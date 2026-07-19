@@ -17,7 +17,6 @@ from ithildin_api.mission_templates import MissionTemplateRegistry
 from ithildin_api.missions import (
     EVIDENCE_COMPLETE,
     EVIDENCE_INCOMPLETE,
-    EVIDENCE_PENDING,
     MISSION_CANCELLATION_TRANSITION_KIND,
     MissionAdmissionPayload,
     MissionAuthoritySnapshot,
@@ -27,6 +26,7 @@ from ithildin_api.missions import (
     MissionRecord,
     MissionStore,
     MissionTransitionAttempt,
+    mission_transition_audit_metadata,
 )
 from ithildin_api.node_configuration import (
     NodeConfigurationNotFoundError,
@@ -292,7 +292,7 @@ class MissionAdmissionService:
                 request_id=f"req_{uuid4().hex}",
                 principal={"id": requester.principal_id, "roles": list(requester.roles)},
                 input_hash=transition.request_digest,
-                metadata=_transition_audit_metadata(transition, mission),
+                metadata=mission_transition_audit_metadata(transition, mission),
                 timestamp=now,
             )
         except AuditWriteError as exc:
@@ -324,33 +324,6 @@ class MissionAdmissionService:
             )
         except MissionError:
             pass
-
-
-def _transition_audit_metadata(
-    transition: MissionTransitionAttempt,
-    mission: MissionRecord,
-) -> JsonObject:
-    return {
-        "transition_id": transition.transition_id,
-        "mission_id": mission.mission_id,
-        "transition_kind": transition.transition_kind,
-        "prior_lifecycle_state": transition.prior_lifecycle_state,
-        "prior_lifecycle_revision": transition.prior_lifecycle_revision,
-        "proposed_lifecycle_state": transition.proposed_lifecycle_state,
-        "proposed_lifecycle_revision": transition.proposed_lifecycle_revision,
-        "request_digest": transition.request_digest,
-        "evidence_status": EVIDENCE_PENDING,
-        "target_node_id": mission.target_node_id,
-        "workspace_id": mission.workspace_id,
-        "mission_template_id": mission.mission_template_id,
-        "authority_snapshot_hash": mission.authority_snapshot_hash,
-        "envelope_digest": mission.envelope_digest,
-        "staged_proposal_only": True,
-        "runner_stop_proven": False,
-        "model_provider_state_known": False,
-    }
-
-
 def mission_node_authority_hash(node: NodeRecord) -> str:
     return sha256_digest(
         {

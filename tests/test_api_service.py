@@ -12,6 +12,7 @@ from pathlib import Path
 from threading import Event
 from typing import Any, NoReturn, cast
 
+import ithildin_api.mission_reports as mission_reports_module
 import ithildin_api.registry as registry_module
 import ithildin_api.trusted_host_promotions as trusted_host_promotions_module
 import pytest
@@ -29,7 +30,16 @@ from ithildin_api.manifest_lock import (
     write_manifest_lock,
     write_manifest_lock_signature,
 )
+from ithildin_api.mission_admission import MissionAdmissionService
 from ithildin_api.mission_claims import MissionClaimError, MissionClaimService
+from ithildin_api.mission_reports import MissionReportError, MissionReportService
+from ithildin_api.missions import (
+    MissionCancellationPayload,
+    MissionControlPollPayload,
+    MissionError,
+    MissionRunnerReportPayload,
+    MissionStore,
+)
 from ithildin_api.node_configuration import (
     NodeConfigurationConflictError,
     NodeConfigurationStore,
@@ -37,6 +47,7 @@ from ithildin_api.node_configuration import (
 )
 from ithildin_api.nodes import (
     NodeHeartbeatPayload,
+    NodeIdentityRotationActivationPayload,
     NodeIdentityRotationRecord,
     NodeStore,
     canonical_identity_rotation_proof_message,
@@ -6389,6 +6400,2426 @@ def test_signed_node_claim_audit_failure_exposes_no_envelope(tmp_path: Path) -> 
         ).fetchone() == ("evidence_incomplete", "audit_write_failed")
 
 
+def test_signed_runner_reports_control_poll_and_cancellation_lifecycle(
+    tmp_path: Path,
+) -> None:
+    settings = _mission_ready_settings(tmp_path)
+    admin_headers = {"Authorization": f"Bearer {settings.admin_token}"}
+    private_key = Ed25519PrivateKey.generate()
+    claim_payload: JsonObject = {"protocol_version": "1"}
+    with TestClient(create_app(settings)) as client:
+        node_id = _ready_mission_node(
+            client,
+            settings,
+            nonce_prefix="5",
+            node_private_key=private_key,
+        )
+        admitted = client.post(
+            "/missions",
+            headers=admin_headers,
+            json={
+                "target_node_id": node_id,
+                "mission_template_id": "synthetic_read_review_v1",
+                "requested_timeout_seconds": 300,
+                "client_request_id": "runner-report-lifecycle-001",
+            },
+        ).json()
+        mission_id = str(admitted["mission_id"])
+        claim_path = f"/nodes/{node_id}/mission-claims"
+        delivered = client.post(
+            claim_path,
+            headers=_signed_node_headers(
+                private_key,
+                node_id=node_id,
+                path=claim_path,
+                payload=claim_payload,
+                nonce="54" * 16,
+            ),
+            json=claim_payload,
+        ).json()
+        claim_id = str(delivered["claim_id"])
+        envelope_digest = str(delivered["envelope_digest"])
+
+        control_path = f"/nodes/{node_id}/mission-control"
+        control_payload: JsonObject = {
+            "protocol_version": "1",
+            "mission_id": mission_id,
+            "claim_id": claim_id,
+            "envelope_digest": envelope_digest,
+            "observed_lifecycle_revision": 2,
+        }
+        control = client.post(
+            control_path,
+            headers=_signed_node_headers(
+                private_key,
+                node_id=node_id,
+                path=control_path,
+                payload=control_payload,
+                nonce="55" * 16,
+            ),
+            json=control_payload,
+        )
+        assert control.status_code == 200
+        assert control.json()["control_decision"] == "continue"
+        assert control.json()["decision_revision"] == 2
+        future_control_payload: JsonObject = {
+            **control_payload,
+            "observed_lifecycle_revision": 99,
+        }
+        future_control = client.post(
+            control_path,
+            headers=_signed_node_headers(
+                private_key,
+                node_id=node_id,
+                path=control_path,
+                payload=future_control_payload,
+                nonce="5c" * 16,
+            ),
+            json=future_control_payload,
+        )
+        assert future_control.status_code == 409
+        assert future_control.json()["detail"] == "mission control binding conflicts"
+
+        report_path = f"/nodes/{node_id}/mission-reports"
+        running_payload: JsonObject = {
+            "mission_id": mission_id,
+            "claim_id": claim_id,
+            "envelope_digest": envelope_digest,
+            "expected_lifecycle_revision": 2,
+            "report_id": "mreport_" + ("5" * 32),
+            "report_kind": "runner_running",
+            "outcome_code": "started",
+            "reason_code": None,
+            "artifact_digest": None,
+        }
+        running_headers = _signed_node_headers(
+            private_key,
+            node_id=node_id,
+            path=report_path,
+            payload=running_payload,
+            nonce="56" * 16,
+        )
+        running = client.post(
+            report_path,
+            headers=running_headers,
+            json=running_payload,
+        )
+        assert running.status_code == 200
+        assert running.json()["receipt"]["receipt_disposition"] == "lifecycle_advancing"
+        assert running.json()["gateway_lifecycle_state"] == "runner_reported_running"
+        assert running.json()["gateway_lifecycle_revision"] == 3
+        assert running.json()["runner_behavior_proven"] is False
+        replayed_nonce = client.post(
+            report_path,
+            headers=running_headers,
+            json=running_payload,
+        )
+        assert replayed_nonce.status_code == 401
+        assert replayed_nonce.json()["detail"] == "replayed mission report nonce"
+        exact_replay = client.post(
+            report_path,
+            headers=_signed_node_headers(
+                private_key,
+                node_id=node_id,
+                path=report_path,
+                payload=running_payload,
+                nonce="5a" * 16,
+            ),
+            json=running_payload,
+        )
+        assert exact_replay.status_code == 200
+        assert exact_replay.json()["gateway_lifecycle_state"] == "runner_reported_running"
+        drifted_payload: JsonObject = {
+            **running_payload,
+            "expected_lifecycle_revision": 3,
+        }
+        drifted_headers = _signed_node_headers(
+            private_key,
+            node_id=node_id,
+            path=report_path,
+            payload=drifted_payload,
+            nonce="5b" * 16,
+        )
+        drifted = client.post(
+            report_path,
+            headers=drifted_headers,
+            json=drifted_payload,
+        )
+        assert drifted.status_code == 409
+        assert drifted.json()["detail"] == "mission report ID conflicts"
+        drifted_nonce_replay = client.post(
+            report_path,
+            headers=drifted_headers,
+            json=drifted_payload,
+        )
+        assert drifted_nonce_replay.status_code == 401
+        assert drifted_nonce_replay.json()["detail"] == "replayed mission report nonce"
+
+        cancel = client.post(
+            f"/missions/{mission_id}/cancel",
+            headers=admin_headers,
+            json={"client_request_id": "runner-report-cancel-001"},
+        )
+        assert cancel.status_code == 200
+        assert cancel.json()["lifecycle_state"] == "cancel_requested"
+        assert cancel.json()["lifecycle_revision"] == 4
+        assert cancel.json()["runner_stop_proven"] is False
+
+        cancel_control_payload: JsonObject = {
+            **control_payload,
+            "observed_lifecycle_revision": 3,
+        }
+        cancel_control = client.post(
+            control_path,
+            headers=_signed_node_headers(
+                private_key,
+                node_id=node_id,
+                path=control_path,
+                payload=cancel_control_payload,
+                nonce="57" * 16,
+            ),
+            json=cancel_control_payload,
+        )
+        assert cancel_control.status_code == 200
+        assert cancel_control.json()["control_decision"] == "cancel_requested"
+        assert cancel_control.json()["decision_revision"] == 4
+
+        observed_payload: JsonObject = {
+            **running_payload,
+            "expected_lifecycle_revision": 4,
+            "report_id": "mreport_" + ("6" * 32),
+            "report_kind": "cancel_observed",
+            "outcome_code": "cancellation_observed",
+        }
+        observed = client.post(
+            report_path,
+            headers=_signed_node_headers(
+                private_key,
+                node_id=node_id,
+                path=report_path,
+                payload=observed_payload,
+                nonce="58" * 16,
+            ),
+            json=observed_payload,
+        )
+        assert observed.status_code == 200
+        assert observed.json()["receipt"]["receipt_disposition"] == "lifecycle_advancing"
+        assert observed.json()["gateway_lifecycle_state"] == "cancel_requested"
+        assert observed.json()["gateway_lifecycle_revision"] == 5
+
+        duplicate_observed_payload: JsonObject = {
+            **observed_payload,
+            "report_id": "mreport_" + ("a" * 32),
+        }
+        duplicate_observed = client.post(
+            report_path,
+            headers=_signed_node_headers(
+                private_key,
+                node_id=node_id,
+                path=report_path,
+                payload=duplicate_observed_payload,
+                nonce="5d" * 16,
+            ),
+            json=duplicate_observed_payload,
+        )
+        assert duplicate_observed.status_code == 200
+        assert duplicate_observed.json()["receipt"]["receipt_disposition"] == "quarantined"
+        assert duplicate_observed.json()["gateway_lifecycle_state"] == "cancel_requested"
+        assert duplicate_observed.json()["gateway_lifecycle_revision"] == 5
+
+        canceled_payload: JsonObject = {
+            **running_payload,
+            "expected_lifecycle_revision": 5,
+            "report_id": "mreport_" + ("7" * 32),
+            "report_kind": "runner_canceled",
+            "outcome_code": "canceled",
+        }
+        canceled = client.post(
+            report_path,
+            headers=_signed_node_headers(
+                private_key,
+                node_id=node_id,
+                path=report_path,
+                payload=canceled_payload,
+                nonce="59" * 16,
+            ),
+            json=canceled_payload,
+        )
+        assert canceled.status_code == 200
+        assert canceled.json()["gateway_lifecycle_state"] == "runner_reported_canceled"
+        assert canceled.json()["gateway_lifecycle_revision"] == 6
+        terminal_control_payload: JsonObject = {
+            **control_payload,
+            "observed_lifecycle_revision": 6,
+        }
+        terminal_control = client.post(
+            control_path,
+            headers=_signed_node_headers(
+                private_key,
+                node_id=node_id,
+                path=control_path,
+                payload=terminal_control_payload,
+                nonce="5e" * 16,
+            ),
+            json=terminal_control_payload,
+        )
+        assert terminal_control.status_code == 409
+        assert terminal_control.json()["detail"] == "mission has no active control decision"
+
+    with TestClient(create_app(settings)) as restarted:
+        replay_after_restart = restarted.post(
+            report_path,
+            headers=running_headers,
+            json=running_payload,
+        )
+        assert replay_after_restart.status_code == 401
+        assert replay_after_restart.json()["detail"] == "replayed mission report nonce"
+
+    with sqlite3.connect(settings.db_path) as connection:
+        assert connection.execute(
+            "SELECT count(*) FROM mission_report_receipts WHERE evidence_status = 'complete'"
+        ).fetchone() == (4,)
+        assert connection.execute(
+            "SELECT count(*) FROM mission_transition_attempts "
+            "WHERE transition_kind = 'report_pending_evidence' "
+            "AND evidence_status = 'complete'"
+        ).fetchone() == (2,)
+
+    store = MissionStore(settings.db_path)
+    cancellation = store.get_cancellation_transition(mission_id)
+    assert cancellation is not None
+    assert cancellation.audit_event_id is not None
+    with sqlite3.connect(settings.db_path) as connection:
+        original_owner_id = connection.execute(
+            "SELECT owner_id FROM mission_audit_evidence_bindings "
+            "WHERE audit_event_id = ?",
+            (cancellation.audit_event_id,),
+        ).fetchone()[0]
+        connection.execute(
+            "UPDATE mission_audit_evidence_bindings SET owner_id = ? "
+            "WHERE audit_event_id = ?",
+            ("mtransition_" + ("0" * 32), cancellation.audit_event_id),
+        )
+        connection.commit()
+    with pytest.raises(MissionError, match="stored mission audit evidence binding"):
+        store.get_cancellation_transition(mission_id)
+    with sqlite3.connect(settings.db_path) as connection:
+        connection.execute(
+            "UPDATE mission_audit_evidence_bindings SET owner_id = ? "
+            "WHERE audit_event_id = ?",
+            (original_owner_id, cancellation.audit_event_id),
+        )
+        connection.commit()
+    assert store.get_cancellation_transition(mission_id) == cancellation
+
+
+def test_revoked_node_report_is_quarantined_and_cannot_poll_control(
+    tmp_path: Path,
+) -> None:
+    settings = _mission_ready_settings(tmp_path)
+    admin_headers = {"Authorization": f"Bearer {settings.admin_token}"}
+    private_key = Ed25519PrivateKey.generate()
+    claim_payload: JsonObject = {"protocol_version": "1"}
+    with TestClient(create_app(settings)) as client:
+        node_id = _ready_mission_node(
+            client,
+            settings,
+            nonce_prefix="4",
+            node_private_key=private_key,
+        )
+        mission = client.post(
+            "/missions",
+            headers=admin_headers,
+            json={
+                "target_node_id": node_id,
+                "mission_template_id": "synthetic_read_review_v1",
+                "requested_timeout_seconds": 300,
+                "client_request_id": "revoked-report-quarantine-001",
+            },
+        ).json()
+        mission_id = str(mission["mission_id"])
+        claim_path = f"/nodes/{node_id}/mission-claims"
+        claim = client.post(
+            claim_path,
+            headers=_signed_node_headers(
+                private_key,
+                node_id=node_id,
+                path=claim_path,
+                payload=claim_payload,
+                nonce="44" * 16,
+            ),
+            json=claim_payload,
+        ).json()
+        revoked = client.post(f"/nodes/{node_id}/revoke", headers=admin_headers)
+        assert revoked.status_code == 200
+        report_path = f"/nodes/{node_id}/mission-reports"
+        report_payload: JsonObject = {
+            "mission_id": mission_id,
+            "claim_id": claim["claim_id"],
+            "envelope_digest": claim["envelope_digest"],
+            "expected_lifecycle_revision": 2,
+            "report_id": "mreport_" + ("4" * 32),
+            "report_kind": "runner_running",
+            "outcome_code": "started",
+            "reason_code": None,
+            "artifact_digest": None,
+        }
+        report = client.post(
+            report_path,
+            headers=_signed_node_headers(
+                private_key,
+                node_id=node_id,
+                path=report_path,
+                payload=report_payload,
+                nonce="45" * 16,
+            ),
+            json=report_payload,
+        )
+        assert report.status_code == 200
+        assert report.json()["receipt"]["receipt_disposition"] == "quarantined"
+        assert report.json()["receipt"]["receipt_posture"]["proposed_advancement"] == {
+            "node_status": "revoked",
+            "node_evidence_status": "complete",
+            "verified_node_identity_key_id": report.json()["receipt"][
+                "verified_node_identity_key_id"
+            ],
+            "current_node_identity_key_id": report.json()["receipt"][
+                "verified_node_identity_key_id"
+            ],
+            "state": "quarantined",
+            "reason_code": "node_revoked",
+        }
+        assert report.json()["gateway_lifecycle_state"] == "claimed"
+        control_path = f"/nodes/{node_id}/mission-control"
+        control_payload: JsonObject = {
+            "protocol_version": "1",
+            "mission_id": mission_id,
+            "claim_id": claim["claim_id"],
+            "envelope_digest": claim["envelope_digest"],
+            "observed_lifecycle_revision": 2,
+        }
+        denied_control = client.post(
+            control_path,
+            headers=_signed_node_headers(
+                private_key,
+                node_id=node_id,
+                path=control_path,
+                payload=control_payload,
+                nonce="46" * 16,
+            ),
+            json=control_payload,
+        )
+        assert denied_control.status_code == 401
+        assert denied_control.json()["detail"] == "Node is revoked"
+
+
+def test_runner_report_identity_rotation_enforces_current_key_and_preserves_replay(
+    tmp_path: Path,
+) -> None:
+    settings = _mission_ready_settings(tmp_path)
+    admin_headers = {"Authorization": f"Bearer {settings.admin_token}"}
+    current_private_key = Ed25519PrivateKey.generate()
+    claim_payload: JsonObject = {"protocol_version": "1"}
+    with TestClient(create_app(settings)) as client:
+        node_id = _ready_mission_node(
+            client,
+            settings,
+            nonce_prefix="3",
+            node_private_key=current_private_key,
+        )
+        mission = client.post(
+            "/missions",
+            headers=admin_headers,
+            json={
+                "target_node_id": node_id,
+                "mission_template_id": "synthetic_read_review_v1",
+                "requested_timeout_seconds": 300,
+                "client_request_id": "runner-report-key-rotation-001",
+            },
+        ).json()
+        mission_id = str(mission["mission_id"])
+        claim_path = f"/nodes/{node_id}/mission-claims"
+        claim = client.post(
+            claim_path,
+            headers=_signed_node_headers(
+                current_private_key,
+                node_id=node_id,
+                path=claim_path,
+                payload=claim_payload,
+                nonce="34" * 16,
+            ),
+            json=claim_payload,
+        ).json()
+        report_path = f"/nodes/{node_id}/mission-reports"
+        running_payload: JsonObject = {
+            "mission_id": mission_id,
+            "claim_id": claim["claim_id"],
+            "envelope_digest": claim["envelope_digest"],
+            "expected_lifecycle_revision": 2,
+            "report_id": "mreport_" + ("3" * 32),
+            "report_kind": "runner_running",
+            "outcome_code": "started",
+            "reason_code": None,
+            "artifact_digest": None,
+        }
+        accepted = client.post(
+            report_path,
+            headers=_signed_node_headers(
+                current_private_key,
+                node_id=node_id,
+                path=report_path,
+                payload=running_payload,
+                nonce="35" * 16,
+            ),
+            json=running_payload,
+        )
+        assert accepted.status_code == 200
+        first_receipt = accepted.json()["receipt"]
+        old_key_id = first_receipt["verified_node_identity_key_id"]
+
+        next_private_key = _rotate_ready_node_identity_key(
+            client,
+            settings,
+            node_id=node_id,
+            current_private_key=current_private_key,
+            nonce_prefix="b",
+        )
+        new_key_id = node_identity_key_id(
+            base64.b64encode(next_private_key.public_key().public_bytes_raw()).decode()
+        )
+        assert new_key_id != old_key_id
+
+        retired_key_payload: JsonObject = {
+            **running_payload,
+            "expected_lifecycle_revision": 3,
+            "report_id": "mreport_" + ("b" * 32),
+            "report_kind": "runner_succeeded",
+            "outcome_code": "succeeded",
+            "artifact_digest": "sha256:" + ("b" * 64),
+        }
+        retired_key_report = client.post(
+            report_path,
+            headers=_signed_node_headers(
+                current_private_key,
+                node_id=node_id,
+                path=report_path,
+                payload=retired_key_payload,
+                nonce="36" * 16,
+            ),
+            json=retired_key_payload,
+        )
+        assert retired_key_report.status_code == 401
+
+        replay_after_rotation = client.post(
+            report_path,
+            headers=_signed_node_headers(
+                next_private_key,
+                node_id=node_id,
+                path=report_path,
+                payload=running_payload,
+                nonce="37" * 16,
+            ),
+            json=running_payload,
+        )
+        assert replay_after_rotation.status_code == 200
+        assert replay_after_rotation.json()["receipt"] == first_receipt
+        assert (
+            replay_after_rotation.json()["receipt"]["verified_node_identity_key_id"]
+            == old_key_id
+        )
+
+        current_key_report = client.post(
+            report_path,
+            headers=_signed_node_headers(
+                next_private_key,
+                node_id=node_id,
+                path=report_path,
+                payload=retired_key_payload,
+                nonce="38" * 16,
+            ),
+            json=retired_key_payload,
+        )
+        assert current_key_report.status_code == 200
+        assert current_key_report.json()["receipt"]["receipt_disposition"] == (
+            "lifecycle_advancing"
+        )
+        assert (
+            current_key_report.json()["receipt"]["verified_node_identity_key_id"]
+            == new_key_id
+        )
+        assert current_key_report.json()["gateway_lifecycle_state"] == (
+            "runner_reported_succeeded"
+        )
+        assert current_key_report.json()["gateway_lifecycle_revision"] == 4
+
+
+def test_mission_control_never_continues_at_claim_expiry(tmp_path: Path) -> None:
+    settings = _mission_ready_settings(tmp_path)
+    admin_headers = {"Authorization": f"Bearer {settings.admin_token}"}
+    private_key = Ed25519PrivateKey.generate()
+    claim_payload: JsonObject = {"protocol_version": "1"}
+    api = create_app(settings)
+    with TestClient(api) as client:
+        node_id = _ready_mission_node(
+            client,
+            settings,
+            nonce_prefix="c",
+            node_private_key=private_key,
+        )
+        mission_id = str(
+            client.post(
+                "/missions",
+                headers=admin_headers,
+                json={
+                    "target_node_id": node_id,
+                    "mission_template_id": "synthetic_read_review_v1",
+                    "requested_timeout_seconds": 300,
+                    "client_request_id": "expired-control-decision-001",
+                },
+            ).json()["mission_id"]
+        )
+        claim_path = f"/nodes/{node_id}/mission-claims"
+        claim = client.post(
+            claim_path,
+            headers=_signed_node_headers(
+                private_key,
+                node_id=node_id,
+                path=claim_path,
+                payload=claim_payload,
+                nonce="c4" * 16,
+            ),
+            json=claim_payload,
+        ).json()
+        stored_claim = MissionStore(settings.db_path).get_claim(mission_id)
+        payload = MissionControlPollPayload(
+            protocol_version="1",
+            mission_id=mission_id,
+            claim_id=claim["claim_id"],
+            envelope_digest=claim["envelope_digest"],
+            observed_lifecycle_revision=2,
+        )
+        with pytest.raises(MissionReportError, match="mission claim has expired"):
+            cast(
+                MissionReportService,
+                api.state.mission_report_service,
+            ).control_decision(
+                payload,
+                authenticated_node=NodeStore(settings.db_path).get(node_id),
+                now=datetime.fromisoformat(stored_claim.expires_at),
+            )
+
+
+@pytest.mark.parametrize("completion_path", ("success", "cancellation"))
+def test_started_mission_remains_controllable_after_claim_delivery_deadline(
+    tmp_path: Path,
+    completion_path: str,
+) -> None:
+    settings = _mission_ready_settings(tmp_path)
+    admin_headers = {"Authorization": f"Bearer {settings.admin_token}"}
+    private_key = Ed25519PrivateKey.generate()
+    claim_payload: JsonObject = {"protocol_version": "1"}
+    api = create_app(settings)
+    with TestClient(api) as client:
+        node_id = _ready_mission_node(
+            client,
+            settings,
+            nonce_prefix="9",
+            node_private_key=private_key,
+        )
+        mission_id = str(
+            client.post(
+                "/missions",
+                headers=admin_headers,
+                json={
+                    "target_node_id": node_id,
+                    "mission_template_id": "synthetic_read_review_v1",
+                    "requested_timeout_seconds": 60,
+                    "client_request_id": f"post-expiry-{completion_path}-001",
+                },
+            ).json()["mission_id"]
+        )
+        claim_path = f"/nodes/{node_id}/mission-claims"
+        claim_document = client.post(
+            claim_path,
+            headers=_signed_node_headers(
+                private_key,
+                node_id=node_id,
+                path=claim_path,
+                payload=claim_payload,
+                nonce="94" * 16,
+            ),
+            json=claim_payload,
+        ).json()
+
+        store = MissionStore(settings.db_path)
+        claim = store.get_claim(mission_id)
+        expires_at = datetime.fromisoformat(claim.expires_at)
+        before_expiry = expires_at - timedelta(seconds=1)
+        after_expiry = expires_at + timedelta(seconds=1)
+        node = NodeStore(settings.db_path).get(node_id)
+        verified_key_id = node_identity_key_id(node.public_key)
+        report_service = cast(MissionReportService, api.state.mission_report_service)
+
+        def accept_at(
+            report: MissionRunnerReportPayload,
+            when: datetime,
+        ) -> JsonObject:
+            with sqlite3.connect(settings.db_path) as connection:
+                connection.execute("PRAGMA foreign_keys = ON")
+                connection.execute("BEGIN IMMEDIATE")
+                staged = report_service.stage_authenticated_report(
+                    connection,
+                    report,
+                    authenticated_node=node,
+                    verified_node_identity_key_id=verified_key_id,
+                    now=when,
+                )
+                connection.commit()
+            return report_service.accept_report(
+                report,
+                authenticated_node=node,
+                verified_node_identity_key_id=verified_key_id,
+                staged=staged,
+                now=when,
+            )
+
+        running_report = MissionRunnerReportPayload(
+            mission_id=mission_id,
+            claim_id=claim.claim_id,
+            envelope_digest=claim.envelope_digest,
+            expected_lifecycle_revision=2,
+            report_id="mreport_" + ("9" * 32),
+            report_kind="runner_running",
+            outcome_code="started",
+        )
+        running = accept_at(running_report, before_expiry)
+        assert running["gateway_lifecycle_state"] == "runner_reported_running"
+        assert running["gateway_lifecycle_revision"] == 3
+
+        control_payload = MissionControlPollPayload(
+            protocol_version="1",
+            mission_id=mission_id,
+            claim_id=claim.claim_id,
+            envelope_digest=claim.envelope_digest,
+            observed_lifecycle_revision=3,
+        )
+        continued = report_service.control_decision(
+            control_payload,
+            authenticated_node=node,
+            now=after_expiry,
+        )
+        assert continued["control_decision"] == "continue"
+        assert continued["decision_revision"] == 3
+
+        if completion_path == "success":
+            success_report = MissionRunnerReportPayload(
+                mission_id=mission_id,
+                claim_id=claim.claim_id,
+                envelope_digest=claim.envelope_digest,
+                expected_lifecycle_revision=3,
+                report_id="mreport_" + ("8" * 32),
+                report_kind="runner_succeeded",
+                outcome_code="succeeded",
+                artifact_digest="sha256:" + ("8" * 64),
+            )
+            succeeded = accept_at(success_report, after_expiry)
+            assert succeeded["gateway_lifecycle_state"] == "runner_reported_succeeded"
+            assert succeeded["gateway_lifecycle_revision"] == 4
+            return
+
+        canceled = cast(
+            MissionAdmissionService,
+            api.state.mission_admission_service,
+        ).cancel(
+            mission_id,
+            MissionCancellationPayload(
+                client_request_id="post-expiry-cancellation-001"
+            ),
+            requester=ADMIN_CONTEXT,
+            now=after_expiry,
+        )
+        assert canceled["lifecycle_state"] == "cancel_requested"
+        assert canceled["lifecycle_revision"] == 4
+        cancel_decision = report_service.control_decision(
+            control_payload,
+            authenticated_node=node,
+            now=after_expiry + timedelta(seconds=1),
+        )
+        assert cancel_decision["control_decision"] == "cancel_requested"
+        assert cancel_decision["decision_revision"] == 4
+        observed_report = MissionRunnerReportPayload(
+            mission_id=mission_id,
+            claim_id=claim.claim_id,
+            envelope_digest=claim.envelope_digest,
+            expected_lifecycle_revision=4,
+            report_id="mreport_" + ("7" * 32),
+            report_kind="cancel_observed",
+            outcome_code="cancellation_observed",
+        )
+        observed = accept_at(observed_report, after_expiry + timedelta(seconds=2))
+        assert observed["gateway_lifecycle_state"] == "cancel_requested"
+        assert observed["gateway_lifecycle_revision"] == 5
+        canceled_report = MissionRunnerReportPayload(
+            mission_id=mission_id,
+            claim_id=claim.claim_id,
+            envelope_digest=claim.envelope_digest,
+            expected_lifecycle_revision=5,
+            report_id="mreport_" + ("6" * 32),
+            report_kind="runner_canceled",
+            outcome_code="canceled",
+        )
+        runner_canceled = accept_at(
+            canceled_report,
+            after_expiry + timedelta(seconds=3),
+        )
+        assert runner_canceled["gateway_lifecycle_state"] == "runner_reported_canceled"
+        assert runner_canceled["gateway_lifecycle_revision"] == 6
+        assert claim_document["claim_id"] == claim.claim_id
+
+
+@pytest.mark.parametrize("authority_change", ("cancellation", "revocation"))
+def test_control_post_audit_revalidation_denies_concurrent_authority_change(
+    tmp_path: Path,
+    authority_change: str,
+) -> None:
+    settings = _mission_ready_settings(tmp_path)
+    admin_headers = {"Authorization": f"Bearer {settings.admin_token}"}
+    private_key = Ed25519PrivateKey.generate()
+    claim_payload: JsonObject = {"protocol_version": "1"}
+    api = create_app(settings)
+    with TestClient(api) as client:
+        node_id = _ready_mission_node(
+            client,
+            settings,
+            nonce_prefix="7",
+            node_private_key=private_key,
+        )
+        mission_id = str(
+            client.post(
+                "/missions",
+                headers=admin_headers,
+                json={
+                    "target_node_id": node_id,
+                    "mission_template_id": "synthetic_read_review_v1",
+                    "requested_timeout_seconds": 300,
+                    "client_request_id": f"control-race-{authority_change}-001",
+                },
+            ).json()["mission_id"]
+        )
+        claim_path = f"/nodes/{node_id}/mission-claims"
+        claim = client.post(
+            claim_path,
+            headers=_signed_node_headers(
+                private_key,
+                node_id=node_id,
+                path=claim_path,
+                payload=claim_payload,
+                nonce="74" * 16,
+            ),
+            json=claim_payload,
+        ).json()
+        real_audit_writer = api.state.mission_report_service.audit_writer
+
+        class AuthorityChangingControlAuditWriter:
+            def write_event(self, **kwargs: object) -> object:
+                event = real_audit_writer.write_event(**kwargs)
+                if kwargs.get("event_type") == AuditEventType.MISSION_CONTROL_POLLED:
+                    if authority_change == "cancellation":
+                        cast(
+                            MissionAdmissionService,
+                            api.state.mission_admission_service,
+                        ).cancel(
+                            mission_id,
+                            MissionCancellationPayload(
+                                client_request_id="control-race-cancellation-001"
+                            ),
+                            requester=ADMIN_CONTEXT,
+                        )
+                    else:
+                        NodeStore(settings.db_path).revoke(node_id)
+                return event
+
+        api.state.mission_report_service.audit_writer = (
+            AuthorityChangingControlAuditWriter()
+        )
+        control_path = f"/nodes/{node_id}/mission-control"
+        control_payload: JsonObject = {
+            "protocol_version": "1",
+            "mission_id": mission_id,
+            "claim_id": claim["claim_id"],
+            "envelope_digest": claim["envelope_digest"],
+            "observed_lifecycle_revision": 2,
+        }
+        denied = client.post(
+            control_path,
+            headers=_signed_node_headers(
+                private_key,
+                node_id=node_id,
+                path=control_path,
+                payload=control_payload,
+                nonce="75" * 16,
+            ),
+            json=control_payload,
+        )
+        assert denied.status_code == 409
+        assert denied.json()["detail"] == (
+            "mission control authority changed before delivery"
+        )
+
+        if authority_change == "cancellation":
+            assert MissionStore(settings.db_path).get(mission_id).safe_summary()[
+                "lifecycle_state"
+            ] == "cancel_requested"
+            return
+
+        node = NodeStore(settings.db_path).get(node_id)
+        assert (node.status, node.evidence_status) == ("revoked", "pending")
+        report_path = f"/nodes/{node_id}/mission-reports"
+        report_payload: JsonObject = {
+            "mission_id": mission_id,
+            "claim_id": claim["claim_id"],
+            "envelope_digest": claim["envelope_digest"],
+            "expected_lifecycle_revision": 2,
+            "report_id": "mreport_" + ("5" * 32),
+            "report_kind": "runner_running",
+            "outcome_code": "started",
+            "reason_code": None,
+            "artifact_digest": None,
+        }
+        quarantined = client.post(
+            report_path,
+            headers=_signed_node_headers(
+                private_key,
+                node_id=node_id,
+                path=report_path,
+                payload=report_payload,
+                nonce="76" * 16,
+            ),
+            json=report_payload,
+        )
+        assert quarantined.status_code == 200
+        assert quarantined.json()["receipt"]["receipt_disposition"] == "quarantined"
+        assert quarantined.json()["receipt"]["receipt_posture"][
+            "proposed_advancement"
+        ]["reason_code"] == "node_revoked"
+        assert quarantined.json()["gateway_lifecycle_state"] == "claimed"
+
+
+def test_control_post_audit_revalidation_denies_claim_expiry_clock_race(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    settings = _mission_ready_settings(tmp_path)
+    admin_headers = {"Authorization": f"Bearer {settings.admin_token}"}
+    private_key = Ed25519PrivateKey.generate()
+    claim_payload: JsonObject = {"protocol_version": "1"}
+    with TestClient(create_app(settings)) as client:
+        node_id = _ready_mission_node(
+            client,
+            settings,
+            nonce_prefix="6",
+            node_private_key=private_key,
+        )
+        mission_id = str(
+            client.post(
+                "/missions",
+                headers=admin_headers,
+                json={
+                    "target_node_id": node_id,
+                    "mission_template_id": "synthetic_read_review_v1",
+                    "requested_timeout_seconds": 60,
+                    "client_request_id": "control-expiry-race-001",
+                },
+            ).json()["mission_id"]
+        )
+        claim_path = f"/nodes/{node_id}/mission-claims"
+        claim = client.post(
+            claim_path,
+            headers=_signed_node_headers(
+                private_key,
+                node_id=node_id,
+                path=claim_path,
+                payload=claim_payload,
+                nonce="64" * 16,
+            ),
+            json=claim_payload,
+        ).json()
+        expires_at = datetime.fromisoformat(
+            MissionStore(settings.db_path).get_claim(mission_id).expires_at
+        )
+        observed_times = iter(
+            (
+                expires_at - timedelta(microseconds=1),
+                expires_at + timedelta(microseconds=1),
+            )
+        )
+
+        class AdvancingDateTime:
+            @classmethod
+            def now(cls, tz: object = None) -> datetime:
+                del tz
+                return next(observed_times)
+
+            @classmethod
+            def fromisoformat(cls, value: str) -> datetime:
+                return datetime.fromisoformat(value)
+
+        monkeypatch.setattr(mission_reports_module, "datetime", AdvancingDateTime)
+        control_path = f"/nodes/{node_id}/mission-control"
+        control_payload: JsonObject = {
+            "protocol_version": "1",
+            "mission_id": mission_id,
+            "claim_id": claim["claim_id"],
+            "envelope_digest": claim["envelope_digest"],
+            "observed_lifecycle_revision": 2,
+        }
+        denied = client.post(
+            control_path,
+            headers=_signed_node_headers(
+                private_key,
+                node_id=node_id,
+                path=control_path,
+                payload=control_payload,
+                nonce="65" * 16,
+            ),
+            json=control_payload,
+        )
+        assert denied.status_code == 409
+        assert denied.json()["detail"] == (
+            "mission control authority changed before delivery"
+        )
+
+
+def test_pending_identity_rotation_current_key_report_is_quarantined(
+    tmp_path: Path,
+) -> None:
+    settings = _mission_ready_settings(tmp_path)
+    admin_headers = {"Authorization": f"Bearer {settings.admin_token}"}
+    private_key = Ed25519PrivateKey.generate()
+    claim_payload: JsonObject = {"protocol_version": "1"}
+    with TestClient(create_app(settings)) as client:
+        node_id = _ready_mission_node(
+            client,
+            settings,
+            nonce_prefix="4",
+            node_private_key=private_key,
+        )
+        mission_id = str(
+            client.post(
+                "/missions",
+                headers=admin_headers,
+                json={
+                    "target_node_id": node_id,
+                    "mission_template_id": "synthetic_read_review_v1",
+                    "requested_timeout_seconds": 300,
+                    "client_request_id": "pending-rotation-report-001",
+                },
+            ).json()["mission_id"]
+        )
+        claim_path = f"/nodes/{node_id}/mission-claims"
+        claim = client.post(
+            claim_path,
+            headers=_signed_node_headers(
+                private_key,
+                node_id=node_id,
+                path=claim_path,
+                payload=claim_payload,
+                nonce="44" * 16,
+            ),
+            json=claim_payload,
+        ).json()
+        challenge_path = f"/nodes/{node_id}/identity-key-rotation/challenges"
+        challenge_payload: JsonObject = {"protocol_version": "1"}
+        challenge = client.post(
+            challenge_path,
+            headers=_signed_node_headers(
+                private_key,
+                node_id=node_id,
+                path=challenge_path,
+                payload=challenge_payload,
+                nonce="45" * 16,
+            ),
+            json=challenge_payload,
+        )
+        assert challenge.status_code == 200
+        assert challenge.json()["status"] == "pending"
+        assert challenge.json()["evidence_status"] == "complete"
+
+        report_path = f"/nodes/{node_id}/mission-reports"
+        report_payload: JsonObject = {
+            "mission_id": mission_id,
+            "claim_id": claim["claim_id"],
+            "envelope_digest": claim["envelope_digest"],
+            "expected_lifecycle_revision": 2,
+            "report_id": "mreport_" + ("4" * 32),
+            "report_kind": "runner_running",
+            "outcome_code": "started",
+            "reason_code": None,
+            "artifact_digest": None,
+        }
+        report = client.post(
+            report_path,
+            headers=_signed_node_headers(
+                private_key,
+                node_id=node_id,
+                path=report_path,
+                payload=report_payload,
+                nonce="46" * 16,
+            ),
+            json=report_payload,
+        )
+        assert report.status_code == 200
+        assert report.json()["receipt"]["receipt_disposition"] == "quarantined"
+        assert report.json()["receipt"]["receipt_posture"]["proposed_advancement"][
+            "reason_code"
+        ] == "identity_rotation_pending"
+        assert report.json()["gateway_lifecycle_state"] == "claimed"
+        control_path = f"/nodes/{node_id}/mission-control"
+        control_payload: JsonObject = {
+            "protocol_version": "1",
+            "mission_id": mission_id,
+            "claim_id": claim["claim_id"],
+            "envelope_digest": claim["envelope_digest"],
+            "observed_lifecycle_revision": 2,
+        }
+        control = client.post(
+            control_path,
+            headers=_signed_node_headers(
+                private_key,
+                node_id=node_id,
+                path=control_path,
+                payload=control_payload,
+                nonce="47" * 16,
+            ),
+            json=control_payload,
+        )
+        assert control.status_code == 409
+        assert control.json()["detail"] == (
+            "mission control authority changed before delivery"
+        )
+
+
+def test_identity_rotation_activation_pending_keys_cannot_report(
+    tmp_path: Path,
+) -> None:
+    settings = _mission_ready_settings(tmp_path)
+    admin_headers = {"Authorization": f"Bearer {settings.admin_token}"}
+    current_private_key = Ed25519PrivateKey.generate()
+    claim_payload: JsonObject = {"protocol_version": "1"}
+    with TestClient(create_app(settings)) as client:
+        node_id = _ready_mission_node(
+            client,
+            settings,
+            nonce_prefix="8",
+            node_private_key=current_private_key,
+        )
+        mission_id = str(
+            client.post(
+                "/missions",
+                headers=admin_headers,
+                json={
+                    "target_node_id": node_id,
+                    "mission_template_id": "synthetic_read_review_v1",
+                    "requested_timeout_seconds": 300,
+                    "client_request_id": "activation-pending-report-001",
+                },
+            ).json()["mission_id"]
+        )
+        claim_path = f"/nodes/{node_id}/mission-claims"
+        claim = client.post(
+            claim_path,
+            headers=_signed_node_headers(
+                current_private_key,
+                node_id=node_id,
+                path=claim_path,
+                payload=claim_payload,
+                nonce="84" * 16,
+            ),
+            json=claim_payload,
+        ).json()
+        challenge_path = f"/nodes/{node_id}/identity-key-rotation/challenges"
+        challenge_payload: JsonObject = {"protocol_version": "1"}
+        challenge = client.post(
+            challenge_path,
+            headers=_signed_node_headers(
+                current_private_key,
+                node_id=node_id,
+                path=challenge_path,
+                payload=challenge_payload,
+                nonce="85" * 16,
+            ),
+            json=challenge_payload,
+        ).json()
+        store = NodeStore(settings.db_path)
+        rotation = store.get_identity_rotation(str(challenge["rotation_id"]))
+        next_private_key = Ed25519PrivateKey.generate()
+        next_public_key = base64.b64encode(
+            next_private_key.public_key().public_bytes_raw()
+        ).decode()
+        next_key_id = node_identity_key_id(next_public_key)
+        proof = canonical_identity_rotation_proof_message(
+            rotation=rotation,
+            next_key_id=next_key_id,
+        )
+        pending_node, pending_rotation = store.activate_identity_rotation(
+            node_id,
+            NodeIdentityRotationActivationPayload(
+                protocol_version="1",
+                rotation_id=rotation.rotation_id,
+                challenge=str(challenge["challenge"]),
+                next_public_key=next_public_key,
+                next_key_proof=base64.b64encode(next_private_key.sign(proof)).decode(),
+            ),
+        )
+        assert (pending_node.evidence_status, pending_rotation.status) == (
+            "pending",
+            "activated",
+        )
+        assert pending_rotation.evidence_status == "pending"
+
+        report_path = f"/nodes/{node_id}/mission-reports"
+        report_payload: JsonObject = {
+            "mission_id": mission_id,
+            "claim_id": claim["claim_id"],
+            "envelope_digest": claim["envelope_digest"],
+            "expected_lifecycle_revision": 2,
+            "report_id": "mreport_" + ("8" * 32),
+            "report_kind": "runner_running",
+            "outcome_code": "started",
+            "reason_code": None,
+            "artifact_digest": None,
+        }
+        new_key_denied = client.post(
+            report_path,
+            headers=_signed_node_headers(
+                next_private_key,
+                node_id=node_id,
+                path=report_path,
+                payload=report_payload,
+                nonce="86" * 16,
+            ),
+            json=report_payload,
+        )
+        assert new_key_denied.status_code == 401
+        assert new_key_denied.json()["detail"] == (
+            "Node identity-key activation evidence is incomplete"
+        )
+        old_key_denied = client.post(
+            report_path,
+            headers=_signed_node_headers(
+                current_private_key,
+                node_id=node_id,
+                path=report_path,
+                payload=report_payload,
+                nonce="87" * 16,
+            ),
+            json=report_payload,
+        )
+        assert old_key_denied.status_code == 401
+        with sqlite3.connect(settings.db_path) as connection:
+            assert connection.execute(
+                "SELECT count(*) FROM mission_report_receipts"
+            ).fetchone() == (0,)
+
+
+def test_heartbeat_audit_pending_current_key_report_is_quarantined(
+    tmp_path: Path,
+) -> None:
+    settings = _mission_ready_settings(tmp_path)
+    admin_headers = {"Authorization": f"Bearer {settings.admin_token}"}
+    private_key = Ed25519PrivateKey.generate()
+    claim_payload: JsonObject = {"protocol_version": "1"}
+    api = create_app(settings)
+    with TestClient(api) as client:
+        node_id = _ready_mission_node(
+            client,
+            settings,
+            nonce_prefix="5",
+            node_private_key=private_key,
+        )
+        mission_id = str(
+            client.post(
+                "/missions",
+                headers=admin_headers,
+                json={
+                    "target_node_id": node_id,
+                    "mission_template_id": "synthetic_read_review_v1",
+                    "requested_timeout_seconds": 300,
+                    "client_request_id": "heartbeat-pending-report-001",
+                },
+            ).json()["mission_id"]
+        )
+        claim_path = f"/nodes/{node_id}/mission-claims"
+        claim = client.post(
+            claim_path,
+            headers=_signed_node_headers(
+                private_key,
+                node_id=node_id,
+                path=claim_path,
+                payload=claim_payload,
+                nonce="54" * 16,
+            ),
+            json=claim_payload,
+        ).json()
+        node = NodeStore(settings.db_path).get(node_id)
+        assert node.acknowledged_configuration_digest is not None
+        heartbeat_payload: JsonObject = {
+            "protocol_version": "1",
+            "node_version": "0.1.0",
+            "runner_adapter": "hermes",
+            "deployment_topology": "docker_sidecar",
+            "configuration_digest": node.acknowledged_configuration_digest,
+        }
+        real_audit_writer = api.state.audit_writer
+
+        class FailingHeartbeatAuditWriter:
+            def write_event(self, **kwargs: object) -> object:
+                if kwargs.get("event_type") == AuditEventType.NODE_HEARTBEAT_ACCEPTED:
+                    raise AuditWriteError("simulated heartbeat audit failure")
+                return real_audit_writer.write_event(**kwargs)
+
+        api.state.audit_writer = FailingHeartbeatAuditWriter()
+        heartbeat_path = f"/nodes/{node_id}/heartbeat"
+        with pytest.raises(AuditWriteError, match="simulated heartbeat audit failure"):
+            client.post(
+                heartbeat_path,
+                headers=_signed_node_headers(
+                    private_key,
+                    node_id=node_id,
+                    path=heartbeat_path,
+                    payload=heartbeat_payload,
+                    nonce="55" * 16,
+                ),
+                json=heartbeat_payload,
+            )
+        pending_node = NodeStore(settings.db_path).get(node_id)
+        assert (pending_node.status, pending_node.evidence_status) == (
+            "enrolled",
+            "pending",
+        )
+
+        report_path = f"/nodes/{node_id}/mission-reports"
+        report_payload: JsonObject = {
+            "mission_id": mission_id,
+            "claim_id": claim["claim_id"],
+            "envelope_digest": claim["envelope_digest"],
+            "expected_lifecycle_revision": 2,
+            "report_id": "mreport_" + ("c" * 32),
+            "report_kind": "runner_running",
+            "outcome_code": "started",
+            "reason_code": None,
+            "artifact_digest": None,
+        }
+        report = client.post(
+            report_path,
+            headers=_signed_node_headers(
+                private_key,
+                node_id=node_id,
+                path=report_path,
+                payload=report_payload,
+                nonce="56" * 16,
+            ),
+            json=report_payload,
+        )
+        assert report.status_code == 200
+        assert report.json()["receipt"]["receipt_disposition"] == "quarantined"
+        assert report.json()["receipt"]["receipt_posture"]["proposed_advancement"][
+            "reason_code"
+        ] == "posture_ineligible"
+        assert report.json()["gateway_lifecycle_state"] == "claimed"
+
+
+@pytest.mark.parametrize(
+    ("mutation_sql", "parameters"),
+    (
+        (
+            "UPDATE nodes SET last_seen_at = ? WHERE node_id = ?",
+            ("2020-01-01T00:00:00+00:00",),
+        ),
+        (
+            "UPDATE nodes SET last_configuration_digest = ? WHERE node_id = ?",
+            ("sha256:" + ("9" * 64),),
+        ),
+        ("UPDATE nodes SET last_node_version = '0.0.1' WHERE node_id = ?", ()),
+        (
+            "UPDATE nodes SET configuration_acknowledgment_status = NULL WHERE node_id = ?",
+            (),
+        ),
+    ),
+)
+def test_ineligible_current_posture_runner_reports_are_quarantined(
+    tmp_path: Path,
+    mutation_sql: str,
+    parameters: tuple[object, ...],
+) -> None:
+    settings = _mission_ready_settings(tmp_path)
+    admin_headers = {"Authorization": f"Bearer {settings.admin_token}"}
+    private_key = Ed25519PrivateKey.generate()
+    claim_payload: JsonObject = {"protocol_version": "1"}
+    with TestClient(create_app(settings)) as client:
+        node_id = _ready_mission_node(
+            client,
+            settings,
+            nonce_prefix="d",
+            node_private_key=private_key,
+        )
+        mission_id = str(
+            client.post(
+                "/missions",
+                headers=admin_headers,
+                json={
+                    "target_node_id": node_id,
+                    "mission_template_id": "synthetic_read_review_v1",
+                    "requested_timeout_seconds": 300,
+                    "client_request_id": "ineligible-report-quarantine-001",
+                },
+            ).json()["mission_id"]
+        )
+        claim_path = f"/nodes/{node_id}/mission-claims"
+        claim = client.post(
+            claim_path,
+            headers=_signed_node_headers(
+                private_key,
+                node_id=node_id,
+                path=claim_path,
+                payload=claim_payload,
+                nonce="d4" * 16,
+            ),
+            json=claim_payload,
+        ).json()
+        with sqlite3.connect(settings.db_path) as connection:
+            connection.execute(mutation_sql, (*parameters, node_id))
+            connection.commit()
+        report_path = f"/nodes/{node_id}/mission-reports"
+        report_payload: JsonObject = {
+            "mission_id": mission_id,
+            "claim_id": claim["claim_id"],
+            "envelope_digest": claim["envelope_digest"],
+            "expected_lifecycle_revision": 2,
+            "report_id": "mreport_" + ("d" * 32),
+            "report_kind": "runner_running",
+            "outcome_code": "started",
+            "reason_code": None,
+            "artifact_digest": None,
+        }
+        report = client.post(
+            report_path,
+            headers=_signed_node_headers(
+                private_key,
+                node_id=node_id,
+                path=report_path,
+                payload=report_payload,
+                nonce="d5" * 16,
+            ),
+            json=report_payload,
+        )
+        assert report.status_code == 200
+        assert report.json()["receipt"]["receipt_disposition"] == "quarantined"
+        assert report.json()["receipt"]["receipt_posture"]["proposed_advancement"][
+            "reason_code"
+        ] == "posture_ineligible"
+        assert report.json()["gateway_lifecycle_state"] == "claimed"
+        assert report.json()["gateway_lifecycle_revision"] == 2
+
+
+def test_runner_report_audit_failure_records_receipt_without_lifecycle_advance(
+    tmp_path: Path,
+) -> None:
+    settings = _mission_ready_settings(tmp_path)
+    admin_headers = {"Authorization": f"Bearer {settings.admin_token}"}
+    private_key = Ed25519PrivateKey.generate()
+    claim_payload: JsonObject = {"protocol_version": "1"}
+    api = create_app(settings)
+    with TestClient(api) as client:
+        node_id = _ready_mission_node(
+            client,
+            settings,
+            nonce_prefix="3",
+            node_private_key=private_key,
+        )
+        mission = client.post(
+            "/missions",
+            headers=admin_headers,
+            json={
+                "target_node_id": node_id,
+                "mission_template_id": "synthetic_read_review_v1",
+                "requested_timeout_seconds": 300,
+                "client_request_id": "report-audit-failure-001",
+            },
+        ).json()
+        mission_id = str(mission["mission_id"])
+        claim_path = f"/nodes/{node_id}/mission-claims"
+        claim = client.post(
+            claim_path,
+            headers=_signed_node_headers(
+                private_key,
+                node_id=node_id,
+                path=claim_path,
+                payload=claim_payload,
+                nonce="34" * 16,
+            ),
+            json=claim_payload,
+        ).json()
+
+        class FailingReportAuditWriter:
+            def write_event(self, **_: object) -> None:
+                raise AuditWriteError("simulated report receipt audit failure")
+
+        api.state.mission_report_service.audit_writer = FailingReportAuditWriter()
+        report_path = f"/nodes/{node_id}/mission-reports"
+        report_payload: JsonObject = {
+            "mission_id": mission_id,
+            "claim_id": claim["claim_id"],
+            "envelope_digest": claim["envelope_digest"],
+            "expected_lifecycle_revision": 2,
+            "report_id": "mreport_" + ("3" * 32),
+            "report_kind": "runner_running",
+            "outcome_code": "started",
+            "reason_code": None,
+            "artifact_digest": None,
+        }
+        failed = client.post(
+            report_path,
+            headers=_signed_node_headers(
+                private_key,
+                node_id=node_id,
+                path=report_path,
+                payload=report_payload,
+                nonce="35" * 16,
+            ),
+            json=report_payload,
+        )
+        assert failed.status_code == 409
+        assert failed.json()["detail"] == "mission report receipt audit evidence failed"
+
+    with TestClient(create_app(settings)) as recovered_client:
+        blocked_cancel = recovered_client.post(
+            f"/missions/{mission_id}/cancel",
+            headers=admin_headers,
+            json={"client_request_id": "report-recovery-cancel-001"},
+        )
+        assert blocked_cancel.status_code == 409
+        assert blocked_cancel.json()["detail"] == (
+            "mission report receipt requires evidence recovery"
+        )
+        later_report_payload: JsonObject = {
+            **report_payload,
+            "report_id": "mreport_" + ("c" * 32),
+        }
+        later_report = recovered_client.post(
+            report_path,
+            headers=_signed_node_headers(
+                private_key,
+                node_id=node_id,
+                path=report_path,
+                payload=later_report_payload,
+                nonce="36" * 16,
+            ),
+            json=later_report_payload,
+        )
+        assert later_report.status_code == 200
+        assert later_report.json()["receipt"]["receipt_disposition"] == "quarantined"
+        assert later_report.json()["gateway_lifecycle_state"] == "claimed"
+        assert later_report.json()["gateway_lifecycle_revision"] == 2
+
+    with sqlite3.connect(settings.db_path) as connection:
+        assert connection.execute(
+            "SELECT lifecycle_state, lifecycle_revision FROM missions WHERE mission_id = ?",
+            (mission_id,),
+        ).fetchone() == ("claimed", 2)
+        assert connection.execute(
+            "SELECT receipt_disposition, evidence_status, failure_reason_code "
+            "FROM mission_report_receipts WHERE report_id = ?",
+            (report_payload["report_id"],),
+        ).fetchone() == (
+            "evidence_incomplete",
+            "evidence_incomplete",
+            "audit_write_failed",
+        )
+        assert connection.execute(
+            "SELECT receipt_disposition, evidence_status FROM mission_report_receipts "
+            "WHERE report_id = ?",
+            (later_report_payload["report_id"],),
+        ).fetchone() == ("quarantined", "complete")
+        assert connection.execute(
+            "SELECT count(*) FROM mission_transition_attempts "
+            "WHERE transition_kind = 'report_pending_evidence'"
+        ).fetchone() == (0,)
+
+
+def test_runner_report_transition_audit_failure_preserves_completed_receipt(
+    tmp_path: Path,
+) -> None:
+    settings = _mission_ready_settings(tmp_path)
+    admin_headers = {"Authorization": f"Bearer {settings.admin_token}"}
+    private_key = Ed25519PrivateKey.generate()
+    claim_payload: JsonObject = {"protocol_version": "1"}
+    api = create_app(settings)
+    with TestClient(api) as client:
+        node_id = _ready_mission_node(
+            client,
+            settings,
+            nonce_prefix="1",
+            node_private_key=private_key,
+        )
+        mission_id = str(
+            client.post(
+                "/missions",
+                headers=admin_headers,
+                json={
+                    "target_node_id": node_id,
+                    "mission_template_id": "synthetic_read_review_v1",
+                    "requested_timeout_seconds": 300,
+                    "client_request_id": "report-transition-audit-failure-001",
+                },
+            ).json()["mission_id"]
+        )
+        claim_path = f"/nodes/{node_id}/mission-claims"
+        claim = client.post(
+            claim_path,
+            headers=_signed_node_headers(
+                private_key,
+                node_id=node_id,
+                path=claim_path,
+                payload=claim_payload,
+                nonce="14" * 16,
+            ),
+            json=claim_payload,
+        ).json()
+        real_audit_writer = api.state.mission_report_service.audit_writer
+
+        class FailingTransitionAuditWriter:
+            def write_event(self, **kwargs: object) -> object:
+                if kwargs.get("event_type") == AuditEventType.MISSION_REPORT_TRANSITION_STAGED:
+                    raise AuditWriteError("simulated report transition audit failure")
+                return real_audit_writer.write_event(**kwargs)
+
+        api.state.mission_report_service.audit_writer = FailingTransitionAuditWriter()
+        report_path = f"/nodes/{node_id}/mission-reports"
+        report_payload: JsonObject = {
+            "mission_id": mission_id,
+            "claim_id": claim["claim_id"],
+            "envelope_digest": claim["envelope_digest"],
+            "expected_lifecycle_revision": 2,
+            "report_id": "mreport_" + ("1" * 32),
+            "report_kind": "runner_running",
+            "outcome_code": "started",
+            "reason_code": None,
+            "artifact_digest": None,
+        }
+        failed = client.post(
+            report_path,
+            headers=_signed_node_headers(
+                private_key,
+                node_id=node_id,
+                path=report_path,
+                payload=report_payload,
+                nonce="15" * 16,
+            ),
+            json=report_payload,
+        )
+        assert failed.status_code == 409
+        assert failed.json()["detail"] == "mission report transition audit evidence failed"
+
+    with TestClient(create_app(settings)) as recovered_client:
+        blocked_cancel = recovered_client.post(
+            f"/missions/{mission_id}/cancel",
+            headers=admin_headers,
+            json={"client_request_id": "report-transition-recovery-cancel-001"},
+        )
+        assert blocked_cancel.status_code == 409
+        assert blocked_cancel.json()["detail"] == (
+            "mission transition requires evidence recovery"
+        )
+        later_report_payload: JsonObject = {
+            **report_payload,
+            "report_id": "mreport_" + ("a" * 32),
+        }
+        later_report = recovered_client.post(
+            report_path,
+            headers=_signed_node_headers(
+                private_key,
+                node_id=node_id,
+                path=report_path,
+                payload=later_report_payload,
+                nonce="16" * 16,
+            ),
+            json=later_report_payload,
+        )
+        assert later_report.status_code == 200
+        assert later_report.json()["receipt"]["receipt_disposition"] == "quarantined"
+        assert later_report.json()["gateway_lifecycle_state"] == "claimed"
+
+    with sqlite3.connect(settings.db_path) as connection:
+        assert connection.execute(
+            "SELECT lifecycle_state, lifecycle_revision FROM missions WHERE mission_id = ?",
+            (mission_id,),
+        ).fetchone() == ("claimed", 2)
+        assert connection.execute(
+            "SELECT receipt_disposition, evidence_status FROM mission_report_receipts"
+            " WHERE report_id = ?",
+            (report_payload["report_id"],),
+        ).fetchone() == ("lifecycle_advancing", "complete")
+        assert connection.execute(
+            "SELECT receipt_disposition, evidence_status FROM mission_report_receipts"
+            " WHERE report_id = ?",
+            (later_report_payload["report_id"],),
+        ).fetchone() == ("quarantined", "complete")
+        assert connection.execute(
+            "SELECT evidence_status, failure_reason_code FROM mission_transition_attempts "
+            "WHERE transition_kind = 'report_pending_evidence'"
+        ).fetchone() == ("evidence_incomplete", "audit_write_failed")
+
+
+def test_incomplete_cancel_observation_transition_quarantines_later_report(
+    tmp_path: Path,
+) -> None:
+    settings = _mission_ready_settings(tmp_path)
+    admin_headers = {"Authorization": f"Bearer {settings.admin_token}"}
+    private_key = Ed25519PrivateKey.generate()
+    claim_payload: JsonObject = {"protocol_version": "1"}
+    api = create_app(settings)
+    with TestClient(api) as client:
+        node_id = _ready_mission_node(
+            client,
+            settings,
+            nonce_prefix="a",
+            node_private_key=private_key,
+        )
+        mission_id = str(
+            client.post(
+                "/missions",
+                headers=admin_headers,
+                json={
+                    "target_node_id": node_id,
+                    "mission_template_id": "synthetic_read_review_v1",
+                    "requested_timeout_seconds": 300,
+                    "client_request_id": "cancel-observation-evidence-failure-001",
+                },
+            ).json()["mission_id"]
+        )
+        claim_path = f"/nodes/{node_id}/mission-claims"
+        claim = client.post(
+            claim_path,
+            headers=_signed_node_headers(
+                private_key,
+                node_id=node_id,
+                path=claim_path,
+                payload=claim_payload,
+                nonce="a4" * 16,
+            ),
+            json=claim_payload,
+        ).json()
+        report_path = f"/nodes/{node_id}/mission-reports"
+        running_payload: JsonObject = {
+            "mission_id": mission_id,
+            "claim_id": claim["claim_id"],
+            "envelope_digest": claim["envelope_digest"],
+            "expected_lifecycle_revision": 2,
+            "report_id": "mreport_" + ("1" * 32),
+            "report_kind": "runner_running",
+            "outcome_code": "started",
+            "reason_code": None,
+            "artifact_digest": None,
+        }
+        running = client.post(
+            report_path,
+            headers=_signed_node_headers(
+                private_key,
+                node_id=node_id,
+                path=report_path,
+                payload=running_payload,
+                nonce="a5" * 16,
+            ),
+            json=running_payload,
+        )
+        assert running.json()["gateway_lifecycle_revision"] == 3
+        canceled = client.post(
+            f"/missions/{mission_id}/cancel",
+            headers=admin_headers,
+            json={"client_request_id": "cancel-observation-evidence-failure-001"},
+        )
+        assert canceled.json()["lifecycle_revision"] == 4
+        real_audit_writer = api.state.mission_report_service.audit_writer
+
+        class FailingObservationAuditWriter:
+            def write_event(self, **kwargs: object) -> object:
+                if (
+                    kwargs.get("event_type")
+                    == AuditEventType.MISSION_CONTROL_OBSERVATION_STAGED
+                ):
+                    raise AuditWriteError("simulated control observation audit failure")
+                return real_audit_writer.write_event(**kwargs)
+
+        api.state.mission_report_service.audit_writer = FailingObservationAuditWriter()
+        observed_payload: JsonObject = {
+            **running_payload,
+            "expected_lifecycle_revision": 4,
+            "report_id": "mreport_" + ("2" * 32),
+            "report_kind": "cancel_observed",
+            "outcome_code": "cancellation_observed",
+        }
+        failed_observation = client.post(
+            report_path,
+            headers=_signed_node_headers(
+                private_key,
+                node_id=node_id,
+                path=report_path,
+                payload=observed_payload,
+                nonce="a6" * 16,
+            ),
+            json=observed_payload,
+        )
+        assert failed_observation.status_code == 409
+        assert failed_observation.json()["detail"] == (
+            "mission report transition audit evidence failed"
+        )
+
+    with TestClient(create_app(settings)) as recovered_client:
+        later_payload: JsonObject = {
+            **running_payload,
+            "expected_lifecycle_revision": 4,
+            "report_id": "mreport_" + ("3" * 32),
+            "report_kind": "runner_canceled",
+            "outcome_code": "canceled",
+        }
+        later = recovered_client.post(
+            report_path,
+            headers=_signed_node_headers(
+                private_key,
+                node_id=node_id,
+                path=report_path,
+                payload=later_payload,
+                nonce="a7" * 16,
+            ),
+            json=later_payload,
+        )
+        assert later.status_code == 200
+        assert later.json()["receipt"]["receipt_disposition"] == "quarantined"
+        assert later.json()["gateway_lifecycle_state"] == "cancel_requested"
+        assert later.json()["gateway_lifecycle_revision"] == 4
+
+    with sqlite3.connect(settings.db_path) as connection:
+        assert connection.execute(
+            "SELECT evidence_status, failure_reason_code FROM mission_transition_attempts "
+            "WHERE transition_kind = 'control_observation_pending_evidence'"
+        ).fetchone() == ("evidence_incomplete", "audit_write_failed")
+        assert connection.execute(
+            "SELECT receipt_disposition, evidence_status FROM mission_report_receipts "
+            "WHERE report_id = ?",
+            (later_payload["report_id"],),
+        ).fetchone() == ("quarantined", "complete")
+
+
+def test_runner_report_revoked_after_transition_audit_does_not_advance(
+    tmp_path: Path,
+) -> None:
+    settings = _mission_ready_settings(tmp_path)
+    admin_headers = {"Authorization": f"Bearer {settings.admin_token}"}
+    private_key = Ed25519PrivateKey.generate()
+    claim_payload: JsonObject = {"protocol_version": "1"}
+    api = create_app(settings)
+    with TestClient(api) as client:
+        node_id = _ready_mission_node(
+            client,
+            settings,
+            nonce_prefix="0",
+            node_private_key=private_key,
+        )
+        mission_id = str(
+            client.post(
+                "/missions",
+                headers=admin_headers,
+                json={
+                    "target_node_id": node_id,
+                    "mission_template_id": "synthetic_read_review_v1",
+                    "requested_timeout_seconds": 300,
+                    "client_request_id": "report-final-authority-race-001",
+                },
+            ).json()["mission_id"]
+        )
+        claim_path = f"/nodes/{node_id}/mission-claims"
+        claim = client.post(
+            claim_path,
+            headers=_signed_node_headers(
+                private_key,
+                node_id=node_id,
+                path=claim_path,
+                payload=claim_payload,
+                nonce="04" * 16,
+            ),
+            json=claim_payload,
+        ).json()
+        real_audit_writer = api.state.mission_report_service.audit_writer
+
+        class RevokingAfterTransitionAuditWriter:
+            def write_event(self, **kwargs: object) -> object:
+                event = real_audit_writer.write_event(**kwargs)
+                if kwargs.get("event_type") == AuditEventType.MISSION_REPORT_TRANSITION_STAGED:
+                    with sqlite3.connect(settings.db_path) as connection:
+                        connection.execute(
+                            "UPDATE nodes SET status = 'revoked' WHERE node_id = ?",
+                            (node_id,),
+                        )
+                        connection.commit()
+                return event
+
+        api.state.mission_report_service.audit_writer = (
+            RevokingAfterTransitionAuditWriter()
+        )
+        report_path = f"/nodes/{node_id}/mission-reports"
+        report_payload: JsonObject = {
+            "mission_id": mission_id,
+            "claim_id": claim["claim_id"],
+            "envelope_digest": claim["envelope_digest"],
+            "expected_lifecycle_revision": 2,
+            "report_id": "mreport_" + ("0" * 32),
+            "report_kind": "runner_running",
+            "outcome_code": "started",
+            "reason_code": None,
+            "artifact_digest": None,
+        }
+        failed = client.post(
+            report_path,
+            headers=_signed_node_headers(
+                private_key,
+                node_id=node_id,
+                path=report_path,
+                payload=report_payload,
+                nonce="05" * 16,
+            ),
+            json=report_payload,
+        )
+        assert failed.status_code == 409
+        assert failed.json()["detail"] == "mission report transition finalization failed"
+
+    with sqlite3.connect(settings.db_path) as connection:
+        assert connection.execute(
+            "SELECT lifecycle_state, lifecycle_revision FROM missions WHERE mission_id = ?",
+            (mission_id,),
+        ).fetchone() == ("claimed", 2)
+        assert connection.execute(
+            "SELECT receipt_disposition, evidence_status FROM mission_report_receipts"
+        ).fetchone() == ("lifecycle_advancing", "complete")
+        assert connection.execute(
+            "SELECT evidence_status, failure_reason_code FROM mission_transition_attempts "
+            "WHERE transition_kind = 'report_pending_evidence'"
+        ).fetchone() == ("evidence_incomplete", "finalization_failed")
+
+
+def test_runner_report_revoked_after_receipt_audit_fails_receipt_closed(
+    tmp_path: Path,
+) -> None:
+    settings = _mission_ready_settings(tmp_path)
+    admin_headers = {"Authorization": f"Bearer {settings.admin_token}"}
+    private_key = Ed25519PrivateKey.generate()
+    claim_payload: JsonObject = {"protocol_version": "1"}
+    api = create_app(settings)
+    with TestClient(api) as client:
+        node_id = _ready_mission_node(
+            client,
+            settings,
+            nonce_prefix="f",
+            node_private_key=private_key,
+        )
+        mission_id = str(
+            client.post(
+                "/missions",
+                headers=admin_headers,
+                json={
+                    "target_node_id": node_id,
+                    "mission_template_id": "synthetic_read_review_v1",
+                    "requested_timeout_seconds": 300,
+                    "client_request_id": "report-receipt-authority-race-001",
+                },
+            ).json()["mission_id"]
+        )
+        claim_path = f"/nodes/{node_id}/mission-claims"
+        claim = client.post(
+            claim_path,
+            headers=_signed_node_headers(
+                private_key,
+                node_id=node_id,
+                path=claim_path,
+                payload=claim_payload,
+                nonce="f4" * 16,
+            ),
+            json=claim_payload,
+        ).json()
+        real_audit_writer = api.state.mission_report_service.audit_writer
+
+        class RevokingAfterReceiptAuditWriter:
+            def write_event(self, **kwargs: object) -> object:
+                event = real_audit_writer.write_event(**kwargs)
+                if kwargs.get("event_type") == AuditEventType.MISSION_REPORT_RECEIPT_STAGED:
+                    with sqlite3.connect(settings.db_path) as connection:
+                        connection.execute(
+                            "UPDATE nodes SET status = 'revoked' WHERE node_id = ?",
+                            (node_id,),
+                        )
+                        connection.commit()
+                return event
+
+        api.state.mission_report_service.audit_writer = RevokingAfterReceiptAuditWriter()
+        report_path = f"/nodes/{node_id}/mission-reports"
+        report_payload: JsonObject = {
+            "mission_id": mission_id,
+            "claim_id": claim["claim_id"],
+            "envelope_digest": claim["envelope_digest"],
+            "expected_lifecycle_revision": 2,
+            "report_id": "mreport_" + ("f" * 32),
+            "report_kind": "runner_running",
+            "outcome_code": "started",
+            "reason_code": None,
+            "artifact_digest": None,
+        }
+        failed = client.post(
+            report_path,
+            headers=_signed_node_headers(
+                private_key,
+                node_id=node_id,
+                path=report_path,
+                payload=report_payload,
+                nonce="f5" * 16,
+            ),
+            json=report_payload,
+        )
+        assert failed.status_code == 409
+        assert failed.json()["detail"] == "mission report receipt finalization failed"
+
+    with sqlite3.connect(settings.db_path) as connection:
+        assert connection.execute(
+            "SELECT lifecycle_state, lifecycle_revision FROM missions WHERE mission_id = ?",
+            (mission_id,),
+        ).fetchone() == ("claimed", 2)
+        assert connection.execute(
+            "SELECT receipt_disposition, evidence_status, failure_reason_code "
+            "FROM mission_report_receipts"
+        ).fetchone() == (
+            "evidence_incomplete",
+            "evidence_incomplete",
+            "finalization_failed",
+        )
+        assert connection.execute(
+            "SELECT count(*) FROM mission_transition_attempts "
+            "WHERE transition_kind = 'report_pending_evidence'"
+        ).fetchone() == (0,)
+
+
+def test_completed_runner_report_receipt_tampering_fails_closed(tmp_path: Path) -> None:
+    settings = _mission_ready_settings(tmp_path)
+    admin_headers = {"Authorization": f"Bearer {settings.admin_token}"}
+    private_key = Ed25519PrivateKey.generate()
+    claim_payload: JsonObject = {"protocol_version": "1"}
+    report_id = "mreport_" + ("e" * 32)
+    with TestClient(create_app(settings)) as client:
+        node_id = _ready_mission_node(
+            client,
+            settings,
+            nonce_prefix="e",
+            node_private_key=private_key,
+        )
+        mission_id = str(
+            client.post(
+                "/missions",
+                headers=admin_headers,
+                json={
+                    "target_node_id": node_id,
+                    "mission_template_id": "synthetic_read_review_v1",
+                    "requested_timeout_seconds": 300,
+                    "client_request_id": "report-receipt-tamper-001",
+                },
+            ).json()["mission_id"]
+        )
+        claim_path = f"/nodes/{node_id}/mission-claims"
+        claim = client.post(
+            claim_path,
+            headers=_signed_node_headers(
+                private_key,
+                node_id=node_id,
+                path=claim_path,
+                payload=claim_payload,
+                nonce="e4" * 16,
+            ),
+            json=claim_payload,
+        ).json()
+        report_path = f"/nodes/{node_id}/mission-reports"
+        report_payload: JsonObject = {
+            "mission_id": mission_id,
+            "claim_id": claim["claim_id"],
+            "envelope_digest": claim["envelope_digest"],
+            "expected_lifecycle_revision": 2,
+            "report_id": report_id,
+            "report_kind": "runner_running",
+            "outcome_code": "started",
+            "reason_code": None,
+            "artifact_digest": None,
+        }
+        accepted = client.post(
+            report_path,
+            headers=_signed_node_headers(
+                private_key,
+                node_id=node_id,
+                path=report_path,
+                payload=report_payload,
+                nonce="e5" * 16,
+            ),
+            json=report_payload,
+        )
+        assert accepted.status_code == 200
+
+    store = MissionStore(settings.db_path)
+    store.initialize()
+    with sqlite3.connect(settings.db_path) as connection:
+        original = connection.execute(
+            "SELECT verified_node_identity_key_id, receipt_posture_json, "
+            "receipt_disposition, audit_event_hash FROM mission_report_receipts "
+            "WHERE report_id = ?",
+            (report_id,),
+        ).fetchone()
+    posture = json.loads(str(original[1]))
+    posture["proposed_advancement"]["reason_code"] = "authority_drift"
+    mutations = (
+        ("verified_node_identity_key_id", "sha256:" + ("0" * 64), original[0]),
+        (
+            "receipt_posture_json",
+            json.dumps(posture, sort_keys=True, separators=(",", ":")),
+            original[1],
+        ),
+        ("receipt_disposition", "quarantined", original[2]),
+        ("audit_event_hash", "sha256:" + ("0" * 64), original[3]),
+    )
+    for column, tampered, restored in mutations:
+        with sqlite3.connect(settings.db_path) as connection:
+            connection.execute(
+                f"UPDATE mission_report_receipts SET {column} = ? WHERE report_id = ?",
+                (tampered, report_id),
+            )
+            connection.commit()
+        with pytest.raises(MissionError, match="stored mission report"):
+            store.get_report_receipt(report_id)
+        with sqlite3.connect(settings.db_path) as connection:
+            connection.execute(
+                f"UPDATE mission_report_receipts SET {column} = ? WHERE report_id = ?",
+                (restored, report_id),
+            )
+            connection.commit()
+        assert store.get_report_receipt(report_id).report.report_id == report_id
+
+    transition = store.get_report_transition(report_id)
+    assert transition is not None
+    assert transition.audit_event_id is not None
+    with sqlite3.connect(settings.db_path) as connection:
+        original_transition_hash = connection.execute(
+            "SELECT audit_event_hash FROM mission_transition_attempts "
+            "WHERE transition_id = ?",
+            (transition.transition_id,),
+        ).fetchone()[0]
+        original_transition_event = connection.execute(
+            "SELECT payload_json FROM audit_events WHERE event_id = ?",
+            (transition.audit_event_id,),
+        ).fetchone()[0]
+        connection.execute(
+            "UPDATE mission_transition_attempts SET audit_event_hash = ? "
+            "WHERE transition_id = ?",
+            ("sha256:" + ("0" * 64), transition.transition_id),
+        )
+        connection.commit()
+    with pytest.raises(MissionError, match="stored mission audit evidence binding"):
+        store.get_report_transition(report_id)
+    with sqlite3.connect(settings.db_path) as connection:
+        connection.execute(
+            "UPDATE mission_transition_attempts SET audit_event_hash = ? "
+            "WHERE transition_id = ?",
+            (original_transition_hash, transition.transition_id),
+        )
+        tampered_event = json.loads(str(original_transition_event))
+        tampered_event["input_hash"] = "sha256:" + ("0" * 64)
+        connection.execute(
+            "UPDATE audit_events SET payload_json = ? WHERE event_id = ?",
+            (
+                json.dumps(tampered_event, sort_keys=True, separators=(",", ":")),
+                transition.audit_event_id,
+            ),
+        )
+        connection.commit()
+    with pytest.raises(MissionError, match="transition audit event binding"):
+        store.get_report_transition(report_id)
+    with sqlite3.connect(settings.db_path) as connection:
+        connection.execute(
+            "UPDATE audit_events SET payload_json = ? WHERE event_id = ?",
+            (original_transition_event, transition.audit_event_id),
+        )
+        connection.commit()
+    assert store.get_report_transition(report_id) == transition
+
+
+def test_late_success_across_exact_cancellation_revision_advances_once(
+    tmp_path: Path,
+) -> None:
+    settings = _mission_ready_settings(tmp_path)
+    admin_headers = {"Authorization": f"Bearer {settings.admin_token}"}
+    private_key = Ed25519PrivateKey.generate()
+    claim_payload: JsonObject = {"protocol_version": "1"}
+    with TestClient(create_app(settings)) as client:
+        node_id = _ready_mission_node(
+            client,
+            settings,
+            nonce_prefix="2",
+            node_private_key=private_key,
+        )
+        mission_id = str(
+            client.post(
+                "/missions",
+                headers=admin_headers,
+                json={
+                    "target_node_id": node_id,
+                    "mission_template_id": "synthetic_read_review_v1",
+                    "requested_timeout_seconds": 300,
+                    "client_request_id": "late-success-cancel-race-001",
+                },
+            ).json()["mission_id"]
+        )
+        claim_path = f"/nodes/{node_id}/mission-claims"
+        claim = client.post(
+            claim_path,
+            headers=_signed_node_headers(
+                private_key,
+                node_id=node_id,
+                path=claim_path,
+                payload=claim_payload,
+                nonce="24" * 16,
+            ),
+            json=claim_payload,
+        ).json()
+        report_path = f"/nodes/{node_id}/mission-reports"
+        base_report: JsonObject = {
+            "mission_id": mission_id,
+            "claim_id": claim["claim_id"],
+            "envelope_digest": claim["envelope_digest"],
+            "expected_lifecycle_revision": 2,
+            "report_id": "mreport_" + ("2" * 32),
+            "report_kind": "runner_running",
+            "outcome_code": "started",
+            "reason_code": None,
+            "artifact_digest": None,
+        }
+        running = client.post(
+            report_path,
+            headers=_signed_node_headers(
+                private_key,
+                node_id=node_id,
+                path=report_path,
+                payload=base_report,
+                nonce="25" * 16,
+            ),
+            json=base_report,
+        )
+        assert running.json()["gateway_lifecycle_revision"] == 3
+        canceled = client.post(
+            f"/missions/{mission_id}/cancel",
+            headers=admin_headers,
+            json={"client_request_id": "late-success-cancel-001"},
+        )
+        assert canceled.json()["lifecycle_revision"] == 4
+        success_payload: JsonObject = {
+            **base_report,
+            "expected_lifecycle_revision": 3,
+            "report_id": "mreport_" + ("8" * 32),
+            "report_kind": "runner_succeeded",
+            "outcome_code": "succeeded",
+            "artifact_digest": "sha256:" + ("8" * 64),
+        }
+        succeeded = client.post(
+            report_path,
+            headers=_signed_node_headers(
+                private_key,
+                node_id=node_id,
+                path=report_path,
+                payload=success_payload,
+                nonce="26" * 16,
+            ),
+            json=success_payload,
+        )
+        assert succeeded.status_code == 200
+        assert succeeded.json()["gateway_lifecycle_state"] == "runner_reported_succeeded"
+        assert succeeded.json()["gateway_lifecycle_revision"] == 5
+        contradictory_payload: JsonObject = {
+            **base_report,
+            "expected_lifecycle_revision": 4,
+            "report_id": "mreport_" + ("9" * 32),
+            "report_kind": "runner_failed",
+            "outcome_code": "failed",
+            "reason_code": "runner_error",
+        }
+        contradictory = client.post(
+            report_path,
+            headers=_signed_node_headers(
+                private_key,
+                node_id=node_id,
+                path=report_path,
+                payload=contradictory_payload,
+                nonce="27" * 16,
+            ),
+            json=contradictory_payload,
+        )
+        assert contradictory.status_code == 200
+        assert contradictory.json()["receipt"]["receipt_disposition"] == "quarantined"
+        assert contradictory.json()["gateway_lifecycle_state"] == "runner_reported_succeeded"
+        assert contradictory.json()["gateway_lifecycle_revision"] == 5
+
+
+def test_concurrent_runner_report_and_cancellation_have_only_evidence_complete_outcomes(
+    tmp_path: Path,
+) -> None:
+    def submit_report(
+        client: TestClient,
+        start: Event,
+        private_key: Ed25519PrivateKey,
+        node_id: str,
+        report_path: str,
+        report_payload: JsonObject,
+    ) -> tuple[int, JsonObject]:
+        start.wait(timeout=2)
+        response = client.post(
+            report_path,
+            headers=_signed_node_headers(
+                private_key,
+                node_id=node_id,
+                path=report_path,
+                payload=report_payload,
+                nonce="e5" * 16,
+            ),
+            json=report_payload,
+        )
+        return response.status_code, cast(JsonObject, response.json())
+
+    def submit_cancel(
+        client: TestClient,
+        start: Event,
+        mission_id: str,
+        admin_headers: dict[str, str],
+        iteration: int,
+    ) -> tuple[int, JsonObject]:
+        start.wait(timeout=2)
+        response = client.post(
+            f"/missions/{mission_id}/cancel",
+            headers=admin_headers,
+            json={"client_request_id": f"report-cancel-race-{iteration}"},
+        )
+        return response.status_code, cast(JsonObject, response.json())
+
+    for iteration in range(6):
+        iteration_path = tmp_path / str(iteration)
+        iteration_path.mkdir()
+        settings = _mission_ready_settings(iteration_path)
+        admin_headers = {"Authorization": f"Bearer {settings.admin_token}"}
+        private_key = Ed25519PrivateKey.generate()
+        claim_payload: JsonObject = {"protocol_version": "1"}
+        with TestClient(create_app(settings)) as client:
+            node_id = _ready_mission_node(
+                client,
+                settings,
+                nonce_prefix="e",
+                node_private_key=private_key,
+            )
+            mission_id = str(
+                client.post(
+                    "/missions",
+                    headers=admin_headers,
+                    json={
+                        "target_node_id": node_id,
+                        "mission_template_id": "synthetic_read_review_v1",
+                        "requested_timeout_seconds": 300,
+                        "client_request_id": f"report-cancel-race-{iteration}",
+                    },
+                ).json()["mission_id"]
+            )
+            claim_path = f"/nodes/{node_id}/mission-claims"
+            claim = client.post(
+                claim_path,
+                headers=_signed_node_headers(
+                    private_key,
+                    node_id=node_id,
+                    path=claim_path,
+                    payload=claim_payload,
+                    nonce="e4" * 16,
+                ),
+                json=claim_payload,
+            ).json()
+            report_path = f"/nodes/{node_id}/mission-reports"
+            report_payload: JsonObject = {
+                "mission_id": mission_id,
+                "claim_id": claim["claim_id"],
+                "envelope_digest": claim["envelope_digest"],
+                "expected_lifecycle_revision": 2,
+                "report_id": "mreport_" + f"{iteration + 1:032x}",
+                "report_kind": "runner_running",
+                "outcome_code": "started",
+                "reason_code": None,
+                "artifact_digest": None,
+            }
+            start = Event()
+
+            with ThreadPoolExecutor(max_workers=2) as executor:
+                report_future = executor.submit(
+                    submit_report,
+                    client,
+                    start,
+                    private_key,
+                    node_id,
+                    report_path,
+                    report_payload,
+                )
+                cancel_future = executor.submit(
+                    submit_cancel,
+                    client,
+                    start,
+                    mission_id,
+                    admin_headers,
+                    iteration,
+                )
+                start.set()
+                report_status, report_body = report_future.result()
+                cancel_status, cancel_body = cancel_future.result()
+
+            assert report_status == 200, report_body
+            assert cancel_status in {200, 409}, cancel_body
+            if cancel_status == 409:
+                assert cancel_body["detail"] in {
+                    "mission report receipt requires evidence recovery",
+                    "mission transition requires evidence recovery",
+                }
+
+        store = MissionStore(settings.db_path)
+        receipt = store.get_report_receipt(str(report_payload["report_id"]))
+        assert receipt.evidence_status == "complete"
+        assert receipt.receipt_disposition in {"lifecycle_advancing", "quarantined"}
+        mission = store.get(mission_id)
+        assert (mission.lifecycle_state, mission.lifecycle_revision) in {
+            ("runner_reported_running", 3),
+            ("cancel_requested", 3),
+            ("cancel_requested", 4),
+        }
+        with sqlite3.connect(settings.db_path) as connection:
+            evidence_counts = connection.execute(
+                "SELECT evidence_status, count(*) FROM mission_transition_attempts "
+                "WHERE mission_id = ? GROUP BY evidence_status",
+                (mission_id,),
+            ).fetchall()
+            transition_ids = [
+                str(row[0])
+                for row in connection.execute(
+                    "SELECT transition_id FROM mission_transition_attempts "
+                    "WHERE mission_id = ?",
+                    (mission_id,),
+                ).fetchall()
+            ]
+        assert evidence_counts == [("complete", len(transition_ids))]
+        for transition_id in transition_ids:
+            assert store.get_transition(transition_id).evidence_status == "complete"
+
+
 def test_signed_node_claim_revoked_after_audit_is_not_delivered(tmp_path: Path) -> None:
     settings = _mission_ready_settings(tmp_path)
     admin_headers = {"Authorization": f"Bearer {settings.admin_token}"}
@@ -7030,6 +9461,77 @@ def _ready_mission_node(
     )
     assert accepted.status_code == 200
     return node_id
+
+
+def _rotate_ready_node_identity_key(
+    client: TestClient,
+    settings: Settings,
+    *,
+    node_id: str,
+    current_private_key: Ed25519PrivateKey,
+    nonce_prefix: str,
+) -> Ed25519PrivateKey:
+    node = NodeStore(settings.db_path).get(node_id)
+    challenge_path = f"/nodes/{node_id}/identity-key-rotation/challenges"
+    challenge_payload: JsonObject = {"protocol_version": "1"}
+    challenge_response = client.post(
+        challenge_path,
+        headers=_signed_node_headers(
+            current_private_key,
+            node_id=node_id,
+            path=challenge_path,
+            payload=challenge_payload,
+            nonce=nonce_prefix + ("1" * 31),
+        ),
+        json=challenge_payload,
+    )
+    assert challenge_response.status_code == 200
+    challenge = challenge_response.json()
+    next_private_key = Ed25519PrivateKey.generate()
+    next_public_key = base64.b64encode(
+        next_private_key.public_key().public_bytes_raw()
+    ).decode()
+    next_key_id = node_identity_key_id(next_public_key)
+    rotation = NodeIdentityRotationRecord(
+        rotation_id=challenge["rotation_id"],
+        node_id=node_id,
+        principal_id=node.principal_id,
+        workspace_id=node.workspace_id,
+        current_key_id=challenge["current_key_id"],
+        challenge_digest=sha256_digest(challenge["challenge"]),
+        created_at=challenge["created_at"],
+        expires_at=challenge["expires_at"],
+        status="pending",
+        evidence_status="complete",
+        next_key_id=None,
+        activated_at=None,
+    )
+    proof = canonical_identity_rotation_proof_message(
+        rotation=rotation,
+        next_key_id=next_key_id,
+    )
+    activation_path = f"/nodes/{node_id}/identity-key-rotation/activations"
+    activation_payload: JsonObject = {
+        "protocol_version": "1",
+        "rotation_id": rotation.rotation_id,
+        "challenge": challenge["challenge"],
+        "next_public_key": next_public_key,
+        "next_key_proof": base64.b64encode(next_private_key.sign(proof)).decode(),
+    }
+    activated = client.post(
+        activation_path,
+        headers=_signed_node_headers(
+            current_private_key,
+            node_id=node_id,
+            path=activation_path,
+            payload=activation_payload,
+            nonce=nonce_prefix + ("2" * 31),
+        ),
+        json=activation_payload,
+    )
+    assert activated.status_code == 200
+    assert activated.json()["active_identity_key_id"] == next_key_id
+    return next_private_key
 
 
 def test_node_configuration_trust_transition_api_is_targeted_signed_and_audited(

@@ -25,9 +25,16 @@ MISSION_ADMISSION_TRANSITION_KIND = "admission_pending_evidence"
 MISSION_CLAIM_TRANSITION_KIND = "claim_pending_evidence"
 MISSION_CLAIM_EXPIRY_TRANSITION_KIND = "claim_expiry_pending_evidence"
 MISSION_CANCELLATION_TRANSITION_KIND = "cancellation_pending_evidence"
+MISSION_CONTROL_OBSERVATION_TRANSITION_KIND = "control_observation_pending_evidence"
+MISSION_REPORT_TRANSITION_KIND = "report_pending_evidence"
 MISSION_UNADMITTED = "unadmitted"
 MISSION_QUEUED = "queued"
 MISSION_CLAIMED = "claimed"
+MISSION_RUNNER_REPORTED_RUNNING = "runner_reported_running"
+MISSION_RUNNER_REPORTED_SUCCEEDED = "runner_reported_succeeded"
+MISSION_RUNNER_REPORTED_FAILED = "runner_reported_failed"
+MISSION_CANCEL_REQUESTED = "cancel_requested"
+MISSION_RUNNER_REPORTED_CANCELED = "runner_reported_canceled"
 MISSION_CLAIM_EXPIRED_REVIEW_REQUIRED = "claim_expired_review_required"
 MISSION_CANCELED = "canceled"
 EVIDENCE_PENDING = "pending"
@@ -85,6 +92,14 @@ class MissionCancellationPayload(FrozenAuthorityModel):
 
 class MissionClaimRequestPayload(FrozenAuthorityModel):
     protocol_version: Literal["1"]
+
+
+class MissionControlPollPayload(FrozenAuthorityModel):
+    protocol_version: Literal["1"]
+    mission_id: str = Field(pattern=r"^mission_[0-9a-f]{32}$")
+    claim_id: str = Field(pattern=r"^mclaim_[0-9a-f]{32}$")
+    envelope_digest: str = Field(pattern=SHA256_PATTERN)
+    observed_lifecycle_revision: int = Field(ge=2)
 
 
 class MissionAuthoritySnapshot(FrozenAuthorityModel):
@@ -344,6 +359,51 @@ class MissionClaimExpiryStage:
     mission: MissionRecord
     claim: MissionClaimRecord
     transition: MissionTransitionAttempt
+
+
+@dataclass(frozen=True)
+class MissionReportReceipt:
+    report: MissionRunnerReportPayload
+    node_id: str
+    verified_node_identity_key_id: str
+    request_digest: str
+    receipt_posture: JsonObject
+    receipt_disposition: str
+    evidence_status: str
+    audit_event_id: str | None
+    audit_event_hash: str | None
+    failure_reason_code: str | None
+    received_at: str
+    finalized_at: str | None
+
+    def safe_summary(self) -> JsonObject:
+        return {
+            **cast(JsonObject, self.report.model_dump(mode="json")),
+            "node_id": self.node_id,
+            "verified_node_identity_key_id": self.verified_node_identity_key_id,
+            "request_digest": self.request_digest,
+            "receipt_posture": self.receipt_posture,
+            "receipt_disposition": self.receipt_disposition,
+            "evidence_status": self.evidence_status,
+            "audit_event_id": self.audit_event_id,
+            "audit_event_hash": self.audit_event_hash,
+            "failure_reason_code": self.failure_reason_code,
+            "received_at": self.received_at,
+            "finalized_at": self.finalized_at,
+            "runner_state_authority": "runner_reported_only",
+        }
+
+
+@dataclass(frozen=True)
+class MissionReportReceiptStage:
+    receipt: MissionReportReceipt
+    idempotent_replay: bool
+
+
+@dataclass(frozen=True)
+class MissionReportReceiptFinalization:
+    receipt: MissionReportReceipt
+    transition: MissionTransitionAttempt | None
 
 
 class MissionStore:
@@ -696,6 +756,12 @@ class MissionStore:
             connection.execute("BEGIN IMMEDIATE")
             mission = _mission_by_id(connection, mission_id)
             claim = _claim_by_mission(connection, mission_id)
+            if _mission_has_other_unresolved_report_receipt(
+                connection,
+                mission_id=mission_id,
+                report_id="",
+            ):
+                raise MissionConflictError("mission report receipt requires evidence recovery")
             if mission.lifecycle_state != MISSION_CLAIMED or claim.claim_status != "delivered":
                 raise MissionConflictError("mission claim is not eligible for expiry")
             try:
@@ -753,6 +819,393 @@ class MissionStore:
             transition=self.get_transition(transition_id),
         )
 
+    def stage_authenticated_report_receipt(
+        self,
+        connection: sqlite3.Connection,
+        report: MissionRunnerReportPayload,
+        *,
+        node_id: str,
+        verified_node_identity_key_id: str,
+        receipt_posture: JsonObject,
+        authority_eligible: bool,
+        now: datetime | None = None,
+    ) -> MissionReportReceiptStage:
+        if not _NODE_ID_PATTERN.fullmatch(node_id):
+            raise MissionConflictError("invalid mission report Node")
+        if not re.fullmatch(SHA256_PATTERN, verified_node_identity_key_id):
+            raise MissionConflictError("invalid verified Node identity key ID")
+        effective_now = now or datetime.now(UTC)
+        request_digest = mission_report_request_digest(report)
+        existing = _report_receipt_optional(connection, report.report_id)
+        if existing is not None:
+            if existing.request_digest != request_digest or existing.node_id != node_id:
+                raise MissionConflictError("mission report ID conflicts")
+            return MissionReportReceiptStage(
+                receipt=existing,
+                idempotent_replay=True,
+            )
+        mission = _mission_by_id(connection, report.mission_id)
+        claim = _claim_by_mission(connection, report.mission_id)
+        _require_report_matches_claim(
+            report,
+            mission=mission,
+            claim=claim,
+            node_id=node_id,
+        )
+        proposed_state = _report_proposed_state(
+            connection,
+            receipt=None,
+            report=report,
+            mission=mission,
+            claim=claim,
+            now=effective_now,
+        )
+        lifecycle_advancing = (
+            authority_eligible
+            and not _mission_has_unresolved_transition(connection, mission.mission_id)
+            and not _mission_has_other_unresolved_report_receipt(
+                connection,
+                mission_id=mission.mission_id,
+                report_id=report.report_id,
+            )
+            and proposed_state is not None
+        )
+        proposed_disposition = (
+            "lifecycle_advancing" if lifecycle_advancing else "quarantined"
+        )
+        stored_posture: JsonObject = {
+            "authenticated_receipt": receipt_posture,
+            "proposed_advancement": receipt_posture,
+            "proposed_disposition": proposed_disposition,
+        }
+        try:
+            connection.execute(
+                """
+                INSERT INTO mission_report_receipts (
+                    report_id, mission_id, claim_id, node_id,
+                    verified_node_identity_key_id, envelope_digest,
+                    expected_lifecycle_revision, report_kind, outcome_code,
+                    reason_code, artifact_digest, request_digest,
+                    receipt_posture_json, receipt_disposition, evidence_status,
+                    audit_event_id, audit_event_hash, failure_reason_code,
+                    received_at, finalized_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+                    'pending', ?, NULL, NULL, NULL, ?, NULL)
+                """,
+                (
+                    report.report_id,
+                    report.mission_id,
+                    report.claim_id,
+                    node_id,
+                    verified_node_identity_key_id,
+                    report.envelope_digest,
+                    report.expected_lifecycle_revision,
+                    report.report_kind,
+                    report.outcome_code,
+                    report.reason_code,
+                    report.artifact_digest,
+                    request_digest,
+                    canonical_json(stored_posture),
+                    EVIDENCE_PENDING,
+                    effective_now.isoformat(),
+                ),
+            )
+        except sqlite3.IntegrityError as exc:
+            raise MissionConflictError("mission report receipt conflicts") from exc
+        return MissionReportReceiptStage(
+            receipt=_report_receipt(connection, report.report_id),
+            idempotent_replay=False,
+        )
+
+    def finalize_report_receipt(
+        self,
+        report_id: str,
+        *,
+        audit_event_id: str,
+        audit_event_hash: str,
+        advancement_precondition: Callable[[], tuple[bool, JsonObject]],
+        now: datetime | None = None,
+    ) -> MissionReportReceiptFinalization:
+        _require_report_id(report_id)
+        if not _EVENT_ID_PATTERN.fullmatch(audit_event_id):
+            raise MissionConflictError("invalid mission report audit event ID")
+        if not re.fullmatch(SHA256_PATTERN, audit_event_hash):
+            raise MissionConflictError("invalid mission report audit event hash")
+        with _mission_connection(self.db_path) as connection:
+            connection.execute("BEGIN IMMEDIATE")
+            receipt = _report_receipt(connection, report_id)
+            if receipt.evidence_status == EVIDENCE_COMPLETE:
+                if (
+                    receipt.audit_event_id != audit_event_id
+                    or receipt.audit_event_hash != audit_event_hash
+                ):
+                    raise MissionConflictError("mission report receipt evidence conflicts")
+                connection.commit()
+                existing_transition = _transition_for_report_optional(connection, report_id)
+                return MissionReportReceiptFinalization(receipt, existing_transition)
+            if receipt.evidence_status != EVIDENCE_PENDING:
+                raise MissionConflictError("mission report receipt evidence is incomplete")
+            mission = _mission_by_id(connection, receipt.report.mission_id)
+            claim = _claim_by_mission(connection, mission.mission_id)
+            _require_report_matches_claim(
+                receipt.report,
+                mission=mission,
+                claim=claim,
+                node_id=receipt.node_id,
+            )
+            eligible, advancement_posture = advancement_precondition()
+            finalization_now = now or datetime.now(UTC)
+            proposed_state = _report_proposed_state(
+                connection,
+                report=receipt.report,
+                mission=mission,
+                claim=claim,
+                now=finalization_now,
+            )
+            lifecycle_advancing = (
+                eligible
+                and not _mission_has_unresolved_transition(connection, mission.mission_id)
+                and not _mission_has_other_unresolved_report_receipt(
+                    connection,
+                    mission_id=mission.mission_id,
+                    report_id=receipt.report.report_id,
+                )
+                and proposed_state is not None
+            )
+            disposition = "lifecycle_advancing" if lifecycle_advancing else "quarantined"
+            staged_disposition = receipt.receipt_posture.get("proposed_disposition")
+            if staged_disposition == "quarantined":
+                disposition = "quarantined"
+                lifecycle_advancing = False
+                proposed_state = None
+            elif (
+                staged_disposition != "lifecycle_advancing"
+                or disposition != "lifecycle_advancing"
+                or receipt.receipt_posture.get("proposed_advancement")
+                != advancement_posture
+            ):
+                raise MissionConflictError(
+                    "mission report authority changed before receipt finalization"
+                )
+            now_text = finalization_now.isoformat()
+            try:
+                connection.execute(
+                    """
+                    INSERT INTO mission_audit_evidence_bindings (
+                        audit_event_id, audit_event_hash, owner_kind, owner_id,
+                        request_digest, bound_at
+                    ) VALUES (?, ?, 'mission_report_receipt', ?, ?, ?)
+                    """,
+                    (
+                        audit_event_id,
+                        audit_event_hash,
+                        report_id,
+                        receipt.request_digest,
+                        now_text,
+                    ),
+                )
+                updated = connection.execute(
+                    """
+                    UPDATE mission_report_receipts
+                    SET receipt_posture_json = ?, receipt_disposition = ?,
+                        evidence_status = ?, audit_event_id = ?, audit_event_hash = ?,
+                        finalized_at = ?
+                    WHERE report_id = ? AND evidence_status = ?
+                    """,
+                    (
+                        canonical_json(receipt.receipt_posture),
+                        disposition,
+                        EVIDENCE_COMPLETE,
+                        audit_event_id,
+                        audit_event_hash,
+                        now_text,
+                        report_id,
+                        EVIDENCE_PENDING,
+                    ),
+                )
+            except sqlite3.IntegrityError as exc:
+                raise MissionConflictError("mission report evidence is already bound") from exc
+            if updated.rowcount != 1:
+                raise MissionConflictError("mission report receipt evidence changed")
+            transition: MissionTransitionAttempt | None = None
+            if lifecycle_advancing and proposed_state is not None:
+                transition = _insert_report_transition(
+                    connection,
+                    receipt=receipt,
+                    mission=mission,
+                    proposed_state=proposed_state,
+                    now_text=now_text,
+                )
+            connection.commit()
+        return MissionReportReceiptFinalization(
+            receipt=self.get_report_receipt(report_id),
+            transition=(
+                self.get_transition(transition.transition_id)
+                if transition is not None
+                else None
+            ),
+        )
+
+    def mark_report_receipt_evidence_incomplete(
+        self,
+        report_id: str,
+        *,
+        failure_reason_code: str,
+        now: datetime | None = None,
+    ) -> MissionReportReceipt:
+        _require_report_id(report_id)
+        if not _SAFE_LABEL_PATTERN.fullmatch(failure_reason_code) or ".." in failure_reason_code:
+            raise MissionConflictError("invalid mission report evidence failure reason")
+        with _mission_connection(self.db_path) as connection:
+            connection.execute("BEGIN IMMEDIATE")
+            receipt = _report_receipt(connection, report_id)
+            if receipt.evidence_status == EVIDENCE_INCOMPLETE:
+                if receipt.failure_reason_code == failure_reason_code:
+                    connection.commit()
+                    return receipt
+                raise MissionConflictError("mission report evidence failure reason conflicts")
+            if receipt.evidence_status != EVIDENCE_PENDING:
+                raise MissionConflictError("completed mission report evidence cannot be changed")
+            connection.execute(
+                """
+                UPDATE mission_report_receipts
+                SET receipt_disposition = 'evidence_incomplete', evidence_status = ?,
+                    failure_reason_code = ?, finalized_at = ?
+                WHERE report_id = ? AND evidence_status = ?
+                """,
+                (
+                    EVIDENCE_INCOMPLETE,
+                    failure_reason_code,
+                    (now or datetime.now(UTC)).isoformat(),
+                    report_id,
+                    EVIDENCE_PENDING,
+                ),
+            )
+            connection.commit()
+        return self.get_report_receipt(report_id)
+
+    def get_report_receipt(self, report_id: str) -> MissionReportReceipt:
+        _require_report_id(report_id)
+        with _mission_connection(self.db_path) as connection:
+            return _report_receipt(connection, report_id)
+
+    def get_report_transition(self, report_id: str) -> MissionTransitionAttempt | None:
+        _require_report_id(report_id)
+        with _mission_connection(self.db_path) as connection:
+            return _transition_for_report_optional(connection, report_id)
+
+    def get_cancellation_transition(
+        self,
+        mission_id: str,
+    ) -> MissionTransitionAttempt | None:
+        _require_mission_id(mission_id)
+        with _mission_connection(self.db_path) as connection:
+            return _transition_for_mission_kind(
+                connection,
+                mission_id=mission_id,
+                transition_kind=MISSION_CANCELLATION_TRANSITION_KIND,
+            )
+
+    def require_current_control_decision(
+        self,
+        payload: MissionControlPollPayload,
+        *,
+        node_id: str,
+        authenticated_public_key: str,
+        expected_lifecycle_state: str,
+        expected_lifecycle_revision: int,
+        expected_decision: str,
+        expected_decision_revision: int,
+        now: datetime | None = None,
+    ) -> None:
+        effective_now = now or datetime.now(UTC)
+        with _mission_connection(self.db_path) as connection:
+            connection.execute("BEGIN IMMEDIATE")
+            mission = _mission_by_id(connection, payload.mission_id)
+            claim = _claim_by_mission(connection, payload.mission_id)
+            node_row = connection.execute(
+                "SELECT status, evidence_status, public_key, principal_id, workspace_id "
+                "FROM nodes WHERE node_id = ?",
+                (node_id,),
+            ).fetchone()
+            pending_rotation = connection.execute(
+                "SELECT expires_at FROM node_identity_key_rotations "
+                "WHERE node_id = ? AND status = 'pending' LIMIT 1",
+                (node_id,),
+            ).fetchone()
+            active_pending_rotation = False
+            if pending_rotation is not None:
+                try:
+                    rotation_expires_at = datetime.fromisoformat(
+                        str(pending_rotation[0])
+                    )
+                except ValueError:
+                    rotation_expires_at = None
+                active_pending_rotation = (
+                    rotation_expires_at is None
+                    or rotation_expires_at.tzinfo is None
+                    or effective_now < rotation_expires_at
+                )
+            if (
+                node_row is None
+                or tuple(str(value) for value in node_row[:3])
+                != ("enrolled", EVIDENCE_COMPLETE, authenticated_public_key)
+                or str(node_row[3]) != mission.target_node_principal_id
+                or str(node_row[4]) != mission.workspace_id
+                or active_pending_rotation
+                or mission.target_node_id != node_id
+                or claim.node_id != node_id
+                or claim.claim_status != "delivered"
+                or payload.claim_id != claim.claim_id
+                or payload.envelope_digest != mission.envelope_digest
+                or claim.envelope_digest != mission.envelope_digest
+                or mission.lifecycle_state != expected_lifecycle_state
+                or mission.lifecycle_revision != expected_lifecycle_revision
+                or payload.observed_lifecycle_revision > mission.lifecycle_revision
+            ):
+                raise MissionConflictError(
+                    "mission control authority changed before delivery"
+                )
+            try:
+                expires_at = datetime.fromisoformat(claim.expires_at)
+            except ValueError as exc:
+                raise MissionError("stored mission claim expiry is invalid") from exc
+            if expires_at.tzinfo is None or (
+                mission.lifecycle_state == MISSION_CLAIMED
+                and effective_now >= expires_at
+            ):
+                raise MissionConflictError(
+                    "mission control authority changed before delivery"
+                )
+            if expected_decision == "continue":
+                valid_decision = (
+                    mission.lifecycle_state
+                    in {MISSION_CLAIMED, MISSION_RUNNER_REPORTED_RUNNING}
+                    and expected_decision_revision == mission.lifecycle_revision
+                )
+            elif expected_decision == "cancel_requested":
+                cancellation = _transition_for_mission_kind(
+                    connection,
+                    mission_id=mission.mission_id,
+                    transition_kind=MISSION_CANCELLATION_TRANSITION_KIND,
+                )
+                valid_decision = (
+                    mission.lifecycle_state == MISSION_CANCEL_REQUESTED
+                    and cancellation is not None
+                    and cancellation.evidence_status == EVIDENCE_COMPLETE
+                    and cancellation.proposed_lifecycle_state
+                    == MISSION_CANCEL_REQUESTED
+                    and cancellation.proposed_lifecycle_revision
+                    == expected_decision_revision
+                )
+            else:
+                valid_decision = False
+            if not valid_decision:
+                raise MissionConflictError(
+                    "mission control authority changed before delivery"
+                )
+            connection.commit()
+
     def stage_cancellation(
         self,
         mission_id: str,
@@ -787,8 +1240,25 @@ class MissionStore:
                     transition=existing,
                     idempotent_replay=True,
                 )
-            if mission.lifecycle_state != MISSION_QUEUED:
-                raise MissionConflictError("mission is not queued for cancellation")
+            if _mission_has_other_unresolved_report_receipt(
+                connection,
+                mission_id=mission_id,
+                report_id="",
+            ):
+                raise MissionConflictError("mission report receipt requires evidence recovery")
+            if _mission_has_unresolved_transition(connection, mission_id):
+                raise MissionConflictError("mission transition requires evidence recovery")
+            if mission.lifecycle_state not in {
+                MISSION_QUEUED,
+                MISSION_CLAIMED,
+                MISSION_RUNNER_REPORTED_RUNNING,
+            }:
+                raise MissionConflictError("mission is not eligible for cancellation")
+            proposed_state = (
+                MISSION_CANCELED
+                if mission.lifecycle_state == MISSION_QUEUED
+                else MISSION_CANCEL_REQUESTED
+            )
             request_digest = mission_cancellation_request_digest(
                 mission=mission,
                 payload=payload,
@@ -815,7 +1285,7 @@ class MissionStore:
                         MISSION_CANCELLATION_TRANSITION_KIND,
                         mission.lifecycle_state,
                         mission.lifecycle_revision,
-                        MISSION_CANCELED,
+                        proposed_state,
                         mission.lifecycle_revision + 1,
                         request_digest,
                         canonical_json(
@@ -909,6 +1379,30 @@ class MissionStore:
             now=now,
         )
 
+    def finalize_report_transition(
+        self,
+        transition_id: str,
+        *,
+        audit_event_id: str,
+        audit_event_hash: str,
+        advancement_precondition: Callable[[], bool],
+        now: datetime | None = None,
+    ) -> MissionRecord:
+        transition = self.get_transition(transition_id)
+        if transition.transition_kind not in {
+            MISSION_REPORT_TRANSITION_KIND,
+            MISSION_CONTROL_OBSERVATION_TRANSITION_KIND,
+        }:
+            raise MissionConflictError("mission transition is not report-sourced")
+        return self._finalize_transition(
+            transition_id,
+            expected_kind=transition.transition_kind,
+            audit_event_id=audit_event_id,
+            audit_event_hash=audit_event_hash,
+            report_advancement_precondition=advancement_precondition,
+            now=now,
+        )
+
     def _finalize_transition(
         self,
         transition_id: str,
@@ -920,6 +1414,7 @@ class MissionStore:
         claim_authority_precondition: (
             Callable[[], MissionClaimAuthoritySnapshot] | None
         ) = None,
+        report_advancement_precondition: Callable[[], bool] | None = None,
     ) -> MissionRecord:
         _require_transition_id(transition_id)
         if not _EVENT_ID_PATTERN.fullmatch(audit_event_id):
@@ -974,6 +1469,16 @@ class MissionStore:
                     raise MissionConflictError("mission claim expired before delivery")
             else:
                 finalization_now = now or datetime.now(UTC)
+            if expected_kind in {
+                MISSION_REPORT_TRANSITION_KIND,
+                MISSION_CONTROL_OBSERVATION_TRANSITION_KIND,
+            } and (
+                report_advancement_precondition is None
+                or not report_advancement_precondition()
+            ):
+                raise MissionConflictError(
+                    "mission report authority changed before lifecycle advancement"
+                )
             now_text = finalization_now.isoformat()
             try:
                 connection.execute(
@@ -1190,7 +1695,11 @@ def mission_cancellation_request_digest(
             "envelope_digest": mission.envelope_digest,
             "prior_lifecycle_state": prior_lifecycle_state,
             "prior_lifecycle_revision": prior_lifecycle_revision,
-            "requested_transition": MISSION_CANCELED,
+            "requested_transition": (
+                MISSION_CANCELED
+                if prior_lifecycle_state == MISSION_QUEUED
+                else MISSION_CANCEL_REQUESTED
+            ),
         }
     )
 
@@ -1242,6 +1751,79 @@ def mission_claim_expiry_request_digest(
             "requested_transition": MISSION_CLAIM_EXPIRED_REVIEW_REQUIRED,
         }
     )
+
+
+def mission_report_request_digest(
+    report: MissionRunnerReportPayload,
+) -> str:
+    return sha256_digest(cast(JsonObject, report.model_dump(mode="json")))
+
+
+def mission_report_receipt_audit_metadata(
+    receipt: MissionReportReceipt,
+) -> JsonObject:
+    report = receipt.report
+    return {
+        "report_id": report.report_id,
+        "mission_id": report.mission_id,
+        "claim_id": report.claim_id,
+        "node_id": receipt.node_id,
+        "verified_node_identity_key_id": receipt.verified_node_identity_key_id,
+        "envelope_digest": report.envelope_digest,
+        "expected_lifecycle_revision": report.expected_lifecycle_revision,
+        "report_kind": report.report_kind,
+        "outcome_code": report.outcome_code,
+        "reason_code": report.reason_code,
+        "artifact_digest": report.artifact_digest,
+        "request_digest": receipt.request_digest,
+        "proposed_disposition": receipt.receipt_posture["proposed_disposition"],
+        "receipt_posture_digest": sha256_digest(receipt.receipt_posture),
+        "staged_proposal_only": True,
+        "runner_behavior_proven": False,
+    }
+
+
+def mission_report_transition_audit_metadata(
+    transition: MissionTransitionAttempt,
+) -> JsonObject:
+    return {
+        "transition_id": transition.transition_id,
+        "mission_id": transition.mission_id,
+        "transition_kind": transition.transition_kind,
+        "prior_lifecycle_state": transition.prior_lifecycle_state,
+        "prior_lifecycle_revision": transition.prior_lifecycle_revision,
+        "proposed_lifecycle_state": transition.proposed_lifecycle_state,
+        "proposed_lifecycle_revision": transition.proposed_lifecycle_revision,
+        "request_digest": transition.request_digest,
+        "safe_metadata": transition.safe_metadata,
+        "staged_proposal_only": True,
+        "runner_behavior_proven": False,
+    }
+
+
+def mission_transition_audit_metadata(
+    transition: MissionTransitionAttempt,
+    mission: MissionRecord,
+) -> JsonObject:
+    return {
+        "transition_id": transition.transition_id,
+        "mission_id": mission.mission_id,
+        "transition_kind": transition.transition_kind,
+        "prior_lifecycle_state": transition.prior_lifecycle_state,
+        "prior_lifecycle_revision": transition.prior_lifecycle_revision,
+        "proposed_lifecycle_state": transition.proposed_lifecycle_state,
+        "proposed_lifecycle_revision": transition.proposed_lifecycle_revision,
+        "request_digest": transition.request_digest,
+        "evidence_status": EVIDENCE_PENDING,
+        "target_node_id": mission.target_node_id,
+        "workspace_id": mission.workspace_id,
+        "mission_template_id": mission.mission_template_id,
+        "authority_snapshot_hash": mission.authority_snapshot_hash,
+        "envelope_digest": mission.envelope_digest,
+        "staged_proposal_only": True,
+        "runner_stop_proven": False,
+        "model_provider_state_known": False,
+    }
 
 
 def _mission_connection(db_path: Path) -> sqlite3.Connection:
@@ -1302,6 +1884,15 @@ SELECT claim_id, mission_id, transition_id, node_id, node_identity_key_id,
        envelope_digest, authority_snapshot_json, authority_snapshot_hash,
        lifecycle_revision, claim_status, claimed_at, expires_at
 FROM mission_claims
+"""
+
+_REPORT_RECEIPT_SELECT = """
+SELECT report_id, mission_id, claim_id, node_id, verified_node_identity_key_id,
+       envelope_digest, expected_lifecycle_revision, report_kind, outcome_code,
+       reason_code, artifact_digest, request_digest, receipt_posture_json,
+       receipt_disposition, evidence_status, audit_event_id, audit_event_hash,
+       failure_reason_code, received_at, finalized_at
+FROM mission_report_receipts
 """
 
 
@@ -1369,6 +1960,538 @@ def _claim_by_mission(
     return claim
 
 
+def _report_receipt_optional(
+    connection: sqlite3.Connection,
+    report_id: str,
+) -> MissionReportReceipt | None:
+    rows = connection.execute(
+        f"{_REPORT_RECEIPT_SELECT} ORDER BY report_id ASC"
+    ).fetchall()
+    match: MissionReportReceipt | None = None
+    for row in rows:
+        receipt = _report_receipt_from_row(row)
+        _verify_report_receipt_bindings(connection, receipt)
+        if receipt.report.report_id == report_id:
+            if match is not None:
+                raise MissionError("stored mission report ID is duplicated")
+            match = receipt
+    return match
+
+
+def _verify_report_receipt_bindings(
+    connection: sqlite3.Connection,
+    receipt: MissionReportReceipt,
+) -> None:
+    mission = _mission_by_id(connection, receipt.report.mission_id)
+    claim = _claim_by_mission(connection, mission.mission_id)
+    _require_report_matches_claim(
+        receipt.report,
+        mission=mission,
+        claim=claim,
+        node_id=receipt.node_id,
+    )
+    if receipt.request_digest != mission_report_request_digest(receipt.report):
+        raise MissionError("stored mission report request digest is invalid")
+    authenticated_posture = receipt.receipt_posture.get("authenticated_receipt")
+    if (
+        not isinstance(authenticated_posture, dict)
+        or authenticated_posture.get("verified_node_identity_key_id")
+        != receipt.verified_node_identity_key_id
+    ):
+        raise MissionError("stored mission report verified key binding is inconsistent")
+    if receipt.evidence_status == EVIDENCE_COMPLETE:
+        binding = connection.execute(
+            """
+            SELECT audit_event_hash, owner_kind, owner_id, request_digest
+            FROM mission_audit_evidence_bindings WHERE audit_event_id = ?
+            """,
+            (receipt.audit_event_id,),
+        ).fetchone()
+        if binding != (
+            receipt.audit_event_hash,
+            "mission_report_receipt",
+            receipt.report.report_id,
+            receipt.request_digest,
+        ):
+            raise MissionError("stored mission report audit binding is inconsistent")
+        event_row = connection.execute(
+            "SELECT payload_json FROM audit_events WHERE event_id = ?",
+            (receipt.audit_event_id,),
+        ).fetchone()
+        try:
+            event_payload = json.loads(
+                str(event_row[0]) if event_row is not None else "",
+                object_pairs_hook=_reject_duplicate_keys,
+            )
+        except (json.JSONDecodeError, ValueError) as exc:
+            raise MissionError("stored mission report audit event is invalid") from exc
+        if (
+            not isinstance(event_payload, dict)
+            or event_payload.get("event_id") != receipt.audit_event_id
+            or event_payload.get("event_hash") != receipt.audit_event_hash
+            or event_payload.get("event_type") != "mission.report_receipt.staged"
+            or event_payload.get("input_hash") != receipt.request_digest
+            or event_payload.get("metadata")
+            != mission_report_receipt_audit_metadata(receipt)
+        ):
+            raise MissionError("stored mission report audit event binding is inconsistent")
+
+
+def _report_receipt(
+    connection: sqlite3.Connection,
+    report_id: str,
+) -> MissionReportReceipt:
+    receipt = _report_receipt_optional(connection, report_id)
+    if receipt is None:
+        raise MissionNotFoundError("unknown mission report")
+    return receipt
+
+
+def _report_receipt_from_row(
+    row: sqlite3.Row | tuple[Any, ...],
+) -> MissionReportReceipt:
+    try:
+        posture = json.loads(str(row[12]), object_pairs_hook=_reject_duplicate_keys)
+        report = MissionRunnerReportPayload.model_validate(
+            {
+                "report_id": str(row[0]),
+                "mission_id": str(row[1]),
+                "claim_id": str(row[2]),
+                "envelope_digest": str(row[5]),
+                "expected_lifecycle_revision": int(row[6]),
+                "report_kind": str(row[7]),
+                "outcome_code": str(row[8]),
+                "reason_code": str(row[9]) if row[9] is not None else None,
+                "artifact_digest": str(row[10]) if row[10] is not None else None,
+            }
+        )
+    except (json.JSONDecodeError, ValueError) as exc:
+        raise MissionError("stored mission report receipt is invalid") from exc
+    if (
+        not isinstance(posture, dict)
+        or "authenticated_receipt" not in posture
+        or not _valid_report_authority_posture(posture["authenticated_receipt"])
+        or not _valid_report_authority_posture(posture.get("proposed_advancement"))
+        or posture.get("proposed_disposition")
+        not in {"lifecycle_advancing", "quarantined"}
+        or set(posture)
+        != {
+            "authenticated_receipt",
+            "proposed_advancement",
+            "proposed_disposition",
+        }
+    ):
+        raise MissionError("stored mission report posture is invalid")
+    receipt = MissionReportReceipt(
+        report=report,
+        node_id=str(row[3]),
+        verified_node_identity_key_id=str(row[4]),
+        request_digest=str(row[11]),
+        receipt_posture=cast(JsonObject, posture),
+        receipt_disposition=str(row[13]),
+        evidence_status=str(row[14]),
+        audit_event_id=str(row[15]) if row[15] is not None else None,
+        audit_event_hash=str(row[16]) if row[16] is not None else None,
+        failure_reason_code=str(row[17]) if row[17] is not None else None,
+        received_at=str(row[18]),
+        finalized_at=str(row[19]) if row[19] is not None else None,
+    )
+    if (
+        not _NODE_ID_PATTERN.fullmatch(receipt.node_id)
+        or not re.fullmatch(SHA256_PATTERN, receipt.verified_node_identity_key_id)
+        or receipt.receipt_disposition
+        not in {"pending", "lifecycle_advancing", "quarantined", "evidence_incomplete"}
+        or receipt.evidence_status
+        not in {EVIDENCE_PENDING, EVIDENCE_COMPLETE, EVIDENCE_INCOMPLETE}
+        or (
+            receipt.evidence_status == EVIDENCE_PENDING
+            and (
+                receipt.receipt_disposition != "pending"
+                or receipt.audit_event_id is not None
+                or receipt.finalized_at is not None
+            )
+        )
+        or (
+            receipt.evidence_status == EVIDENCE_COMPLETE
+            and (
+                receipt.receipt_disposition
+                not in {"lifecycle_advancing", "quarantined"}
+                or receipt.audit_event_id is None
+                or receipt.audit_event_hash is None
+                or receipt.finalized_at is None
+                or receipt.receipt_posture.get("proposed_disposition")
+                != receipt.receipt_disposition
+            )
+        )
+        or (
+            receipt.evidence_status == EVIDENCE_INCOMPLETE
+            and (
+                receipt.receipt_disposition != "evidence_incomplete"
+                or receipt.failure_reason_code is None
+                or receipt.finalized_at is None
+            )
+        )
+    ):
+        raise MissionError("stored mission report evidence state is invalid")
+    return receipt
+
+
+def _valid_report_authority_posture(value: object) -> bool:
+    if not isinstance(value, dict) or set(value) != {
+        "node_status",
+        "node_evidence_status",
+        "verified_node_identity_key_id",
+        "current_node_identity_key_id",
+        "state",
+        "reason_code",
+    }:
+        return False
+    return (
+        value.get("node_status") in {"enrolled", "revoked"}
+        and value.get("node_evidence_status")
+        in {EVIDENCE_PENDING, EVIDENCE_COMPLETE, EVIDENCE_INCOMPLETE}
+        and isinstance(value.get("verified_node_identity_key_id"), str)
+        and re.fullmatch(
+            SHA256_PATTERN,
+            cast(str, value["verified_node_identity_key_id"]),
+        )
+        is not None
+        and isinstance(value.get("current_node_identity_key_id"), str)
+        and re.fullmatch(
+            SHA256_PATTERN,
+            cast(str, value["current_node_identity_key_id"]),
+        )
+        is not None
+        and value.get("state") in {"eligible", "quarantined"}
+        and value.get("reason_code")
+        in {
+            "ready_read_only",
+            "node_revoked",
+            "posture_ineligible",
+            "retired_key",
+            "authority_drift",
+            "claim_authority_invalid",
+            "claim_expired",
+            "identity_rotation_pending",
+        }
+    )
+
+
+def _require_report_matches_claim(
+    report: MissionRunnerReportPayload,
+    *,
+    mission: MissionRecord,
+    claim: MissionClaimRecord,
+    node_id: str,
+) -> None:
+    if (
+        report.mission_id != mission.mission_id
+        or report.claim_id != claim.claim_id
+        or report.envelope_digest != mission.envelope_digest
+        or claim.envelope_digest != mission.envelope_digest
+        or node_id != mission.target_node_id
+        or claim.node_id != node_id
+    ):
+        raise MissionConflictError("mission report does not match delivered claim")
+
+
+def _mission_has_unresolved_transition(
+    connection: sqlite3.Connection,
+    mission_id: str,
+) -> bool:
+    try:
+        transitions = _validated_transitions(connection)
+    except MissionError as exc:
+        raise MissionConflictError("mission transition evidence is invalid") from exc
+    return any(
+        transition.mission_id == mission_id
+        and transition.evidence_status in {EVIDENCE_PENDING, EVIDENCE_INCOMPLETE}
+        for transition in transitions
+    )
+
+
+def _mission_has_other_unresolved_report_receipt(
+    connection: sqlite3.Connection,
+    *,
+    mission_id: str,
+    report_id: str,
+) -> bool:
+    _report_receipt_optional(connection, report_id)
+    return (
+        connection.execute(
+            """
+            SELECT 1 FROM mission_report_receipts
+            WHERE mission_id = ? AND report_id != ? AND evidence_status IN (?, ?)
+            LIMIT 1
+            """,
+            (mission_id, report_id, EVIDENCE_PENDING, EVIDENCE_INCOMPLETE),
+        ).fetchone()
+        is not None
+    )
+
+
+def _has_complete_cancel_observation(
+    connection: sqlite3.Connection,
+    *,
+    mission_id: str,
+    claim_id: str,
+    decision_revision: int,
+) -> bool:
+    _report_receipt_optional(connection, "")
+    row = connection.execute(
+        """
+        SELECT report_id FROM mission_report_receipts
+        WHERE mission_id = ? AND claim_id = ? AND report_kind = 'cancel_observed'
+          AND expected_lifecycle_revision = ? AND evidence_status = ?
+          AND receipt_disposition = 'lifecycle_advancing'
+        ORDER BY received_at, report_id LIMIT 1
+        """,
+        (mission_id, claim_id, decision_revision, EVIDENCE_COMPLETE),
+    ).fetchone()
+    if row is None:
+        return False
+    receipt = _report_receipt(connection, str(row[0]))
+    transition = _transition_for_mission_kind(
+        connection,
+        mission_id=mission_id,
+        transition_kind=MISSION_CONTROL_OBSERVATION_TRANSITION_KIND,
+    )
+    if transition is None:
+        raise MissionError("stored cancel observation transition is missing")
+    if transition.evidence_status in {EVIDENCE_PENDING, EVIDENCE_INCOMPLETE}:
+        return False
+    if (
+        transition.transition_kind != MISSION_CONTROL_OBSERVATION_TRANSITION_KIND
+        or transition.evidence_status != EVIDENCE_COMPLETE
+        or transition.prior_lifecycle_state != MISSION_CANCEL_REQUESTED
+        or transition.prior_lifecycle_revision != decision_revision
+        or transition.proposed_lifecycle_state != MISSION_CANCEL_REQUESTED
+        or transition.proposed_lifecycle_revision != decision_revision + 1
+        or transition.safe_metadata.get("report_id") != receipt.report.report_id
+    ):
+        raise MissionError("stored cancel observation transition is inconsistent")
+    return True
+
+
+def _report_proposed_state(
+    connection: sqlite3.Connection,
+    *,
+    receipt: MissionReportReceipt | None = None,
+    report: MissionRunnerReportPayload | None = None,
+    mission: MissionRecord,
+    claim: MissionClaimRecord,
+    now: datetime,
+) -> str | None:
+    effective_report = receipt.report if receipt is not None else report
+    if effective_report is None:  # pragma: no cover - internal call contract
+        raise MissionError("mission report proposal is missing")
+    try:
+        expires_at = datetime.fromisoformat(claim.expires_at)
+    except ValueError as exc:
+        raise MissionError("stored mission claim expiry is invalid") from exc
+    if expires_at.tzinfo is None or (
+        mission.lifecycle_state == MISSION_CLAIMED and now >= expires_at
+    ):
+        return None
+    exact_current_revision = (
+        effective_report.expected_lifecycle_revision == mission.lifecycle_revision
+    )
+    cancellation = (
+        _transition_for_mission_kind(
+            connection,
+            mission_id=mission.mission_id,
+            transition_kind=MISSION_CANCELLATION_TRANSITION_KIND,
+        )
+        if mission.lifecycle_state == MISSION_CANCEL_REQUESTED
+        else None
+    )
+    if effective_report.report_kind == "cancel_observed":
+        if (
+            cancellation is None
+            or cancellation.evidence_status != EVIDENCE_COMPLETE
+            or cancellation.proposed_lifecycle_state != MISSION_CANCEL_REQUESTED
+            or mission.lifecycle_revision != cancellation.proposed_lifecycle_revision
+            or effective_report.expected_lifecycle_revision
+            != cancellation.proposed_lifecycle_revision
+            or _has_complete_cancel_observation(
+                connection,
+                mission_id=mission.mission_id,
+                claim_id=effective_report.claim_id,
+                decision_revision=cancellation.proposed_lifecycle_revision,
+            )
+        ):
+            return None
+        return MISSION_CANCEL_REQUESTED
+    cancellation_prior_revision = False
+    if (
+        mission.lifecycle_state == MISSION_CANCEL_REQUESTED
+        and effective_report.report_kind in {"runner_succeeded", "runner_failed"}
+    ):
+        observation_advances_current_revision = (
+            cancellation is not None
+            and _has_complete_cancel_observation(
+                connection,
+                mission_id=mission.mission_id,
+                claim_id=effective_report.claim_id,
+                decision_revision=cancellation.proposed_lifecycle_revision,
+            )
+            and mission.lifecycle_revision == cancellation.proposed_lifecycle_revision + 1
+        )
+        cancellation_prior_revision = (
+            cancellation is not None
+            and cancellation.evidence_status == EVIDENCE_COMPLETE
+            and cancellation.prior_lifecycle_state == MISSION_RUNNER_REPORTED_RUNNING
+            and cancellation.proposed_lifecycle_state == MISSION_CANCEL_REQUESTED
+            and (
+                cancellation.proposed_lifecycle_revision == mission.lifecycle_revision
+                or observation_advances_current_revision
+            )
+            and effective_report.expected_lifecycle_revision
+            == cancellation.prior_lifecycle_revision
+        )
+    if not exact_current_revision and not cancellation_prior_revision:
+        return None
+    if effective_report.report_kind == "runner_running":
+        return (
+            MISSION_RUNNER_REPORTED_RUNNING
+            if mission.lifecycle_state == MISSION_CLAIMED
+            else None
+        )
+    if effective_report.report_kind == "runner_succeeded":
+        return (
+            MISSION_RUNNER_REPORTED_SUCCEEDED
+            if mission.lifecycle_state
+            in {MISSION_RUNNER_REPORTED_RUNNING, MISSION_CANCEL_REQUESTED}
+            else None
+        )
+    if effective_report.report_kind == "runner_failed":
+        return (
+            MISSION_RUNNER_REPORTED_FAILED
+            if mission.lifecycle_state
+            in {MISSION_RUNNER_REPORTED_RUNNING, MISSION_CANCEL_REQUESTED}
+            else None
+        )
+    if effective_report.report_kind == "runner_canceled":
+        if mission.lifecycle_state != MISSION_CANCEL_REQUESTED or not exact_current_revision:
+            return None
+        if (
+            cancellation is None
+            or not _has_complete_cancel_observation(
+                connection,
+                mission_id=mission.mission_id,
+                claim_id=effective_report.claim_id,
+                decision_revision=cancellation.proposed_lifecycle_revision,
+            )
+            or mission.lifecycle_revision != cancellation.proposed_lifecycle_revision + 1
+        ):
+            return None
+        return MISSION_RUNNER_REPORTED_CANCELED
+    return None
+
+
+def _insert_report_transition(
+    connection: sqlite3.Connection,
+    *,
+    receipt: MissionReportReceipt,
+    mission: MissionRecord,
+    proposed_state: str,
+    now_text: str,
+) -> MissionTransitionAttempt:
+    transition_id = f"mtransition_{uuid4().hex}"
+    transition_kind = (
+        MISSION_CONTROL_OBSERVATION_TRANSITION_KIND
+        if receipt.report.report_kind == "cancel_observed"
+        else MISSION_REPORT_TRANSITION_KIND
+    )
+    metadata: JsonObject = {
+        "report_id": receipt.report.report_id,
+        "claim_id": receipt.report.claim_id,
+        "node_id": receipt.node_id,
+        "verified_node_identity_key_id": receipt.verified_node_identity_key_id,
+        "envelope_digest": receipt.report.envelope_digest,
+        "report_kind": receipt.report.report_kind,
+    }
+    request_digest = sha256_digest(
+        {
+            "schema_version": MISSION_AUTHORITY_SCHEMA_VERSION,
+            "report_request_digest": receipt.request_digest,
+            "prior_lifecycle_state": mission.lifecycle_state,
+            "prior_lifecycle_revision": mission.lifecycle_revision,
+            "proposed_lifecycle_state": proposed_state,
+            "proposed_lifecycle_revision": mission.lifecycle_revision + 1,
+        }
+    )
+    try:
+        connection.execute(
+            """
+            INSERT INTO mission_transition_attempts (
+                transition_id, mission_id, transition_kind,
+                prior_lifecycle_state, prior_lifecycle_revision,
+                proposed_lifecycle_state, proposed_lifecycle_revision,
+                request_digest, safe_metadata_json, evidence_status,
+                audit_event_id, audit_event_hash, failure_reason_code,
+                created_at, finalized_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, NULL, NULL, ?, NULL)
+            """,
+            (
+                transition_id,
+                mission.mission_id,
+                transition_kind,
+                mission.lifecycle_state,
+                mission.lifecycle_revision,
+                proposed_state,
+                mission.lifecycle_revision + 1,
+                request_digest,
+                canonical_json(metadata),
+                EVIDENCE_PENDING,
+                now_text,
+            ),
+        )
+    except sqlite3.IntegrityError as exc:
+        raise MissionConflictError("mission report transition conflicts") from exc
+    row = connection.execute(
+        f"{_TRANSITION_SELECT} WHERE transition_id = ?",
+        (transition_id,),
+    ).fetchone()
+    if row is None:  # pragma: no cover - same-transaction insertion invariant
+        raise MissionError("mission report transition insertion failed")
+    return _transition_from_row(row)
+
+
+def _transition_for_report_optional(
+    connection: sqlite3.Connection,
+    report_id: str,
+) -> MissionTransitionAttempt | None:
+    matches: list[MissionTransitionAttempt] = []
+    for transition in _validated_transitions(connection):
+        if (
+            transition.transition_kind
+            in {
+                MISSION_REPORT_TRANSITION_KIND,
+                MISSION_CONTROL_OBSERVATION_TRANSITION_KIND,
+            }
+            and transition.safe_metadata.get("report_id") == report_id
+        ):
+            matches.append(transition)
+    if len(matches) > 1:
+        raise MissionError("stored mission report has multiple lifecycle transitions")
+    return matches[0] if matches else None
+
+
+def _validated_transitions(
+    connection: sqlite3.Connection,
+) -> list[MissionTransitionAttempt]:
+    rows = connection.execute(
+        f"{_TRANSITION_SELECT} ORDER BY created_at, transition_id",
+    ).fetchall()
+    transitions: list[MissionTransitionAttempt] = []
+    for row in rows:
+        transition = _transition_from_row(row)
+        _verify_transition_bindings(connection, transition)
+        transitions.append(transition)
+    return transitions
+
+
 def _node_has_blocking_claim(
     connection: sqlite3.Connection,
     node_id: str,
@@ -1422,12 +2545,7 @@ def _transition_for_mission_kind(
     if row is None:
         return None
     transition = _transition_from_row(row)
-    if transition_kind == MISSION_CANCELLATION_TRANSITION_KIND:
-        _verify_cancellation_transition_bindings(connection, transition)
-    elif transition_kind == MISSION_CLAIM_TRANSITION_KIND:
-        _verify_claim_transition_bindings(connection, transition)
-    elif transition_kind == MISSION_CLAIM_EXPIRY_TRANSITION_KIND:
-        _verify_claim_expiry_transition_bindings(connection, transition)
+    _verify_transition_bindings(connection, transition)
     return transition
 
 
@@ -1440,15 +2558,49 @@ def _transition_by_id(
     if row is None:
         raise MissionNotFoundError("unknown mission transition")
     transition = _transition_from_row(row)
+    _verify_transition_bindings(connection, transition)
+    return transition
+
+
+def _verify_transition_bindings(
+    connection: sqlite3.Connection,
+    transition: MissionTransitionAttempt,
+) -> None:
     if transition.transition_kind == MISSION_ADMISSION_TRANSITION_KIND:
         _verify_admission_transition_bindings(connection, transition)
     elif transition.transition_kind == MISSION_CLAIM_TRANSITION_KIND:
         _verify_claim_transition_bindings(connection, transition)
     elif transition.transition_kind == MISSION_CLAIM_EXPIRY_TRANSITION_KIND:
         _verify_claim_expiry_transition_bindings(connection, transition)
+    elif transition.transition_kind in {
+        MISSION_REPORT_TRANSITION_KIND,
+        MISSION_CONTROL_OBSERVATION_TRANSITION_KIND,
+    }:
+        _verify_report_transition_bindings(connection, transition)
+        _verify_bound_transition_evidence(
+            connection,
+            transition,
+            expected_event_type=(
+                "mission.control_observation.staged"
+                if transition.transition_kind
+                == MISSION_CONTROL_OBSERVATION_TRANSITION_KIND
+                else "mission.report_transition.staged"
+            ),
+            expected_metadata=mission_report_transition_audit_metadata(transition),
+        )
     elif transition.transition_kind == MISSION_CANCELLATION_TRANSITION_KIND:
         _verify_cancellation_transition_bindings(connection, transition)
-    return transition
+        _verify_bound_transition_evidence(
+            connection,
+            transition,
+            expected_event_type="mission.cancellation.staged",
+            expected_metadata=mission_transition_audit_metadata(
+                transition,
+                _mission_by_id(connection, transition.mission_id),
+            ),
+        )
+    else:
+        raise MissionError("stored mission transition kind is unsupported")
 
 
 def _mission_from_row(row: sqlite3.Row | tuple[Any, ...]) -> MissionRecord:
@@ -1530,6 +2682,22 @@ def _transition_from_row(row: sqlite3.Row | tuple[Any, ...]) -> MissionTransitio
             "node_id",
             "envelope_digest",
             "expires_at",
+        },
+        MISSION_REPORT_TRANSITION_KIND: {
+            "report_id",
+            "claim_id",
+            "node_id",
+            "verified_node_identity_key_id",
+            "envelope_digest",
+            "report_kind",
+        },
+        MISSION_CONTROL_OBSERVATION_TRANSITION_KIND: {
+            "report_id",
+            "claim_id",
+            "node_id",
+            "verified_node_identity_key_id",
+            "envelope_digest",
+            "report_kind",
         },
     }.get(transition_kind)
     if (
@@ -1789,6 +2957,188 @@ def _verify_claim_expiry_transition_bindings(
         raise MissionError("stored mission claim expiry bindings are inconsistent")
 
 
+def _verify_report_transition_bindings(
+    connection: sqlite3.Connection,
+    transition: MissionTransitionAttempt,
+) -> None:
+    metadata = transition.safe_metadata
+    report_id = metadata.get("report_id")
+    if not isinstance(report_id, str):
+        raise MissionError("stored mission report transition metadata is invalid")
+    receipt = _report_receipt(connection, report_id)
+    report = receipt.report
+    mission = _mission_by_id(connection, transition.mission_id)
+    expected_proposed_state = {
+        (MISSION_CLAIMED, "runner_running"): MISSION_RUNNER_REPORTED_RUNNING,
+        (
+            MISSION_RUNNER_REPORTED_RUNNING,
+            "runner_succeeded",
+        ): MISSION_RUNNER_REPORTED_SUCCEEDED,
+        (MISSION_CANCEL_REQUESTED, "runner_succeeded"): MISSION_RUNNER_REPORTED_SUCCEEDED,
+        (
+            MISSION_RUNNER_REPORTED_RUNNING,
+            "runner_failed",
+        ): MISSION_RUNNER_REPORTED_FAILED,
+        (MISSION_CANCEL_REQUESTED, "runner_failed"): MISSION_RUNNER_REPORTED_FAILED,
+        (MISSION_CANCEL_REQUESTED, "runner_canceled"): MISSION_RUNNER_REPORTED_CANCELED,
+        (MISSION_CANCEL_REQUESTED, "cancel_observed"): MISSION_CANCEL_REQUESTED,
+    }.get((transition.prior_lifecycle_state, report.report_kind))
+    expected_metadata = {
+        "report_id": report.report_id,
+        "claim_id": report.claim_id,
+        "node_id": receipt.node_id,
+        "verified_node_identity_key_id": receipt.verified_node_identity_key_id,
+        "envelope_digest": report.envelope_digest,
+        "report_kind": report.report_kind,
+    }
+    expected_digest = sha256_digest(
+        {
+            "schema_version": MISSION_AUTHORITY_SCHEMA_VERSION,
+            "report_request_digest": receipt.request_digest,
+            "prior_lifecycle_state": transition.prior_lifecycle_state,
+            "prior_lifecycle_revision": transition.prior_lifecycle_revision,
+            "proposed_lifecycle_state": transition.proposed_lifecycle_state,
+            "proposed_lifecycle_revision": transition.proposed_lifecycle_revision,
+        }
+    )
+    report_revision_matches = (
+        report.expected_lifecycle_revision == transition.prior_lifecycle_revision
+    )
+    if (
+        not report_revision_matches
+        and transition.prior_lifecycle_state == MISSION_CANCEL_REQUESTED
+        and report.report_kind in {"runner_succeeded", "runner_failed"}
+    ):
+        cancellation = _transition_for_mission_kind(
+            connection,
+            mission_id=mission.mission_id,
+            transition_kind=MISSION_CANCELLATION_TRANSITION_KIND,
+        )
+        report_revision_matches = (
+            cancellation is not None
+            and cancellation.evidence_status == EVIDENCE_COMPLETE
+            and cancellation.prior_lifecycle_state == MISSION_RUNNER_REPORTED_RUNNING
+            and (
+                cancellation.proposed_lifecycle_revision
+                == transition.prior_lifecycle_revision
+                or (
+                    _has_complete_cancel_observation(
+                        connection,
+                        mission_id=mission.mission_id,
+                        claim_id=report.claim_id,
+                        decision_revision=cancellation.proposed_lifecycle_revision,
+                    )
+                    and transition.prior_lifecycle_revision
+                    == cancellation.proposed_lifecycle_revision + 1
+                )
+            )
+            and report.expected_lifecycle_revision
+            == cancellation.prior_lifecycle_revision
+        )
+    if (
+        transition.transition_kind
+        != (
+            MISSION_CONTROL_OBSERVATION_TRANSITION_KIND
+            if report.report_kind == "cancel_observed"
+            else MISSION_REPORT_TRANSITION_KIND
+        )
+        or receipt.evidence_status != EVIDENCE_COMPLETE
+        or receipt.receipt_disposition != "lifecycle_advancing"
+        or mission.mission_id != report.mission_id
+        or not report_revision_matches
+        or expected_proposed_state is None
+        or transition.proposed_lifecycle_state != expected_proposed_state
+        or transition.proposed_lifecycle_revision != transition.prior_lifecycle_revision + 1
+        or metadata != expected_metadata
+        or transition.request_digest != expected_digest
+    ):
+        raise MissionError("stored mission report transition bindings are inconsistent")
+
+
+def _verify_bound_transition_evidence(
+    connection: sqlite3.Connection,
+    transition: MissionTransitionAttempt,
+    *,
+    expected_event_type: str,
+    expected_metadata: JsonObject,
+) -> None:
+    try:
+        created_at = datetime.fromisoformat(transition.created_at)
+        finalized_at = (
+            datetime.fromisoformat(transition.finalized_at)
+            if transition.finalized_at is not None
+            else None
+        )
+    except ValueError as exc:
+        raise MissionError("stored mission transition timestamps are invalid") from exc
+    if (
+        not _TRANSITION_ID_PATTERN.fullmatch(transition.transition_id)
+        or not _MISSION_ID_PATTERN.fullmatch(transition.mission_id)
+        or not re.fullmatch(SHA256_PATTERN, transition.request_digest)
+        or created_at.tzinfo is None
+        or (finalized_at is not None and finalized_at.tzinfo is None)
+    ):
+        raise MissionError("stored mission transition evidence state is invalid")
+    if transition.evidence_status == EVIDENCE_PENDING:
+        if (
+            transition.audit_event_id is not None
+            or transition.audit_event_hash is not None
+            or transition.failure_reason_code is not None
+            or transition.finalized_at is not None
+        ):
+            raise MissionError("stored mission transition evidence state is invalid")
+        return
+    if transition.evidence_status == EVIDENCE_INCOMPLETE:
+        if (
+            transition.audit_event_id is not None
+            or transition.audit_event_hash is not None
+            or transition.failure_reason_code is None
+            or not _SAFE_LABEL_PATTERN.fullmatch(transition.failure_reason_code)
+            or ".." in transition.failure_reason_code
+            or finalized_at is None
+        ):
+            raise MissionError("stored mission transition evidence state is invalid")
+        return
+    if (
+        transition.evidence_status != EVIDENCE_COMPLETE
+        or transition.audit_event_id is None
+        or not _EVENT_ID_PATTERN.fullmatch(transition.audit_event_id)
+        or transition.audit_event_hash is None
+        or not re.fullmatch(SHA256_PATTERN, transition.audit_event_hash)
+        or transition.failure_reason_code is not None
+        or finalized_at is None
+    ):
+        raise MissionError("stored mission transition evidence state is invalid")
+    _verify_audit_evidence_binding(
+        connection,
+        transition=transition,
+        audit_event_id=transition.audit_event_id,
+        audit_event_hash=transition.audit_event_hash,
+    )
+    event_row = connection.execute(
+        "SELECT payload_json FROM audit_events WHERE event_id = ?",
+        (transition.audit_event_id,),
+    ).fetchone()
+    try:
+        event_payload = json.loads(
+            str(event_row[0]) if event_row is not None else "",
+            object_pairs_hook=_reject_duplicate_keys,
+        )
+    except (json.JSONDecodeError, ValueError) as exc:
+        raise MissionError("stored mission transition audit event is invalid") from exc
+    if (
+        not isinstance(event_payload, dict)
+        or event_payload.get("event_id") != transition.audit_event_id
+        or event_payload.get("event_hash") != transition.audit_event_hash
+        or event_payload.get("event_type") != expected_event_type
+        or event_payload.get("input_hash") != transition.request_digest
+        or event_payload.get("metadata") != expected_metadata
+    ):
+        raise MissionError(
+            "stored mission transition audit event binding is inconsistent"
+        )
+
+
 def _verify_cancellation_transition_bindings(
     connection: sqlite3.Connection,
     transition: MissionTransitionAttempt,
@@ -1818,9 +3168,15 @@ def _verify_cancellation_transition_bindings(
         "workspace_id": mission.workspace_id,
         "envelope_digest": mission.envelope_digest,
     }
+    expected_proposed_state = (
+        MISSION_CANCELED
+        if transition.prior_lifecycle_state == MISSION_QUEUED
+        else MISSION_CANCEL_REQUESTED
+    )
     if (
-        transition.prior_lifecycle_state != MISSION_QUEUED
-        or transition.proposed_lifecycle_state != MISSION_CANCELED
+        transition.prior_lifecycle_state
+        not in {MISSION_QUEUED, MISSION_CLAIMED, MISSION_RUNNER_REPORTED_RUNNING}
+        or transition.proposed_lifecycle_state != expected_proposed_state
         or transition.proposed_lifecycle_revision != transition.prior_lifecycle_revision + 1
         or metadata != expected_metadata
         or transition.request_digest
@@ -1908,6 +3264,11 @@ def _require_mission_id(value: str) -> None:
 def _require_transition_id(value: str) -> None:
     if not _TRANSITION_ID_PATTERN.fullmatch(value):
         raise MissionNotFoundError("unknown mission transition")
+
+
+def _require_report_id(value: str) -> None:
+    if not _REPORT_ID_PATTERN.fullmatch(value):
+        raise MissionNotFoundError("unknown mission report")
 
 
 assert MISSION_AUTHORITY_SCHEMA_VERSION == "1"

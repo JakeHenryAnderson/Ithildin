@@ -9,11 +9,12 @@ import json
 import re
 import secrets
 import sqlite3
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from hashlib import sha256
 from pathlib import Path
-from typing import Literal, cast
+from typing import Literal, TypeVar, cast
 from uuid import uuid4
 
 from cryptography.exceptions import InvalidSignature
@@ -38,6 +39,8 @@ _ACTIVE_STATUS = "enrolled"
 _REVOKED_STATUS = "revoked"
 _EVIDENCE_PENDING = "pending"
 _EVIDENCE_COMPLETE = "complete"
+
+_AuthenticatedReportResult = TypeVar("_AuthenticatedReportResult")
 
 
 class NodeError(RuntimeError):
@@ -784,6 +787,100 @@ class NodeStore:
             connection.commit()
         return record
 
+    def authenticate_mission_report_request(
+        self,
+        *,
+        node_id: str,
+        timestamp: str,
+        nonce: str,
+        signature: str,
+        body: JsonObject,
+        path: str,
+        max_clock_skew_seconds: int,
+        on_authenticated: Callable[
+            [sqlite3.Connection, NodeRecord, str],
+            _AuthenticatedReportResult,
+        ],
+        now: datetime | None = None,
+    ) -> tuple[NodeRecord, str, _AuthenticatedReportResult]:
+        """Authenticate report evidence, including from an evidence-complete revoked Node."""
+        effective_now = now or datetime.now(UTC)
+        if not _NONCE_PATTERN.fullmatch(nonce):
+            raise NodeAuthenticationError("invalid mission report nonce")
+        try:
+            timestamp_value = int(timestamp)
+        except ValueError as exc:
+            raise NodeAuthenticationError("invalid Node timestamp") from exc
+        if abs(int(effective_now.timestamp()) - timestamp_value) > max_clock_skew_seconds:
+            raise NodeAuthenticationError("stale Node timestamp")
+        record = self.get(node_id)
+        if record.status not in {_ACTIVE_STATUS, _REVOKED_STATUS}:
+            raise NodeAuthenticationError("Node report identity is unavailable")
+        if not _report_identity_evidence_is_usable(
+            status=record.status,
+            evidence_status=record.evidence_status,
+        ):
+            raise NodeAuthenticationError("Node evidence is incomplete")
+        message = canonical_signature_message(
+            method="POST",
+            path=path,
+            timestamp=timestamp,
+            nonce=nonce,
+            body_hash=sha256_digest(body),
+        )
+        _verify_signature(record.public_key, signature, message)
+        verified_key_id = node_identity_key_id(record.public_key)
+        with sqlite3.connect(self.db_path) as connection:
+            connection.execute("PRAGMA foreign_keys = ON")
+            connection.execute("BEGIN IMMEDIATE")
+            current = connection.execute(
+                "SELECT status, evidence_status, public_key FROM nodes WHERE node_id = ?",
+                (node_id,),
+            ).fetchone()
+            if (
+                current is None
+                or str(current[0]) not in {_ACTIVE_STATUS, _REVOKED_STATUS}
+                or not _report_identity_evidence_is_usable(
+                    status=str(current[0]),
+                    evidence_status=str(current[1]),
+                )
+                or str(current[2]) != record.public_key
+            ):
+                raise NodeAuthenticationError("Node report identity changed")
+            activation_pending = connection.execute(
+                "SELECT 1 FROM node_identity_key_rotations "
+                "WHERE node_id = ? AND status = 'activated' AND evidence_status = ? "
+                "AND next_public_key = ? LIMIT 1",
+                (node_id, _EVIDENCE_PENDING, record.public_key),
+            ).fetchone()
+            if activation_pending is not None:
+                raise NodeAuthenticationError(
+                    "Node identity-key activation evidence is incomplete"
+                )
+            try:
+                connection.execute(
+                    "INSERT INTO mission_report_nonces (node_id, nonce, accepted_at) "
+                    "VALUES (?, ?, ?)",
+                    (node_id, nonce, effective_now.isoformat()),
+                )
+            except sqlite3.IntegrityError as exc:
+                raise NodeAuthenticationError("replayed mission report nonce") from exc
+            connection.execute("SAVEPOINT mission_report_receipt_stage")
+            try:
+                authenticated_result = on_authenticated(
+                    connection,
+                    record,
+                    verified_key_id,
+                )
+            except Exception:
+                connection.execute("ROLLBACK TO mission_report_receipt_stage")
+                connection.execute("RELEASE mission_report_receipt_stage")
+                connection.commit()
+                raise
+            connection.execute("RELEASE mission_report_receipt_stage")
+            connection.commit()
+        return record, verified_key_id, authenticated_result
+
     def issue_identity_rotation_challenge(
         self,
         node_id: str,
@@ -1060,6 +1157,20 @@ def canonical_signature_message(
 def node_identity_key_id(public_key: str) -> str:
     _decode_public_key(public_key)
     return sha256_digest(public_key)
+
+
+def _report_identity_evidence_is_usable(
+    *,
+    status: str,
+    evidence_status: str,
+) -> bool:
+    return (
+        status == _ACTIVE_STATUS
+        and evidence_status in {_EVIDENCE_PENDING, _EVIDENCE_COMPLETE}
+    ) or (
+        status == _REVOKED_STATUS
+        and evidence_status in {_EVIDENCE_PENDING, _EVIDENCE_COMPLETE}
+    )
 
 
 def canonical_identity_rotation_proof_message(

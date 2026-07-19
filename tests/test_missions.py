@@ -26,8 +26,10 @@ from ithildin_api.missions import (
     MissionRecord,
     MissionRunnerReportPayload,
     MissionStore,
+    mission_transition_audit_metadata,
 )
 from ithildin_api.promotion_authority import AdminPrincipalContext
+from ithildin_schemas import JsonObject
 from pydantic import ValidationError
 
 SHA_A = "sha256:" + ("a" * 64)
@@ -238,9 +240,36 @@ def test_queued_cancellation_is_staged_audited_and_idempotent(tmp_path: Path) ->
     assert replay.idempotent_replay is True
     assert replay.transition.transition_id == staged.transition.transition_id
 
+    cancellation_event_id = "evt_" + ("2" * 32)
+    with sqlite3.connect(store.db_path) as connection:
+        connection.execute(
+            "CREATE TABLE audit_events (event_id TEXT PRIMARY KEY, payload_json TEXT NOT NULL)"
+        )
+        connection.execute(
+            "INSERT INTO audit_events (event_id, payload_json) VALUES (?, ?)",
+            (
+                cancellation_event_id,
+                json.dumps(
+                    {
+                        "event_id": cancellation_event_id,
+                        "event_hash": SHA_B,
+                        "event_type": "mission.cancellation.staged",
+                        "input_hash": staged.transition.request_digest,
+                        "metadata": mission_transition_audit_metadata(
+                            staged.transition,
+                            staged.mission,
+                        ),
+                    },
+                    sort_keys=True,
+                    separators=(",", ":"),
+                ),
+            ),
+        )
+        connection.commit()
+
     canceled = store.finalize_cancellation(
         staged.transition.transition_id,
-        audit_event_id="evt_" + ("2" * 32),
+        audit_event_id=cancellation_event_id,
         audit_event_hash=SHA_B,
     )
     assert canceled.lifecycle_state == "canceled"
@@ -526,6 +555,72 @@ def test_claim_expiry_rejects_tampered_claim_row_without_lifecycle_effects(
             "SELECT count(*) FROM mission_transition_attempts "
             "WHERE transition_kind = 'claim_expiry_pending_evidence'"
         ).fetchone() == (0,)
+
+
+def test_report_at_claim_deadline_is_staged_for_quarantine(tmp_path: Path) -> None:
+    store = _store(tmp_path)
+    now = datetime(2026, 7, 18, 12, 0, tzinfo=UTC)
+    admission = store.stage_admission(
+        _payload(requested_timeout_seconds=60),
+        authority=_authority(),
+        now=now,
+    )
+    mission = store.finalize_admission(
+        admission.transition.transition_id,
+        audit_event_id="evt_" + ("1" * 32),
+        audit_event_hash=SHA_A,
+        now=now,
+    )
+    claim_authority = _claim_authority(mission)
+    staged_claim = store.stage_claim(
+        mission.mission_id,
+        MissionClaimRequestPayload(protocol_version="1"),
+        authority=claim_authority,
+        now=now,
+    )
+    claim = store.finalize_claim(
+        staged_claim.transition.transition_id,
+        audit_event_id="evt_" + ("2" * 32),
+        audit_event_hash=SHA_B,
+        authority_precondition=lambda: claim_authority,
+        now=now,
+    )
+    report = MissionRunnerReportPayload(
+        mission_id=mission.mission_id,
+        claim_id=claim.claim_id,
+        envelope_digest=mission.envelope_digest,
+        expected_lifecycle_revision=2,
+        report_id="mreport_" + ("a" * 32),
+        report_kind="runner_running",
+        outcome_code="started",
+        reason_code=None,
+        artifact_digest=None,
+    )
+    posture: JsonObject = {
+        "node_status": "enrolled",
+        "node_evidence_status": "complete",
+        "verified_node_identity_key_id": SHA_B,
+        "current_node_identity_key_id": SHA_B,
+        "state": "eligible",
+        "reason_code": "ready_read_only",
+    }
+    with sqlite3.connect(tmp_path / "ithildin.sqlite3") as connection:
+        connection.execute("PRAGMA foreign_keys = ON")
+        connection.execute("BEGIN IMMEDIATE")
+        staged_report = store.stage_authenticated_report_receipt(
+            connection,
+            report,
+            node_id=NODE_ID,
+            verified_node_identity_key_id=SHA_B,
+            receipt_posture=posture,
+            authority_eligible=True,
+            now=now + timedelta(seconds=60),
+        )
+        connection.commit()
+
+    assert staged_report.receipt.receipt_posture["proposed_disposition"] == "quarantined"
+    assert store.get(mission.mission_id).lifecycle_state == MISSION_CLAIMED
+    assert store.get_report_transition(report.report_id) is None
 
 
 def test_tampered_blocking_claim_node_cannot_enable_second_claim(tmp_path: Path) -> None:

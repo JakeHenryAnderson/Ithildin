@@ -67,14 +67,17 @@ from ithildin_api.mission_claims import (
     MissionClaimService,
     MissionClaimUnavailableError,
 )
+from ithildin_api.mission_reports import MissionReportError, MissionReportService
 from ithildin_api.mission_templates import MissionTemplateRegistry
 from ithildin_api.missions import (
     MissionAdmissionPayload,
     MissionCancellationPayload,
     MissionClaimRequestPayload,
     MissionConflictError,
+    MissionControlPollPayload,
     MissionError,
     MissionNotFoundError,
+    MissionRunnerReportPayload,
     MissionStore,
 )
 from ithildin_api.node_configuration import (
@@ -296,7 +299,7 @@ def create_app(
                 manifest_lock_path=resolved_settings.manifest_lock_path,
                 verified_manifest_lock_digest=startup_manifest_lock_digest,
             )
-            app_instance.state.mission_claim_service = MissionClaimService(
+            mission_claim_service = MissionClaimService(
                 mission_store=mission_store,
                 node_store=node_store,
                 node_configuration_store=node_configuration_store,
@@ -309,6 +312,13 @@ def create_app(
                 node_stale_after_seconds=resolved_settings.node_stale_after_seconds,
                 manifest_lock_path=resolved_settings.manifest_lock_path,
                 verified_manifest_lock_digest=startup_manifest_lock_digest,
+            )
+            app_instance.state.mission_claim_service = mission_claim_service
+            app_instance.state.mission_report_service = MissionReportService(
+                mission_store=mission_store,
+                node_store=node_store,
+                mission_claim_service=mission_claim_service,
+                audit_writer=audit_writer,
             )
             http_fetch_executor = HttpFetchExecutor.from_settings(
                 http_allowlist=resolved_settings.http_allowlist,
@@ -839,6 +849,88 @@ def create_app(
                 detail=str(exc),
             ) from exc
         except MissionClaimError as exc:
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
+
+    @api.post("/nodes/{node_id}/mission-reports")
+    async def submit_node_mission_report(
+        node_id: str,
+        request: Request,
+    ) -> JsonObject:
+        document = await _strict_json_request_object(request)
+        try:
+            report = MissionRunnerReportPayload.model_validate(document)
+        except ValidationError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="invalid mission runner report",
+            ) from exc
+        _require_header_node(request, node_id)
+        settings_state = cast(Settings, api.state.settings)
+        node_store = cast(NodeStore, api.state.node_store)
+        report_service = cast(MissionReportService, api.state.mission_report_service)
+        body = cast(JsonObject, report.model_dump(mode="json"))
+        try:
+            node, verified_key_id, staged = node_store.authenticate_mission_report_request(
+                node_id=node_id,
+                timestamp=request.headers.get("X-Ithildin-Timestamp", ""),
+                nonce=request.headers.get("X-Ithildin-Nonce", ""),
+                signature=request.headers.get("X-Ithildin-Signature", ""),
+                body=body,
+                path=request.url.path,
+                max_clock_skew_seconds=settings_state.node_max_clock_skew_seconds,
+                on_authenticated=lambda connection, authenticated, key_id: (
+                    report_service.stage_authenticated_report(
+                        connection,
+                        report,
+                        authenticated_node=authenticated,
+                        verified_node_identity_key_id=key_id,
+                    )
+                ),
+            )
+            return report_service.accept_report(
+                report,
+                authenticated_node=node,
+                verified_node_identity_key_id=verified_key_id,
+                staged=staged,
+            )
+        except (NodeAuthenticationError, NodeNotFoundError) as exc:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(exc)) from exc
+        except (MissionReportError, MissionError) as exc:
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
+
+    @api.post("/nodes/{node_id}/mission-control")
+    async def poll_node_mission_control(
+        node_id: str,
+        request: Request,
+    ) -> JsonObject:
+        document = await _strict_json_request_object(request)
+        try:
+            payload = MissionControlPollPayload.model_validate(document)
+        except ValidationError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="invalid mission control poll",
+            ) from exc
+        _require_header_node(request, node_id)
+        settings_state = cast(Settings, api.state.settings)
+        body = cast(JsonObject, payload.model_dump(mode="json"))
+        try:
+            node = cast(NodeStore, api.state.node_store).authenticate_request(
+                node_id=node_id,
+                timestamp=request.headers.get("X-Ithildin-Timestamp", ""),
+                nonce=request.headers.get("X-Ithildin-Nonce", ""),
+                signature=request.headers.get("X-Ithildin-Signature", ""),
+                body=body,
+                path=request.url.path,
+                max_clock_skew_seconds=settings_state.node_max_clock_skew_seconds,
+            )
+            return cast(
+                MissionReportService,
+                api.state.mission_report_service,
+            ).control_decision(payload, authenticated_node=node)
+        except (NodeAuthenticationError, NodeNotFoundError) as exc:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(exc)) from exc
+        except MissionReportError as exc:
             raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
 
     @api.post("/nodes/{node_id}/identity-key-rotation/challenges")

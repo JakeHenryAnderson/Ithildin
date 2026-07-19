@@ -92,7 +92,7 @@ class MissionClaimService:
         except MissionNotFoundError as exc:
             raise MissionClaimNotFoundError("no queued mission for Node") from exc
         authenticated_key_id = node_identity_key_id(authenticated_node.public_key)
-        authority = self._claim_authority(
+        authority = self.current_claim_authority(
             mission,
             authenticated_node_id=authenticated_node.node_id,
             authenticated_key_id=authenticated_key_id,
@@ -103,7 +103,7 @@ class MissionClaimService:
                 mission.mission_id,
                 payload,
                 authority=authority,
-                authority_precondition=lambda: self._claim_authority(
+                authority_precondition=lambda: self.current_claim_authority(
                     mission,
                     authenticated_node_id=authenticated_node.node_id,
                     authenticated_key_id=authenticated_key_id,
@@ -135,7 +135,7 @@ class MissionClaimService:
                 staged.transition.transition_id,
                 audit_event_id=event.event_id,
                 audit_event_hash=event.event_hash,
-                authority_precondition=lambda: self._claim_authority(
+                authority_precondition=lambda: self.current_claim_authority(
                     mission,
                     authenticated_node_id=authenticated_node.node_id,
                     authenticated_key_id=authenticated_key_id,
@@ -202,7 +202,7 @@ class MissionClaimService:
             reconciled += 1
         return reconciled
 
-    def _claim_authority(
+    def current_claim_authority(
         self,
         mission: MissionRecord,
         *,
