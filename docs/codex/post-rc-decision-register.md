@@ -374,10 +374,13 @@ Current selected capability: `not selected`.
   authority, and fails closed on stale snapshots, missing authority epochs, or split-brain risk.
 - Current source-review evidence:
   `production-identity-storage-source-review.md` records the independent packet-and-source review
-  of commit `531bcfd87f0a42a3818bc6de73ad884cd6d090f2`, its
-  `continue_architecture_planning` disposition, zero critical/high findings, and five medium
-  `EXT-PROD-IAM-STORAGE-###` findings. The follow-up candidate repairs those findings but still
-  requires exact-commit re-review before an architecture decision record can be considered.
+  of commit `531bcfd87f0a42a3818bc6de73ad884cd6d090f2`, its five medium
+  `EXT-PROD-IAM-STORAGE-###` findings, and the exact-candidate re-review of remediation commit
+  `88f8e53cc54e599df25da6b14d465a5fb06848d7`. The re-review verified every finding fixed, found no
+  new critical/high/medium issue, and returned `continue_architecture_planning`. The normalized
+  response passed exact commit and packet-manifest binding, making both gaps
+  `ready_for_architecture_decision_record` as a review disposition only. Both registered gap states
+  remain `planning_only` until a separate bounded architecture decision record is committed.
 - Current disposition evidence:
   `production-identity-storage-disposition-packet.md` asks whether the current architecture
   evidence is coherent enough for continued planning while runtime identity and storage behavior

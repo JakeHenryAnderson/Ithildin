@@ -1,6 +1,7 @@
 # Production Identity And Storage Source Review
 
-Status: independent planning-only source review recorded for `ERG-006` and `ERG-007`.
+Status: exact-candidate planning-only source review and remediation re-review recorded for
+`ERG-006` and `ERG-007`.
 
 The independent GPT-5.6 Sol xhigh reviewer inspected commit
 `531bcfd87f0a42a3818bc6de73ad884cd6d090f2` with `packet-and-source` access on 2026-07-19. The
@@ -22,10 +23,25 @@ five medium planning or evidence-integrity findings:
 - `EXT-PROD-IAM-STORAGE-005`: the PostgreSQL transport, credential, role, encryption, backup, and
   WAL security profile was not explicit enough.
 
-This follow-up repairs those five findings in architecture and gate code. The findings may be marked
-`fixed` only for this implementation diff after focused tests pass. A fresh exact-commit independent
-review is still required before the normalized response can support
-`ready_for_architecture_decision_record`.
+The follow-up candidate at commit `88f8e53cc54e599df25da6b14d465a5fb06848d7` repaired those five
+findings in architecture and gate code. The same independent GPT-5.6 Sol xhigh reviewer then
+performed a fresh `packet-and-source` re-review of that exact clean commit and the rebuilt packet.
+The packet artifact-manifest digest was
+`sha256:bdcac6f8cbb1c5a3cec40730eccdf2cb6a3a2d1f9c0ab2a588e3f1afaf378c57`, every listed artifact
+hash matched, and the reviewer verified all five findings as `fixed` with no new critical, high, or
+medium finding.
+
+The raw transcript declared `continue_architecture_planning` on a standalone line. The generic
+normalizer bound that disposition to the full reviewed commit and exact packet-manifest digest. The
+fail-closed closure gate reported `valid: true`, `closure_ready: true`, and
+`ready_for_architecture_decision_record` for both `ERG-006` and `ERG-007`, while every implementation
+planning, runtime, identity, storage, migration, custody, claim, and new-power flag remained false.
+The ignored normalized response was removed after this committed triage record was prepared so
+ordinary release gates return to the fail-closed no-live-response state.
+
+This disposition permits the next planning step to draft a bounded post-RC architecture decision
+record. It does not itself create that record, select a runtime capability, authorize `PIS-001`, or
+move either enterprise gap out of `planning_only`.
 
 The review and this remediation do not approve implementation planning, runtime implementation,
 production IAM, enterprise RBAC, tenant/team authorization runtime behavior, remote admin, runtime
