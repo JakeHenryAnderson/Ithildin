@@ -52,15 +52,6 @@ ERG005_NEXT_AFTER_SEND_COMMANDS = [
     "make enterprise-response-now",
 ]
 
-PIS_NEXT_AFTER_SEND_COMMANDS = [
-    "make production-identity-storage-response-kit-check",
-    "make production-identity-storage-response-dry-run",
-    "make production-identity-storage-external-response-intake-check",
-    "make production-identity-storage-disposition-closure-check",
-    "make enterprise-response-waiting-room",
-    "make enterprise-response-now",
-]
-
 RESPONSE_COMMANDS = [
     "make enterprise-response-intake-refresh",
 ]
@@ -127,6 +118,14 @@ ERG005_TRUSTED_HOST_COMMANDS = [
     "make trusted-host-promotion-runtime-implementation-decision-check",
     "make trusted-host-promotion-negative-transcripts",
     "make trusted-host-promotion-runtime-source-review-bundle-check",
+    "make no-new-powers-guardrail",
+    "make tool-surface-invariant-gate",
+]
+
+PIS_001_PLANNING_COMMANDS = [
+    "make production-identity-storage-pis-001-planning-gate-check",
+    "make production-identity-storage-architecture-decision-record-check",
+    "make production-identity-storage-architecture-check",
     "make no-new-powers-guardrail",
     "make tool-surface-invariant-gate",
 ]
@@ -543,16 +542,40 @@ ERG005_TRUSTED_HOST_ARTIFACTS = [
     },
 ]
 
-PIS_ARCHITECTURE_REVIEW_ARTIFACTS = [
+PIS_001_PLANNING_ARTIFACTS = [
+    {
+        "label": "production_identity_storage_architecture_decision",
+        "path": (
+            "docs/codex/"
+            "production-identity-storage-architecture-decision-record.md"
+        ),
+        "description": "decision permitting only bounded PIS-001 planning",
+    },
+    {
+        "label": "production_identity_storage_pis_001_planning_gate",
+        "path": (
+            "docs/codex/"
+            "production-identity-storage-pis-001-planning-gate.md"
+        ),
+        "description": "fail-closed scope and done criteria for PIS-001 planning",
+    },
     {
         "label": "production_identity_storage_architecture",
         "path": "docs/codex/production-identity-storage-architecture.md",
         "description": "planning-only Phase 1 identity and storage architecture",
     },
     {
-        "label": "production_identity_storage_disposition_packet",
-        "path": "var/review-packets/v3/production-identity-storage-disposition",
-        "description": "ERG-006/ERG-007 architecture-disposition packet",
+        "label": "production_identity_storage_source_review",
+        "path": "docs/codex/production-identity-storage-source-review.md",
+        "description": "accepted exact-candidate architecture source review",
+    },
+]
+
+PIS_ARCHITECTURE_REVIEW_ARTIFACTS = [
+    {
+        "label": "production_identity_storage_architecture",
+        "path": "docs/codex/production-identity-storage-architecture.md",
+        "description": "planning-only Phase 1 identity and storage architecture",
     },
     {
         "label": "production_identity_storage_external_review_bundle",
@@ -578,21 +601,17 @@ REQUIRED_DOC_PHRASES = [
     "accepted staging-only",
     "`ERG-005` source-finding disposition",
     "make production-identity-storage-architecture-check",
-    "make production-identity-storage-disposition-packet-check",
-    "make production-identity-storage-external-review-bundle-check",
-    "make production-identity-storage-response-kit-check",
-    "make production-identity-storage-response-dry-run",
-    "make production-identity-storage-external-response-intake-check",
-    "make production-identity-storage-disposition-closure-check",
+    "make production-identity-storage-architecture-decision-record-check",
+    "make production-identity-storage-pis-001-planning-gate-check",
     "make no-new-powers-guardrail",
     "make tool-surface-invariant-gate",
     "make enterprise-review-send-refresh",
     "make handoff-dry-run",
     "make enterprise-send-now",
     "handoff_artifacts",
-    "When a real reviewer response is available for the current active `ERG-006`/`ERG-007` route",
-    "For the current active route, the primary lane is:",
-    "`ERG-006`/`ERG-007`: use the production identity/storage response kit",
+    "The architecture review and exact-candidate finding",
+    "For the current active route, the primary lane is `PIS-001`",
+    "PIS-002 remains blocked behind a separate entry decision",
     "Historical fallback lanes remain available only when the operator next-action command reports",
     "`ERG-003`: static sandbox/VM preflight disposition",
     "`ERG-002`: Mission Control display/import planning review",
@@ -657,6 +676,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     erg005_runtime_source_findings_disposition_recorded = (
         _erg005_runtime_source_findings_disposition_recorded(repo_root)
     )
+    pis_architecture_decision_recorded = _pis_architecture_decision_recorded(repo_root)
     next_action = _next_action(
         response_present_count,
         closure_ready_count,
@@ -667,6 +687,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         erg005_runtime_source_findings_disposition_recorded=(
             erg005_runtime_source_findings_disposition_recorded
         ),
+        pis_architecture_decision_recorded=pis_architecture_decision_recorded,
     )
     if next_action == "send_erg_003_and_erg_002":
         action_commands = SEND_COMMANDS
@@ -693,6 +714,13 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         handoff_artifacts = ERG005_TRUSTED_HOST_ARTIFACTS
         recommended_send_set = ["ERG-005"]
         recommended_next_enterprise_review = "ERG-005"
+    elif next_action == (
+        "execute_pis_001_threat_model_dependency_decision"
+    ):
+        action_commands = PIS_001_PLANNING_COMMANDS
+        handoff_artifacts = PIS_001_PLANNING_ARTIFACTS
+        recommended_send_set = ["ERG-006", "ERG-007"]
+        recommended_next_enterprise_review = "ERG-006/ERG-007"
     elif next_action == (
         "prepare_erg006_erg007_production_identity_storage_architecture_review"
     ):
@@ -803,12 +831,13 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "erg005_runtime_source_findings_disposition_recorded": (
             erg005_runtime_source_findings_disposition_recorded
         ),
+        "pis_architecture_decision_recorded": pis_architecture_decision_recorded,
         "next_action": next_action,
         "action_commands": action_commands,
         "next_after_send_commands": (
-            PIS_NEXT_AFTER_SEND_COMMANDS
+            PIS_001_PLANNING_COMMANDS
             if next_action
-            == "prepare_erg006_erg007_production_identity_storage_architecture_review"
+            == "execute_pis_001_threat_model_dependency_decision"
             else ERG005_NEXT_AFTER_SEND_COMMANDS
             if next_action == "prepare_erg005_trusted_host_promotion_review"
             else NEXT_AFTER_SEND_COMMANDS
@@ -872,11 +901,14 @@ def _next_action(
     runtime_gate_decision_recorded: bool,
     descriptor_only_disposition_recorded: bool,
     erg005_runtime_source_findings_disposition_recorded: bool,
+    pis_architecture_decision_recorded: bool,
 ) -> str:
     if closure_ready_count > 0:
         return "run_lane_specific_closure_playbook"
     if response_present_count > 0:
         return "run_response_intake_preflight"
+    if pis_architecture_decision_recorded:
+        return "execute_pis_001_threat_model_dependency_decision"
     if erg005_runtime_source_findings_disposition_recorded:
         return "prepare_erg006_erg007_production_identity_storage_architecture_review"
     if descriptor_only_disposition_recorded:
@@ -899,6 +931,22 @@ def _dual_response_disposition_recorded(repo_root: Path) -> bool:
         and "EXT-MC-DISPLAY-001" in text
         and "runtime importer behavior" in text
         and "live VM/container inspection" in text
+    )
+
+
+def _pis_architecture_decision_recorded(repo_root: Path) -> bool:
+    path = (
+        repo_root
+        / "docs/codex/production-identity-storage-architecture-decision-record.md"
+    )
+    text = _read(path)
+    return (
+        "`PRD-PROD-IAM-STORAGE-ARCH-001`" in text
+        and "`approved_for_pis_001_planning_only`" in text
+        and "production-identity-storage-pis-001-planning-gate.md" in text
+        and "Recorded `ERG-006` status: `planning_only`." in text
+        and "Recorded `ERG-007` status: `planning_only`." in text
+        and "Current selected runtime capability: `not selected`." in text
     )
 
 

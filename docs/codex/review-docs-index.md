@@ -451,6 +451,8 @@ externally closed.
 - [Public Positioning External Review Bundle](public-positioning-external-review-bundle.md)
 - [Public Security Product Positioning Response Kit](public-security-product-positioning-response-kit.md)
 - [Docs/Claims Public-Preview Disposition Closure Gate](docs-claims-public-preview-disposition-closure-gate.md)
+- [Production Identity And Storage Architecture Decision Record](production-identity-storage-architecture-decision-record.md)
+- [Production Identity And Storage PIS-001 Planning Gate](production-identity-storage-pis-001-planning-gate.md)
 - [Production Identity And Storage Architecture](production-identity-storage-architecture.md)
 - [Production Identity And Storage Disposition Packet](production-identity-storage-disposition-packet.md)
 - [Production Identity And Storage External Review Bundle](production-identity-storage-external-review-bundle.md)

@@ -29,26 +29,26 @@ close enterprise lanes, approve runtime behavior, or approve public/security-pro
 - `ERG-005`: staging-only trusted-host promotion runtime source findings are dispositioned for the
   bounded local-preview slice; ERG-005, placement authority, broader promotion, release, and UAT
   remain blocked.
-- Handoff readiness marker: `ERG-006`/`ERG-007`: production identity/storage architecture review is next.
+- Planning marker: the `ERG-006`/`ERG-007` architecture review and disposition are recorded; the
+  bounded `PIS-001` threat-model and dependency-decision artifact is next.
 - The descriptor-only runtime slice has both an internal source review and a high-effort internal
   proxy disposition with no findings. That is not external review and does not approve live
   VM/container runtime behavior.
 
-Validate the active planning-only ERG-006/ERG-007 architecture-review surface with:
+Validate the active planning-only PIS-001 surface with:
 
 ```sh
+make production-identity-storage-pis-001-planning-gate-check
+make production-identity-storage-architecture-decision-record-check
 make production-identity-storage-architecture-check
-make production-identity-storage-disposition-packet-check
-make production-identity-storage-external-review-bundle-check
-make production-identity-storage-response-kit-check
 make no-new-powers-guardrail
 make tool-surface-invariant-gate
 ```
 
-The accepted ERG-005 response closes only its two tracked runtime source findings. The active
-ERG-006/ERG-007 packet asks whether the existing production identity, tenancy, session, storage,
-migration, retention, recovery, and custody architecture is coherent enough for continued
-planning. It does not approve PIS implementation packages, production identity, enterprise RBAC,
+The accepted ERG-005 response closes only its two tracked runtime source findings. The exact
+ERG-006/ERG-007 architecture review fixed five medium findings and recorded a decision permitting
+only PIS-001 threat-model, non-goal, dependency-evaluation, exact-contract, and negative-test
+planning. It does not approve dependency changes, PIS-002, production identity, enterprise RBAC,
 remote administration, runtime Postgres, migrations, production Node transport, or new governed
 tool powers.
 
@@ -57,25 +57,25 @@ tool powers.
 The historical ERG-005 and dual-send artifacts remain below for lineage and response-intake
 fallback. They are not the active post-disposition route while
 `make enterprise-operator-next-action` reports
-`prepare_erg006_erg007_production_identity_storage_architecture_review`.
+`execute_pis_001_threat_model_dependency_decision`.
 
-The current recommended enterprise handoff set is:
+The current enterprise planning scope is:
 
-1. `ERG-006`/`ERG-007`: production identity and durable-storage architecture review.
+1. `PIS-001`: threat model and dependency decision under the recorded ERG-006/ERG-007 architecture
+   boundaries.
 
-Generate or refresh the active source-review artifact with:
+Execute and validate this planning scope with:
 
 ```sh
-make enterprise-send-now
-make production-identity-storage-external-review-bundle
-make production-identity-storage-response-kit
+make production-identity-storage-pis-001-planning-gate-check
+make production-identity-storage-architecture-decision-record-check
 ```
 
-The active ERG-006/ERG-007 architecture-review packet and response kit are:
+The active decision and planning gate are:
 
 ```sh
-var/review-packets/v3/production-identity-storage-external-review/
-var/review-packets/v3/production-identity-storage-response-kit/
+docs/codex/production-identity-storage-architecture-decision-record.md
+docs/codex/production-identity-storage-pis-001-planning-gate.md
 ```
 
 The bounded implementation-planning checkpoint for the next ERG-005 slice is:

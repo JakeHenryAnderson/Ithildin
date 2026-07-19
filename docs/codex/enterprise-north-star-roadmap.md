@@ -38,7 +38,7 @@ implemented surface is the local governed MCP/tool gateway, local review console
 evidence surfaces, demo/handoff packets, and bounded local-preview tools. The latest local-preview
 RC packet is generated through `make review-candidate`.
 
-Active enterprise route: `ERG-006`/`ERG-007` production identity/storage architecture review.
+Active enterprise route: `PIS-001` threat-model and dependency-decision planning under the recorded `ERG-006`/`ERG-007` architecture decision.
 
 Historical dual-send route: `ERG-003` then `ERG-002`.
 

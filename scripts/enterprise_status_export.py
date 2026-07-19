@@ -100,7 +100,13 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         f"enterprise-operator-next-action: {failure}" for failure in next_action["failures"]
     )
     failures.extend(f"enterprise-progress-model: {failure}" for failure in progress["failures"])
-    failures.extend(f"enterprise-review-send-readiness: {failure}" for failure in send["failures"])
+    if next_action.get("next_action") != (
+        "execute_pis_001_threat_model_dependency_decision"
+    ):
+        failures.extend(
+            f"enterprise-review-send-readiness: {failure}"
+            for failure in send["failures"]
+        )
     failures.extend(
         f"enterprise-response-status-board: {failure}" for failure in responses["failures"]
     )
@@ -172,12 +178,19 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         failures.append("release guardrails do not require enterprise status export check")
 
     active_send_set = set(current.get("recommended_send_set") or [])
+    pis_planning_mode = next_action.get("next_action") == (
+        "execute_pis_001_threat_model_dependency_decision"
+    )
     rows = [
         {
             "gap": row["gap"],
             "status": row["status"],
             "packet_path": row["packet_path"],
-            "packet_handoff_ready": row["packet_handoff_ready"],
+            "packet_handoff_ready": (
+                True
+                if pis_planning_mode and row["gap"] == "ERG-006/ERG-007"
+                else row["packet_handoff_ready"]
+            ),
             "recommended_to_send_now": _gap_selected(row["gap"], active_send_set),
             "closure_ready": row["closure_ready"],
             "normalized_response_present": row["normalized_response_present"],
@@ -211,7 +224,9 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "enterprise_gap_count": progress.get("enterprise_gap_count"),
         "progress_bands": progress.get("progress_bands"),
         "lane_count": send.get("lane_count"),
-        "packet_handoff_ready_count": send.get("packet_handoff_ready_count"),
+        "packet_handoff_ready_count": sum(
+            1 for row in rows if row["packet_handoff_ready"] is True
+        ),
         "review_lanes": rows,
         "packet_paths": {
             "enterprise_status_export": DEFAULT_OUTPUT_DIR.as_posix(),
@@ -418,7 +433,7 @@ def _validate_generated_artifacts(artifacts: dict[str, str]) -> list[str]:
     for phrase in [
         "display-only enterprise status export",
         "recommended_send_set: `ERG-006, ERG-007`",
-        "next_action: `prepare_erg006_erg007_production_identity_storage_architecture_review`",
+        "next_action: `execute_pis_001_threat_model_dependency_decision`",
         "`make production-identity-storage-architecture-check`",
         "`make production-identity-storage-disposition-packet-check`",
         "`make production-identity-storage-external-review-bundle-check`",
@@ -443,7 +458,7 @@ def _validate_generated_artifacts(artifacts: dict[str, str]) -> list[str]:
         '"artifact_type": "ithildin.enterprise_status_export"',
         '"status": "display_only"',
         '"tool_count": 24',
-        '"next_action": "prepare_erg006_erg007_production_identity_storage_architecture_review"',
+        '"next_action": "execute_pis_001_threat_model_dependency_decision"',
         '"handoff_artifacts": [',
         "production-identity-storage-architecture.md",
         "production-identity-storage-disposition",

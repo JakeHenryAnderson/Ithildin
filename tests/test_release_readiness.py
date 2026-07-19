@@ -191,10 +191,12 @@ from scripts import (
     post_rc_decision_record_template_check,
     post_rc_decision_register_check,
     production_identity_storage_architecture_check,
+    production_identity_storage_architecture_decision_record_check,
     production_identity_storage_disposition_closure_check,
     production_identity_storage_disposition_packet,
     production_identity_storage_external_response_intake_check,
     production_identity_storage_external_review_bundle,
+    production_identity_storage_pis_001_planning_gate_check,
     production_identity_storage_response_dry_run,
     production_identity_storage_response_kit,
     progress_check,
@@ -1347,7 +1349,7 @@ def test_artifact_freshness_and_status_now_report_current_posture() -> None:
     assert freshness["enterprise_next_action"] in {
         "prepare_erg004_descriptor_only_runtime_planning",
         "prepare_erg005_trusted_host_promotion_review",
-        "prepare_erg006_erg007_production_identity_storage_architecture_review",
+        "execute_pis_001_threat_model_dependency_decision",
     }
     assert set(freshness["checks"]) >= {
         "enterprise_send_artifact_commits_match_current",
@@ -1376,7 +1378,7 @@ def test_artifact_freshness_and_status_now_report_current_posture() -> None:
     assert status["mission_control_execution_allowed"] is False
     assert status["public_security_product_positioning_allowed"] is False
     assert status["enterprise_next_action"] == (
-        "prepare_erg006_erg007_production_identity_storage_architecture_review"
+        "execute_pis_001_threat_model_dependency_decision"
     )
     if freshness["valid"]:
         assert freshness["enterprise_next_action"] == status["enterprise_next_action"]
@@ -1654,7 +1656,7 @@ def test_v1_rc_roadmap_is_wired(tmp_path: Path) -> None:
     assert "compose_demo_ready" in rendered_trial_record
     assert "docker_daemon_status" in rendered_trial_record
     assert operator_trial_record_report["enterprise_review_state"]["next_action"] == (
-        "prepare_erg006_erg007_production_identity_storage_architecture_review"
+        "execute_pis_001_threat_model_dependency_decision"
     )
     assert operator_trial_record_report["enterprise_review_state"][
         "recommended_send_set"
@@ -2080,15 +2082,17 @@ def test_v1_rc_packet_includes_current_artifact_map(tmp_path: Path) -> None:
     assert "validation decision summary" in trial_record
     assert "Enterprise Review State" in trial_record
     assert (
-        "- next_action: `prepare_erg006_erg007_production_identity_storage_architecture_review`"
+        "- next_action: `execute_pis_001_threat_model_dependency_decision`"
         in trial_record
     )
     assert "- recommended_send_set: `ERG-006`, `ERG-007`" in trial_record
     assert "- candidate_response_count: `0`" in trial_record
     assert "- placeholder_count: `1`" in trial_record
     assert "- waiting_room_next_action: `wait_for_external_response`" in trial_record
+    assert "`production_identity_storage_architecture_decision`" in trial_record
+    assert "`production_identity_storage_pis_001_planning_gate`" in trial_record
     assert "`production_identity_storage_architecture`" in trial_record
-    assert "`production_identity_storage_response_kit`" in trial_record
+    assert "`production_identity_storage_source_review`" in trial_record
     assert "Ithildin v1.0 Observed Operator Trial Evidence" in observed_trial
     assert "patch_apply_status" in observed_trial
     assert "audit_verification_valid" in observed_trial
@@ -2296,7 +2300,7 @@ def test_enterprise_readiness_gap_matrix_is_wired() -> None:
     assert report["active_send_set"] == ["ERG-006", "ERG-007"]
     assert report["recommended_next_enterprise_review"] == "ERG-006/ERG-007"
     assert report["next_action"] == (
-        "prepare_erg006_erg007_production_identity_storage_architecture_review"
+        "execute_pis_001_threat_model_dependency_decision"
     )
     assert report["historical_fallback_route"] == ["ERG-003", "ERG-002"]
     assert report["runtime_changes_allowed"] is False
@@ -2335,10 +2339,10 @@ def test_enterprise_readiness_gap_matrix_is_wired() -> None:
         "Allowed current claims",
         "Blocked current claims",
         "Mission Control outside execution, policy, approval, audit authority",
-        "Current active route: `ERG-006`/`ERG-007` production identity/storage "
-        "architecture review.",
+            "Current active route: bounded `PIS-001` threat-model and dependency-decision "
+            "planning under the recorded `ERG-006`/`ERG-007` architecture decision.",
         "Historical/fallback route: `ERG-003` static sandbox/VM preflight",
-        "prepare_erg006_erg007_production_identity_storage_architecture_review",
+        "execute_pis_001_threat_model_dependency_decision",
     ]:
         assert phrase in doc
     for phrase in [
@@ -2398,7 +2402,7 @@ def test_enterprise_external_review_queue_is_wired() -> None:
     assert report["recommended_next_review"] == "ERG-006/ERG-007"
     assert report["historical_recommended_review"] == "ERG-003"
     assert report["expected_action"] == (
-        "prepare_erg006_erg007_production_identity_storage_architecture_review"
+        "execute_pis_001_threat_model_dependency_decision"
     )
     assert report["runtime_changes_allowed"] is False
     assert report["mission_control_runtime_allowed"] is False
@@ -2413,10 +2417,10 @@ def test_enterprise_external_review_queue_is_wired() -> None:
         "Current governed tool count: `24`.",
         "Current selected capability: `not selected`.",
         "Active Route Versus Historical Queue",
-        "Current active route: `ERG-006`/`ERG-007` production identity/storage "
-        "architecture review.",
+            "Current active route: `PIS-001` threat-model and dependency-decision planning "
+            "under the recorded `ERG-006`/`ERG-007` architecture decision.",
         "Historical recommended review: `ERG-003` static sandbox/VM preflight disposition.",
-        "`prepare_erg006_erg007_production_identity_storage_architecture_review`",
+        "`execute_pis_001_threat_model_dependency_decision`",
         "sandbox-vm-static-preflight-disposition-packet.md",
         "mission-control-integration-readiness-packet.md",
         "trusted-host-promotion-disposition-packet.md",
@@ -2681,38 +2685,27 @@ def test_enterprise_current_checkpoint_is_wired() -> None:
     assert report["recommended_send_set"] == ["ERG-006", "ERG-007"]
     assert report["recommended_next_enterprise_review"] == "ERG-006/ERG-007"
     assert report["next_action"] == (
-        "prepare_erg006_erg007_production_identity_storage_architecture_review"
+        "execute_pis_001_threat_model_dependency_decision"
     )
     assert report["action_commands"] == [
+        "make production-identity-storage-pis-001-planning-gate-check",
+        "make production-identity-storage-architecture-decision-record-check",
         "make production-identity-storage-architecture-check",
-        "make production-identity-storage-disposition-packet-check",
-        "make production-identity-storage-external-review-bundle-check",
-        "make production-identity-storage-response-kit-check",
-        "make production-identity-storage-response-dry-run",
-        "make production-identity-storage-external-response-intake-check",
-        "make production-identity-storage-disposition-closure-check",
         "make no-new-powers-guardrail",
         "make tool-surface-invariant-gate",
     ]
-    assert report["next_after_send_commands"] == [
-        "make production-identity-storage-response-kit-check",
-        "make production-identity-storage-response-dry-run",
-        "make production-identity-storage-external-response-intake-check",
-        "make production-identity-storage-disposition-closure-check",
-        "make enterprise-response-waiting-room",
-        "make enterprise-response-now",
-    ]
+    assert report["next_after_send_commands"] == report["action_commands"]
     assert [artifact["label"] for artifact in report["handoff_artifacts"]] == [
+        "production_identity_storage_architecture_decision",
+        "production_identity_storage_pis_001_planning_gate",
         "production_identity_storage_architecture",
-        "production_identity_storage_disposition_packet",
-        "production_identity_storage_external_review_bundle",
-        "production_identity_storage_response_kit",
-        ]
+        "production_identity_storage_source_review",
+    ]
     assert {artifact["path"] for artifact in report["handoff_artifacts"]} == {
+        "docs/codex/production-identity-storage-architecture-decision-record.md",
+        "docs/codex/production-identity-storage-pis-001-planning-gate.md",
         "docs/codex/production-identity-storage-architecture.md",
-        "var/review-packets/v3/production-identity-storage-disposition",
-        "var/review-packets/v3/production-identity-storage-external-review",
-        "var/review-packets/v3/production-identity-storage-response-kit",
+        "docs/codex/production-identity-storage-source-review.md",
     }
     assert report["operator_next_action_doc"] == (
         "docs/codex/enterprise-operator-next-action.md"
@@ -2737,11 +2730,11 @@ def test_enterprise_current_checkpoint_is_wired() -> None:
         "`ERG-004`: descriptor-only sandbox/VM live POC runtime source review "
         "is locally dispositioned",
         "`ERG-005`: staging-only trusted-host promotion runtime source findings are dispositioned",
-        "`ERG-006`/`ERG-007`: production identity/storage architecture review is next",
+        "the `ERG-006`/`ERG-007` architecture review and disposition are recorded",
+        "bounded `PIS-001` threat-model and dependency-decision artifact is next",
+        "make production-identity-storage-pis-001-planning-gate-check",
+        "make production-identity-storage-architecture-decision-record-check",
         "make production-identity-storage-architecture-check",
-        "make production-identity-storage-external-review-bundle-check",
-        "make production-identity-storage-response-kit-check",
-        "make production-identity-storage-disposition-closure-check",
         "The historical ERG-003/ERG-002 dual-send commands remain available only for "
         "lineage and fallback.",
         "What This Checkpoint Does Not Approve",
@@ -2780,10 +2773,10 @@ def test_enterprise_progress_model_is_wired() -> None:
     assert report["recommended_send_set"] == ["ERG-006", "ERG-007"]
     assert report["recommended_next_enterprise_review"] == "ERG-006/ERG-007"
     assert [artifact["label"] for artifact in report["handoff_artifacts"]] == [
+        "production_identity_storage_architecture_decision",
+        "production_identity_storage_pis_001_planning_gate",
         "production_identity_storage_architecture",
-        "production_identity_storage_disposition_packet",
-        "production_identity_storage_external_review_bundle",
-        "production_identity_storage_response_kit",
+        "production_identity_storage_source_review",
     ]
     assert report["response_present_count"] == 0
     assert report["closure_ready_count"] == 0
@@ -3082,14 +3075,19 @@ def test_enterprise_status_export_is_wired(tmp_path: Path) -> None:
         "Enterprise Status Export",
         "display-only enterprise status export",
         "recommended_send_set: `ERG-006, ERG-007`",
-        "next_action: `prepare_erg006_erg007_production_identity_storage_architecture_review`",
+        "next_action: `execute_pis_001_threat_model_dependency_decision`",
+        "`make production-identity-storage-pis-001-planning-gate-check`",
+        "`make production-identity-storage-architecture-decision-record-check`",
         "`make production-identity-storage-architecture-check`",
-        "`make production-identity-storage-response-kit-check`",
         "handoff_artifacts:",
+        "`production_identity_storage_architecture_decision`: "
+        "`docs/codex/production-identity-storage-architecture-decision-record.md`",
+        "`production_identity_storage_pis_001_planning_gate`: "
+        "`docs/codex/production-identity-storage-pis-001-planning-gate.md`",
         "`production_identity_storage_architecture`: "
         "`docs/codex/production-identity-storage-architecture.md`",
-        "`production_identity_storage_response_kit`: "
-        "`var/review-packets/v3/production-identity-storage-response-kit`",
+        "`production_identity_storage_source_review`: "
+        "`docs/codex/production-identity-storage-source-review.md`",
         "## Packet Paths",
         "`enterprise_review_send_package`: `var/review-packets/v3/enterprise-review-send-package`",
         "`enterprise_review_send_session_record`: "
@@ -3103,18 +3101,20 @@ def test_enterprise_status_export_is_wired(tmp_path: Path) -> None:
         '"artifact_type": "ithildin.enterprise_status_export"',
         '"status": "display_only"',
         '"tool_count": 24',
-        '"next_action": "prepare_erg006_erg007_production_identity_storage_architecture_review"',
-        '"handoff_artifacts": [',
-        '"label": "production_identity_storage_architecture"',
-        '"label": "production_identity_storage_response_kit"',
+            '"next_action": "execute_pis_001_threat_model_dependency_decision"',
+            '"handoff_artifacts": [',
+            '"label": "production_identity_storage_architecture_decision"',
+            '"label": "production_identity_storage_pis_001_planning_gate"',
+            '"label": "production_identity_storage_architecture"',
+            '"label": "production_identity_storage_source_review"',
         '"enterprise_review_send_quickstart": '
         '"var/review-packets/v3/enterprise-review-send-quickstart"',
         '"enterprise_review_send_package": '
         '"var/review-packets/v3/enterprise-review-send-package"',
         '"enterprise_review_send_session_record": '
         '"var/review-runs/enterprise-review-send-session-record"',
-        '"make production-identity-storage-architecture-check"',
-        '"make production-identity-storage-response-kit-check"',
+            '"make production-identity-storage-architecture-check"',
+            '"make production-identity-storage-pis-001-planning-gate-check"',
         '"runtime_changes_allowed": false',
         '"new_power_classes_allowed": false',
     ]:
@@ -3610,8 +3610,8 @@ def test_enterprise_response_application_protocol_is_wired() -> None:
     for phrase in [
         "Status: checked operator protocol for applying enterprise external-review responses.",
         "make enterprise-response-application-protocol",
-        "Active enterprise route: `ERG-006`/`ERG-007` production identity/storage "
-        "architecture review.",
+        "Active enterprise route: `PIS-001` threat-model and dependency-decision planning "
+        "under the recorded `ERG-006`/`ERG-007` architecture decision.",
         "Historical dual-response route: `ERG-003` then `ERG-002`.",
         "make enterprise-dual-response-inbox",
         "var/review-runs/enterprise-dual-response-inbox/ENTERPRISE_DUAL_RESPONSE_CHEATSHEET.md",
@@ -6281,7 +6281,7 @@ def test_enterprise_review_send_preflight_is_wired() -> None:
     assert report["selected_capability"] == "not selected"
     assert report["current_send_set"] == ["ERG-006", "ERG-007"]
     assert report["expected_action"] == (
-        "prepare_erg006_erg007_production_identity_storage_architecture_review"
+        "execute_pis_001_threat_model_dependency_decision"
     )
     assert report["preflight_mode"] == "post_disposition_next_review"
     assert report["current_commit"]
@@ -6289,7 +6289,6 @@ def test_enterprise_review_send_preflight_is_wired() -> None:
     assert report["response_present_count"] == 0
     assert report["closure_ready_count"] == 0
     assert report["component_validity"] == {
-        "dual_response_readiness": True,
         "operator_next_action": True,
         "response_status_board": True,
     }
@@ -6330,15 +6329,12 @@ def test_enterprise_review_send_preflight_is_wired() -> None:
         "Status: checked final operator preflight for the current enterprise review send.",
         "make enterprise-review-send-preflight",
         "make enterprise-review-send-refresh",
-        "current send set: `ERG-006`/`ERG-007`",
-        "production-identity-storage-external-review",
-        "production-identity-storage-response-kit",
+        "current gap scope: `ERG-006`/`ERG-007`",
+        "production-identity-storage-architecture-decision-record.md",
+        "production-identity-storage-pis-001-planning-gate.md",
         "EXT-PROD-IAM-STORAGE-###",
-        "make production-identity-storage-external-review-bundle-check",
-        "make production-identity-storage-response-kit-check",
-        "make enterprise-send-now",
-        "make production-identity-storage-response-dry-run",
-        "make production-identity-storage-disposition-closure-check",
+        "make production-identity-storage-pis-001-planning-gate-check",
+        "make production-identity-storage-architecture-decision-record-check",
         "For speed, the preflight does not recursively rebuild every component.",
         "When the worktree is clean, the preflight also enforces",
         "When the worktree is dirty during development, that freshness check",
@@ -6507,32 +6503,21 @@ def test_enterprise_operator_next_action_is_wired() -> None:
     assert report["response_present_count"] == 0
     assert report["closure_ready_count"] == 0
     assert report["next_action"] == (
-        "prepare_erg006_erg007_production_identity_storage_architecture_review"
+        "execute_pis_001_threat_model_dependency_decision"
     )
     assert report["action_commands"] == [
+        "make production-identity-storage-pis-001-planning-gate-check",
+        "make production-identity-storage-architecture-decision-record-check",
         "make production-identity-storage-architecture-check",
-        "make production-identity-storage-disposition-packet-check",
-        "make production-identity-storage-external-review-bundle-check",
-        "make production-identity-storage-response-kit-check",
-        "make production-identity-storage-response-dry-run",
-        "make production-identity-storage-external-response-intake-check",
-        "make production-identity-storage-disposition-closure-check",
         "make no-new-powers-guardrail",
         "make tool-surface-invariant-gate",
     ]
-    assert report["next_after_send_commands"] == [
-        "make production-identity-storage-response-kit-check",
-        "make production-identity-storage-response-dry-run",
-        "make production-identity-storage-external-response-intake-check",
-        "make production-identity-storage-disposition-closure-check",
-        "make enterprise-response-waiting-room",
-        "make enterprise-response-now",
-    ]
+    assert report["next_after_send_commands"] == report["action_commands"]
     assert [artifact["label"] for artifact in report["handoff_artifacts"]] == [
+        "production_identity_storage_architecture_decision",
+        "production_identity_storage_pis_001_planning_gate",
         "production_identity_storage_architecture",
-        "production_identity_storage_disposition_packet",
-        "production_identity_storage_external_review_bundle",
-        "production_identity_storage_response_kit",
+        "production_identity_storage_source_review",
     ]
     assert any(
         artifact["path"] == "docs/codex/production-identity-storage-architecture.md"
@@ -6540,10 +6525,11 @@ def test_enterprise_operator_next_action_is_wired() -> None:
     )
     assert any(
         artifact["path"]
-        == "var/review-packets/v3/production-identity-storage-response-kit"
+        == "docs/codex/production-identity-storage-pis-001-planning-gate.md"
         for artifact in report["handoff_artifacts"]
     )
     assert report["erg005_runtime_source_findings_disposition_recorded"] is True
+    assert report["pis_architecture_decision_recorded"] is True
     assert report["normalized_response_paths"] == []
     assert report["runtime_changes_allowed"] is False
     assert report["mission_control_runtime_allowed"] is False
@@ -6564,11 +6550,12 @@ def test_enterprise_operator_next_action_is_wired() -> None:
         "make handoff-dry-run",
         "handoff_artifacts",
         "var/review-packets/v3/enterprise-review-send-manifest",
-        "When a real reviewer response is available for the current active "
-        "`ERG-006`/`ERG-007` route",
+        "The current `PIS-001` planning route does not require a new reviewer response",
+        "make production-identity-storage-pis-001-planning-gate-check",
+        "make production-identity-storage-architecture-decision-record-check",
         "make production-identity-storage-response-kit-check",
         "make production-identity-storage-disposition-closure-check",
-        "For the current active route, the primary lane is:",
+        "For the current active route, the primary lane is `PIS-001`",
         "`ERG-006`/`ERG-007`: use the production identity/storage response kit",
         (
             "Historical fallback lanes remain available only when the operator next-action "
@@ -8234,6 +8221,130 @@ def test_docs_claims_public_preview_disposition_closure_gate_is_wired() -> None:
     assert "docs-claims-public-preview-disposition-closure-gate.md" in assurance
 
 
+def test_production_identity_storage_architecture_decision_record_is_wired() -> None:
+    report = production_identity_storage_architecture_decision_record_check.build_report(
+        Path.cwd()
+    )
+    doc_rel = (
+        "docs/codex/production-identity-storage-architecture-decision-record.md"
+    )
+    doc = Path(doc_rel).read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(
+        encoding="utf-8"
+    )
+
+    assert report["valid"] is True
+    assert report["decision_id"] == "PRD-PROD-IAM-STORAGE-ARCH-001"
+    assert report["decision_status"] == "approved_for_pis_001_planning_only"
+    assert report["reviewed_commit"] == (
+        "88f8e53cc54e599df25da6b14d465a5fb06848d7"
+    )
+    assert report["finding_count"] == 5
+    assert report["tool_count"] == 24
+    assert report["erg_006_status"] == "planning_only"
+    assert report["erg_007_status"] == "planning_only"
+    assert report["pis_001_planning_allowed"] is True
+    assert report["dependency_changes_allowed"] is False
+    assert report["pis_002_planning_allowed"] is False
+    assert report["runtime_changes_allowed"] is False
+    assert report["production_identity_allowed"] is False
+    assert report["runtime_postgres_allowed"] is False
+    assert report["database_migrations_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    assert report["uat_required_now"] is False
+    assert "Approved `PIS-001` Scope" not in doc
+    assert "Allowed `PIS-001` Scope" in doc
+    assert "Explicitly Forbidden Scope" in doc
+    assert "approved_for_pis_001_planning_only" in doc
+    assert (
+        "production-identity-storage-architecture-decision-record-check:" in makefile
+    )
+    assert (
+        "release-check: production-identity-storage-architecture-decision-record-check"
+        in makefile
+    )
+    assert (
+        "make production-identity-storage-architecture-decision-record-check"
+        in readme
+    )
+    assert doc_rel in docs_site
+    assert doc_rel in review_docs.REVIEW_DOCS
+    assert "Production Identity And Storage Architecture Decision Record" in review_index
+    assert (
+        "production-identity-storage-architecture-decision-record-check"
+        in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+
+
+def test_production_identity_storage_architecture_decision_record_rejects_authority() -> None:
+    failures = (
+        production_identity_storage_architecture_decision_record_check.validate_decision_text(
+            "Production identity is approved."
+        )
+    )
+
+    assert any("forbidden phrase: production identity is approved" in item for item in failures)
+
+
+def test_production_identity_storage_pis_001_planning_gate_is_wired() -> None:
+    report = production_identity_storage_pis_001_planning_gate_check.build_report(
+        Path.cwd()
+    )
+    doc_rel = "docs/codex/production-identity-storage-pis-001-planning-gate.md"
+    doc = Path(doc_rel).read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(
+        encoding="utf-8"
+    )
+
+    assert report["valid"] is True
+    assert report["work_package"] == "PIS-001"
+    assert report["parent_decision"] == "PRD-PROD-IAM-STORAGE-ARCH-001"
+    assert report["status"] == "ready_for_bounded_planning_execution"
+    assert report["tool_count"] == 24
+    assert report["erg_006_status"] == "planning_only"
+    assert report["erg_007_status"] == "planning_only"
+    assert report["pis_001_planning_allowed"] is True
+    assert report["pis_001_complete"] is False
+    assert report["dependency_changes_allowed"] is False
+    assert report["pis_002_allowed"] is False
+    assert report["runtime_changes_allowed"] is False
+    assert report["production_identity_allowed"] is False
+    assert report["runtime_postgres_allowed"] is False
+    assert report["database_migrations_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    assert report["uat_required_now"] is False
+    assert "Allowed Work" in doc
+    assert "Forbidden Work" in doc
+    assert "PIS-002 remains blocked behind a separate entry decision" in doc
+    assert "production-identity-storage-pis-001-planning-gate-check:" in makefile
+    assert (
+        "release-check: production-identity-storage-pis-001-planning-gate-check"
+        in makefile
+    )
+    assert "make production-identity-storage-pis-001-planning-gate-check" in readme
+    assert doc_rel in docs_site
+    assert doc_rel in review_docs.REVIEW_DOCS
+    assert "Production Identity And Storage PIS-001 Planning Gate" in review_index
+    assert (
+        "production-identity-storage-pis-001-planning-gate-check"
+        in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+
+
+def test_production_identity_storage_pis_001_planning_gate_rejects_authority() -> None:
+    failures = production_identity_storage_pis_001_planning_gate_check.validate_gate_text(
+        "PIS-002 is approved."
+    )
+
+    assert any("forbidden phrase: pis-002 is approved" in item for item in failures)
+
+
 def test_production_identity_storage_architecture_is_wired() -> None:
     report = production_identity_storage_architecture_check.build_report(Path.cwd())
     doc = Path("docs/codex/production-identity-storage-architecture.md").read_text(
@@ -8306,7 +8417,7 @@ def test_production_identity_storage_architecture_is_wired() -> None:
         "Evidence Contract",
         "Required Before Implementation",
         "external architecture review",
-        "The current decision is `planning_only`.",
+        "The current enterprise-gap state remains `planning_only`.",
         "Planning Status Axes",
         "Runtime implementation remains blocked",
     ]:
@@ -30883,7 +30994,7 @@ def test_enterprise_active_route_clarity_is_wired() -> None:
     assert report["active_send_set"] == ["ERG-006", "ERG-007"]
     assert report["historical_dual_send_set"] == ["ERG-003", "ERG-002"]
     assert report["expected_action"] == (
-        "prepare_erg006_erg007_production_identity_storage_architecture_review"
+        "execute_pis_001_threat_model_dependency_decision"
     )
     assert report["active_route_sources"][0] == (
         "enterprise-operator-next-action (canonical state reader)"
@@ -30899,8 +31010,8 @@ def test_enterprise_active_route_clarity_is_wired() -> None:
 
     for phrase in [
         "The completed source-finding disposition route is `ERG-005`.",
-        "var/review-packets/v3/production-identity-storage-external-review/",
-        "var/review-packets/v3/production-identity-storage-response-kit/",
+        "docs/codex/production-identity-storage-architecture-decision-record.md",
+        "docs/codex/production-identity-storage-pis-001-planning-gate.md",
         "EXT-PROD-IAM-STORAGE-###",
         "EXT-LIVE-DESC-###",
         "Historical dual-send route: `ERG-003`, then `ERG-002`.",
@@ -35858,7 +35969,7 @@ def test_technical_mvp_ticket_map_is_wired() -> None:
     assert report["latest_implemented_tool"] == "sandbox.artifact.write_text"
     assert report["recommended_next_enterprise_review"] == "ERG-006/ERG-007"
     assert report["next_action"] == (
-        "prepare_erg006_erg007_production_identity_storage_architecture_review"
+        "execute_pis_001_threat_model_dependency_decision"
     )
     assert report["response_present_count"] == 0
     assert report["capability_expansion_allowed"] is False
@@ -35915,7 +36026,7 @@ def test_technical_mvp_execution_board_is_wired() -> None:
     assert report["selected_capability"] == "not selected"
     assert report["technical_mvp_state"] == "operator_trial_observed"
     assert report["enterprise_next_action"] == (
-        "prepare_erg006_erg007_production_identity_storage_architecture_review"
+        "execute_pis_001_threat_model_dependency_decision"
     )
     assert report["active_resume_checkpoint"] == "ENT-001"
     assert report["response_present_count"] == 0
@@ -35964,37 +36075,38 @@ def test_technical_mvp_execution_board_is_wired() -> None:
         "Current governed tool count: `24`",
         "Technical MVP state: `operator_trial_observed`",
         "Current enterprise next action: "
-        "`prepare_erg006_erg007_production_identity_storage_architecture_review`",
+        "`execute_pis_001_threat_model_dependency_decision`",
         "Active resume checkpoint: `ENT-001`",
         (
-            "The paused umbrella goal resumes through the post-`ENT-001` "
-            "production identity/storage architecture"
+            "The paused umbrella goal resumes through the bounded `PIS-001` threat-model and "
+            "dependency-decision planning slice only"
         ),
         "Development Validation Ladder",
         "Stop Conditions",
     ]:
-        assert phrase in technical_doc
+        assert " ".join(phrase.split()) in " ".join(technical_doc.split())
     for phrase in [
         "Status: checked enterprise roadmap control board",
         "Current send set: `ERG-006`, `ERG-007`",
         "Active resume checkpoint: `ENT-001`",
-        "The current resumed goal is limited to post-`ENT-001` production identity/storage "
-        "architecture review",
+        "The current resumed goal is limited to post-`ENT-001` bounded `PIS-001` threat-model and "
+        "dependency-decision planning",
         "Enterprise Target Definition",
         "Non-Negotiable Gates",
     ]:
-        assert phrase in enterprise_doc
+        assert " ".join(phrase.split()) in " ".join(enterprise_doc.split())
     for phrase in [
         "Status: checked batch validation strategy",
         "Tier 1: inner loop",
         "Tier 2: batch checkpoint",
         "Tier 3: handoff freeze",
-        "`ERG-006`/`ERG-007` production identity/storage architecture review | "
+        "`PIS-001` threat-model and dependency-decision planning under the recorded "
+        "`ERG-006`/`ERG-007` architecture decision | "
         "active resume checkpoint",
         "Safe Batch Shapes",
         "Unsafe Batch Shapes",
     ]:
-        assert phrase in batch_doc
+        assert " ".join(phrase.split()) in " ".join(batch_doc.split())
 
 
 def test_observed_operator_trial_report_can_be_built_without_artifacts(
@@ -36049,7 +36161,7 @@ def test_technical_mvp_operator_trial_readiness_is_wired() -> None:
         assert report["observed_trial"]["patch_apply_status"] == "completed"
         assert report["observed_trial"]["audit_verification_valid"] == "true"
     assert report["enterprise_next_action"] == (
-        "prepare_erg006_erg007_production_identity_storage_architecture_review"
+        "execute_pis_001_threat_model_dependency_decision"
     )
     assert report["response_present_count"] == 0
     assert report["runtime_changes_allowed"] is False
@@ -36117,7 +36229,7 @@ def test_development_efficiency_status_is_wired() -> None:
     assert isinstance(report["operator_trial_ready"], bool)
     assert isinstance(report["operator_trial_observed"], bool)
     assert report["enterprise_next_action"] == (
-        "prepare_erg006_erg007_production_identity_storage_architecture_review"
+        "execute_pis_001_threat_model_dependency_decision"
     )
     assert isinstance(report["enterprise_send_ready"], bool)
     assert isinstance(report["enterprise_send_artifact_commits_match_current"], bool)

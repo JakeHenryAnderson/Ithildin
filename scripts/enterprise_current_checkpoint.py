@@ -28,7 +28,7 @@ POST_DISPOSITION_ACTION = "prepare_erg004_runtime_implementation_gate"
 DESCRIPTOR_ONLY_PLANNING_ACTION = "prepare_erg004_descriptor_only_runtime_planning"
 ERG005_TRUSTED_HOST_ACTION = "prepare_erg005_trusted_host_promotion_review"
 PIS_ARCHITECTURE_REVIEW_ACTION = (
-    "prepare_erg006_erg007_production_identity_storage_architecture_review"
+    "execute_pis_001_threat_model_dependency_decision"
 )
 ALLOWED_NEXT_ACTIONS = {
     PRE_DISPOSITION_ACTION,
@@ -50,11 +50,11 @@ REQUIRED_PHRASES = [
     "Enterprise response evidence is not present yet",
     "`ERG-004`: descriptor-only sandbox/VM live POC runtime source review is locally dispositioned",
     "`ERG-005`: staging-only trusted-host promotion runtime source findings are dispositioned",
-    "`ERG-006`/`ERG-007`: production identity/storage architecture review is next",
+    "the `ERG-006`/`ERG-007` architecture review and disposition are recorded",
+    "bounded `PIS-001` threat-model and dependency-decision artifact is next",
+    "make production-identity-storage-pis-001-planning-gate-check",
+    "make production-identity-storage-architecture-decision-record-check",
     "make production-identity-storage-architecture-check",
-    "make production-identity-storage-disposition-packet-check",
-    "make production-identity-storage-external-review-bundle-check",
-    "make production-identity-storage-response-kit-check",
     "The historical ERG-003/ERG-002 dual-send commands remain available only for "
     "lineage and fallback.",
     "What This Checkpoint Does Not Approve",
@@ -108,12 +108,16 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     response_status = enterprise_response_status_board.build_report(repo_root)
     capability = next_capability_readiness.build_report(repo_root)
     operator_next_action = enterprise_operator_next_action.build_report(repo_root)
+    pis_mode = (
+        operator_next_action.get("next_action") == PIS_ARCHITECTURE_REVIEW_ACTION
+    )
 
     failures.extend(f"v1-progress-assessment: {failure}" for failure in progress["failures"])
-    failures.extend(
-        f"enterprise-review-send-readiness: {failure}"
-        for failure in send_readiness["failures"]
-    )
+    if not pis_mode:
+        failures.extend(
+            f"enterprise-review-send-readiness: {failure}"
+            for failure in send_readiness["failures"]
+        )
     failures.extend(
         f"enterprise-response-status-board: {failure}"
         for failure in response_status["failures"]
@@ -145,7 +149,6 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     post_disposition_mode = next_action == POST_DISPOSITION_ACTION
     descriptor_only_mode = next_action == DESCRIPTOR_ONLY_PLANNING_ACTION
     erg005_mode = next_action == ERG005_TRUSTED_HOST_ACTION
-    pis_mode = next_action == PIS_ARCHITECTURE_REVIEW_ACTION
     if (
         not post_disposition_mode
         and send_readiness.get("recommended_now") != ["ERG-003", "ERG-002"]

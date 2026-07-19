@@ -11,14 +11,14 @@ Current governed tool count: `24`
 Current selected capability: `not selected`
 Latest implemented tool: `sandbox.artifact.write_text`
 Technical MVP state: `operator_trial_observed`
-Current enterprise next action: `prepare_erg006_erg007_production_identity_storage_architecture_review`
+Current enterprise next action: `execute_pis_001_threat_model_dependency_decision`
 Active resume checkpoint: `ENT-001`
 
 ## Active Resume Scope
 
-The paused umbrella goal resumes through the post-`ENT-001` production identity/storage architecture
-review slice only: use the accepted `ERG-005` source-finding disposition to move into the
-planning-only `ERG-006`/`ERG-007` architecture lane. This resume slice does not add runtime
+The paused umbrella goal resumes through the bounded `PIS-001` threat-model and dependency-decision
+planning slice only: use the recorded `ERG-006`/`ERG-007` architecture decision and planning gate
+to produce its required artifact. This resume slice does not add dependencies or runtime
 behavior, implement production identity, enable Postgres or migrations, implement Mission Control
 execution, start sandbox/VM control, promote artifacts into trusted host zones, or select a new
 runtime capability.
@@ -50,8 +50,8 @@ promotion engine, public/security-product release, or broad write platform.
 
 | Batch | Status | Subtasks | Fast gate | Escalation gate |
 | --- | --- | --- | --- | --- |
-| Prepare `ERG-006`/`ERG-007` identity/storage architecture review | active | Validate the planning-only architecture, disposition packet, external-review bundle, response kit, and fail-closed closure path while keeping production identity, enterprise RBAC, remote administration, runtime Postgres, migrations, retention enforcement, and new powers blocked. | `make production-identity-storage-architecture-check`; `make production-identity-storage-disposition-packet-check`; `make production-identity-storage-external-review-bundle-check`; `make no-new-powers-guardrail`; `make tool-surface-invariant-gate` | later architecture disposition and separate PIS-001 decision record |
-| Intake future `ERG-006`/`ERG-007` response | blocked on review response | Run the production identity/storage response dry run and closure gate before any committed triage update. | `make production-identity-storage-response-dry-run` | lane-specific closure gate |
+| Execute bounded `PIS-001` planning | active | Produce the threat model, non-goals, dependency decision, exact contract freeze, and negative-test plan while keeping dependency changes, PIS-002, production identity, enterprise RBAC, remote administration, runtime Postgres, migrations, retention enforcement, and new powers blocked. | `make production-identity-storage-pis-001-planning-gate-check`; `make production-identity-storage-architecture-decision-record-check`; `make no-new-powers-guardrail`; `make tool-surface-invariant-gate` | completed PIS-001 planning artifact and separate PIS-002 entry decision |
+| Handle contradictory future `ERG-006`/`ERG-007` response | blocked on new response | Use the historical production identity/storage response dry run and closure gate before any committed triage update. | `make production-identity-storage-response-dry-run` | lane-specific contradiction handling |
 | Track `EXT-MC-DISPLAY-001` | later advisory | Improve Mission Control launch-bundle artifact coverage before implementation, without blocking design-only continuation. | `make reviewer-findings-check` | `make review-findings-summary` |
 
 ## Development Validation Ladder

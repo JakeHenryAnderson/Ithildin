@@ -1,6 +1,6 @@
 # Enterprise Active Route Clarity
 
-Status: checked active-route clarification for the current enterprise review path.
+Status: checked active-route clarification for the current enterprise planning path.
 
 Current governed tool count: `24`.
 
@@ -16,15 +16,15 @@ make enterprise-active-route-clarity
 
 The completed source-finding disposition route is `ERG-005`.
 
-Current expected action: `prepare_erg006_erg007_production_identity_storage_architecture_review`.
+Current expected action: `execute_pis_001_threat_model_dependency_decision`.
 
-Current active packet:
-`var/review-packets/v3/production-identity-storage-external-review/`.
+Current architecture decision:
+`docs/codex/production-identity-storage-architecture-decision-record.md`.
 
-Current active send set: `ERG-006`, `ERG-007`.
+Current active gap scope: `ERG-006`, `ERG-007`; no new review send is required.
 
-Current response kit:
-`var/review-packets/v3/production-identity-storage-response-kit/`.
+Current PIS-001 planning gate:
+`docs/codex/production-identity-storage-pis-001-planning-gate.md`.
 
 Current production identity/storage finding namespace: `EXT-PROD-IAM-STORAGE-###`.
 
@@ -57,8 +57,9 @@ The distinction is intentional:
 - completed local-development disposition artifacts preserve the `ERG-004` descriptor-only lane;
 - the accepted source-finding disposition preserves the bounded `ERG-005` review result without
   closing ERG-005;
-- active operator checkpoint artifacts now point to `ERG-006`/`ERG-007`;
-- current implementation planning remains external-review-gated before runtime.
+- active operator checkpoint artifacts now point to bounded `PIS-001` planning under
+  `ERG-006`/`ERG-007`;
+- dependency changes and PIS-002 implementation planning remain separately gated before runtime.
 
 ## What This Does Not Approve
 

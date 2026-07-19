@@ -6,8 +6,14 @@ import argparse
 import hashlib
 import json
 import subprocess
+import sys
 from pathlib import Path
 from typing import Any
+
+if __package__ in {None, ""}:
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from scripts import enterprise_operator_next_action
 
 ROOT = Path(__file__).resolve().parents[1]
 SEND_MANIFEST_DIR = Path("var/review-packets/v3/enterprise-review-send-manifest")
@@ -141,9 +147,9 @@ def build_report(repo_root: Path) -> dict[str, Any]:
             "Technical MVP state:",
         )
         or "unknown",
-        "enterprise_next_action": _enterprise_next_action(
-            send_manifest, enterprise_send_now
-        ),
+        "enterprise_next_action": enterprise_operator_next_action.build_report(
+            repo_root
+        ).get("next_action", "unknown"),
         "checks": checks,
         "stale_or_missing": stale,
         "refresh_commands": _refresh_commands(stale),
@@ -281,24 +287,6 @@ def _extract_prefixed_doc_value(text: str, prefix: str) -> str | None:
         if stripped.startswith(prefix):
             return stripped.removeprefix(prefix).strip(" `.")
     return None
-
-
-def _enterprise_next_action(
-    send_manifest: dict[str, Any], enterprise_send_now: dict[str, Any] | None = None
-) -> str:
-    send_now = enterprise_send_now or {}
-    send_now_action = send_now.get("enterprise_next_action")
-    if isinstance(send_now_action, str) and send_now_action:
-        return send_now_action
-    gaps = send_now.get("recommended_gaps")
-    if gaps == ["ERG-004"]:
-        return "prepare_erg004_descriptor_only_runtime_planning"
-    gaps = send_manifest.get("recommended_gaps")
-    if gaps == ["ERG-003", "ERG-002"]:
-        return "send_erg_003_and_erg_002"
-    if gaps == ["ERG-004"]:
-        return "prepare_erg004_descriptor_only_runtime_planning"
-    return "unknown"
 
 
 if __name__ == "__main__":

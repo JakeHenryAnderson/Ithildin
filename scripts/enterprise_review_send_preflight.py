@@ -31,7 +31,7 @@ DESCRIPTOR_ONLY_PLANNING_ACTION = "prepare_erg004_descriptor_only_runtime_planni
 ERG005_SEND_SET = ["ERG-005"]
 ERG005_ACTION = "prepare_erg005_trusted_host_promotion_review"
 PIS_SEND_SET = ["ERG-006", "ERG-007"]
-PIS_ACTION = "prepare_erg006_erg007_production_identity_storage_architecture_review"
+PIS_ACTION = "execute_pis_001_threat_model_dependency_decision"
 ALLOWED_ACTIONS = {
     EXPECTED_ACTION,
     POST_DISPOSITION_ACTION,
@@ -116,13 +116,12 @@ ERG005_DOC_PHRASES = [
 PIS_DOC_PHRASES = [
     "Status: checked final operator preflight for the current enterprise review send.",
     "make enterprise-review-send-preflight",
-    "current send set: `ERG-006`/`ERG-007`",
-    "production-identity-storage-external-review",
-    "production-identity-storage-response-kit",
+    "current gap scope: `ERG-006`/`ERG-007`",
+    "production-identity-storage-architecture-decision-record.md",
+    "production-identity-storage-pis-001-planning-gate.md",
     "EXT-PROD-IAM-STORAGE-###",
-    "make production-identity-storage-external-review-bundle-check",
-    "make production-identity-storage-response-kit-check",
-    "make production-identity-storage-response-dry-run",
+    "make production-identity-storage-architecture-decision-record-check",
+    "make production-identity-storage-pis-001-planning-gate-check",
     "The accepted ERG-005 source-finding disposition remains recorded",
     "does not record external review",
     "does not normalize responses",
@@ -271,10 +270,10 @@ def build_report(repo_root: Path) -> dict[str, Any]:
 
     state_reports = {
         "operator_next_action": operator_next,
-        "dual_response_readiness": dual_response,
         "response_status_board": response_status,
     }
     if not post_disposition_mode:
+        state_reports["dual_response_readiness"] = dual_response
         state_reports["handoff_consistency"] = handoff_consistency
     for name, report in state_reports.items():
         if report.get("valid") is not True:
@@ -302,10 +301,11 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         failures.append("response evidence is present; use response-intake flow instead")
     if response_status.get("closure_ready_count") != 0:
         failures.append("closure-ready evidence is present; use lane closure flow instead")
-    if dual_response.get("response_present_count") != 0:
-        failures.append("dual-response readiness reports responses present")
-    if dual_response.get("closure_ready_count") != 0:
-        failures.append("dual-response readiness reports closure-ready evidence")
+    if not post_disposition_mode:
+        if dual_response.get("response_present_count") != 0:
+            failures.append("dual-response readiness reports responses present")
+        if dual_response.get("closure_ready_count") != 0:
+            failures.append("dual-response readiness reports closure-ready evidence")
 
     artifact_reports = (
         {}

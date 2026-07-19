@@ -224,7 +224,7 @@ def _recommended_next_commands(
             "make tool-surface-invariant-gate",
         ]
     if enterprise_next.get("next_action") == (
-        "prepare_erg006_erg007_production_identity_storage_architecture_review"
+        "execute_pis_001_threat_model_dependency_decision"
     ):
         return [
             "make production-identity-storage-architecture-check",

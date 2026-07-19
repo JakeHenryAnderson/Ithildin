@@ -481,14 +481,17 @@ This packet does not approve:
 
 ## Current Decision
 
-The current decision is `planning_only`.
+The current enterprise-gap state remains `planning_only`.
 
-Architecture discussion and review packets may continue. Runtime implementation remains blocked
-until a separate post-RC decision record approves a specific identity or storage implementation plan.
+The committed
+[production-identity-storage-architecture-decision-record.md](production-identity-storage-architecture-decision-record.md)
+records `approved_for_pis_001_planning_only`. It permits the bounded PIS-001 threat-model,
+non-goal, dependency-evaluation, exact-contract, and negative-test planning artifact only. Runtime implementation remains blocked until later, separately gated work approves a specific identity or
+storage implementation plan.
 
-The Phase 1 candidate above selects a reviewable architecture shape only. It does not change the
-decision-register status, select a capability for runtime work, or authorize `PIS-001` through
-`PIS-008`.
+The Phase 1 candidate above selects a reviewable architecture shape only. The decision record does
+not change the enterprise-gap state, select a capability for runtime work, approve dependency
+changes, or authorize `PIS-002` through `PIS-008`.
 
 ### Planning Status Axes
 

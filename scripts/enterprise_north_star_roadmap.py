@@ -32,7 +32,8 @@ REQUIRED_DOC_PHRASES = [
     "Current selected capability: `not selected`",
     "make enterprise-north-star-roadmap",
     "v1.0 local-preview RC candidate",
-    "Active enterprise route: `ERG-006`/`ERG-007` production identity/storage architecture review.",
+    "Active enterprise route: `PIS-001` threat-model and dependency-decision planning "
+    "under the recorded `ERG-006`/`ERG-007` architecture decision.",
     "Historical dual-send route: `ERG-003` then `ERG-002`.",
     "`ERG-003`: static sandbox/VM preflight disposition",
     "`ERG-002`: Mission Control display/import planning review",

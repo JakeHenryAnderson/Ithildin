@@ -408,7 +408,8 @@ Current selected capability: `not selected`.
 
 Route scope: historical `ERG-003`/`ERG-002` dual-send handoff drill.
 
-Active enterprise route: `ERG-006`/`ERG-007` production identity/storage architecture review.
+Active enterprise route: `PIS-001` threat-model and dependency-decision planning under the
+recorded `ERG-006`/`ERG-007` architecture decision.
 
 This drill ties together the historical send-ready outbox, send manifest, submission prompt, send
 receipt template, response inbox, response status board, and fixture-only intake drill. It does not

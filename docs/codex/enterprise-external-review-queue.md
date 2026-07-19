@@ -53,23 +53,24 @@ make enterprise-response-intake-drill
 
 ## Active Route Versus Historical Queue
 
-The post-disposition active route is now `ERG-006`/`ERG-007`: prepare the planning-only production
-identity/storage architecture review. The bounded `ERG-005` runtime source findings are
+The post-disposition active route is now bounded `PIS-001` threat-model and dependency-decision
+planning under the recorded `ERG-006`/`ERG-007` architecture decision. The bounded `ERG-005`
+runtime source findings are
 dispositioned, but ERG-005 and broader trusted-host promotion remain blocked. The historical
 `ERG-004` descriptor-only and `ERG-003`/`ERG-002` routes remain below for provenance,
 response-intake fallback, and dependency traceability. They are not the current operator next
 action while `make enterprise-operator-next-action` reports
-`prepare_erg006_erg007_production_identity_storage_architecture_review`.
+`execute_pis_001_threat_model_dependency_decision`.
 
-Current active route: `ERG-006`/`ERG-007` production identity/storage architecture review.
+Current active route: `PIS-001` threat-model and dependency-decision planning under the recorded `ERG-006`/`ERG-007` architecture decision.
 
 Current active route validation:
 
 ```sh
 make enterprise-active-route-clarity
+make production-identity-storage-pis-001-planning-gate-check
+make production-identity-storage-architecture-decision-record-check
 make production-identity-storage-architecture-check
-make production-identity-storage-disposition-packet-check
-make production-identity-storage-external-review-bundle-check
 make production-identity-storage-response-kit-check
 ```
 

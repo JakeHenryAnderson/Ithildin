@@ -57,9 +57,10 @@ REQUIRED_PHRASES = [
     "Blocked current claims",
     "post-RC decision record",
     "Mission Control outside execution, policy, approval, audit authority",
-    "Current active route: `ERG-006`/`ERG-007` production identity/storage architecture review.",
+    "Current active route: bounded `PIS-001` threat-model and dependency-decision planning "
+    "under the recorded `ERG-006`/`ERG-007` architecture decision.",
     "Historical/fallback route: `ERG-003` static sandbox/VM preflight",
-    "prepare_erg006_erg007_production_identity_storage_architecture_review",
+    "execute_pis_001_threat_model_dependency_decision",
 ]
 
 REQUIRED_BLOCKED_PHRASES = [
@@ -225,7 +226,7 @@ def _active_route_failures(operator_next: dict[str, Any]) -> list[str]:
     if operator_next.get("recommended_next_enterprise_review") != "ERG-006/ERG-007":
         failures.append("active enterprise review is not ERG-006/ERG-007")
     if operator_next.get("next_action") != (
-        "prepare_erg006_erg007_production_identity_storage_architecture_review"
+        "execute_pis_001_threat_model_dependency_decision"
     ):
         failures.append(
             "active enterprise action is not ERG-006/ERG-007 architecture review"

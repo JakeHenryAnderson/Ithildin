@@ -51,7 +51,7 @@ A batch is complete only when:
 | Batch | Status | Use now? | Fast validation |
 | --- | --- | --- | --- |
 | Technical MVP execution-board cleanup | done | no | `make technical-mvp-execution-board`, `make roadmap-status` |
-| `ERG-006`/`ERG-007` production identity/storage architecture review | active resume checkpoint | yes | `make production-identity-storage-architecture-check`, `make production-identity-storage-disposition-packet-check`, `make production-identity-storage-external-review-bundle-check`, `make production-identity-storage-response-kit-check`, `make no-new-powers-guardrail`, `make tool-surface-invariant-gate` |
+| `PIS-001` threat-model and dependency-decision planning under the recorded `ERG-006`/`ERG-007` architecture decision | active resume checkpoint | yes | `make production-identity-storage-architecture-check`, `make production-identity-storage-disposition-packet-check`, `make production-identity-storage-external-review-bundle-check`, `make production-identity-storage-response-kit-check`, `make no-new-powers-guardrail`, `make tool-surface-invariant-gate` |
 | `ERG-004` descriptor-only runtime source review | locally dispositioned for continued local-development progress | no | `make sandbox-vm-live-poc-runtime-descriptor-only-response-application-record-check`, `make sandbox-vm-live-poc-runtime-descriptor-only-response-application-playbook-check`, `make sandbox-vm-live-poc-runtime-descriptor-only-response-application-preflight-check` |
 | `ERG-003` response intake | blocked on response | not until response arrives | `make sandbox-vm-static-preflight-response-dry-run` |
 | `ERG-002` response intake | blocked on response | not until response arrives | `make mission-control-display-response-dry-run` |

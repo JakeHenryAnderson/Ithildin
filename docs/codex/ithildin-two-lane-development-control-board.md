@@ -51,8 +51,8 @@ remains the product-comprehension gate for the combined candidate.
 
 ## Lane B: Gateway Capability and Enterprise Readiness
 
-Current route: `ERG-006`/`ERG-007` production identity/storage architecture review
-Computed next action: `prepare_erg006_erg007_production_identity_storage_architecture_review`
+Current route: `PIS-001` threat-model and dependency-decision planning under the recorded `ERG-006`/`ERG-007` architecture decision
+Computed next action: `execute_pis_001_threat_model_dependency_decision`
 Current response count: `0`
 Current source-review status: `ready_for_external_source_review`
 Runtime promotion allowed: `false`

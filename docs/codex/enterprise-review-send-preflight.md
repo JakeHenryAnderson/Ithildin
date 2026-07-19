@@ -15,13 +15,11 @@ one operator command, use:
 make enterprise-review-send-refresh
 ```
 
-This preflight gives the operator one final checked answer before sending the
-current enterprise review packet. In the current post-disposition route, that
-send set is `ERG-006`/`ERG-007`: the planning-only production identity/storage architecture review
-packet. It
-inspects the generated send artifacts, response
-landing pad, handoff drill, response-readiness state, operator next-action
-state, and handoff consistency gate.
+This preflight now serves two modes. For a historical send route, it gives the operator one final
+checked answer before sending a review packet. In the current post-disposition route, it validates
+the `ERG-006`/`ERG-007` gap scope and the bounded PIS-001 planning transition; no new review send is
+required. It checks the operator next-action and response state without treating stale historical
+send artifacts as active authority.
 
 ## Covered Components
 
@@ -54,27 +52,25 @@ payloads were produced for the current commit and were not generated from a
 dirty tree. When the worktree is dirty during development, that freshness check
 is deferred until the next clean run.
 
-It expects:
+In the current PIS-001 mode it expects:
 
-- current send set: `ERG-006`/`ERG-007`;
+- current gap scope: `ERG-006`/`ERG-007`;
 - current response-present count: `0`;
 - current closure-ready count: `0`;
-- active source-review packet:
-  `var/review-packets/v3/production-identity-storage-external-review`;
-- active production identity/storage response kit:
-  `var/review-packets/v3/production-identity-storage-response-kit`;
+- active architecture decision:
+  `docs/codex/production-identity-storage-architecture-decision-record.md`;
+- active planning gate:
+  `docs/codex/production-identity-storage-pis-001-planning-gate.md`;
 - active finding namespace: `EXT-PROD-IAM-STORAGE-###`.
 
 ## Operator Use
 
-Run this after refreshing the send artifacts and before manually sending the
-review packet. The active ERG-006/ERG-007 sequence is:
+The current PIS-001 sequence is:
 
 ```sh
-make production-identity-storage-external-review-bundle-check
-make production-identity-storage-response-kit-check
-make production-identity-storage-response-dry-run
-make enterprise-send-now
+make production-identity-storage-pis-001-planning-gate-check
+make production-identity-storage-architecture-decision-record-check
+make production-identity-storage-architecture-check
 make enterprise-review-send-preflight
 ```
 

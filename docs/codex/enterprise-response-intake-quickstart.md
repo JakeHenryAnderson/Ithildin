@@ -4,7 +4,7 @@ Status: operator quickstart for applying `ERG-003` and `ERG-002` reviewer respon
 
 Route scope: historical `ERG-003`/`ERG-002` dual-response intake.
 
-Active enterprise route: `ERG-006`/`ERG-007` production identity/storage architecture review.
+Active enterprise route: `PIS-001` threat-model and dependency-decision planning under the recorded `ERG-006`/`ERG-007` architecture decision.
 
 Current governed tool count: `24`.
 

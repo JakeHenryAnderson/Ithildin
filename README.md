@@ -804,6 +804,12 @@ checked with `make control-mapping-readiness`.
 - `make production-identity-storage-architecture-check` - validate the design-only architecture
   packet for production identity and durable storage while keeping production IAM, runtime Postgres,
   remote admin use, and custody-grade audit claims blocked.
+- `make production-identity-storage-architecture-decision-record-check` - validate the committed
+  planning-only decision that permits only the PIS-001 threat-model and dependency-decision
+  artifact while keeping dependency changes, PIS-002, and all runtime identity/storage work blocked.
+- `make production-identity-storage-pis-001-planning-gate-check` - validate the bounded PIS-001
+  execution plan, required threat-model and dependency-decision fields, and the no-dependency,
+  no-schema, no-runtime stop line.
 - `make production-identity-storage-disposition-packet` - generate the focused architecture
   disposition packet asking whether ERG-006/ERG-007 may continue planning while production identity,
   runtime Postgres, migrations, retention enforcement, and custody claims remain blocked.
@@ -1773,6 +1779,16 @@ and is checked with `make production-identity-storage-architecture-check`; it de
 `ERG-006`/`ERG-007` identity, tenancy, storage, migration, retention, backup/restore, and evidence
 questions while keeping production IAM, runtime Postgres, remote admin use, and custody-grade audit
 claims blocked.
+The production identity and storage architecture decision is recorded in
+[docs/codex/production-identity-storage-architecture-decision-record.md](docs/codex/production-identity-storage-architecture-decision-record.md)
+and checked with `make production-identity-storage-architecture-decision-record-check`; it accepts
+the reviewed Phase 1 direction only as input to the PIS-001 planning gate and does not approve a
+dependency change, PIS-002, schemas, migrations, production IAM, runtime PostgreSQL, or UAT.
+The bounded PIS-001 execution gate is
+[docs/codex/production-identity-storage-pis-001-planning-gate.md](docs/codex/production-identity-storage-pis-001-planning-gate.md)
+and checked with `make production-identity-storage-pis-001-planning-gate-check`; it defines the
+required threat model, dependency evaluation, exact contract freeze, negative-test plan, and stop
+conditions without changing manifests, locks, APIs, schemas, migrations, or runtime behavior.
 Generate the production identity and storage disposition packet with
 `make production-identity-storage-disposition-packet`; it asks whether the current ERG-006/ERG-007
 architecture evidence is coherent enough to continue planning while keeping production identity,

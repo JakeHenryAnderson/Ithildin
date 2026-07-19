@@ -22,7 +22,7 @@ SEND_MANIFEST_JSON = Path(
     "enterprise-review-send-manifest.json"
 )
 POST_DISPOSITION_ACTION = (
-    "prepare_erg006_erg007_production_identity_storage_architecture_review"
+    "execute_pis_001_threat_model_dependency_decision"
 )
 
 REQUIRED_DOCS = [TECHNICAL_DOC, ENTERPRISE_DOC, BATCH_DOC]
@@ -47,10 +47,10 @@ REQUIRED_PHRASES = {
         "Latest implemented tool: `sandbox.artifact.write_text`",
         "Technical MVP state: `operator_trial_observed`",
         "Current enterprise next action: "
-        "`prepare_erg006_erg007_production_identity_storage_architecture_review`",
+        "`execute_pis_001_threat_model_dependency_decision`",
         "Active resume checkpoint: `ENT-001`",
-        "The paused umbrella goal resumes through the post-`ENT-001` production "
-        "identity/storage architecture",
+        "The paused umbrella goal resumes through the bounded `PIS-001` threat-model and "
+        "dependency-decision planning slice only",
         "Development Validation Ladder",
         "Stop Conditions",
         "no sandbox orchestration",
@@ -64,8 +64,8 @@ REQUIRED_PHRASES = {
         "Current response count: `0`",
         "Current closure-ready count: `0`",
         "Active resume checkpoint: `ENT-001`",
-        "The current resumed goal is limited to post-`ENT-001` production identity/storage "
-        "architecture review",
+        "The current resumed goal is limited to post-`ENT-001` bounded `PIS-001` threat-model and "
+        "dependency-decision planning",
         "Enterprise Target Definition",
         "Non-Negotiable Gates",
         "No new governed power class",
@@ -125,9 +125,10 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         if not text:
             failures.append(f"roadmap doc is missing: {doc}")
             continue
-        lowered = text.lower()
+        normalized = " ".join(text.split())
+        lowered = normalized.lower()
         for phrase in REQUIRED_PHRASES[doc]:
-            if phrase not in text:
+            if " ".join(phrase.split()) not in normalized:
                 failures.append(f"{doc} is missing phrase: {phrase}")
         for phrase in FORBIDDEN_PHRASES:
             if phrase.lower() in lowered:
@@ -153,7 +154,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         failures.append("technical MVP state is not operator_trial_observed")
     if status.get("enterprise_next_action") != POST_DISPOSITION_ACTION:
         failures.append(
-            "enterprise next action is not ERG-006/ERG-007 architecture review"
+            "enterprise next action is not bounded PIS-001 planning"
         )
     if status.get("response_present_count") != 0:
         failures.append("response evidence is present; response intake flow should take over")

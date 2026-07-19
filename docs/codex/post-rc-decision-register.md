@@ -364,6 +364,14 @@ Current selected capability: `not selected`.
   backup/restore runtime behavior, retention enforcement, hosted control plane, custody-grade audit
   claims, compliance automation, and public/security-product positioning.
 - Current implementation posture: runtime identity and storage behavior remain blocked.
+- Current architecture decision:
+  `production-identity-storage-architecture-decision-record.md` records
+  `approved_for_pis_001_planning_only`. It permits only the PIS-001 threat-model,
+  non-goal, dependency-evaluation, exact-contract, and negative-test planning artifact. It does not
+  approve dependency changes, PIS-002, schemas, migrations, production identity, runtime
+  PostgreSQL, remote administration, or runtime work. Both enterprise gaps remain `planning_only`.
+  The bounded execution contract is
+  `production-identity-storage-pis-001-planning-gate.md`.
 - Current warning language: Ithildin may discuss production identity and durable storage
   architecture, but the current runtime remains local-preview with local principal labels and SQLite.
 - Current architecture evidence:

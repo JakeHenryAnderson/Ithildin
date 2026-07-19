@@ -79,6 +79,8 @@ The valid fixture may display only these checked action commands:
 - `make enterprise-send-now`;
 - `make enterprise-response-intake-refresh`;
 - `make trusted-host-descriptor-contract-check`;
+- `make production-identity-storage-pis-001-planning-gate-check`;
+- `make production-identity-storage-architecture-decision-record-check`;
 - `make production-identity-storage-architecture-check`;
 - `make production-identity-storage-disposition-packet-check`;
 - `make production-identity-storage-external-review-bundle-check`;

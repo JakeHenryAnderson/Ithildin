@@ -137,6 +137,8 @@ REQUIRED_RELEASE_CHECK_FRAGMENTS = [
     "public-positioning-external-review-bundle-check",
     "public-security-product-positioning-response-kit-check",
     "docs-claims-public-preview-disposition-closure-check",
+    "production-identity-storage-architecture-decision-record-check",
+    "production-identity-storage-pis-001-planning-gate-check",
     "production-identity-storage-architecture-check",
     "production-identity-storage-disposition-packet-check",
     "production-identity-storage-disposition-closure-check",

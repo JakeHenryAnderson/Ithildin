@@ -47,12 +47,13 @@ REQUIRED_PHRASES = [
     "Current selected capability: `not selected`.",
     "make enterprise-external-review-queue-check",
     "Active Route Versus Historical Queue",
-    "Current active route: `ERG-006`/`ERG-007` production identity/storage architecture review.",
+    "Current active route: `PIS-001` threat-model and dependency-decision planning "
+    "under the recorded `ERG-006`/`ERG-007` architecture decision.",
     "make enterprise-active-route-clarity",
     "Historical Review Queue",
     "Dependency Order",
     "Historical recommended review: `ERG-003` static sandbox/VM preflight disposition.",
-    "`prepare_erg006_erg007_production_identity_storage_architecture_review`",
+    "`execute_pis_001_threat_model_dependency_decision`",
     "Runtime allowed",
     "public/security-product positioning remains a no-go lane",
 ]
@@ -206,7 +207,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "recommended_next_review": "ERG-006/ERG-007",
         "historical_recommended_review": "ERG-003",
         "expected_action": (
-            "prepare_erg006_erg007_production_identity_storage_architecture_review"
+            "execute_pis_001_threat_model_dependency_decision"
         ),
         "runtime_changes_allowed": False,
         "mission_control_runtime_allowed": False,

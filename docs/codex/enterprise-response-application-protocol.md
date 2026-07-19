@@ -12,7 +12,7 @@ This protocol starts after a reviewer response has been saved to the ignored res
 does not record external review by itself, does not normalize real responses by itself, does not
 close enterprise lanes, does not approve runtime behavior, and does not approve public/security-
 product positioning.
-Active enterprise route: `ERG-006`/`ERG-007` production identity/storage architecture review.
+Active enterprise route: `PIS-001` threat-model and dependency-decision planning under the recorded `ERG-006`/`ERG-007` architecture decision.
 
 Historical dual-response route: `ERG-003` then `ERG-002`.
 
@@ -39,7 +39,7 @@ lanes.
 
 - Current governed tool count: `24`.
 - Current selected capability: `not selected`.
-- Active enterprise route: `ERG-006`/`ERG-007` production identity/storage architecture review.
+- Active enterprise route: `PIS-001` threat-model and dependency-decision planning under the recorded `ERG-006`/`ERG-007` architecture decision.
 - Historical dual-response route: `ERG-003` then `ERG-002`.
 - Enterprise response evidence is not present yet.
 - Enterprise closure-ready count is `0`.

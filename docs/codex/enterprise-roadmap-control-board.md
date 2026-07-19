@@ -25,9 +25,10 @@ properties today.
 
 ## Current Resume Scope
 
-The current resumed goal is limited to post-`ENT-001` production identity/storage architecture review:
-use the accepted `ERG-005` source-finding disposition to validate the planning-only
-`ERG-006`/`ERG-007` architecture lane. Production identity, enterprise RBAC, remote administration,
+The current resumed goal is limited to post-`ENT-001` bounded `PIS-001` threat-model and
+dependency-decision planning: use the recorded `ERG-006`/`ERG-007` architecture decision and
+planning gate to produce the required artifact. Dependency changes, PIS-002, production identity,
+enterprise RBAC, remote administration,
 runtime Postgres, migrations, live sandbox/VM execution, trusted-host promotion authority, Mission
 Control execution, and runtime capability selection remain blocked.
 

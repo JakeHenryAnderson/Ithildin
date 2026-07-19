@@ -33,7 +33,7 @@ ALLOWED_NEXT_ACTIONS = {
     "prepare_erg004_runtime_implementation_gate",
     "prepare_erg004_descriptor_only_runtime_planning",
     "prepare_erg005_trusted_host_promotion_review",
-    "prepare_erg006_erg007_production_identity_storage_architecture_review",
+    "execute_pis_001_threat_model_dependency_decision",
 }
 
 REQUIRED_PHRASES = [

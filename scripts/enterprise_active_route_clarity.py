@@ -29,25 +29,25 @@ TARGET = "enterprise-active-route-clarity"
 ACTIVE_SEND_SET = ["ERG-005"]
 NEXT_SEND_SET = ["ERG-006", "ERG-007"]
 HISTORICAL_SEND_SET = ["ERG-003", "ERG-002"]
-EXPECTED_ACTION = "prepare_erg006_erg007_production_identity_storage_architecture_review"
+EXPECTED_ACTION = "execute_pis_001_threat_model_dependency_decision"
 
 REQUIRED_DOC_PHRASES = [
-    "Status: checked active-route clarification for the current enterprise review path.",
+    "Status: checked active-route clarification for the current enterprise planning path.",
     "Current governed tool count: `24`.",
     "Current selected capability: `not selected`.",
     "make enterprise-active-route-clarity",
     "The completed source-finding disposition route is `ERG-005`.",
     "Current expected action: "
-    "`prepare_erg006_erg007_production_identity_storage_architecture_review`.",
-    "var/review-packets/v3/production-identity-storage-external-review/",
-    "Current active send set: `ERG-006`, `ERG-007`.",
-    "var/review-packets/v3/production-identity-storage-response-kit/",
+    "`execute_pis_001_threat_model_dependency_decision`.",
+    "docs/codex/production-identity-storage-architecture-decision-record.md",
+    "Current active gap scope: `ERG-006`, `ERG-007`; no new review send is required.",
+    "docs/codex/production-identity-storage-pis-001-planning-gate.md",
     "EXT-LIVE-DESC-###",
     "EXT-PROD-IAM-STORAGE-###",
     "Older ERG-003/ERG-002 generated packet surfaces remain in the repository for provenance",
     "Historical dual-send route: `ERG-003`, then `ERG-002`.",
     "completed local-development disposition artifacts preserve the `ERG-004` descriptor-only lane",
-    "active operator checkpoint artifacts now point to `ERG-006`/`ERG-007`",
+    "active operator checkpoint artifacts now point to bounded `PIS-001` planning",
     "What This Does Not Approve",
 ]
 
@@ -88,7 +88,6 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         ("enterprise-current-checkpoint", checkpoint),
         ("enterprise-operator-next-action", operator_next),
         ("technical-mvp-execution-board", technical_board),
-        ("enterprise-review-send-readiness", historical_readiness),
         ("v1-progress-assessment", progress_assessment),
         ("enterprise-readiness-gap-matrix", gap_matrix),
     ]:

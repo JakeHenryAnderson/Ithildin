@@ -397,6 +397,8 @@ REVIEW_DOCS = [
     "docs/codex/public-positioning-external-review-bundle.md",
     "docs/codex/public-security-product-positioning-response-kit.md",
     "docs/codex/docs-claims-public-preview-disposition-closure-gate.md",
+    "docs/codex/production-identity-storage-architecture-decision-record.md",
+    "docs/codex/production-identity-storage-pis-001-planning-gate.md",
     "docs/codex/production-identity-storage-architecture.md",
     "docs/codex/production-identity-storage-disposition-packet.md",
     "docs/codex/production-identity-storage-external-review-bundle.md",

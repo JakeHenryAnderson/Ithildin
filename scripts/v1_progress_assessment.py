@@ -34,7 +34,8 @@ REQUIRED_PHRASES = [
     "Runtime changes: blocked",
     "Public/security-product positioning: blocked",
     "Enterprise readiness gap count: `10`",
-    "Recommended next enterprise review: `ERG-006`/`ERG-007`",
+    "Recommended next enterprise work: bounded `PIS-001` threat-model and "
+    "dependency-decision planning",
     "Historical/fallback review route: `ERG-003` and `ERG-002`",
     "Core governed local tool gateway | `92-96%`",
     "v1.0 local-preview RC foundation | `84-90%`",
@@ -46,7 +47,7 @@ REQUIRED_PHRASES = [
     "Technical MVP state: `operator_trial_observed`",
     "Enterprise send package ready: `true`",
     "same-commit `make release-check` and `make review-candidate`",
-    "accepted staging-only ERG-005 source-finding disposition",
+    "recorded `ERG-006`/`ERG-007` architecture decision",
     "Mission Control remains a display/import layer",
     "Blocked Claims",
 ]
@@ -161,10 +162,10 @@ def build_report(repo_root: Path) -> dict[str, Any]:
             "operator next action does not identify ERG-006/ERG-007 as the next review"
         )
     if operator_next.get("next_action") != (
-        "prepare_erg006_erg007_production_identity_storage_architecture_review"
+        "execute_pis_001_threat_model_dependency_decision"
     ):
         failures.append(
-            "operator next action is not the ERG-006/ERG-007 architecture review path"
+            "operator next action is not the bounded PIS-001 planning path"
         )
     if (
         not post_disposition_mode
