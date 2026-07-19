@@ -1873,7 +1873,8 @@ review-candidate-release-transcript:
 	@{ echo "$$ make release-check"; $(MAKE) release-check; rc=$$?; echo "returncode=$$rc"; exit $$rc; } > var/review-packets/v3/review-candidate-release-check.txt 2>&1 || (cat var/review-packets/v3/review-candidate-release-check.txt; exit 1)
 	@echo "release-check transcript: var/review-packets/v3/review-candidate-release-check.txt"
 
-review-candidate: mission-command-control-plane-poc-check
+review-candidate:
+	$(MAKE) mission-command-control-plane-poc-check
 	$(MAKE) review-candidate-release-transcript
 	$(MAKE) filesystem-contract-check
 	$(MAKE) signed-evidence-demo

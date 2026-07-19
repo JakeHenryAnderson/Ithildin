@@ -89,7 +89,8 @@ def test_poc_contract_and_candidate_gate_are_wired() -> None:
 
     assert "mission-command-control-plane-poc:" in makefile
     assert "mission-command-control-plane-poc-check:" in makefile
-    assert "review-candidate: mission-command-control-plane-poc-check" in makefile
+    review_candidate = makefile.partition("review-candidate:")[2].partition("\n\n")[0]
+    assert "$(MAKE) mission-command-control-plane-poc-check" in review_candidate
     assert "var/mission-command-control-plane-poc-*/" in gitignore
     poc_source = Path("scripts/mission_command_control_plane_poc.py").read_text(encoding="utf-8")
     assert 'deployment_topology="local_process"' in poc_source
