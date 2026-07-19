@@ -1154,6 +1154,95 @@ def test_trusted_host_promotion_production_readiness_requires_candidate_reverifi
     assert readiness["operator_override_available"] is False
 
 
+def test_trusted_host_promotion_missing_verifier_restart_terminally_stales_approved_proposal(
+    tmp_path: Path,
+) -> None:
+    settings = make_settings(tmp_path, token="correct-token")
+    settings.workspace_root.mkdir()
+    settings.workspace_root.joinpath("summary.txt").write_text(
+        "restart verifier fence\n",
+        encoding="utf-8",
+    )
+    settings.trusted_host_staging_root = tmp_path / "trusted-host-staging"
+    settings.trusted_host_staging_root.mkdir(mode=0o700)
+    candidate = runtime_candidate_fixture()
+
+    initial_app = promotion_ready_app(
+        settings,
+        test_fixture_ready=False,
+        runtime_candidate=candidate,
+    )
+    with TestClient(initial_app) as client:
+        headers = {"Authorization": "Bearer correct-token"}
+        proposal = create_approved_promotion(
+            client,
+            sandbox_id="sandbox-missing-verifier-restart",
+        )
+
+    unavailable_app = promotion_ready_app(
+        settings,
+        test_fixture_ready=False,
+        runtime_candidate=candidate,
+        configure_runtime_candidate_verifier=False,
+    )
+    with TestClient(unavailable_app) as client:
+        headers = {"Authorization": "Bearer correct-token"}
+        unavailable_apply = client.post(
+            f"/trusted-host-promotions/proposals/{proposal['promotion_proposal_id']}/apply",
+            json={"approval_id": proposal["approval_id"]},
+            headers=headers,
+        )
+        stale_proposal = client.get(
+            f"/trusted-host-promotions/proposals/{proposal['promotion_proposal_id']}",
+            headers=headers,
+        ).json()
+        preserved_approval = client.get(
+            f"/approvals/{proposal['approval_id']}",
+            headers=headers,
+        ).json()
+        unavailable_diagnostics = client.get(
+            "/trusted-host-promotions/diagnostics",
+            headers=headers,
+        ).json()
+
+    restored_app = promotion_ready_app(
+        settings,
+        test_fixture_ready=False,
+        runtime_candidate=candidate,
+    )
+    with TestClient(restored_app) as client:
+        headers = {"Authorization": "Bearer correct-token"}
+        restored_apply = client.post(
+            f"/trusted-host-promotions/proposals/{proposal['promotion_proposal_id']}/apply",
+            json={"approval_id": proposal["approval_id"]},
+            headers=headers,
+        )
+        still_stale_proposal = client.get(
+            f"/trusted-host-promotions/proposals/{proposal['promotion_proposal_id']}",
+            headers=headers,
+        ).json()
+        still_preserved_approval = client.get(
+            f"/approvals/{proposal['approval_id']}",
+            headers=headers,
+        ).json()
+        restored_diagnostics = client.get(
+            "/trusted-host-promotions/diagnostics",
+            headers=headers,
+        ).json()
+
+    assert unavailable_apply.status_code == 409
+    assert unavailable_apply.json()["detail"] == "trusted-host promotion authority is stale"
+    assert stale_proposal["status"] == "authority_stale"
+    assert preserved_approval["status"] == "approved"
+    assert unavailable_diagnostics["attempts"] == []
+    assert restored_apply.status_code == 409
+    assert restored_apply.json()["detail"] == "proposal_not_applicable"
+    assert still_stale_proposal["status"] == "authority_stale"
+    assert still_preserved_approval["status"] == "approved"
+    assert restored_diagnostics["attempts"] == []
+    assert list(settings.trusted_host_staging_root.iterdir()) == []
+
+
 def test_trusted_host_promotion_production_readiness_requires_enforced_manifest_lock(
     tmp_path: Path,
 ) -> None:

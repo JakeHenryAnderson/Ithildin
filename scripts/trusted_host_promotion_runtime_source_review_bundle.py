@@ -113,6 +113,7 @@ FOCUSED_TEST_COMMAND = [
     "pytest",
     "tests/test_api_service.py::test_trusted_host_promotion_binds_identity_but_keeps_placement_unavailable",
     "tests/test_api_service.py::test_trusted_host_promotion_production_readiness_requires_candidate_reverification",
+    "tests/test_api_service.py::test_trusted_host_promotion_missing_verifier_restart_terminally_stales_approved_proposal",
     "tests/test_api_service.py::test_trusted_host_promotion_production_readiness_requires_approver_role",
     "tests/test_api_service.py::test_trusted_host_promotion_missing_approver_role_cannot_decide_or_place",
     "tests/test_api_service.py::test_trusted_host_promotion_denies_stale_and_unsafe_inputs",
@@ -140,6 +141,7 @@ FOCUSED_TEST_COMMAND = [
     "tests/test_runtime_candidate_bootstrap.py",
     "tests/test_trusted_host_registry.py",
     "tests/test_trusted_host_promotion_v2_migration.py",
+    "tests/test_release_readiness.py::test_trusted_host_promotion_closure_gate_accepts_runtime_namespace_pair",
     "-q",
 ]
 

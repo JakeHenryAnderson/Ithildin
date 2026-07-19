@@ -1644,7 +1644,7 @@ class TrustedHostPromotionService:
         approval_service: ApprovalService,
         context: AdminPrincipalContext,
     ) -> JsonObject:
-        self._require_governance_binding()
+        self._require_supported_policy_engine()
         proposal = self.store.get_proposal(proposal_id)
         if proposal.status != "approval_required":
             raise TrustedHostPromotionError("proposal_not_applicable")
@@ -1658,6 +1658,7 @@ class TrustedHostPromotionService:
                 self._terminally_stale(proposal.proposal_id)
             raise TrustedHostPromotionError("trusted-host promotion approval binding review failed")
         try:
+            self._require_governance_binding()
             current_context = self._current_requesting_principal(context)
             current_snapshot, _ = self._authority_snapshot(
                 payload=self._payload_from_proposal(proposal),
@@ -2007,8 +2008,7 @@ class TrustedHostPromotionService:
         }
 
     def _require_governance_binding(self) -> None:
-        if self.policy_engine.engine_name != "yaml":
-            raise TrustedHostPromotionError("unsupported_policy_engine_for_promotion")
+        self._require_supported_policy_engine()
         if not self.governance_binding_ready:
             raise TrustedHostPromotionError(
                 PromotionReadinessReason.GOVERNANCE_BINDING_INCOMPLETE.value
@@ -2024,6 +2024,10 @@ class TrustedHostPromotionService:
             raise TrustedHostPromotionError(
                 PromotionReadinessReason.CANDIDATE_VERIFICATION_FAILED.value
             )
+
+    def _require_supported_policy_engine(self) -> None:
+        if self.policy_engine.engine_name != "yaml":
+            raise TrustedHostPromotionError("unsupported_policy_engine_for_promotion")
 
     def _require_proposal_readiness(self) -> None:
         self._require_governance_binding()

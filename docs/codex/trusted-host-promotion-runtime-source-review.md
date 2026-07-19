@@ -113,7 +113,19 @@ installed inventory immediately before reservation. That kept `EXT-TRUSTED-HOST-
 The current remediation retains the startup-selected verifier paths, freshly verifies the closed
 installed inventory during apply-time authority recomputation, terminally stales the proposal on
 verification failure before reservation, and adds a direct post-approval installed-file drift
-proof with no attempt or staging effect. Those changes remain an implementation candidate until a
+proof with no attempt or staging effect. Independent Sol xhigh review of exact commit
+`56db06ac49bb38e3df579562cde0dac411e7d81e` confirmed that production path but found two remaining
+closure defects: a restart with no retained verifier denied apply before terminally staling the
+persisted proposal, and the runtime response gate accepted a missing reviewed commit plus any
+syntactically valid packet hash.
+
+The current follow-up candidate moves candidate/verifier readiness into the proposal's terminal
+staleness envelope while preserving the earlier unsupported-policy-engine fence. Its restart proof
+requires the proposal to remain `authority_stale`, the approval to remain approved, attempts and
+staging effects to remain absent, and verifier restoration to leave the proposal non-revivable.
+The response gate now derives the exact commit from the focused candidate review packet and the
+actual packet identity from the SHA-256 of its artifact-hash manifest; missing, abbreviated, stale,
+or mismatched identities fail closed. These changes remain an implementation candidate until a
 fresh exact-candidate independent response is normalized and separately triaged. `ERG-005`, broad
 trusted-host promotion, release authorization, and UAT remain blocked.
 

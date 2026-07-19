@@ -33274,6 +33274,14 @@ def test_trusted_host_promotion_closure_gate_accepts_runtime_namespace_pair(
     tmp_path: Path,
 ) -> None:
     response_path = tmp_path / "normalized-response.json"
+    expected_commit, expected_packet_hash, identity_failures = (
+        trusted_host_promotion_disposition_closure_check._runtime_review_identity(
+            Path.cwd()
+        )
+    )
+    assert identity_failures == []
+    assert expected_commit is not None
+    assert expected_packet_hash is not None
     payload: dict[str, Any] = {
         "response_type": "ithildin.external_review.normalized_response",
         "area": "trusted-host-promotion-runtime",
@@ -33281,7 +33289,8 @@ def test_trusted_host_promotion_closure_gate_accepts_runtime_namespace_pair(
         "can_close_source_rows": True,
         "mutates_findings": False,
         "closes_external_review": False,
-        "reviewed_packet_hash": "sha256:" + "0" * 64,
+        "reviewed_commit": expected_commit,
+        "reviewed_packet_hash": expected_packet_hash,
         "disposition_outcome": "runtime_findings_closed",
         "findings": [
             {
@@ -33302,17 +33311,62 @@ def test_trusted_host_promotion_closure_gate_accepts_runtime_namespace_pair(
 
     runtime_report = (
         trusted_host_promotion_disposition_closure_check._validate_normalized_response(
-            response_path
+            response_path,
+            repo_root=Path.cwd(),
         )
     )
     assert runtime_report["failures"] == []
     assert runtime_report["closure_ready"] is True
 
+    identity_cases: list[tuple[str, str | None, str]] = [
+        (
+            "reviewed_commit",
+            None,
+            "runtime response reviewed_commit is not a full 40-character commit",
+        ),
+        (
+            "reviewed_commit",
+            expected_commit[:12],
+            "runtime response reviewed_commit is not a full 40-character commit",
+        ),
+        (
+            "reviewed_commit",
+            "f" * 40 if expected_commit != "f" * 40 else "e" * 40,
+            "runtime response reviewed_commit does not match the focused packet",
+        ),
+        (
+            "reviewed_packet_hash",
+            None,
+            "normalized response reviewed_packet_hash is not a sha256 digest",
+        ),
+        (
+            "reviewed_packet_hash",
+            "sha256:" + "0" * 64,
+            "runtime response reviewed_packet_hash does not match the focused packet",
+        ),
+    ]
+    for field, value, expected_failure in identity_cases:
+        variant = dict(payload)
+        if value is None:
+            variant.pop(field)
+        else:
+            variant[field] = value
+        response_path.write_text(json.dumps(variant), encoding="utf-8")
+        identity_report = (
+            trusted_host_promotion_disposition_closure_check._validate_normalized_response(
+                response_path,
+                repo_root=Path.cwd(),
+            )
+        )
+        assert identity_report["closure_ready"] is False
+        assert expected_failure in identity_report["failures"]
+
     omitted_finding = payload["findings"].pop()
     response_path.write_text(json.dumps(payload), encoding="utf-8")
     incomplete_report = (
         trusted_host_promotion_disposition_closure_check._validate_normalized_response(
-            response_path
+            response_path,
+            repo_root=Path.cwd(),
         )
     )
     assert incomplete_report["closure_ready"] is False
@@ -33326,7 +33380,8 @@ def test_trusted_host_promotion_closure_gate_accepts_runtime_namespace_pair(
     response_path.write_text(json.dumps(payload), encoding="utf-8")
     mixed_report = (
         trusted_host_promotion_disposition_closure_check._validate_normalized_response(
-            response_path
+            response_path,
+            repo_root=Path.cwd(),
         )
     )
     assert mixed_report["closure_ready"] is False

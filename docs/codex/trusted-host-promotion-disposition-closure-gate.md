@@ -39,6 +39,10 @@ using the external response normalizer. The expected response shape is:
 - source access: `source-level` or `packet-and-source`;
 - finding namespace: `EXT-TRUSTED-HOST-###`;
 - runtime finding namespace: `EXT-TRUSTED-HOST-RUNTIME-###`;
+- for a runtime response, the full exact reviewed commit must match `source_commit` in the focused
+  runtime candidate review packet;
+- for a runtime response, `reviewed_packet_hash` must equal the actual focused runtime packet manifest digest computed from
+  `trusted-host-promotion-runtime-source-review-artifact-hashes.json`;
 - reviewed packet hash: `sha256:<64 lowercase hex chars>`;
 - `can_close_source_rows: true`;
 - `mutates_findings: false`;
@@ -55,7 +59,8 @@ uses `trusted-host-promotion-runtime` with `EXT-TRUSTED-HOST-RUNTIME-###`. Runti
 be relabeled into the design namespace to pass intake.
 
 If that file is absent, malformed, packet-only/docs-only, missing the allowed disposition outcome,
-or contains critical/high findings, the gate must report:
+contains a missing, abbreviated, stale, or mismatched runtime review identity, or contains
+critical/high findings, the gate must report:
 
 ```text
 closure_ready: false

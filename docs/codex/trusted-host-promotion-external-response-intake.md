@@ -73,12 +73,14 @@ candidate and runtime source-review packet:
    selected at startup before any approval/proposal reservation or staging effect?
 3. Does a post-approval installed-file mutation terminally stale the proposal while leaving the
    approval unconsumed, attempts absent, and the staging root unchanged?
-4. Is `EXT-TRUSTED-HOST-RUNTIME-002` `fixed`, `partially_closed`, `open`, or `regressed`?
-5. Is `EXT-TRUSTED-HOST-RUNTIME-006` `fixed`, `partially_closed`, `open`, or `regressed`?
-6. Are any critical/high implementation findings unresolved?
-7. Does the packet include the governing TGB contracts and distinguish historical review state
+4. Does a restart without the retained verifier terminally stale an already-approved proposal,
+   preserve its approval and zero-effect state, and prevent revival after verifier restoration?
+5. Is `EXT-TRUSTED-HOST-RUNTIME-002` `fixed`, `partially_closed`, `open`, or `regressed`?
+6. Is `EXT-TRUSTED-HOST-RUNTIME-006` `fixed`, `partially_closed`, `open`, or `regressed`?
+7. Are any critical/high implementation findings unresolved?
+8. Does the packet include the governing TGB contracts and distinguish historical review state
    from the current exact candidate?
-8. Does the response explicitly avoid turning source-review closure into runtime authorization,
+9. Does the response explicitly avoid turning source-review closure into runtime authorization,
    release approval, broad host promotion, UAT acceptance, or a production-security claim?
 
 ## Finding Extraction Table
@@ -118,11 +120,16 @@ uv run python scripts/external_response_normalize.py \
   --reviewer "reviewer label" \
   --reviewer-type "independent-source-reviewer" \
   --source-access packet-and-source \
-  --reviewed-commit "$(git rev-parse HEAD)" \
-  --reviewed-packet-hash "sha256:<packet-hash>" \
+  --reviewed-commit "<full source_commit from 11_TRUSTED_HOST_PROMOTION_RUNTIME_CANDIDATE_REVIEW_PACKET.json>" \
+  --reviewed-packet-hash "sha256:<SHA-256 of trusted-host-promotion-runtime-source-review-artifact-hashes.json>" \
   --area trusted-host-promotion-runtime \
   --output var/review-runs/trusted-host-promotion/normalized-response.json
 ```
+
+The runtime closure gate requires the full 40-character commit embedded in the focused candidate
+review packet and independently computes the actual focused packet manifest digest. A missing,
+abbreviated, stale, or mismatched commit, or a merely well-formed but unrelated packet hash, fails
+closed. Do not substitute the current checkout commit if it differs from the reviewed packet.
 
 The closure gate accepts either the design-level area/namespace pair or the runtime-level
 area/namespace pair, but never a mixed pair. Both remain intake evidence only.

@@ -148,6 +148,8 @@ MATRIX_ROWS = (
             "wrong candidate and metadata-only spoof rejected",
             "inventory schema, reviewed inventory, installed file, and reviewed commit drift "
             "rejected",
+            "restart without retained verifier terminally stales and cannot revive an "
+            "approved proposal",
             "release artifact, review packet, and dependency-lock digest drift rejected",
             "digest-domain cycle rejected",
             "writable package root and environment-only spoof rejected",
@@ -159,6 +161,7 @@ MATRIX_ROWS = (
                 "tests/test_promotion_authority.py::test_runtime_candidate_id_does_not_include_review_packet_digest",
                 "tests/test_api_service.py::test_trusted_host_promotion_every_authority_component_drift_is_terminal",
                 "tests/test_api_service.py::test_trusted_host_promotion_installed_file_drift_is_terminal_before_reservation",
+                "tests/test_api_service.py::test_trusted_host_promotion_missing_verifier_restart_terminally_stales_approved_proposal",
                 "-q",
             ),
         ),

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import re
 import sys
@@ -28,11 +29,20 @@ AREA_NAMESPACE_PREFIXES = {
 }
 EXPECTED_OUTCOME = "continue_design_only"
 RUNTIME_EXPECTED_OUTCOME = "runtime_findings_closed"
+RUNTIME_REVIEW_PACKET_REL = (
+    "var/review-packets/v3/trusted-host-promotion-runtime-source-review/"
+    "11_TRUSTED_HOST_PROMOTION_RUNTIME_CANDIDATE_REVIEW_PACKET.json"
+)
+RUNTIME_REVIEW_HASH_MANIFEST_REL = (
+    "var/review-packets/v3/trusted-host-promotion-runtime-source-review/"
+    "trusted-host-promotion-runtime-source-review-artifact-hashes.json"
+)
 RUNTIME_REQUIRED_FIXED_FINDINGS = {
     "EXT-TRUSTED-HOST-RUNTIME-002",
     "EXT-TRUSTED-HOST-RUNTIME-006",
 }
 SHA256_PATTERN = re.compile(r"^sha256:[0-9a-f]{64}$")
+COMMIT_PATTERN = re.compile(r"^[0-9a-f]{40}$")
 
 REQUIRED_PHRASES = [
     "Status: fail-closed closure gate for blocked `ERG-005`.",
@@ -46,6 +56,8 @@ REQUIRED_PHRASES = [
     "source-level` or `packet-and-source`",
     "finding namespace: `EXT-TRUSTED-HOST-###`",
     "runtime finding namespace: `EXT-TRUSTED-HOST-RUNTIME-###`",
+    "full exact reviewed commit",
+    "actual focused runtime packet manifest digest",
     "can_close_source_rows: true",
     "mutates_findings: false",
     "closes_external_review: false",
@@ -152,7 +164,10 @@ def build_report(repo_root: Path) -> dict[str, Any]:
                 failures.append(f"closure gate doc contains forbidden phrase: {phrase}")
 
     response_present = normalized_response_path.exists()
-    response_report = _validate_normalized_response(normalized_response_path)
+    response_report = _validate_normalized_response(
+        normalized_response_path,
+        repo_root=repo_root,
+    )
     failures.extend(response_report["failures"])
     closure_ready = response_report["closure_ready"]
     response_area = response_report.get("area")
@@ -233,7 +248,11 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     }
 
 
-def _validate_normalized_response(path: Path) -> dict[str, Any]:
+def _validate_normalized_response(
+    path: Path,
+    *,
+    repo_root: Path | None = None,
+) -> dict[str, Any]:
     if not path.exists():
         return {
             "failures": [],
@@ -266,7 +285,9 @@ def _validate_normalized_response(path: Path) -> dict[str, Any]:
         failures.append("normalized response must not mutate findings")
     if payload.get("closes_external_review") is not False:
         failures.append("normalized response must not close external review directly")
-    if not SHA256_PATTERN.match(str(payload.get("reviewed_packet_hash", ""))):
+    reviewed_packet_hash = str(payload.get("reviewed_packet_hash", ""))
+    packet_hash_valid = SHA256_PATTERN.fullmatch(reviewed_packet_hash) is not None
+    if not packet_hash_valid:
         failures.append("normalized response reviewed_packet_hash is not a sha256 digest")
     disposition_outcome = payload.get("disposition_outcome")
     expected_outcome = (
@@ -298,6 +319,30 @@ def _validate_normalized_response(path: Path) -> dict[str, Any]:
             failures.append(f"{finding_id} is critical/high and blocks closure")
 
     if area == RUNTIME_AREA:
+        reviewed_commit = str(payload.get("reviewed_commit", ""))
+        if COMMIT_PATTERN.fullmatch(reviewed_commit) is None:
+            failures.append(
+                "runtime response reviewed_commit is not a full 40-character commit"
+            )
+        if repo_root is None:
+            failures.append("runtime response exact packet identity context is unavailable")
+        else:
+            expected_commit, expected_packet_hash, identity_failures = (
+                _runtime_review_identity(repo_root)
+            )
+            failures.extend(identity_failures)
+            if expected_commit is not None and reviewed_commit != expected_commit:
+                failures.append(
+                    "runtime response reviewed_commit does not match the focused packet"
+                )
+            if (
+                packet_hash_valid
+                and expected_packet_hash is not None
+                and reviewed_packet_hash != expected_packet_hash
+            ):
+                failures.append(
+                    "runtime response reviewed_packet_hash does not match the focused packet"
+                )
         fixed_findings = {
             str(finding.get("finding_id"))
             for finding in findings
@@ -318,6 +363,47 @@ def _validate_normalized_response(path: Path) -> dict[str, Any]:
         "reason": "normalized response validates" if not failures else "normalized response failed",
         "finding_count": len(findings),
     }
+
+
+def _runtime_review_identity(
+    repo_root: Path,
+) -> tuple[str | None, str | None, list[str]]:
+    failures: list[str] = []
+    packet_path = repo_root / RUNTIME_REVIEW_PACKET_REL
+    manifest_path = repo_root / RUNTIME_REVIEW_HASH_MANIFEST_REL
+    source_commit: str | None = None
+    packet_hash: str | None = None
+
+    try:
+        packet_payload = json.loads(packet_path.read_text(encoding="utf-8"))
+    except FileNotFoundError:
+        failures.append("focused runtime candidate review packet is missing")
+    except json.JSONDecodeError as exc:
+        failures.append(f"focused runtime candidate review packet is invalid JSON: {exc}")
+    except (OSError, UnicodeError) as exc:
+        failures.append(f"focused runtime candidate review packet is unreadable: {exc}")
+    else:
+        if not isinstance(packet_payload, dict):
+            failures.append("focused runtime candidate review packet must be an object")
+        else:
+            candidate_commit = str(packet_payload.get("source_commit", ""))
+            if COMMIT_PATTERN.fullmatch(candidate_commit) is None:
+                failures.append(
+                    "focused runtime candidate review packet has invalid source_commit"
+                )
+            else:
+                source_commit = candidate_commit
+
+    try:
+        manifest_bytes = manifest_path.read_bytes()
+    except FileNotFoundError:
+        failures.append("focused runtime packet hash manifest is missing")
+    except OSError as exc:
+        failures.append(f"focused runtime packet hash manifest is unreadable: {exc}")
+    else:
+        packet_hash = "sha256:" + hashlib.sha256(manifest_bytes).hexdigest()
+
+    return source_commit, packet_hash, failures
 
 
 def render_report(report: dict[str, Any]) -> str:
