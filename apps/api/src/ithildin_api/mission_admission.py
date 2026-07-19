@@ -195,7 +195,7 @@ class MissionAdmissionService:
             target_node_id=node.node_id,
             target_node_principal_id=node.principal_id,
             workspace_id=node.workspace_id,
-            node_record_hash=_node_authority_hash(node),
+            node_record_hash=mission_node_authority_hash(node),
             node_identity_key_id=node_identity_key_id(node.public_key),
             configuration_generation=desired.generation,
             configuration_digest=desired.configuration_digest,
@@ -351,7 +351,7 @@ def _transition_audit_metadata(
     }
 
 
-def _node_authority_hash(node: NodeRecord) -> str:
+def mission_node_authority_hash(node: NodeRecord) -> str:
     return sha256_digest(
         {
             "node_id": node.node_id,

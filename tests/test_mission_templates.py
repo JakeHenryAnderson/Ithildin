@@ -34,12 +34,11 @@ def test_template_payload_delivery_copy_cannot_mutate_registry() -> None:
 
     second = registry.get("synthetic_read_review_v1").payload_copy()
     assert second["mission_kind"] == "synthetic_read_review"
-    assert second["host_control"] == {
-        "runner_launch_allowed": False,
-        "shell_allowed": False,
-        "filesystem_write_allowed": False,
-        "network_allowed": False,
-    }
+    assert "host_control" not in second
+    assert second["operations"] == [
+        {"sequence": 1, "tool_name": "project.structure.summary"},
+        {"sequence": 2, "tool_name": "project.test.summary"},
+    ]
 
 
 @pytest.mark.parametrize(
@@ -49,7 +48,10 @@ def test_template_payload_delivery_copy_cannot_mutate_registry() -> None:
             template_id="synthetic_read_review_v1",
             canonical_payload_json=MissionTemplateRegistry.startup()
             .get("synthetic_read_review_v1")
-            .canonical_payload_json.replace('"network_allowed":false', '"network_allowed":true'),
+            .canonical_payload_json.replace(
+                '"freeform_summary_allowed":false',
+                '"freeform_summary_allowed":true',
+            ),
             payload_digest=MissionTemplateRegistry.startup()
             .get("synthetic_read_review_v1")
             .payload_digest,

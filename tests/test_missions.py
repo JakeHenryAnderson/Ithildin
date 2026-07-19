@@ -11,13 +11,19 @@ from ithildin_api.missions import (
     EVIDENCE_COMPLETE,
     EVIDENCE_INCOMPLETE,
     EVIDENCE_PENDING,
+    MISSION_CLAIM_EXPIRED_REVIEW_REQUIRED,
+    MISSION_CLAIMED,
     MISSION_QUEUED,
     MISSION_UNADMITTED,
     MissionAdmissionPayload,
     MissionAuthoritySnapshot,
     MissionCancellationPayload,
+    MissionClaimAuthoritySnapshot,
+    MissionClaimRequestPayload,
     MissionConflictError,
     MissionError,
+    MissionNotFoundError,
+    MissionRecord,
     MissionRunnerReportPayload,
     MissionStore,
 )
@@ -253,6 +259,324 @@ def test_queued_cancellation_is_staged_audited_and_idempotent(tmp_path: Path) ->
             MissionCancellationPayload(client_request_id="cancel-request-002"),
             requester=_authority().requesting_principal,
         )
+
+
+def test_claim_stages_without_delivery_and_finalizes_exactly_once(tmp_path: Path) -> None:
+    store = _store(tmp_path)
+    now = datetime(2026, 7, 18, 12, 0, tzinfo=UTC)
+    admission = store.stage_admission(_payload(), authority=_authority(), now=now)
+    mission = store.finalize_admission(
+        admission.transition.transition_id,
+        audit_event_id="evt_" + ("1" * 32),
+        audit_event_hash=SHA_A,
+        now=now,
+    )
+    authority = _claim_authority(mission)
+
+    staged = store.stage_claim(
+        mission.mission_id,
+        MissionClaimRequestPayload(protocol_version="1"),
+        authority=authority,
+        now=now + timedelta(seconds=1),
+    )
+
+    assert staged.mission.lifecycle_state == MISSION_QUEUED
+    assert staged.claim.claim_status == "staged"
+    assert staged.claim.lifecycle_revision == 2
+    assert staged.claim.expires_at == (now + timedelta(seconds=301)).isoformat()
+    assert staged.transition.evidence_status == EVIDENCE_PENDING
+    assert staged.transition.proposed_lifecycle_state == MISSION_CLAIMED
+    claimed = store.finalize_claim(
+        staged.transition.transition_id,
+        audit_event_id="evt_" + ("2" * 32),
+        audit_event_hash=SHA_B,
+        authority_precondition=lambda: authority,
+        now=now + timedelta(seconds=2),
+    )
+    assert claimed.claim_status == "delivered"
+    assert store.get(mission.mission_id).lifecycle_state == MISSION_CLAIMED
+    assert store.get(mission.mission_id).lifecycle_revision == 2
+    replay = store.finalize_claim(
+        staged.transition.transition_id,
+        audit_event_id="evt_" + ("2" * 32),
+        audit_event_hash=SHA_B,
+        authority_precondition=lambda: authority,
+    )
+    assert replay == claimed
+
+
+def test_claim_evidence_failure_preserves_queue_and_blocks_another_claim(
+    tmp_path: Path,
+) -> None:
+    store = _store(tmp_path)
+    admission = store.stage_admission(_payload(), authority=_authority())
+    mission = store.finalize_admission(
+        admission.transition.transition_id,
+        audit_event_id="evt_" + ("1" * 32),
+        audit_event_hash=SHA_A,
+    )
+    claim = store.stage_claim(
+        mission.mission_id,
+        MissionClaimRequestPayload(protocol_version="1"),
+        authority=_claim_authority(mission),
+    )
+
+    failed = store.mark_transition_evidence_incomplete(
+        claim.transition.transition_id,
+        failure_reason_code="audit_write_failed",
+    )
+
+    assert failed.evidence_status == EVIDENCE_INCOMPLETE
+    assert store.get(mission.mission_id).lifecycle_state == MISSION_QUEUED
+    assert store.get_claim(mission.mission_id).claim_status == "evidence_incomplete"
+    with pytest.raises(MissionNotFoundError, match="no queued mission"):
+        store.next_queued_for_node(NODE_ID)
+    with pytest.raises(MissionConflictError, match="already has a claim"):
+        store.stage_claim(
+            mission.mission_id,
+            MissionClaimRequestPayload(protocol_version="1"),
+            authority=_claim_authority(mission),
+        )
+
+
+def test_claim_authority_precondition_change_has_zero_claim_effects(tmp_path: Path) -> None:
+    store = _store(tmp_path)
+    admission = store.stage_admission(_payload(), authority=_authority())
+    mission = store.finalize_admission(
+        admission.transition.transition_id,
+        audit_event_id="evt_" + ("1" * 32),
+        audit_event_hash=SHA_A,
+    )
+    authority = _claim_authority(mission)
+    changed = authority.model_copy(update={"current_node_record_hash": SHA_2})
+
+    with pytest.raises(MissionConflictError, match="claim authority changed"):
+        store.stage_claim(
+            mission.mission_id,
+            MissionClaimRequestPayload(protocol_version="1"),
+            authority=authority,
+            authority_precondition=lambda: changed,
+        )
+
+    with sqlite3.connect(tmp_path / "ithildin.sqlite3") as connection:
+        assert connection.execute("SELECT count(*) FROM mission_claims").fetchone() == (0,)
+        assert connection.execute(
+            "SELECT count(*) FROM mission_transition_attempts WHERE transition_kind = ?",
+            ("claim_pending_evidence",),
+        ).fetchone() == (0,)
+
+
+def test_claim_expired_before_finalization_is_not_delivered(tmp_path: Path) -> None:
+    store = _store(tmp_path)
+    now = datetime(2026, 7, 18, 12, 0, tzinfo=UTC)
+    admission = store.stage_admission(
+        _payload(requested_timeout_seconds=60),
+        authority=_authority(),
+        now=now,
+    )
+    mission = store.finalize_admission(
+        admission.transition.transition_id,
+        audit_event_id="evt_" + ("1" * 32),
+        audit_event_hash=SHA_A,
+        now=now,
+    )
+    authority = _claim_authority(mission)
+    staged = store.stage_claim(
+        mission.mission_id,
+        MissionClaimRequestPayload(protocol_version="1"),
+        authority=authority,
+        now=now,
+    )
+
+    with pytest.raises(MissionConflictError, match="expired before delivery"):
+        store.finalize_claim(
+            staged.transition.transition_id,
+            audit_event_id="evt_" + ("2" * 32),
+            audit_event_hash=SHA_B,
+            authority_precondition=lambda: authority,
+            now=now + timedelta(seconds=60),
+        )
+    failed = store.mark_transition_evidence_incomplete(
+        staged.transition.transition_id,
+        failure_reason_code="finalization_failed",
+        now=now + timedelta(seconds=60),
+    )
+
+    assert failed.evidence_status == EVIDENCE_INCOMPLETE
+    assert store.get(mission.mission_id).lifecycle_state == MISSION_QUEUED
+    assert store.get_claim(mission.mission_id).claim_status == "evidence_incomplete"
+
+
+def test_claim_expiry_enters_attention_without_requeue(tmp_path: Path) -> None:
+    store = _store(tmp_path)
+    now = datetime(2026, 7, 18, 12, 0, tzinfo=UTC)
+    admission = store.stage_admission(
+        _payload(requested_timeout_seconds=60),
+        authority=_authority(),
+        now=now,
+    )
+    mission = store.finalize_admission(
+        admission.transition.transition_id,
+        audit_event_id="evt_" + ("1" * 32),
+        audit_event_hash=SHA_A,
+        now=now,
+    )
+    claim = store.stage_claim(
+        mission.mission_id,
+        MissionClaimRequestPayload(protocol_version="1"),
+        authority=_claim_authority(mission),
+        now=now,
+    )
+    delivered = store.finalize_claim(
+        claim.transition.transition_id,
+        audit_event_id="evt_" + ("2" * 32),
+        audit_event_hash=SHA_B,
+        authority_precondition=lambda: _claim_authority(mission),
+        now=now,
+    )
+    assert store.due_delivered_claims(now=now + timedelta(seconds=59)) == []
+    assert store.due_delivered_claims(now=now + timedelta(seconds=60)) == [delivered]
+
+    staged_expiry = store.stage_claim_expiry(
+        mission.mission_id,
+        now=now + timedelta(seconds=60),
+    )
+
+    assert staged_expiry.mission.lifecycle_state == MISSION_CLAIMED
+    assert staged_expiry.claim.claim_status == "delivered"
+    assert staged_expiry.transition.proposed_lifecycle_state == (
+        MISSION_CLAIM_EXPIRED_REVIEW_REQUIRED
+    )
+    expired = store.finalize_claim_expiry(
+        staged_expiry.transition.transition_id,
+        audit_event_id="evt_" + ("3" * 32),
+        audit_event_hash=SHA_C,
+        now=now + timedelta(seconds=60),
+    )
+    assert expired.lifecycle_state == MISSION_CLAIM_EXPIRED_REVIEW_REQUIRED
+    assert expired.lifecycle_revision == 3
+    assert store.get_claim(mission.mission_id).claim_status == "expired_review_required"
+    assert store.get_transition(claim.transition.transition_id).evidence_status == EVIDENCE_COMPLETE
+    assert store.get_transition(
+        staged_expiry.transition.transition_id
+    ).evidence_status == EVIDENCE_COMPLETE
+    assert store.due_delivered_claims(now=now + timedelta(days=1)) == []
+    with pytest.raises(MissionNotFoundError, match="no queued mission"):
+        store.next_queued_for_node(NODE_ID)
+
+
+@pytest.mark.parametrize("mutation_kind", ["earlier_deadline", "later_deadline", "status"])
+def test_claim_expiry_rejects_tampered_claim_row_without_lifecycle_effects(
+    tmp_path: Path,
+    mutation_kind: str,
+) -> None:
+    store = _store(tmp_path)
+    now = datetime(2026, 7, 18, 12, 0, tzinfo=UTC)
+    admission = store.stage_admission(
+        _payload(requested_timeout_seconds=60),
+        authority=_authority(),
+        now=now,
+    )
+    mission = store.finalize_admission(
+        admission.transition.transition_id,
+        audit_event_id="evt_" + ("1" * 32),
+        audit_event_hash=SHA_A,
+        now=now,
+    )
+    authority = _claim_authority(mission)
+    staged = store.stage_claim(
+        mission.mission_id,
+        MissionClaimRequestPayload(protocol_version="1"),
+        authority=authority,
+        now=now,
+    )
+    store.finalize_claim(
+        staged.transition.transition_id,
+        audit_event_id="evt_" + ("2" * 32),
+        audit_event_hash=SHA_B,
+        authority_precondition=lambda: authority,
+        now=now,
+    )
+    with sqlite3.connect(tmp_path / "ithildin.sqlite3") as connection:
+        if mutation_kind == "status":
+            connection.execute(
+                "UPDATE mission_claims SET claim_status = 'staged' WHERE mission_id = ?",
+                (mission.mission_id,),
+            )
+        else:
+            offset_seconds = 1 if mutation_kind == "earlier_deadline" else 120
+            connection.execute(
+                "UPDATE mission_claims SET expires_at = ? WHERE mission_id = ?",
+                (
+                    (now + timedelta(seconds=offset_seconds)).isoformat(),
+                    mission.mission_id,
+                ),
+            )
+        connection.commit()
+
+    with pytest.raises(
+        MissionError,
+        match="stored mission claim transition bindings are inconsistent",
+    ):
+        store.due_delivered_claims(now=now + timedelta(seconds=61))
+
+    assert store.get(mission.mission_id).lifecycle_state == MISSION_CLAIMED
+    with sqlite3.connect(tmp_path / "ithildin.sqlite3") as connection:
+        assert connection.execute(
+            "SELECT count(*) FROM mission_transition_attempts "
+            "WHERE transition_kind = 'claim_expiry_pending_evidence'"
+        ).fetchone() == (0,)
+
+
+def test_tampered_blocking_claim_node_cannot_enable_second_claim(tmp_path: Path) -> None:
+    store = _store(tmp_path)
+    first_admission = store.stage_admission(
+        _payload(client_request_id="mission-claim-blocker-001"),
+        authority=_authority(),
+    )
+    first_mission = store.finalize_admission(
+        first_admission.transition.transition_id,
+        audit_event_id="evt_" + ("1" * 32),
+        audit_event_hash=SHA_A,
+    )
+    second_admission = store.stage_admission(
+        _payload(client_request_id="mission-claim-blocker-002"),
+        authority=_authority(),
+    )
+    second_mission = store.finalize_admission(
+        second_admission.transition.transition_id,
+        audit_event_id="evt_" + ("2" * 32),
+        audit_event_hash=SHA_B,
+    )
+    store.stage_claim(
+        first_mission.mission_id,
+        MissionClaimRequestPayload(protocol_version="1"),
+        authority=_claim_authority(first_mission),
+    )
+    with sqlite3.connect(tmp_path / "ithildin.sqlite3") as connection:
+        connection.execute(
+            "UPDATE mission_claims SET node_id = ? WHERE mission_id = ?",
+            ("node_" + ("2" * 32), first_mission.mission_id),
+        )
+        connection.commit()
+
+    with pytest.raises(
+        MissionError,
+        match="stored mission claim authority bindings are inconsistent",
+    ):
+        store.stage_claim(
+            second_mission.mission_id,
+            MissionClaimRequestPayload(protocol_version="1"),
+            authority=_claim_authority(second_mission),
+        )
+
+    with sqlite3.connect(tmp_path / "ithildin.sqlite3") as connection:
+        assert connection.execute("SELECT count(*) FROM mission_claims").fetchone() == (1,)
+        assert connection.execute(
+            "SELECT count(*) FROM mission_transition_attempts "
+            "WHERE mission_id = ? AND transition_kind = 'claim_pending_evidence'",
+            (second_mission.mission_id,),
+        ).fetchone() == (0,)
 
 
 def test_admission_idempotency_is_exact_and_authority_namespaced(tmp_path: Path) -> None:
@@ -505,6 +829,27 @@ def _authority(**updates: object) -> MissionAuthoritySnapshot:
     }
     document.update(updates)
     return MissionAuthoritySnapshot.model_validate(document)
+
+
+def _claim_authority(mission: MissionRecord) -> MissionClaimAuthoritySnapshot:
+    return MissionClaimAuthoritySnapshot(
+        mission_id=mission.mission_id,
+        admitted_authority_snapshot_hash=mission.authority_snapshot_hash,
+        envelope_digest=mission.envelope_digest,
+        target_node_id=mission.target_node_id,
+        target_node_principal_id=mission.target_node_principal_id,
+        workspace_id=mission.workspace_id,
+        current_node_record_hash=SHA_A,
+        node_identity_key_id=SHA_B,
+        configuration_generation=mission.configuration_generation,
+        configuration_digest=mission.configuration_digest,
+        policy_digest=mission.policy_digest,
+        manifest_lock_digest=mission.manifest_lock_digest,
+        tool_count=24,
+        mission_template_id="synthetic_read_review_v1",
+        template_registry_generation=mission.template_registry_generation,
+        template_payload_digest=mission.template_payload_digest,
+    )
 
 
 def _runner_report(**updates: object) -> MissionRunnerReportPayload:

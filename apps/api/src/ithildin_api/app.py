@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 from collections.abc import AsyncIterator
@@ -60,11 +61,19 @@ from ithildin_api.mission_admission import (
     MissionAdmissionService,
     MissionAdmissionUnavailableError,
 )
+from ithildin_api.mission_claims import (
+    MissionClaimError,
+    MissionClaimNotFoundError,
+    MissionClaimService,
+    MissionClaimUnavailableError,
+)
 from ithildin_api.mission_templates import MissionTemplateRegistry
 from ithildin_api.missions import (
     MissionAdmissionPayload,
     MissionCancellationPayload,
+    MissionClaimRequestPayload,
     MissionConflictError,
+    MissionError,
     MissionNotFoundError,
     MissionStore,
 )
@@ -158,6 +167,22 @@ from ithildin_api.trusted_host_registry import TrustedHostDescriptorRegistry
 from ithildin_api.workspaces import WorkspaceRegistry, WorkspaceRegistryError
 
 SERVICE_NAME = "ithildin-api"
+MISSION_CLAIM_RECONCILIATION_INTERVAL_SECONDS = 1.0
+
+
+async def _reconcile_mission_claim_expiries(
+    service: MissionClaimService,
+) -> None:
+    logger = logging.getLogger(__name__)
+    while True:
+        try:
+            service.reconcile_expired_claims()
+        except (MissionClaimError, MissionError) as exc:
+            logger.warning(
+                "mission claim expiry reconciliation failed closed",
+                extra={"error_type": type(exc).__name__},
+            )
+        await asyncio.sleep(MISSION_CLAIM_RECONCILIATION_INTERVAL_SECONDS)
 
 
 def create_app(
@@ -271,6 +296,20 @@ def create_app(
                 manifest_lock_path=resolved_settings.manifest_lock_path,
                 verified_manifest_lock_digest=startup_manifest_lock_digest,
             )
+            app_instance.state.mission_claim_service = MissionClaimService(
+                mission_store=mission_store,
+                node_store=node_store,
+                node_configuration_store=node_configuration_store,
+                template_registry=mission_template_registry,
+                principal_registry=principal_registry,
+                workspace_registry=workspace_registry,
+                tool_registry=registry,
+                policy_engine=policy_evaluator,
+                audit_writer=audit_writer,
+                node_stale_after_seconds=resolved_settings.node_stale_after_seconds,
+                manifest_lock_path=resolved_settings.manifest_lock_path,
+                verified_manifest_lock_digest=startup_manifest_lock_digest,
+            )
             http_fetch_executor = HttpFetchExecutor.from_settings(
                 http_allowlist=resolved_settings.http_allowlist,
                 timeout_seconds=resolved_settings.http_timeout_seconds,
@@ -341,8 +380,24 @@ def create_app(
                 read_tool_executor.default_workspace_id,
             )
             app_instance.state.tool_call_telemetry = telemetry
+        mission_claim_reconciliation_task = asyncio.create_task(
+            _reconcile_mission_claim_expiries(
+                cast(MissionClaimService, app_instance.state.mission_claim_service)
+            ),
+            name="ithildin-mission-claim-expiry-reconciliation",
+        )
+        app_instance.state.mission_claim_reconciliation_task = (
+            mission_claim_reconciliation_task
+        )
         logging.getLogger(__name__).info("api service started")
-        yield
+        try:
+            yield
+        finally:
+            mission_claim_reconciliation_task.cancel()
+            try:
+                await mission_claim_reconciliation_task
+            except asyncio.CancelledError:
+                pass
 
     api = FastAPI(title="Ithildin API", lifespan=lifespan)
     api.add_middleware(
@@ -744,6 +799,47 @@ def create_app(
             "configuration_digest": context.configuration_digest,
             "offline_fallback_used": False,
         }
+
+    @api.post("/nodes/{node_id}/mission-claims")
+    def claim_node_mission(
+        node_id: str,
+        request: Request,
+        payload: JsonObject,
+    ) -> JsonObject:
+        try:
+            claim_request = MissionClaimRequestPayload.model_validate(payload)
+        except ValidationError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="invalid mission claim request",
+            ) from exc
+        _require_header_node(request, node_id)
+        settings_state = cast(Settings, api.state.settings)
+        try:
+            node = cast(NodeStore, api.state.node_store).authenticate_request(
+                node_id=node_id,
+                timestamp=request.headers.get("X-Ithildin-Timestamp", ""),
+                nonce=request.headers.get("X-Ithildin-Nonce", ""),
+                signature=request.headers.get("X-Ithildin-Signature", ""),
+                body=cast(JsonObject, claim_request.model_dump(mode="json")),
+                path=request.url.path,
+                max_clock_skew_seconds=settings_state.node_max_clock_skew_seconds,
+            )
+            return cast(
+                MissionClaimService,
+                api.state.mission_claim_service,
+            ).claim(claim_request, authenticated_node=node)
+        except (NodeAuthenticationError, NodeNotFoundError) as exc:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(exc)) from exc
+        except MissionClaimNotFoundError as exc:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+        except MissionClaimUnavailableError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail=str(exc),
+            ) from exc
+        except MissionClaimError as exc:
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
 
     @api.post("/nodes/{node_id}/identity-key-rotation/challenges")
     def issue_node_identity_key_rotation_challenge(
@@ -1447,6 +1543,16 @@ def create_app(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="unsupported query parameter",
             )
+        try:
+            cast(
+                MissionClaimService,
+                api.state.mission_claim_service,
+            ).reconcile_expired_claims()
+        except MissionClaimError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="mission claim expiry reconciliation failed",
+            ) from exc
         limit = _bounded_query_limit(request.query_params.get("limit"), default=50, maximum=200)
         missions = cast(MissionStore, api.state.mission_store).list_admitted(limit=limit)
         return {
@@ -1461,9 +1567,18 @@ def create_app(
     @api.get("/missions/{mission_id}", dependencies=[Depends(require_admin_token)])
     def get_mission(mission_id: str) -> JsonObject:
         try:
+            cast(
+                MissionClaimService,
+                api.state.mission_claim_service,
+            ).reconcile_expired_claims()
             return cast(MissionStore, api.state.mission_store).get_admitted(
                 mission_id
             ).safe_summary()
+        except MissionClaimError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="mission claim expiry reconciliation failed",
+            ) from exc
         except MissionNotFoundError as exc:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
 

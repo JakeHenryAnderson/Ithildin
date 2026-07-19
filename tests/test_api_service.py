@@ -9,6 +9,7 @@ import sqlite3
 from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from threading import Event
 from typing import Any, NoReturn, cast
 
 import ithildin_api.registry as registry_module
@@ -28,6 +29,7 @@ from ithildin_api.manifest_lock import (
     write_manifest_lock,
     write_manifest_lock_signature,
 )
+from ithildin_api.mission_claims import MissionClaimError, MissionClaimService
 from ithildin_api.node_configuration import (
     NodeConfigurationConflictError,
     NodeConfigurationStore,
@@ -6138,6 +6140,597 @@ def test_mission_admission_inventory_detail_and_queued_cancellation_api(
         assert event["metadata"]["transition_id"] == binding[1]
 
 
+def test_signed_node_claim_delivers_one_closed_envelope_and_denies_replay(
+    tmp_path: Path,
+) -> None:
+    settings = _mission_ready_settings(tmp_path)
+    admin_headers = {"Authorization": f"Bearer {settings.admin_token}"}
+    private_key = Ed25519PrivateKey.generate()
+    claim_payload: JsonObject = {"protocol_version": "1"}
+    api = create_app(settings)
+    with TestClient(api) as client:
+        node_id = _ready_mission_node(
+            client,
+            settings,
+            nonce_prefix="7",
+            node_private_key=private_key,
+        )
+        admitted = client.post(
+            "/missions",
+            headers=admin_headers,
+            json={
+                "target_node_id": node_id,
+                "mission_template_id": "synthetic_read_review_v1",
+                "requested_timeout_seconds": 300,
+                "client_request_id": "claim-delivery-mission-001",
+            },
+        )
+        assert admitted.status_code == 200
+        mission_id = str(admitted.json()["mission_id"])
+        claim_path = f"/nodes/{node_id}/mission-claims"
+        unauthorized = client.post(claim_path, json=claim_payload)
+        assert unauthorized.status_code == 401
+        invalid = client.post(
+            claim_path,
+            headers={"X-Ithildin-Node": node_id},
+            json={"protocol_version": "1", "mission_id": mission_id},
+        )
+        assert invalid.status_code == 400
+        claim_headers = _signed_node_headers(
+            private_key,
+            node_id=node_id,
+            path=claim_path,
+            payload=claim_payload,
+            nonce="74" * 16,
+        )
+
+        delivered = client.post(claim_path, headers=claim_headers, json=claim_payload)
+
+        assert delivered.status_code == 200
+        envelope = delivered.json()
+        assert envelope["mission_id"] == mission_id
+        assert envelope["gateway_lifecycle_state"] == "claimed"
+        assert envelope["gateway_delivery_recorded"] is True
+        assert envelope["claim_lifecycle_revision"] == 2
+        assert envelope["runner_state_authority"] == "runner_reported_only"
+        assert envelope["model_provider_state_known"] is False
+        assert envelope["template_payload"]["operations"] == [
+            {"sequence": 1, "tool_name": "project.structure.summary"},
+            {"sequence": 2, "tool_name": "project.test.summary"},
+        ]
+        assert sha256_digest(cast(JsonObject, envelope["template_payload"])) == (
+            envelope["template_payload_digest"]
+        )
+        serialized = json.dumps(envelope, sort_keys=True)
+        for forbidden in (
+            "host_control",
+            "runner_launch_allowed",
+            "shell_allowed",
+            "filesystem_write_allowed",
+            "network_allowed",
+            "objective",
+            "executable",
+            "command",
+            "environment",
+            "provider_secret",
+        ):
+            assert forbidden not in serialized
+        detail = client.get(f"/missions/{mission_id}", headers=admin_headers)
+        assert detail.json()["lifecycle_state"] == "claimed"
+        assert detail.json()["lifecycle_revision"] == 2
+        replay = client.post(claim_path, headers=claim_headers, json=claim_payload)
+        assert replay.status_code == 401
+        assert replay.json()["detail"] == "replayed Node nonce"
+
+    with TestClient(create_app(settings)) as restarted:
+        replay_after_restart = restarted.post(
+            claim_path,
+            headers=claim_headers,
+            json=claim_payload,
+        )
+        assert replay_after_restart.status_code == 401
+        assert replay_after_restart.json()["detail"] == "replayed Node nonce"
+
+    with sqlite3.connect(settings.db_path) as connection:
+        event = json.loads(
+            str(
+                connection.execute(
+                    "SELECT payload_json FROM audit_events WHERE event_type = ?",
+                    (AuditEventType.MISSION_CLAIM_STAGED.value,),
+                ).fetchone()[0]
+            )
+        )
+        binding = connection.execute(
+            "SELECT owner_kind, owner_id, request_digest "
+            "FROM mission_audit_evidence_bindings WHERE audit_event_id = ?",
+            (event["event_id"],),
+        ).fetchone()
+    assert event["metadata"]["staged_proposal_only"] is True
+    assert event["metadata"]["runner_started_proven"] is False
+    assert event["input_hash"] == binding[2]
+    assert event["metadata"]["request_digest"] == binding[2]
+    assert binding[:2] == ("mission_transition", event["metadata"]["transition_id"])
+    audit_text = settings.audit_log_path.read_text(encoding="utf-8")
+    assert "project.structure.summary" not in audit_text
+    assert "template_payload" not in audit_text
+
+
+def test_signed_node_claim_is_single_winner_and_target_bound(tmp_path: Path) -> None:
+    settings = _mission_ready_settings(tmp_path)
+    admin_headers = {"Authorization": f"Bearer {settings.admin_token}"}
+    target_key = Ed25519PrivateKey.generate()
+    other_key = Ed25519PrivateKey.generate()
+    claim_payload: JsonObject = {"protocol_version": "1"}
+    with TestClient(create_app(settings)) as client:
+        target_node_id = _ready_mission_node(
+            client,
+            settings,
+            nonce_prefix="8",
+            node_private_key=target_key,
+        )
+        other_node_id = _ready_mission_node(
+            client,
+            settings,
+            nonce_prefix="9",
+            node_private_key=other_key,
+        )
+        admitted = client.post(
+            "/missions",
+            headers=admin_headers,
+            json={
+                "target_node_id": target_node_id,
+                "mission_template_id": "synthetic_read_review_v1",
+                "requested_timeout_seconds": 300,
+                "client_request_id": "concurrent-claim-mission-001",
+            },
+        )
+        assert admitted.status_code == 200
+        other_path = f"/nodes/{other_node_id}/mission-claims"
+        wrong_node = client.post(
+            other_path,
+            headers=_signed_node_headers(
+                other_key,
+                node_id=other_node_id,
+                path=other_path,
+                payload=claim_payload,
+                nonce="94" * 16,
+            ),
+            json=claim_payload,
+        )
+        assert wrong_node.status_code == 404
+        assert "template_payload" not in wrong_node.text
+
+        claim_path = f"/nodes/{target_node_id}/mission-claims"
+        headers = [
+            _signed_node_headers(
+                target_key,
+                node_id=target_node_id,
+                path=claim_path,
+                payload=claim_payload,
+                nonce=nonce,
+            )
+            for nonce in ("84" * 16, "85" * 16)
+        ]
+
+        def submit_claim(claim_headers: dict[str, str]) -> tuple[int, JsonObject]:
+            response = client.post(claim_path, headers=claim_headers, json=claim_payload)
+            return response.status_code, cast(JsonObject, response.json())
+
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            outcomes = list(executor.map(submit_claim, headers))
+
+        assert [status_code for status_code, _ in outcomes].count(200) == 1
+        assert all(status_code in {200, 404, 409} for status_code, _ in outcomes)
+        [delivery] = [body for status_code, body in outcomes if status_code == 200]
+        assert delivery["gateway_delivery_recorded"] is True
+        with sqlite3.connect(settings.db_path) as connection:
+            assert connection.execute("SELECT count(*) FROM mission_claims").fetchone() == (1,)
+            assert connection.execute(
+                "SELECT count(*) FROM mission_claims WHERE claim_status = 'delivered'"
+            ).fetchone() == (1,)
+
+
+def test_signed_node_claim_audit_failure_exposes_no_envelope(tmp_path: Path) -> None:
+    settings = _mission_ready_settings(tmp_path)
+    admin_headers = {"Authorization": f"Bearer {settings.admin_token}"}
+    private_key = Ed25519PrivateKey.generate()
+    claim_payload: JsonObject = {"protocol_version": "1"}
+    api = create_app(settings)
+    with TestClient(api) as client:
+        node_id = _ready_mission_node(
+            client,
+            settings,
+            nonce_prefix="a",
+            node_private_key=private_key,
+        )
+        admitted = client.post(
+            "/missions",
+            headers=admin_headers,
+            json={
+                "target_node_id": node_id,
+                "mission_template_id": "synthetic_read_review_v1",
+                "requested_timeout_seconds": 300,
+                "client_request_id": "claim-audit-failure-001",
+            },
+        )
+        assert admitted.status_code == 200
+
+        class FailingAuditWriter:
+            def write_event(self, **_: object) -> None:
+                raise AuditWriteError("simulated claim audit failure")
+
+        api.state.mission_claim_service.audit_writer = FailingAuditWriter()
+        claim_path = f"/nodes/{node_id}/mission-claims"
+        failed = client.post(
+            claim_path,
+            headers=_signed_node_headers(
+                private_key,
+                node_id=node_id,
+                path=claim_path,
+                payload=claim_payload,
+                nonce="a4" * 16,
+            ),
+            json=claim_payload,
+        )
+        assert failed.status_code == 409
+        assert failed.json()["detail"] == "mission claim audit evidence failed"
+        assert "template_payload" not in failed.text
+
+    with sqlite3.connect(settings.db_path) as connection:
+        assert connection.execute(
+            "SELECT lifecycle_state, lifecycle_revision FROM missions"
+        ).fetchone() == ("queued", 1)
+        assert connection.execute(
+            "SELECT claim_status FROM mission_claims"
+        ).fetchone() == ("evidence_incomplete",)
+        assert connection.execute(
+            "SELECT evidence_status, failure_reason_code FROM mission_transition_attempts "
+            "WHERE transition_kind = 'claim_pending_evidence'"
+        ).fetchone() == ("evidence_incomplete", "audit_write_failed")
+
+
+def test_signed_node_claim_revoked_after_audit_is_not_delivered(tmp_path: Path) -> None:
+    settings = _mission_ready_settings(tmp_path)
+    admin_headers = {"Authorization": f"Bearer {settings.admin_token}"}
+    private_key = Ed25519PrivateKey.generate()
+    claim_payload: JsonObject = {"protocol_version": "1"}
+    api = create_app(settings)
+    with TestClient(api) as client:
+        node_id = _ready_mission_node(
+            client,
+            settings,
+            nonce_prefix="6",
+            node_private_key=private_key,
+        )
+        admitted = client.post(
+            "/missions",
+            headers=admin_headers,
+            json={
+                "target_node_id": node_id,
+                "mission_template_id": "synthetic_read_review_v1",
+                "requested_timeout_seconds": 300,
+                "client_request_id": "claim-final-authority-race-001",
+            },
+        )
+        assert admitted.status_code == 200
+        real_audit_writer = api.state.mission_claim_service.audit_writer
+
+        class RevokingAfterAuditWriter:
+            def write_event(self, **kwargs: object) -> object:
+                event = real_audit_writer.write_event(**kwargs)
+                with sqlite3.connect(settings.db_path) as connection:
+                    connection.execute(
+                        "UPDATE nodes SET status = 'revoked' WHERE node_id = ?",
+                        (node_id,),
+                    )
+                    connection.commit()
+                return event
+
+        api.state.mission_claim_service.audit_writer = RevokingAfterAuditWriter()
+        claim_path = f"/nodes/{node_id}/mission-claims"
+        failed = client.post(
+            claim_path,
+            headers=_signed_node_headers(
+                private_key,
+                node_id=node_id,
+                path=claim_path,
+                payload=claim_payload,
+                nonce="64" * 16,
+            ),
+            json=claim_payload,
+        )
+
+        assert failed.status_code == 409
+        assert failed.json()["detail"] == "mission claim finalization failed"
+        assert "template_payload" not in failed.text
+
+    with sqlite3.connect(settings.db_path) as connection:
+        assert connection.execute(
+            "SELECT lifecycle_state, lifecycle_revision FROM missions"
+        ).fetchone() == ("queued", 1)
+        assert connection.execute(
+            "SELECT claim_status FROM mission_claims"
+        ).fetchone() == ("evidence_incomplete",)
+        transition = connection.execute(
+            "SELECT transition_id, evidence_status, failure_reason_code "
+            "FROM mission_transition_attempts "
+            "WHERE transition_kind = 'claim_pending_evidence'"
+        ).fetchone()
+        assert transition[1:] == ("evidence_incomplete", "finalization_failed")
+        assert connection.execute(
+            "SELECT count(*) FROM mission_audit_evidence_bindings WHERE owner_id = ?",
+            (transition[0],),
+        ).fetchone() == (0,)
+
+
+@pytest.mark.parametrize(
+    ("mutation_sql", "parameters", "expected_status"),
+    (
+        (
+            "UPDATE nodes SET last_seen_at = ? WHERE node_id = ?",
+            ("2020-01-01T00:00:00+00:00",),
+            409,
+        ),
+        ("UPDATE nodes SET status = 'revoked' WHERE node_id = ?", (), 401),
+        (
+            "UPDATE nodes SET last_configuration_digest = ? WHERE node_id = ?",
+            ("sha256:" + ("9" * 64),),
+            409,
+        ),
+        ("UPDATE nodes SET last_node_version = '0.0.1' WHERE node_id = ?", (), 409),
+        (
+            "UPDATE nodes SET configuration_acknowledgment_status = NULL WHERE node_id = ?",
+            (),
+            409,
+        ),
+    ),
+)
+def test_signed_node_claim_ineligible_postures_have_zero_claim_effects(
+    tmp_path: Path,
+    mutation_sql: str,
+    parameters: tuple[object, ...],
+    expected_status: int,
+) -> None:
+    settings = _mission_ready_settings(tmp_path)
+    admin_headers = {"Authorization": f"Bearer {settings.admin_token}"}
+    private_key = Ed25519PrivateKey.generate()
+    claim_payload: JsonObject = {"protocol_version": "1"}
+    with TestClient(create_app(settings)) as client:
+        node_id = _ready_mission_node(
+            client,
+            settings,
+            nonce_prefix="b",
+            node_private_key=private_key,
+        )
+        admitted = client.post(
+            "/missions",
+            headers=admin_headers,
+            json={
+                "target_node_id": node_id,
+                "mission_template_id": "synthetic_read_review_v1",
+                "requested_timeout_seconds": 300,
+                "client_request_id": "ineligible-claim-mission-001",
+            },
+        )
+        assert admitted.status_code == 200
+        with sqlite3.connect(settings.db_path) as connection:
+            connection.execute(mutation_sql, (*parameters, node_id))
+            connection.commit()
+        claim_path = f"/nodes/{node_id}/mission-claims"
+        denied = client.post(
+            claim_path,
+            headers=_signed_node_headers(
+                private_key,
+                node_id=node_id,
+                path=claim_path,
+                payload=claim_payload,
+                nonce="b4" * 16,
+            ),
+            json=claim_payload,
+        )
+        assert denied.status_code == expected_status
+        assert "template_payload" not in denied.text
+
+    with sqlite3.connect(settings.db_path) as connection:
+        assert connection.execute("SELECT count(*) FROM mission_claims").fetchone() == (0,)
+        assert connection.execute(
+            "SELECT count(*) FROM mission_transition_attempts "
+            "WHERE transition_kind = 'claim_pending_evidence'"
+        ).fetchone() == (0,)
+
+
+def test_mission_claim_expiry_reconciler_runs_without_request_traffic_and_restarts(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    settings = _mission_ready_settings(tmp_path)
+    observed = Event()
+    original = MissionClaimService.reconcile_expired_claims
+
+    def observe_reconciliation(
+        self: MissionClaimService,
+        *,
+        now: datetime | None = None,
+    ) -> int:
+        observed.set()
+        return original(self, now=now)
+
+    monkeypatch.setattr(
+        MissionClaimService,
+        "reconcile_expired_claims",
+        observe_reconciliation,
+    )
+
+    first_api = create_app(settings)
+    with TestClient(first_api):
+        assert observed.wait(timeout=2)
+        first_task = first_api.state.mission_claim_reconciliation_task
+        assert first_task.done() is False
+    assert first_task.cancelled() is True
+
+    observed.clear()
+    restarted_api = create_app(settings)
+    with TestClient(restarted_api):
+        assert observed.wait(timeout=2)
+        restarted_task = restarted_api.state.mission_claim_reconciliation_task
+        assert restarted_task.done() is False
+    assert restarted_task.cancelled() is True
+
+
+def test_claim_expiry_reconciliation_enters_attention_without_requeue(
+    tmp_path: Path,
+) -> None:
+    settings = _mission_ready_settings(tmp_path)
+    admin_headers = {"Authorization": f"Bearer {settings.admin_token}"}
+    private_key = Ed25519PrivateKey.generate()
+    claim_payload: JsonObject = {"protocol_version": "1"}
+    api = create_app(settings)
+    with TestClient(api) as client:
+        node_id = _ready_mission_node(
+            client,
+            settings,
+            nonce_prefix="c",
+            node_private_key=private_key,
+        )
+        admitted = client.post(
+            "/missions",
+            headers=admin_headers,
+            json={
+                "target_node_id": node_id,
+                "mission_template_id": "synthetic_read_review_v1",
+                "requested_timeout_seconds": 60,
+                "client_request_id": "claim-expiry-mission-001",
+            },
+        )
+        assert admitted.status_code == 200
+        second_admission = client.post(
+            "/missions",
+            headers=admin_headers,
+            json={
+                "target_node_id": node_id,
+                "mission_template_id": "synthetic_read_review_v1",
+                "requested_timeout_seconds": 60,
+                "client_request_id": "claim-expiry-mission-002",
+            },
+        )
+        assert second_admission.status_code == 200
+        claim_path = f"/nodes/{node_id}/mission-claims"
+        delivered = client.post(
+            claim_path,
+            headers=_signed_node_headers(
+                private_key,
+                node_id=node_id,
+                path=claim_path,
+                payload=claim_payload,
+                nonce="c4" * 16,
+            ),
+            json=claim_payload,
+        )
+        assert delivered.status_code == 200
+        mission_id = str(delivered.json()["mission_id"])
+        expiry = datetime.fromisoformat(str(delivered.json()["claim_expires_at"]))
+
+        reconciled = api.state.mission_claim_service.reconcile_expired_claims(
+            now=expiry + timedelta(microseconds=1)
+        )
+
+        assert reconciled == 1
+        detail = client.get(f"/missions/{mission_id}", headers=admin_headers)
+        assert detail.status_code == 200
+        assert detail.json()["lifecycle_state"] == "claim_expired_review_required"
+        assert detail.json()["lifecycle_revision"] == 3
+        assert api.state.mission_claim_service.reconcile_expired_claims(
+            now=expiry + timedelta(days=1)
+        ) == 0
+        no_requeue = client.post(
+            claim_path,
+            headers=_signed_node_headers(
+                private_key,
+                node_id=node_id,
+                path=claim_path,
+                payload=claim_payload,
+                nonce="c5" * 16,
+            ),
+            json=claim_payload,
+        )
+        assert no_requeue.status_code == 409
+        assert no_requeue.json()["detail"] == "Node already has unresolved mission delivery"
+        assert "template_payload" not in no_requeue.text
+
+    with sqlite3.connect(settings.db_path) as connection:
+        assert connection.execute(
+            "SELECT claim_status FROM mission_claims"
+        ).fetchone() == ("expired_review_required",)
+        assert connection.execute(
+            "SELECT count(*) FROM mission_transition_attempts "
+            "WHERE transition_kind = 'claim_expiry_pending_evidence' "
+            "AND evidence_status = 'complete'"
+        ).fetchone() == (1,)
+
+
+def test_claim_expiry_audit_failure_preserves_claimed_state(tmp_path: Path) -> None:
+    settings = _mission_ready_settings(tmp_path)
+    admin_headers = {"Authorization": f"Bearer {settings.admin_token}"}
+    private_key = Ed25519PrivateKey.generate()
+    claim_payload: JsonObject = {"protocol_version": "1"}
+    api = create_app(settings)
+    with TestClient(api) as client:
+        node_id = _ready_mission_node(
+            client,
+            settings,
+            nonce_prefix="d",
+            node_private_key=private_key,
+        )
+        admitted = client.post(
+            "/missions",
+            headers=admin_headers,
+            json={
+                "target_node_id": node_id,
+                "mission_template_id": "synthetic_read_review_v1",
+                "requested_timeout_seconds": 60,
+                "client_request_id": "claim-expiry-audit-failure-001",
+            },
+        )
+        mission_id = str(admitted.json()["mission_id"])
+        claim_path = f"/nodes/{node_id}/mission-claims"
+        delivered = client.post(
+            claim_path,
+            headers=_signed_node_headers(
+                private_key,
+                node_id=node_id,
+                path=claim_path,
+                payload=claim_payload,
+                nonce="d4" * 16,
+            ),
+            json=claim_payload,
+        )
+        expiry = datetime.fromisoformat(str(delivered.json()["claim_expires_at"]))
+
+        class FailingAuditWriter:
+            def write_event(self, **_: object) -> None:
+                raise AuditWriteError("simulated claim expiry audit failure")
+
+        api.state.mission_claim_service.audit_writer = FailingAuditWriter()
+        with pytest.raises(MissionClaimError, match="expiry audit evidence failed"):
+            api.state.mission_claim_service.reconcile_expired_claims(
+                now=expiry + timedelta(microseconds=1)
+            )
+
+    with sqlite3.connect(settings.db_path) as connection:
+        assert connection.execute(
+            "SELECT lifecycle_state, lifecycle_revision FROM missions WHERE mission_id = ?",
+            (mission_id,),
+        ).fetchone() == ("claimed", 2)
+        assert connection.execute(
+            "SELECT claim_status FROM mission_claims WHERE mission_id = ?",
+            (mission_id,),
+        ).fetchone() == ("delivered",)
+        assert connection.execute(
+            "SELECT evidence_status, failure_reason_code FROM mission_transition_attempts "
+            "WHERE transition_kind = 'claim_expiry_pending_evidence'"
+        ).fetchone() == ("evidence_incomplete", "audit_write_failed")
+
+
 @pytest.mark.parametrize(
     ("mutation_sql", "parameters"),
     (
@@ -6351,9 +6944,10 @@ def _ready_mission_node(
     settings: Settings,
     *,
     nonce_prefix: str,
+    node_private_key: Ed25519PrivateKey | None = None,
 ) -> str:
     admin_headers = {"Authorization": f"Bearer {settings.admin_token}"}
-    private_key = Ed25519PrivateKey.generate()
+    private_key = node_private_key or Ed25519PrivateKey.generate()
     public_key = base64.b64encode(private_key.public_key().public_bytes_raw()).decode()
     issued = client.post(
         "/nodes/enrollment-codes",

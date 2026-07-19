@@ -26,12 +26,6 @@ _SYNTHETIC_READ_REVIEW_PAYLOAD: JsonObject = {
         "artifact_digest_optional": True,
         "freeform_summary_allowed": False,
     },
-    "host_control": {
-        "runner_launch_allowed": False,
-        "shell_allowed": False,
-        "filesystem_write_allowed": False,
-        "network_allowed": False,
-    },
 }
 
 
