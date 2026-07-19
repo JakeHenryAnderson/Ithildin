@@ -11,6 +11,7 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any, NoReturn, cast
 
+import ithildin_api.registry as registry_module
 import ithildin_api.trusted_host_promotions as trusted_host_promotions_module
 import pytest
 from cryptography.hazmat.primitives import serialization
@@ -55,7 +56,7 @@ from ithildin_api.trusted_host_promotions import (
     TrustedHostPromotionStore,
 )
 from ithildin_api.trusted_host_registry import TRUSTED_HOST_REGISTRY_SCHEMA_DIGEST
-from ithildin_audit_core import AuditWriter, generate_audit_signing_keypair
+from ithildin_audit_core import AuditWriteError, AuditWriter, generate_audit_signing_keypair
 from ithildin_policy_core import OpaBundleSource, opa_bundle_hash
 from ithildin_schemas import AuditEventType, JsonObject, PolicyDecision, PolicyInput, sha256_digest
 from pydantic import ValidationError
@@ -5992,6 +5993,449 @@ def test_node_governed_read_uses_derived_identity_workspace_and_durable_replay(
     assert f"agent:node.{node_id}" in audit_text
     assert "node:node_" in audit_text
     assert private_key.private_bytes_raw().hex() not in audit_text
+
+
+def test_mission_admission_inventory_detail_and_queued_cancellation_api(
+    tmp_path: Path,
+) -> None:
+    settings = _mission_ready_settings(tmp_path)
+    admin_headers = {"Authorization": f"Bearer {settings.admin_token}"}
+    api = create_app(settings)
+    with TestClient(api) as client:
+        node_id = _ready_mission_node(client, settings, nonce_prefix="e")
+        template_response = client.get("/mission-templates", headers=admin_headers)
+        assert template_response.status_code == 200
+        template_document = template_response.json()
+        assert template_document["template_count"] == 1
+        assert template_document["templates"][0]["payload_included"] is False
+        assert "operations" not in template_response.text
+
+        admission_payload = {
+            "target_node_id": node_id,
+            "mission_template_id": "synthetic_read_review_v1",
+            "requested_timeout_seconds": 300,
+            "client_request_id": "operator-mission-001",
+        }
+        unauthorized = client.post("/missions", json=admission_payload)
+        assert unauthorized.status_code == 401
+        assert client.get("/missions", headers=admin_headers).json()["count"] == 0
+        duplicate = client.post(
+            "/missions",
+            headers={**admin_headers, "Content-Type": "application/json"},
+            content=(
+                f'{{"target_node_id":"{node_id}","target_node_id":"{node_id}",'
+                '"mission_template_id":"synthetic_read_review_v1",'
+                '"requested_timeout_seconds":300,"client_request_id":"duplicate"}'
+            ),
+        )
+        assert duplicate.status_code == 400
+        unknown_field = client.post(
+            "/missions",
+            headers=admin_headers,
+            json={**admission_payload, "objective": "do something arbitrary"},
+        )
+        assert unknown_field.status_code == 400
+        assert client.get("/missions", headers=admin_headers).json()["count"] == 0
+
+        admitted = client.post("/missions", headers=admin_headers, json=admission_payload)
+        assert admitted.status_code == 200
+        admitted_document = admitted.json()
+        assert admitted_document["lifecycle_state"] == "queued"
+        assert admitted_document["lifecycle_revision"] == 1
+        assert admitted_document["lifecycle_authority"] == "gateway"
+        assert admitted_document["runner_state_authority"] == "runner_reported_only"
+        assert admitted_document["model_provider_state_known"] is False
+        assert "objective" not in admitted.text
+        assert "operations" not in admitted.text
+        mission_id = admitted_document["mission_id"]
+        replay = client.post("/missions", headers=admin_headers, json=admission_payload)
+        assert replay.status_code == 200
+        assert replay.json()["mission_id"] == mission_id
+        conflict = client.post(
+            "/missions",
+            headers=admin_headers,
+            json={**admission_payload, "requested_timeout_seconds": 301},
+        )
+        assert conflict.status_code == 409
+
+        inventory = client.get("/missions", headers=admin_headers)
+        assert inventory.status_code == 200
+        assert inventory.json()["count"] == 1
+        assert inventory.json()["template_payloads_included"] is False
+        detail = client.get(f"/missions/{mission_id}", headers=admin_headers)
+        assert detail.status_code == 200
+        assert detail.json() == admitted_document
+
+        cancel_payload = {"client_request_id": "operator-cancel-001"}
+        canceled = client.post(
+            f"/missions/{mission_id}/cancel",
+            headers=admin_headers,
+            json=cancel_payload,
+        )
+        assert canceled.status_code == 200
+        assert canceled.json()["lifecycle_state"] == "canceled"
+        assert canceled.json()["cancellation_authority"] == "gateway_decision_only"
+        assert canceled.json()["runner_stop_proven"] is False
+        cancel_replay = client.post(
+            f"/missions/{mission_id}/cancel",
+            headers=admin_headers,
+            json=cancel_payload,
+        )
+        assert cancel_replay.status_code == 200
+        assert cancel_replay.json()["lifecycle_revision"] == 2
+        with sqlite3.connect(settings.db_path) as connection:
+            connection.execute(
+                "UPDATE nodes SET status = 'revoked' WHERE node_id = ?",
+                (node_id,),
+            )
+            connection.commit()
+        replay_after_node_revocation = client.post(
+            "/missions",
+            headers=admin_headers,
+            json=admission_payload,
+        )
+        assert replay_after_node_revocation.status_code == 200
+        assert replay_after_node_revocation.json()["mission_id"] == mission_id
+        assert replay_after_node_revocation.json()["lifecycle_state"] == "canceled"
+
+    with TestClient(create_app(settings)) as restarted:
+        restarted_inventory = restarted.get("/missions", headers=admin_headers)
+        assert restarted_inventory.status_code == 200
+        assert restarted_inventory.json()["count"] == 1
+        restarted_detail = restarted.get(f"/missions/{mission_id}", headers=admin_headers)
+        assert restarted_detail.status_code == 200
+        assert restarted_detail.json()["lifecycle_state"] == "canceled"
+        assert restarted_detail.json()["lifecycle_revision"] == 2
+
+    with sqlite3.connect(settings.db_path) as connection:
+        events = [
+            json.loads(str(row[0]))
+            for row in connection.execute(
+                "SELECT payload_json FROM audit_events "
+                "WHERE event_type IN (?, ?) ORDER BY rowid",
+                (
+                    AuditEventType.MISSION_ADMISSION_STAGED.value,
+                    AuditEventType.MISSION_CANCELLATION_STAGED.value,
+                ),
+            )
+        ]
+        bindings = connection.execute(
+            "SELECT owner_kind, owner_id, request_digest "
+            "FROM mission_audit_evidence_bindings ORDER BY rowid"
+        ).fetchall()
+    assert [event["event_type"] for event in events] == [
+        "mission.admission.staged",
+        "mission.cancellation.staged",
+    ]
+    assert all(event["metadata"]["staged_proposal_only"] is True for event in events)
+    assert all(event["metadata"]["evidence_status"] == "pending" for event in events)
+    assert "operations" not in json.dumps(events)
+    assert len(bindings) == 2
+    assert all(binding[0] == "mission_transition" for binding in bindings)
+    for event, binding in zip(events, bindings, strict=True):
+        assert event["input_hash"] == binding[2]
+        assert event["metadata"]["request_digest"] == binding[2]
+        assert event["metadata"]["transition_id"] == binding[1]
+
+
+@pytest.mark.parametrize(
+    ("mutation_sql", "parameters"),
+    (
+        ("UPDATE nodes SET last_seen_at = ? WHERE node_id = ?", ("2020-01-01T00:00:00+00:00",)),
+        ("UPDATE nodes SET status = 'revoked' WHERE node_id = ?", ()),
+        (
+            "UPDATE nodes SET last_configuration_digest = ? WHERE node_id = ?",
+            ("sha256:" + ("9" * 64),),
+        ),
+        ("UPDATE nodes SET last_node_version = '0.0.1' WHERE node_id = ?", ()),
+        ("UPDATE nodes SET evidence_status = 'pending' WHERE node_id = ?", ()),
+        (
+            "UPDATE nodes SET configuration_acknowledgment_status = NULL WHERE node_id = ?",
+            (),
+        ),
+    ),
+)
+def test_mission_admission_denied_postures_have_zero_effects(
+    tmp_path: Path,
+    mutation_sql: str,
+    parameters: tuple[object, ...],
+) -> None:
+    settings = _mission_ready_settings(tmp_path)
+    admin_headers = {"Authorization": f"Bearer {settings.admin_token}"}
+    with TestClient(create_app(settings)) as client:
+        node_id = _ready_mission_node(client, settings, nonce_prefix="f")
+        with sqlite3.connect(settings.db_path) as connection:
+            connection.execute(mutation_sql, (*parameters, node_id))
+            connection.commit()
+        denied = client.post(
+            "/missions",
+            headers=admin_headers,
+            json={
+                "target_node_id": node_id,
+                "mission_template_id": "synthetic_read_review_v1",
+                "requested_timeout_seconds": 300,
+                "client_request_id": "denied-mission-001",
+            },
+        )
+        assert denied.status_code == 409
+        assert client.get("/missions", headers=admin_headers).json()["count"] == 0
+    with sqlite3.connect(settings.db_path) as connection:
+        assert connection.execute("SELECT count(*) FROM missions").fetchone() == (0,)
+        assert connection.execute(
+            "SELECT count(*) FROM mission_transition_attempts"
+        ).fetchone() == (0,)
+
+
+def test_mission_admission_audit_failure_remains_unadmitted_and_recovery_required(
+    tmp_path: Path,
+) -> None:
+    settings = _mission_ready_settings(tmp_path)
+    admin_headers = {"Authorization": f"Bearer {settings.admin_token}"}
+    api = create_app(settings)
+    with TestClient(api) as client:
+        node_id = _ready_mission_node(client, settings, nonce_prefix="a")
+
+        class FailingAuditWriter:
+            def write_event(self, **_: object) -> None:
+                raise AuditWriteError("simulated mission audit failure")
+
+        api.state.mission_admission_service.audit_writer = FailingAuditWriter()
+        payload = {
+            "target_node_id": node_id,
+            "mission_template_id": "synthetic_read_review_v1",
+            "requested_timeout_seconds": 300,
+            "client_request_id": "audit-failure-mission-001",
+        }
+        failed = client.post("/missions", headers=admin_headers, json=payload)
+        assert failed.status_code == 409
+        assert failed.json()["detail"] == "mission transition audit evidence failed"
+        assert client.get("/missions", headers=admin_headers).json()["count"] == 0
+        retry = client.post("/missions", headers=admin_headers, json=payload)
+        assert retry.status_code == 409
+        assert retry.json()["detail"] == "mission admission requires evidence recovery"
+
+    with sqlite3.connect(settings.db_path) as connection:
+        assert connection.execute(
+            "SELECT lifecycle_state, lifecycle_revision FROM missions"
+        ).fetchone() == ("unadmitted", 0)
+        assert connection.execute(
+            "SELECT evidence_status, failure_reason_code "
+            "FROM mission_transition_attempts"
+        ).fetchone() == ("evidence_incomplete", "audit_write_failed")
+        assert connection.execute(
+            "SELECT count(*) FROM mission_audit_evidence_bindings"
+        ).fetchone() == (0,)
+
+
+def test_mission_admission_requires_exact_startup_tool_authority(tmp_path: Path) -> None:
+    settings = make_settings(tmp_path)
+    settings.require_manifest_lock = True
+    settings.workspace_root.mkdir(parents=True, exist_ok=True)
+    admin_headers = {"Authorization": f"Bearer {settings.admin_token}"}
+    with TestClient(create_app(settings)) as client:
+        node_id = _ready_mission_node(client, settings, nonce_prefix="b")
+        denied = client.post(
+            "/missions",
+            headers=admin_headers,
+            json={
+                "target_node_id": node_id,
+                "mission_template_id": "synthetic_read_review_v1",
+                "requested_timeout_seconds": 300,
+                "client_request_id": "missing-tool-authority-001",
+            },
+        )
+        assert denied.status_code == 503
+        assert denied.json()["detail"] == "mission tool authority is unavailable"
+        assert client.get("/missions", headers=admin_headers).json()["count"] == 0
+
+
+def test_mission_admission_manifest_lock_drift_has_zero_effects(tmp_path: Path) -> None:
+    settings = _mission_ready_settings(tmp_path)
+    admin_headers = {"Authorization": f"Bearer {settings.admin_token}"}
+    with TestClient(create_app(settings)) as client:
+        node_id = _ready_mission_node(client, settings, nonce_prefix="c")
+        lock_document = json.loads(settings.manifest_lock_path.read_text(encoding="utf-8"))
+        lock_document["authority_note"] = "post-startup-tamper"
+        settings.manifest_lock_path.write_text(
+            json.dumps(lock_document, indent=2, sort_keys=True) + "\n",
+            encoding="utf-8",
+        )
+
+        denied = client.post(
+            "/missions",
+            headers=admin_headers,
+            json={
+                "target_node_id": node_id,
+                "mission_template_id": "synthetic_read_review_v1",
+                "requested_timeout_seconds": 300,
+                "client_request_id": "manifest-drift-mission-001",
+            },
+        )
+        assert denied.status_code == 503
+        assert denied.json()["detail"] == "mission manifest authority is unavailable"
+        assert client.get("/missions", headers=admin_headers).json()["count"] == 0
+
+    with sqlite3.connect(settings.db_path) as connection:
+        assert connection.execute("SELECT count(*) FROM missions").fetchone() == (0,)
+        assert connection.execute(
+            "SELECT count(*) FROM mission_transition_attempts"
+        ).fetchone() == (0,)
+
+
+def test_mission_admission_pins_the_lock_document_verified_with_the_registry(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    settings = _mission_ready_settings(tmp_path)
+    registry_module_any = cast(Any, registry_module)
+    original_verify = registry_module_any.verify_manifest_lock
+
+    def verify_then_replace_lock(
+        *,
+        manifest_dir: Path,
+        lock_path: Path,
+        records: list[ManifestLockRecord],
+    ) -> str:
+        verified_digest = cast(
+            str,
+            original_verify(
+                manifest_dir=manifest_dir,
+                lock_path=lock_path,
+                records=records,
+            ),
+        )
+        replacement = json.loads(lock_path.read_text(encoding="utf-8"))
+        replacement["authority_note"] = "replacement-after-registry-verification"
+        lock_path.write_text(
+            json.dumps(replacement, indent=2, sort_keys=True) + "\n",
+            encoding="utf-8",
+        )
+        return verified_digest
+
+    monkeypatch.setattr(registry_module_any, "verify_manifest_lock", verify_then_replace_lock)
+    admin_headers = {"Authorization": f"Bearer {settings.admin_token}"}
+    with TestClient(create_app(settings)) as client:
+        node_id = _ready_mission_node(client, settings, nonce_prefix="d")
+        denied = client.post(
+            "/missions",
+            headers=admin_headers,
+            json={
+                "target_node_id": node_id,
+                "mission_template_id": "synthetic_read_review_v1",
+                "requested_timeout_seconds": 300,
+                "client_request_id": "startup-lock-replacement-001",
+            },
+        )
+        assert denied.status_code == 503
+        assert denied.json()["detail"] == "mission manifest authority is unavailable"
+
+    with sqlite3.connect(settings.db_path) as connection:
+        assert connection.execute("SELECT count(*) FROM missions").fetchone() == (0,)
+        assert connection.execute(
+            "SELECT count(*) FROM mission_transition_attempts"
+        ).fetchone() == (0,)
+
+
+def _mission_ready_settings(tmp_path: Path) -> Settings:
+    settings = make_settings(tmp_path)
+    shutil.rmtree(settings.manifest_dir)
+    shutil.copytree(Path("tool-manifests"), settings.manifest_dir)
+    shutil.copyfile(Path("tool-manifests.lock.json"), settings.manifest_lock_path)
+    settings.require_manifest_lock = True
+    settings.workspace_root.mkdir(parents=True, exist_ok=True)
+    return settings
+
+
+def _ready_mission_node(
+    client: TestClient,
+    settings: Settings,
+    *,
+    nonce_prefix: str,
+) -> str:
+    admin_headers = {"Authorization": f"Bearer {settings.admin_token}"}
+    private_key = Ed25519PrivateKey.generate()
+    public_key = base64.b64encode(private_key.public_key().public_bytes_raw()).decode()
+    issued = client.post(
+        "/nodes/enrollment-codes",
+        headers=admin_headers,
+        json={"workspace_id": "default", "display_name": "Mission Node"},
+    )
+    enrollment = client.post(
+        "/nodes/enroll",
+        json={
+            "enrollment_code": issued.json()["enrollment_code"],
+            "public_key": public_key,
+            "protocol_version": "1",
+            "node_version": "0.1.0",
+            "runner_adapter": "hermes",
+            "deployment_topology": "docker_sidecar",
+        },
+    )
+    assert enrollment.status_code == 200
+    node_id = str(enrollment.json()["node_id"])
+    assigned = client.post(
+        f"/nodes/{node_id}/configurations",
+        headers=admin_headers,
+        json={"minimum_node_version": "0.1.0"},
+    )
+    assert assigned.status_code == 200
+    configuration_request: JsonObject = {"protocol_version": "1", "known_generation": 0}
+    configuration_path = f"/nodes/{node_id}/configuration"
+    configuration = client.post(
+        configuration_path,
+        headers=_signed_node_headers(
+            private_key,
+            node_id=node_id,
+            path=configuration_path,
+            payload=configuration_request,
+            nonce=nonce_prefix + ("1" * 31),
+        ),
+        json=configuration_request,
+    )
+    assert configuration.status_code == 200
+    bundle = configuration.json()
+    acknowledgment: JsonObject = {
+        "protocol_version": "1",
+        "generation": bundle["generation"],
+        "configuration_digest": bundle["configuration_digest"],
+        "configuration_signing_key_id": bundle["signature"]["key_id"],
+        "active_configuration_signing_key_id": bundle["signature"]["key_id"],
+        "status": "stored_not_enforced",
+    }
+    acknowledgment_path = f"/nodes/{node_id}/configuration/acknowledgments"
+    acknowledged = client.post(
+        acknowledgment_path,
+        headers=_signed_node_headers(
+            private_key,
+            node_id=node_id,
+            path=acknowledgment_path,
+            payload=acknowledgment,
+            nonce=nonce_prefix + ("2" * 31),
+        ),
+        json=acknowledgment,
+    )
+    assert acknowledged.status_code == 200
+    heartbeat: JsonObject = {
+        "protocol_version": "1",
+        "node_version": "0.1.0",
+        "runner_adapter": "hermes",
+        "deployment_topology": "docker_sidecar",
+        "configuration_digest": bundle["configuration_digest"],
+    }
+    heartbeat_path = f"/nodes/{node_id}/heartbeat"
+    accepted = client.post(
+        heartbeat_path,
+        headers=_signed_node_headers(
+            private_key,
+            node_id=node_id,
+            path=heartbeat_path,
+            payload=heartbeat,
+            nonce=nonce_prefix + ("3" * 31),
+        ),
+        json=heartbeat,
+    )
+    assert accepted.status_code == 200
+    return node_id
 
 
 def test_node_configuration_trust_transition_api_is_targeted_signed_and_audited(

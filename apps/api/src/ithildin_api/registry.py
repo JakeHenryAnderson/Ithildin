@@ -66,8 +66,14 @@ class UnknownToolDenied(Exception):
 
 
 class ToolRegistry:
-    def __init__(self, tools: dict[str, RegisteredTool]) -> None:
+    def __init__(
+        self,
+        tools: dict[str, RegisteredTool],
+        *,
+        verified_manifest_lock_digest: str | None = None,
+    ) -> None:
         self._tools = tools
+        self.verified_manifest_lock_digest = verified_manifest_lock_digest
 
     @classmethod
     def load(
@@ -81,10 +87,15 @@ class ToolRegistry:
         require_signed_lock: bool = False,
     ) -> ToolRegistry:
         tools: dict[str, RegisteredTool] = {}
+        verified_manifest_lock_digest: str | None = None
 
         if not manifest_dir.exists():
             if require_lock and lock_path is not None:
-                verify_manifest_lock(manifest_dir=manifest_dir, lock_path=lock_path, records=[])
+                verified_manifest_lock_digest = verify_manifest_lock(
+                    manifest_dir=manifest_dir,
+                    lock_path=lock_path,
+                    records=[],
+                )
                 if require_signed_lock:
                     if signature_path is None or signature_public_key_path is None:
                         raise ToolRegistryError(
@@ -94,10 +105,14 @@ class ToolRegistry:
                         lock_path=lock_path,
                         signature_path=signature_path,
                         public_key_path=signature_public_key_path,
+                        expected_lock_digest=verified_manifest_lock_digest,
                     )
             elif require_signed_lock:
                 raise ToolRegistryError("signed manifest lock requires manifest lock enforcement")
-            return cls(tools)
+            return cls(
+                tools,
+                verified_manifest_lock_digest=verified_manifest_lock_digest,
+            )
 
         for manifest_path in sorted(manifest_dir.iterdir()):
             if manifest_path.suffix not in {".yaml", ".yml"}:
@@ -112,7 +127,7 @@ class ToolRegistry:
         if require_lock:
             if lock_path is None:
                 raise ToolRegistryError("manifest lock is required but no lock path is configured")
-            verify_manifest_lock(
+            verified_manifest_lock_digest = verify_manifest_lock(
                 manifest_dir=manifest_dir,
                 lock_path=lock_path,
                 records=[
@@ -134,11 +149,15 @@ class ToolRegistry:
                     lock_path=lock_path,
                     signature_path=signature_path,
                     public_key_path=signature_public_key_path,
+                    expected_lock_digest=verified_manifest_lock_digest,
                 )
         elif require_signed_lock:
             raise ToolRegistryError("signed manifest lock requires manifest lock enforcement")
 
-        return cls(tools)
+        return cls(
+            tools,
+            verified_manifest_lock_digest=verified_manifest_lock_digest,
+        )
 
     def list_tools(self, principal: Optional[str] = None) -> list[RegisteredTool]:
         return list(self._tools.values())

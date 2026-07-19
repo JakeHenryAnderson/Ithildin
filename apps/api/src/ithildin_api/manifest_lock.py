@@ -194,6 +194,7 @@ def verify_manifest_lock_signature(
     lock_path: Path,
     signature_path: Path,
     public_key_path: Optional[Path] = None,
+    expected_lock_digest: Optional[str] = None,
 ) -> ManifestLockSignatureVerificationResult:
     """Verify a signed manifest lock bundle."""
     try:
@@ -214,7 +215,12 @@ def verify_manifest_lock_signature(
         key_id = _require_hash(signature.get("key_id"), "signature.key_id")
         signature_b64 = _require_string(signature.get("signature"), "signature.signature")
 
-        if sha256_digest(_read_lock(lock_path)) != lock_sha256:
+        verified_lock_digest = (
+            expected_lock_digest
+            if expected_lock_digest is not None
+            else sha256_digest(_read_lock(lock_path))
+        )
+        if verified_lock_digest != lock_sha256:
             raise ManifestLockSignatureError("manifest lock signature digest mismatch")
 
         embedded_public_key = _public_key_from_b64(public_key_b64)
@@ -265,11 +271,13 @@ def require_manifest_lock_signature(
     lock_path: Path,
     signature_path: Path,
     public_key_path: Path,
+    expected_lock_digest: Optional[str] = None,
 ) -> None:
     result = verify_manifest_lock_signature(
         lock_path=lock_path,
         signature_path=signature_path,
         public_key_path=public_key_path,
+        expected_lock_digest=expected_lock_digest,
     )
     if not result.valid:
         raise ManifestLockSignatureError(result.failure or "invalid manifest lock signature")
@@ -322,7 +330,7 @@ def verify_manifest_lock(
     manifest_dir: Path,
     lock_path: Path,
     records: list[ManifestLockRecord],
-) -> None:
+) -> str:
     lock = _read_lock(lock_path)
     lock_root = lock_path.parent.resolve(strict=False)
     expected_manifest_dir = _safe_relative_path(
@@ -379,6 +387,27 @@ def verify_manifest_lock(
             raise ManifestLockError(f"invalid manifest hash in lock: {record.name}")
         if locked_hash != record.manifest_hash:
             raise ManifestLockError(f"manifest hash mismatch: {record.name}")
+    return sha256_digest(lock)
+
+
+def manifest_lock_digest(lock_path: Path) -> str:
+    """Return the canonical digest of a structurally valid manifest lock."""
+
+    try:
+        payload = json.loads(
+            lock_path.read_text(encoding="utf-8"),
+            object_pairs_hook=_reject_duplicate_json_members,
+        )
+    except FileNotFoundError as exc:
+        raise ManifestLockError(f"manifest lock not found: {lock_path}") from exc
+    except json.JSONDecodeError as exc:
+        raise ManifestLockError(f"manifest lock is invalid JSON: {lock_path}") from exc
+    if not isinstance(payload, dict):
+        raise ManifestLockError("manifest lock must be a JSON object")
+    lock = _json_object(payload)
+    if lock.get("lockfile_version") != LOCKFILE_VERSION:
+        raise ManifestLockError("unsupported manifest lock version")
+    return sha256_digest(lock)
 
 
 def _read_lock(lock_path: Path) -> JsonObject:
@@ -394,6 +423,15 @@ def _read_lock(lock_path: Path) -> JsonObject:
     if lock.get("lockfile_version") != LOCKFILE_VERSION:
         raise ManifestLockError("unsupported manifest lock version")
     return lock
+
+
+def _reject_duplicate_json_members(pairs: list[tuple[str, object]]) -> dict[str, object]:
+    document: dict[str, object] = {}
+    for key, value in pairs:
+        if key in document:
+            raise ManifestLockError(f"duplicate manifest lock member: {key}")
+        document[key] = value
+    return document
 
 
 def _read_signature(signature_path: Path) -> JsonObject:

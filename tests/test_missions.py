@@ -15,6 +15,7 @@ from ithildin_api.missions import (
     MISSION_UNADMITTED,
     MissionAdmissionPayload,
     MissionAuthoritySnapshot,
+    MissionCancellationPayload,
     MissionConflictError,
     MissionError,
     MissionRunnerReportPayload,
@@ -201,6 +202,59 @@ def test_evidence_interruption_preserves_prior_lifecycle_and_blocks_finalize(
         )
 
 
+def test_queued_cancellation_is_staged_audited_and_idempotent(tmp_path: Path) -> None:
+    store = _store(tmp_path)
+    admission = store.stage_admission(_payload(), authority=_authority())
+    admitted = store.finalize_admission(
+        admission.transition.transition_id,
+        audit_event_id="evt_" + ("1" * 32),
+        audit_event_hash=SHA_A,
+    )
+    cancellation_payload = MissionCancellationPayload(
+        client_request_id="cancel-request-001"
+    )
+
+    staged = store.stage_cancellation(
+        admitted.mission_id,
+        cancellation_payload,
+        requester=_authority().requesting_principal,
+    )
+
+    assert staged.idempotent_replay is False
+    assert staged.mission.lifecycle_state == MISSION_QUEUED
+    assert staged.transition.proposed_lifecycle_state == "canceled"
+    assert store.get(admitted.mission_id).lifecycle_state == MISSION_QUEUED
+    replay = store.stage_cancellation(
+        admitted.mission_id,
+        cancellation_payload,
+        requester=_authority().requesting_principal,
+    )
+    assert replay.idempotent_replay is True
+    assert replay.transition.transition_id == staged.transition.transition_id
+
+    canceled = store.finalize_cancellation(
+        staged.transition.transition_id,
+        audit_event_id="evt_" + ("2" * 32),
+        audit_event_hash=SHA_B,
+    )
+    assert canceled.lifecycle_state == "canceled"
+    assert canceled.lifecycle_revision == 2
+    assert canceled.admitted_at == admitted.admitted_at
+    exact = store.stage_cancellation(
+        admitted.mission_id,
+        cancellation_payload,
+        requester=_authority().requesting_principal,
+    )
+    assert exact.idempotent_replay is True
+    assert exact.mission.lifecycle_state == "canceled"
+    with pytest.raises(MissionConflictError, match="cancellation request conflicts"):
+        store.stage_cancellation(
+            admitted.mission_id,
+            MissionCancellationPayload(client_request_id="cancel-request-002"),
+            requester=_authority().requesting_principal,
+        )
+
+
 def test_admission_idempotency_is_exact_and_authority_namespaced(tmp_path: Path) -> None:
     store = _store(tmp_path)
     payload = _payload()
@@ -231,6 +285,25 @@ def test_admission_rejects_payload_authority_mismatch(tmp_path: Path) -> None:
             _payload(),
             authority=_authority(target_node_id="node_" + ("2" * 32)),
         )
+
+
+def test_admission_authority_precondition_failure_has_zero_effects(tmp_path: Path) -> None:
+    store = _store(tmp_path)
+
+    def deny_changed_authority() -> None:
+        raise MissionConflictError("authority changed while staging")
+
+    with pytest.raises(MissionConflictError, match="authority changed while staging"):
+        store.stage_admission(
+            _payload(),
+            authority=_authority(),
+            authority_precondition=deny_changed_authority,
+        )
+    with sqlite3.connect(tmp_path / "ithildin.sqlite3") as connection:
+        assert connection.execute("SELECT count(*) FROM missions").fetchone() == (0,)
+        assert connection.execute(
+            "SELECT count(*) FROM mission_transition_attempts"
+        ).fetchone() == (0,)
 
 
 def test_stored_authority_tamper_fails_closed(tmp_path: Path) -> None:

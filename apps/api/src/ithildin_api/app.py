@@ -50,7 +50,24 @@ from ithildin_api.identity import (
     filter_tools_for_principal,
 )
 from ithildin_api.logging import configure_logging
-from ithildin_api.manifest_lock import ManifestLockError, manifest_lock_signature_status
+from ithildin_api.manifest_lock import (
+    ManifestLockError,
+    manifest_lock_signature_status,
+)
+from ithildin_api.mission_admission import (
+    MissionAdmissionError,
+    MissionAdmissionNotFoundError,
+    MissionAdmissionService,
+    MissionAdmissionUnavailableError,
+)
+from ithildin_api.mission_templates import MissionTemplateRegistry
+from ithildin_api.missions import (
+    MissionAdmissionPayload,
+    MissionCancellationPayload,
+    MissionConflictError,
+    MissionNotFoundError,
+    MissionStore,
+)
 from ithildin_api.node_configuration import (
     NodeConfigurationAcknowledgmentPayload,
     NodeConfigurationAssignmentPayload,
@@ -174,6 +191,11 @@ def create_app(
             node_store = NodeStore(resolved_settings.db_path)
             node_store.initialize()
             app_instance.state.node_store = node_store
+            mission_store = MissionStore(resolved_settings.db_path)
+            mission_store.initialize()
+            app_instance.state.mission_store = mission_store
+            mission_template_registry = MissionTemplateRegistry.startup()
+            app_instance.state.mission_template_registry = mission_template_registry
             node_configuration_store = NodeConfigurationStore(resolved_settings.db_path)
             node_configuration_store.initialize()
             app_instance.state.node_configuration_store = node_configuration_store
@@ -208,6 +230,8 @@ def create_app(
                 signature_public_key_path=resolved_settings.manifest_lock_signing_public_key_path,
                 require_signed_lock=resolved_settings.require_signed_manifest_lock,
             )
+            startup_manifest_lock_digest = registry.verified_manifest_lock_digest
+            app_instance.state.startup_manifest_lock_digest = startup_manifest_lock_digest
             app_instance.state.manifest_lock_signature_startup = manifest_lock_signature_status(
                 lock_path=resolved_settings.manifest_lock_path,
                 signature_path=resolved_settings.manifest_lock_signature_path,
@@ -233,6 +257,20 @@ def create_app(
             app_instance.state.workspace_registry = workspace_registry
             app_instance.state.trusted_host_registry = trusted_host_registry
             app_instance.state.policy_evaluator = policy_evaluator
+            app_instance.state.mission_admission_service = MissionAdmissionService(
+                mission_store=mission_store,
+                node_store=node_store,
+                node_configuration_store=node_configuration_store,
+                template_registry=mission_template_registry,
+                principal_registry=principal_registry,
+                workspace_registry=workspace_registry,
+                tool_registry=registry,
+                policy_engine=policy_evaluator,
+                audit_writer=audit_writer,
+                node_stale_after_seconds=resolved_settings.node_stale_after_seconds,
+                manifest_lock_path=resolved_settings.manifest_lock_path,
+                verified_manifest_lock_digest=startup_manifest_lock_digest,
+            )
             http_fetch_executor = HttpFetchExecutor.from_settings(
                 http_allowlist=resolved_settings.http_allowlist,
                 timeout_seconds=resolved_settings.http_timeout_seconds,
@@ -1363,6 +1401,101 @@ def create_app(
         node = node_store.mark_node_evidence_complete(node_id)
         return node.summary(stale_after_seconds=settings_state.node_stale_after_seconds)
 
+    @api.get("/mission-templates", dependencies=[Depends(require_admin_token)])
+    def list_mission_templates() -> JsonObject:
+        return cast(
+            MissionTemplateRegistry,
+            api.state.mission_template_registry,
+        ).safe_summary()
+
+    @api.post("/missions")
+    async def create_mission(
+        request: Request,
+        context: Annotated[AdminPrincipalContext, Depends(require_admin_token)],
+    ) -> JsonObject:
+        document = await _strict_json_request_object(request)
+        try:
+            payload = MissionAdmissionPayload.model_validate(document)
+        except ValidationError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="invalid mission admission request",
+            ) from exc
+        try:
+            return cast(
+                MissionAdmissionService,
+                api.state.mission_admission_service,
+            ).admit(
+                payload,
+                requester=context,
+            )
+        except MissionAdmissionNotFoundError as exc:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+        except MissionAdmissionUnavailableError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail=str(exc),
+            ) from exc
+        except (MissionAdmissionError, MissionConflictError) as exc:
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
+
+    @api.get("/missions", dependencies=[Depends(require_admin_token)])
+    def list_missions(request: Request) -> JsonObject:
+        unexpected = sorted(set(request.query_params.keys()) - {"limit"})
+        if unexpected:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="unsupported query parameter",
+            )
+        limit = _bounded_query_limit(request.query_params.get("limit"), default=50, maximum=200)
+        missions = cast(MissionStore, api.state.mission_store).list_admitted(limit=limit)
+        return {
+            "missions": cast(JsonValue, missions),
+            "count": len(missions),
+            "lifecycle_authority": "gateway",
+            "runner_state_authority": "runner_reported_only",
+            "model_provider_state_known": False,
+            "template_payloads_included": False,
+        }
+
+    @api.get("/missions/{mission_id}", dependencies=[Depends(require_admin_token)])
+    def get_mission(mission_id: str) -> JsonObject:
+        try:
+            return cast(MissionStore, api.state.mission_store).get_admitted(
+                mission_id
+            ).safe_summary()
+        except MissionNotFoundError as exc:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
+    @api.post("/missions/{mission_id}/cancel")
+    async def cancel_mission(
+        mission_id: str,
+        request: Request,
+        context: Annotated[AdminPrincipalContext, Depends(require_admin_token)],
+    ) -> JsonObject:
+        document = await _strict_json_request_object(request)
+        try:
+            payload = MissionCancellationPayload.model_validate(document)
+        except ValidationError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="invalid mission cancellation request",
+            ) from exc
+        try:
+            mission = cast(
+                MissionAdmissionService,
+                api.state.mission_admission_service,
+            ).cancel(mission_id, payload, requester=context)
+        except (MissionAdmissionNotFoundError, MissionNotFoundError) as exc:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+        except (MissionAdmissionError, MissionConflictError) as exc:
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
+        return {
+            **mission,
+            "cancellation_authority": "gateway_decision_only",
+            "runner_stop_proven": False,
+        }
+
     @api.post("/sandbox-descriptors", dependencies=[Depends(require_admin_token)])
     def create_sandbox_descriptor(payload: JsonObject) -> JsonObject:
         try:
@@ -1872,6 +2005,70 @@ def _manifest_lock_digest(path: Path) -> str:
     if not isinstance(document, dict):
         raise ValueError("manifest lock must be an object")
     return sha256_digest(cast(JsonObject, document))
+
+
+async def _strict_json_request_object(request: Request) -> JsonObject:
+    content_type = request.headers.get("content-type", "").partition(";")[0].strip().lower()
+    if content_type != "application/json":
+        raise HTTPException(
+            status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+            detail="mission request requires application/json",
+        )
+    content_length = request.headers.get("content-length")
+    if content_length is not None:
+        try:
+            declared_length = int(content_length)
+        except ValueError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="invalid mission request body",
+            ) from exc
+        if declared_length < 0 or declared_length > 4096:
+            raise HTTPException(
+                status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                detail="mission request body is too large",
+            )
+    raw_body = await request.body()
+    if not raw_body or len(raw_body) > 4096:
+        raise HTTPException(
+            status_code=(
+                status.HTTP_400_BAD_REQUEST
+                if not raw_body
+                else status.HTTP_413_REQUEST_ENTITY_TOO_LARGE
+            ),
+            detail=(
+                "invalid mission request body"
+                if not raw_body
+                else "mission request body is too large"
+            ),
+        )
+    try:
+        document = json.loads(
+            raw_body.decode("utf-8"),
+            object_pairs_hook=_json_object_without_duplicate_members,
+        )
+    except (UnicodeDecodeError, json.JSONDecodeError, ValueError) as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="invalid mission request body",
+        ) from exc
+    if not isinstance(document, dict):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="invalid mission request body",
+        )
+    return cast(JsonObject, document)
+
+
+def _json_object_without_duplicate_members(
+    pairs: list[tuple[str, object]],
+) -> dict[str, object]:
+    document: dict[str, object] = {}
+    for key, value in pairs:
+        if key in document:
+            raise ValueError("duplicate JSON member")
+        document[key] = value
+    return document
 
 
 def _require_header_node(request: Request, node_id: str) -> None:

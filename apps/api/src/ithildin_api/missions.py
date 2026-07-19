@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import re
 import sqlite3
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
@@ -21,8 +22,10 @@ from ithildin_api.trusted_host_promotion_v2_migration import verify_database_v2
 MISSION_TEMPLATE_ID: Literal["synthetic_read_review_v1"] = "synthetic_read_review_v1"
 MISSION_AUTHORITY_SCHEMA_VERSION = "1"
 MISSION_ADMISSION_TRANSITION_KIND = "admission_pending_evidence"
+MISSION_CANCELLATION_TRANSITION_KIND = "cancellation_pending_evidence"
 MISSION_UNADMITTED = "unadmitted"
 MISSION_QUEUED = "queued"
+MISSION_CANCELED = "canceled"
 EVIDENCE_PENDING = "pending"
 EVIDENCE_COMPLETE = "complete"
 EVIDENCE_INCOMPLETE = "evidence_incomplete"
@@ -63,6 +66,17 @@ class MissionAdmissionPayload(FrozenAuthorityModel):
 
     def safe_payload(self) -> JsonObject:
         return cast(JsonObject, self.model_dump(mode="json"))
+
+
+class MissionCancellationPayload(FrozenAuthorityModel):
+    client_request_id: str = Field(min_length=1, max_length=128)
+
+    @field_validator("client_request_id")
+    @classmethod
+    def _safe_client_request_id(cls, value: str) -> str:
+        if not _SAFE_LABEL_PATTERN.fullmatch(value) or ".." in value:
+            raise ValueError("unsafe mission cancellation request ID")
+        return value
 
 
 class MissionAuthoritySnapshot(FrozenAuthorityModel):
@@ -246,6 +260,13 @@ class MissionAdmissionStage:
     idempotent_replay: bool
 
 
+@dataclass(frozen=True)
+class MissionCancellationStage:
+    mission: MissionRecord
+    transition: MissionTransitionAttempt
+    idempotent_replay: bool
+
+
 class MissionStore:
     """Persist staged mission authority without exposing incomplete lifecycle claims."""
 
@@ -255,11 +276,42 @@ class MissionStore:
     def initialize(self) -> None:
         verify_database_v2(self.db_path)
 
+    def replay_admission(
+        self,
+        payload: MissionAdmissionPayload,
+        *,
+        requester: AdminPrincipalContext,
+    ) -> MissionAdmissionStage | None:
+        with _mission_connection(self.db_path) as connection:
+            existing = _mission_by_idempotency_namespace(
+                connection,
+                requester_principal_id=requester.principal_id,
+                requester_identity_generation=requester.identity_generation,
+                client_request_id=payload.client_request_id,
+            )
+            if existing is None:
+                return None
+            request_digest = mission_admission_request_digest(
+                payload,
+                authority=existing.authority_snapshot,
+            )
+            if existing.admission_request_digest != request_digest:
+                raise MissionConflictError("mission client request ID conflicts")
+            return MissionAdmissionStage(
+                mission=existing,
+                transition=_admission_transition_for_mission(
+                    connection,
+                    existing.mission_id,
+                ),
+                idempotent_replay=True,
+            )
+
     def stage_admission(
         self,
         payload: MissionAdmissionPayload,
         *,
         authority: MissionAuthoritySnapshot,
+        authority_precondition: Callable[[], None] | None = None,
         now: datetime | None = None,
     ) -> MissionAdmissionStage:
         _require_payload_matches_authority(payload, authority)
@@ -285,6 +337,8 @@ class MissionStore:
                     transition=transition,
                     idempotent_replay=True,
                 )
+            if authority_precondition is not None:
+                authority_precondition()
 
             mission_id = f"mission_{uuid4().hex}"
             transition_id = f"mtransition_{uuid4().hex}"
@@ -379,6 +433,95 @@ class MissionStore:
             idempotent_replay=False,
         )
 
+    def stage_cancellation(
+        self,
+        mission_id: str,
+        payload: MissionCancellationPayload,
+        *,
+        requester: AdminPrincipalContext,
+        now: datetime | None = None,
+    ) -> MissionCancellationStage:
+        _require_mission_id(mission_id)
+        now_text = (now or datetime.now(UTC)).isoformat()
+        with _mission_connection(self.db_path) as connection:
+            connection.execute("BEGIN IMMEDIATE")
+            mission = _mission_by_id(connection, mission_id)
+            existing = _transition_for_mission_kind(
+                connection,
+                mission_id=mission_id,
+                transition_kind=MISSION_CANCELLATION_TRANSITION_KIND,
+            )
+            if existing is not None:
+                expected_digest = mission_cancellation_request_digest(
+                    mission=mission,
+                    payload=payload,
+                    requester=requester,
+                    prior_lifecycle_state=existing.prior_lifecycle_state,
+                    prior_lifecycle_revision=existing.prior_lifecycle_revision,
+                )
+                if existing.request_digest != expected_digest:
+                    raise MissionConflictError("mission cancellation request conflicts")
+                connection.commit()
+                return MissionCancellationStage(
+                    mission=mission,
+                    transition=existing,
+                    idempotent_replay=True,
+                )
+            if mission.lifecycle_state != MISSION_QUEUED:
+                raise MissionConflictError("mission is not queued for cancellation")
+            request_digest = mission_cancellation_request_digest(
+                mission=mission,
+                payload=payload,
+                requester=requester,
+                prior_lifecycle_state=mission.lifecycle_state,
+                prior_lifecycle_revision=mission.lifecycle_revision,
+            )
+            transition_id = f"mtransition_{uuid4().hex}"
+            try:
+                connection.execute(
+                    """
+                    INSERT INTO mission_transition_attempts (
+                        transition_id, mission_id, transition_kind,
+                        prior_lifecycle_state, prior_lifecycle_revision,
+                        proposed_lifecycle_state, proposed_lifecycle_revision,
+                        request_digest, safe_metadata_json, evidence_status,
+                        audit_event_id, audit_event_hash, failure_reason_code,
+                        created_at, finalized_at
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, NULL, NULL, ?, NULL)
+                    """,
+                    (
+                        transition_id,
+                        mission_id,
+                        MISSION_CANCELLATION_TRANSITION_KIND,
+                        mission.lifecycle_state,
+                        mission.lifecycle_revision,
+                        MISSION_CANCELED,
+                        mission.lifecycle_revision + 1,
+                        request_digest,
+                        canonical_json(
+                            {
+                                "requester_principal_id": requester.principal_id,
+                                "requester_identity_generation": requester.identity_generation,
+                                "client_request_id": payload.client_request_id,
+                                "mission_template_id": mission.mission_template_id,
+                                "target_node_id": mission.target_node_id,
+                                "workspace_id": mission.workspace_id,
+                                "envelope_digest": mission.envelope_digest,
+                            }
+                        ),
+                        EVIDENCE_PENDING,
+                        now_text,
+                    ),
+                )
+            except sqlite3.IntegrityError as exc:
+                raise MissionConflictError("mission cancellation conflicts") from exc
+            connection.commit()
+        return MissionCancellationStage(
+            mission=self.get(mission_id),
+            transition=self.get_transition(transition_id),
+            idempotent_replay=False,
+        )
+
     def finalize_admission(
         self,
         transition_id: str,
@@ -386,6 +529,39 @@ class MissionStore:
         audit_event_id: str,
         audit_event_hash: str,
         now: datetime | None = None,
+    ) -> MissionRecord:
+        return self._finalize_transition(
+            transition_id,
+            expected_kind=MISSION_ADMISSION_TRANSITION_KIND,
+            audit_event_id=audit_event_id,
+            audit_event_hash=audit_event_hash,
+            now=now,
+        )
+
+    def finalize_cancellation(
+        self,
+        transition_id: str,
+        *,
+        audit_event_id: str,
+        audit_event_hash: str,
+        now: datetime | None = None,
+    ) -> MissionRecord:
+        return self._finalize_transition(
+            transition_id,
+            expected_kind=MISSION_CANCELLATION_TRANSITION_KIND,
+            audit_event_id=audit_event_id,
+            audit_event_hash=audit_event_hash,
+            now=now,
+        )
+
+    def _finalize_transition(
+        self,
+        transition_id: str,
+        *,
+        expected_kind: str,
+        audit_event_id: str,
+        audit_event_hash: str,
+        now: datetime | None,
     ) -> MissionRecord:
         _require_transition_id(transition_id)
         if not _EVENT_ID_PATTERN.fullmatch(audit_event_id):
@@ -396,8 +572,8 @@ class MissionStore:
         with _mission_connection(self.db_path) as connection:
             connection.execute("BEGIN IMMEDIATE")
             transition = _transition_by_id(connection, transition_id)
-            if transition.transition_kind != MISSION_ADMISSION_TRANSITION_KIND:
-                raise MissionConflictError("mission transition is not admission")
+            if transition.transition_kind != expected_kind:
+                raise MissionConflictError("mission transition kind does not match")
             if transition.evidence_status == EVIDENCE_COMPLETE:
                 if (
                     transition.audit_event_id == audit_event_id
@@ -456,22 +632,39 @@ class MissionStore:
                 raise MissionConflictError("mission audit evidence is already bound") from exc
             if updated_transition.rowcount != 1:
                 raise MissionConflictError("mission transition evidence changed")
-            updated_mission = connection.execute(
-                """
-                UPDATE missions
-                SET lifecycle_state = ?, lifecycle_revision = ?, updated_at = ?, admitted_at = ?
-                WHERE mission_id = ? AND lifecycle_state = ? AND lifecycle_revision = ?
-                """,
-                (
-                    transition.proposed_lifecycle_state,
-                    transition.proposed_lifecycle_revision,
-                    now_text,
-                    now_text,
-                    mission.mission_id,
-                    transition.prior_lifecycle_state,
-                    transition.prior_lifecycle_revision,
-                ),
-            )
+            if expected_kind == MISSION_ADMISSION_TRANSITION_KIND:
+                updated_mission = connection.execute(
+                    """
+                    UPDATE missions
+                    SET lifecycle_state = ?, lifecycle_revision = ?, updated_at = ?, admitted_at = ?
+                    WHERE mission_id = ? AND lifecycle_state = ? AND lifecycle_revision = ?
+                    """,
+                    (
+                        transition.proposed_lifecycle_state,
+                        transition.proposed_lifecycle_revision,
+                        now_text,
+                        now_text,
+                        mission.mission_id,
+                        transition.prior_lifecycle_state,
+                        transition.prior_lifecycle_revision,
+                    ),
+                )
+            else:
+                updated_mission = connection.execute(
+                    """
+                    UPDATE missions
+                    SET lifecycle_state = ?, lifecycle_revision = ?, updated_at = ?
+                    WHERE mission_id = ? AND lifecycle_state = ? AND lifecycle_revision = ?
+                    """,
+                    (
+                        transition.proposed_lifecycle_state,
+                        transition.proposed_lifecycle_revision,
+                        now_text,
+                        mission.mission_id,
+                        transition.prior_lifecycle_state,
+                        transition.prior_lifecycle_revision,
+                    ),
+                )
             if updated_mission.rowcount != 1:
                 raise MissionConflictError("mission lifecycle finalization conflicted")
             connection.commit()
@@ -522,6 +715,12 @@ class MissionStore:
         with _mission_connection(self.db_path) as connection:
             return _mission_by_id(connection, mission_id)
 
+    def get_admitted(self, mission_id: str) -> MissionRecord:
+        mission = self.get(mission_id)
+        if mission.lifecycle_state == MISSION_UNADMITTED:
+            raise MissionNotFoundError("unknown mission")
+        return mission
+
     def get_transition(self, transition_id: str) -> MissionTransitionAttempt:
         _require_transition_id(transition_id)
         with _mission_connection(self.db_path) as connection:
@@ -555,6 +754,29 @@ def mission_admission_request_digest(
             "client_request_id": payload.client_request_id,
             "request": payload.safe_payload(),
             "authority_snapshot_hash": authority.canonical_hash(),
+        }
+    )
+
+
+def mission_cancellation_request_digest(
+    *,
+    mission: MissionRecord,
+    payload: MissionCancellationPayload,
+    requester: AdminPrincipalContext,
+    prior_lifecycle_state: str,
+    prior_lifecycle_revision: int,
+) -> str:
+    return sha256_digest(
+        {
+            "schema_version": MISSION_AUTHORITY_SCHEMA_VERSION,
+            "requester_principal_id": requester.principal_id,
+            "requester_identity_generation": requester.identity_generation,
+            "client_request_id": payload.client_request_id,
+            "mission_id": mission.mission_id,
+            "envelope_digest": mission.envelope_digest,
+            "prior_lifecycle_state": prior_lifecycle_state,
+            "prior_lifecycle_revision": prior_lifecycle_revision,
+            "requested_transition": MISSION_CANCELED,
         }
     )
 
@@ -652,6 +874,24 @@ def _admission_transition_for_mission(
     return transition
 
 
+def _transition_for_mission_kind(
+    connection: sqlite3.Connection,
+    *,
+    mission_id: str,
+    transition_kind: str,
+) -> MissionTransitionAttempt | None:
+    row = connection.execute(
+        f"{_TRANSITION_SELECT} WHERE mission_id = ? AND transition_kind = ?",
+        (mission_id, transition_kind),
+    ).fetchone()
+    if row is None:
+        return None
+    transition = _transition_from_row(row)
+    if transition_kind == MISSION_CANCELLATION_TRANSITION_KIND:
+        _verify_cancellation_transition_bindings(connection, transition)
+    return transition
+
+
 def _transition_by_id(
     connection: sqlite3.Connection, transition_id: str
 ) -> MissionTransitionAttempt:
@@ -663,6 +903,8 @@ def _transition_by_id(
     transition = _transition_from_row(row)
     if transition.transition_kind == MISSION_ADMISSION_TRANSITION_KIND:
         _verify_admission_transition_bindings(connection, transition)
+    elif transition.transition_kind == MISSION_CANCELLATION_TRANSITION_KIND:
+        _verify_cancellation_transition_bindings(connection, transition)
     return transition
 
 
@@ -715,17 +957,34 @@ def _transition_from_row(row: sqlite3.Row | tuple[Any, ...]) -> MissionTransitio
         )
     except (json.JSONDecodeError, ValueError) as exc:
         raise MissionError("stored mission transition metadata is invalid") from exc
-    if not isinstance(metadata, dict) or set(metadata) != {
-        "mission_template_id",
-        "target_node_id",
-        "workspace_id",
-        "envelope_digest",
-    }:
+    transition_kind = str(row[2])
+    expected_metadata_fields = {
+        MISSION_ADMISSION_TRANSITION_KIND: {
+            "mission_template_id",
+            "target_node_id",
+            "workspace_id",
+            "envelope_digest",
+        },
+        MISSION_CANCELLATION_TRANSITION_KIND: {
+            "requester_principal_id",
+            "requester_identity_generation",
+            "client_request_id",
+            "mission_template_id",
+            "target_node_id",
+            "workspace_id",
+            "envelope_digest",
+        },
+    }.get(transition_kind)
+    if (
+        not isinstance(metadata, dict)
+        or expected_metadata_fields is None
+        or set(metadata) != expected_metadata_fields
+    ):
         raise MissionError("stored mission transition metadata is invalid")
     return MissionTransitionAttempt(
         transition_id=str(row[0]),
         mission_id=str(row[1]),
-        transition_kind=str(row[2]),
+        transition_kind=transition_kind,
         prior_lifecycle_state=str(row[3]),
         prior_lifecycle_revision=int(row[4]),
         proposed_lifecycle_state=str(row[5]),
@@ -803,6 +1062,52 @@ def _verify_admission_transition_bindings(
         }
     ):
         raise MissionError("stored mission admission transition bindings are inconsistent")
+
+
+def _verify_cancellation_transition_bindings(
+    connection: sqlite3.Connection,
+    transition: MissionTransitionAttempt,
+) -> None:
+    mission = _mission_by_id(connection, transition.mission_id)
+    metadata = transition.safe_metadata
+    try:
+        requester = AdminPrincipalContext(
+            principal_id=cast(Literal["admin:local-ui"], metadata["requester_principal_id"]),
+            principal_type="admin",
+            roles=("Admin",),
+            authentication_method="local_admin_bearer",
+            identity_source="principal_registry",
+            identity_generation=str(metadata["requester_identity_generation"]),
+        )
+        payload = MissionCancellationPayload(
+            client_request_id=str(metadata["client_request_id"])
+        )
+    except (KeyError, ValueError) as exc:
+        raise MissionError("stored mission cancellation authority is invalid") from exc
+    expected_metadata = {
+        "requester_principal_id": requester.principal_id,
+        "requester_identity_generation": requester.identity_generation,
+        "client_request_id": payload.client_request_id,
+        "mission_template_id": mission.mission_template_id,
+        "target_node_id": mission.target_node_id,
+        "workspace_id": mission.workspace_id,
+        "envelope_digest": mission.envelope_digest,
+    }
+    if (
+        transition.prior_lifecycle_state != MISSION_QUEUED
+        or transition.proposed_lifecycle_state != MISSION_CANCELED
+        or transition.proposed_lifecycle_revision != transition.prior_lifecycle_revision + 1
+        or metadata != expected_metadata
+        or transition.request_digest
+        != mission_cancellation_request_digest(
+            mission=mission,
+            payload=payload,
+            requester=requester,
+            prior_lifecycle_state=transition.prior_lifecycle_state,
+            prior_lifecycle_revision=transition.prior_lifecycle_revision,
+        )
+    ):
+        raise MissionError("stored mission cancellation transition bindings are inconsistent")
 
 
 def _verify_audit_evidence_binding(

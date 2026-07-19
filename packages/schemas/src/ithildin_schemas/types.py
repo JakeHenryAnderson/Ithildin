@@ -74,6 +74,8 @@ class AuditEventType(StrEnum):
     NODE_CONFIGURATION_TRUST_TRANSITION_ACKNOWLEDGED = (
         "node.configuration_trust_transition.acknowledged"
     )
+    MISSION_ADMISSION_STAGED = "mission.admission.staged"
+    MISSION_CANCELLATION_STAGED = "mission.cancellation.staged"
     TOOL_LIST_REQUESTED = "tool.list.requested"
     TOOL_CALL_PROPOSED = "tool.call.proposed"
     POLICY_EVALUATED = "policy.evaluated"
