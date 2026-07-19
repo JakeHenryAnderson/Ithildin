@@ -57,10 +57,13 @@ report, evidence failures, revocation, and the transition interruption boundarie
 
 SQLite is the committed audit index and JSONL is its append-only mirror. A process interruption after
 JSONL append but before SQLite commit can leave an orphan mirror line. Every later audit write now
-compares the full ordered committed SQLite payload sequence with JSONL while holding the SQLite write
-lock. Any missing, orphaned, partial, or edited line produces `recovery_required` and blocks new audit
-events. Mission cockpit projections and governed mission bindings also refuse that lifecycle. Ithildin
-does not silently repair or discard evidence.
+compares the raw mirror bytes with the canonical full ordered SQLite payload sequence while holding
+the SQLite write lock. Canonical framing is exactly one UTF-8 payload followed by exactly one LF byte
+for every committed event. The same exact-byte check drives write preflight, diagnostics, exports,
+Mission cockpit projections, governed mission bindings, and this POC checker. Any missing terminal
+newline, CRLF substitution, blank line, orphaned append, partial record, appended byte, or edited
+payload produces `recovery_required` and blocks new audit events. Ithildin does not silently repair or
+discard evidence.
 
 Focused tests distinguish interruption before audit insert, after JSONL append, after audit commit,
 and before or after mission finalization. Tests and transcripts are evidence only; they do not perform

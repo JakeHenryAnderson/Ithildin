@@ -5123,6 +5123,7 @@ def test_audit_diagnostics_endpoint_requires_auth_and_reports_state(tmp_path: Pa
     payload = response.json()
     assert payload["category"] == "valid"
     assert payload["lifecycle"]["status"] == "clean"
+    assert payload["lifecycle"]["sqlite_jsonl_payload_bytes_match"] is True
     assert payload["lifecycle"]["retention_mutation_supported"] is False
     assert payload["verification"]["valid"] is True
     assert payload["verification"]["event_count"] == 1

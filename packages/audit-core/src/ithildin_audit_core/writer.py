@@ -320,6 +320,12 @@ class AuditWriter:
         ]
         return "\n".join(lines) + "\n"
 
+    def exact_jsonl_match(self) -> bool:
+        """Compare the mirror with the canonical LF-framed committed payload bytes."""
+
+        payloads = [_payload_json_from_row(row) for row in self._payload_rows()]
+        return self._jsonl_matches_payloads(payloads)
+
     def diagnostics(self) -> JsonObject:
         db_exists = self.db_path.exists()
         jsonl_exists = self.jsonl_path.exists()
@@ -327,10 +333,10 @@ class AuditWriter:
         jsonl_line_count: Optional[int] = None
         jsonl_head_hash: Optional[str] = None
         jsonl_error: Optional[str] = None
+        sqlite_jsonl_payload_bytes_match: Optional[bool] = None
         if jsonl_exists:
             try:
-                with self.jsonl_path.open("r", encoding="utf-8") as jsonl_file:
-                    jsonl_lines = [line for line in jsonl_file if line.strip()]
+                jsonl_lines = self.jsonl_path.read_text(encoding="utf-8").splitlines()
                 jsonl_line_count = len(jsonl_lines)
                 jsonl_head_hash = _jsonl_head_hash(jsonl_lines)
             except (OSError, UnicodeError) as exc:
@@ -367,6 +373,11 @@ class AuditWriter:
             else:
                 verification = result.as_dict()
                 category = _diagnostic_category(result)
+                try:
+                    sqlite_jsonl_payload_bytes_match = self.exact_jsonl_match()
+                except AuditWriteError as exc:
+                    if jsonl_error is None:
+                        jsonl_error = str(exc)
 
         lifecycle = _lifecycle_diagnostics(
             category=category,
@@ -377,6 +388,7 @@ class AuditWriter:
             jsonl_head_hash=jsonl_head_hash,
             verification=verification,
             jsonl_error=jsonl_error,
+            sqlite_jsonl_payload_bytes_match=sqlite_jsonl_payload_bytes_match,
         )
 
         return {
@@ -390,6 +402,7 @@ class AuditWriter:
             "jsonl_line_count": jsonl_line_count,
             "jsonl_head_hash": jsonl_head_hash,
             "jsonl_error": jsonl_error,
+            "sqlite_jsonl_payload_bytes_match": sqlite_jsonl_payload_bytes_match,
             "category": category,
             "lifecycle": lifecycle,
             "verification": verification,
@@ -448,8 +461,8 @@ class AuditWriter:
                 payload_json,
             ),
         )
-        with self.jsonl_path.open("a", encoding="utf-8") as jsonl_file:
-            jsonl_file.write(payload_json + "\n")
+        with self.jsonl_path.open("ab") as jsonl_file:
+            jsonl_file.write(_canonical_jsonl_bytes([payload_json]))
 
     def _require_clean_committed_lifecycle(self, connection: sqlite3.Connection) -> None:
         """Refuse new evidence when committed SQLite and JSONL history diverge.
@@ -466,15 +479,15 @@ class AuditWriter:
                 "SELECT payload_json FROM audit_events ORDER BY rowid ASC"
             ).fetchall()
         ]
-        if not self.jsonl_path.exists():
-            jsonl_payloads: list[str] = []
-        else:
-            try:
-                jsonl_payloads = self.jsonl_path.read_text(encoding="utf-8").splitlines()
-            except (OSError, UnicodeError) as exc:
-                raise AuditWriteError("audit lifecycle recovery is required") from exc
-        if jsonl_payloads != sqlite_payloads:
+        if not self._jsonl_matches_payloads(sqlite_payloads):
             raise AuditWriteError("audit lifecycle recovery is required")
+
+    def _jsonl_matches_payloads(self, payloads: list[str]) -> bool:
+        try:
+            actual = self.jsonl_path.read_bytes() if self.jsonl_path.exists() else b""
+        except OSError as exc:
+            raise AuditWriteError("audit lifecycle recovery is required") from exc
+        return actual == _canonical_jsonl_bytes(payloads)
 
 
 def _redact_json(value: JsonObject, redact_fields: set[str]) -> JsonObject:
@@ -557,6 +570,10 @@ def _jsonl_head_hash(lines: list[str]) -> Optional[str]:
     return event_hash if isinstance(event_hash, str) else None
 
 
+def _canonical_jsonl_bytes(payloads: list[str]) -> bytes:
+    return b"".join(payload.encode("utf-8") + b"\n" for payload in payloads)
+
+
 def _path_size(path: Path) -> Optional[int]:
     try:
         return path.stat().st_size if path.exists() else None
@@ -574,6 +591,7 @@ def _lifecycle_diagnostics(
     jsonl_head_hash: Optional[str],
     verification: JsonObject,
     jsonl_error: Optional[str],
+    sqlite_jsonl_payload_bytes_match: Optional[bool],
 ) -> JsonObject:
     verification_valid = verification.get("valid") is True
     verification_head_hash = _optional_string(verification.get("head_hash"))
@@ -599,7 +617,12 @@ def _lifecycle_diagnostics(
         lifecycle_status = "clean"
     elif jsonl_error is not None or not jsonl_exists:
         lifecycle_status = "ambiguous"
-    elif verification_valid and count_matches and head_matches:
+    elif (
+        verification_valid
+        and count_matches
+        and head_matches
+        and sqlite_jsonl_payload_bytes_match is True
+    ):
         lifecycle_status = "clean"
     elif not verification_valid:
         lifecycle_status = "verification_failed"
@@ -627,6 +650,7 @@ def _lifecycle_diagnostics(
         "export_jsonl_available": db_exists,
         "sqlite_jsonl_event_count_match": count_matches if jsonl_line_count is not None else None,
         "sqlite_jsonl_head_hash_match": head_matches if jsonl_head_hash is not None else None,
+        "sqlite_jsonl_payload_bytes_match": sqlite_jsonl_payload_bytes_match,
         "recommendation": recommendations[lifecycle_status],
         "category": category,
     }

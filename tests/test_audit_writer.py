@@ -477,7 +477,11 @@ def test_audit_writer_export_includes_metadata_and_jsonl_events(tmp_path: Path) 
     assert event_payload["event_id"] == "evt_1"
 
 
-def test_audit_writer_export_can_require_clean_lifecycle(tmp_path: Path) -> None:
+@pytest.mark.parametrize("drift", ["missing", "content_edit_same_head", "missing_terminal_newline"])
+def test_audit_writer_export_can_require_clean_lifecycle(
+    tmp_path: Path,
+    drift: str,
+) -> None:
     writer = make_writer(tmp_path)
     writer.write_event(
         event_id="evt_1",
@@ -486,7 +490,19 @@ def test_audit_writer_export_can_require_clean_lifecycle(tmp_path: Path) -> None
         request_id="req_1",
         principal={"id": "agent:local-dev"},
     )
-    writer.jsonl_path.write_text("", encoding="utf-8")
+    if drift == "missing":
+        writer.jsonl_path.write_text("", encoding="utf-8")
+    elif drift == "content_edit_same_head":
+        payload = json.loads(writer.jsonl_path.read_text(encoding="utf-8"))
+        payload["principal"]["id"] = "agent:edited"
+        writer.jsonl_path.write_text(
+            json.dumps(payload, sort_keys=True, separators=(",", ":")) + "\n",
+            encoding="utf-8",
+        )
+    else:
+        writer.jsonl_path.write_bytes(
+            writer.jsonl_path.read_bytes().removesuffix(b"\n")
+        )
 
     bundle_lines = writer.export_jsonl_bundle().splitlines()
     metadata = json.loads(bundle_lines[0])["metadata"]
@@ -1058,7 +1074,19 @@ def test_audit_writer_blocks_when_jsonl_cannot_be_written(tmp_path: Path) -> Non
     assert row_count == 0
 
 
-@pytest.mark.parametrize("drift", ["orphan", "missing", "tampered", "invalid_utf8"])
+@pytest.mark.parametrize(
+    "drift",
+    [
+        "orphan",
+        "missing",
+        "tampered",
+        "invalid_utf8",
+        "missing_terminal_newline",
+        "crlf",
+        "blank_line",
+        "appended_bytes",
+    ],
+)
 def test_audit_writer_blocks_new_events_when_committed_jsonl_lifecycle_drifts(
     tmp_path: Path,
     drift: str,
@@ -1071,19 +1099,32 @@ def test_audit_writer_blocks_new_events_when_committed_jsonl_lifecycle_drifts(
         request_id="req_1",
         principal={"id": "agent:local-dev"},
     )
-    original = writer.jsonl_path.read_text(encoding="utf-8")
+    original = writer.jsonl_path.read_bytes()
     if drift == "orphan":
-        writer.jsonl_path.write_text(original + "{}\n", encoding="utf-8")
+        writer.jsonl_path.write_bytes(original + b"{}\n")
     elif drift == "missing":
-        writer.jsonl_path.write_text("", encoding="utf-8")
+        writer.jsonl_path.write_bytes(b"")
     elif drift == "tampered":
-        writer.jsonl_path.write_text(
-            original.replace("policy.evaluated", "policy.tampered"),
-            encoding="utf-8",
+        writer.jsonl_path.write_bytes(
+            original.replace(b"policy.evaluated", b"policy.tampered")
         )
-    else:
+    elif drift == "invalid_utf8":
         writer.jsonl_path.write_bytes(b"\xff\n")
+    elif drift == "missing_terminal_newline":
+        writer.jsonl_path.write_bytes(original.removesuffix(b"\n"))
+    elif drift == "crlf":
+        writer.jsonl_path.write_bytes(original.replace(b"\n", b"\r\n"))
+    elif drift == "blank_line":
+        writer.jsonl_path.write_bytes(original + b"\n")
+    else:
+        writer.jsonl_path.write_bytes(original + b"appended")
     drifted = writer.jsonl_path.read_bytes()
+
+    diagnostics = writer.diagnostics()
+    lifecycle = cast(dict[str, Any], diagnostics["lifecycle"])
+    assert lifecycle["status"] != "clean"
+    assert lifecycle["sqlite_jsonl_payload_bytes_match"] is False
+    assert writer.exact_jsonl_match() is False
 
     with pytest.raises(AuditWriteError, match="lifecycle recovery is required"):
         writer.write_event(

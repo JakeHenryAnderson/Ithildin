@@ -1,5 +1,9 @@
-import sqlite3
+import json
 from pathlib import Path
+
+import pytest
+from ithildin_audit_core import AuditWriter
+from ithildin_schemas import AuditEventType
 
 from scripts import mission_command_control_plane_poc as poc
 from scripts import mission_command_control_plane_poc_evidence_check as evidence_check
@@ -42,18 +46,32 @@ def test_focused_transcript_requires_every_named_passing_test() -> None:
     )
 
 
-def test_exact_sqlite_jsonl_comparison_rejects_edited_mirror(tmp_path: Path) -> None:
+@pytest.mark.parametrize("drift", ["content_edit_same_head", "missing_terminal_newline"])
+def test_exact_sqlite_jsonl_comparison_rejects_noncanonical_mirror(
+    tmp_path: Path,
+    drift: str,
+) -> None:
     database = tmp_path / "audit.sqlite3"
     audit = tmp_path / "audit.jsonl"
-    payload = '{"event_hash":"sha256:committed"}'
-    with sqlite3.connect(database) as connection:
-        connection.execute("CREATE TABLE audit_events (payload_json TEXT NOT NULL)")
-        connection.execute("INSERT INTO audit_events (payload_json) VALUES (?)", (payload,))
-        connection.commit()
-    audit.write_text(payload + "\n", encoding="utf-8")
+    writer = AuditWriter(database, audit)
+    writer.initialize()
+    writer.write_event(
+        event_id="evt_1",
+        event_type=AuditEventType.POLICY_EVALUATED,
+        request_id="req_1",
+        principal={"id": "agent:test"},
+    )
 
     assert evidence_check._sqlite_jsonl_payloads_match(database, audit)
-    audit.write_text('{"event_hash":"sha256:edited"}\n', encoding="utf-8")
+    if drift == "content_edit_same_head":
+        payload = json.loads(audit.read_text(encoding="utf-8"))
+        payload["principal"]["id"] = "agent:edited"
+        audit.write_text(
+            json.dumps(payload, sort_keys=True, separators=(",", ":")) + "\n",
+            encoding="utf-8",
+        )
+    else:
+        audit.write_bytes(audit.read_bytes().removesuffix(b"\n"))
     assert not evidence_check._sqlite_jsonl_payloads_match(database, audit)
 
 

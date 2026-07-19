@@ -102,10 +102,7 @@ def build_report(repo_root: Path, evidence_root: Path = DEFAULT_EVIDENCE_ROOT) -
         verification = writer.verify_chain()
         diagnostics = cast(dict[str, Any], writer.diagnostics())
         lifecycle = cast(dict[str, Any], diagnostics.get("lifecycle", {}))
-        sqlite_jsonl_payloads_match = _sqlite_jsonl_payloads_match(
-            paths["database"],
-            paths["audit"],
-        )
+        sqlite_jsonl_payloads_match = writer.exact_jsonl_match()
         template_payload_absent = _forbidden_payload_keys_absent(root / "evidence")
         transcript_valid = _focused_transcript_valid(transcript, focused_tests)
         runtime = {
@@ -184,9 +181,9 @@ def build_report(repo_root: Path, evidence_root: Path = DEFAULT_EVIDENCE_ROOT) -
             "audit_chain_and_sqlite_jsonl_lifecycle_clean": verification.valid
             and sqlite_jsonl_payloads_match
             and lifecycle.get("status") == "clean"
-            and diagnostics.get("sqlite_jsonl_event_count_match") is not False
             and lifecycle.get("sqlite_jsonl_event_count_match") is True
             and lifecycle.get("sqlite_jsonl_head_hash_match") is True
+            and lifecycle.get("sqlite_jsonl_payload_bytes_match") is True
             and documents["audit_verification"].get("valid") is True,
             "database_lifecycle_and_correlation_proven": database.get("valid") is True,
             "template_payload_absent_from_saved_evidence": template_payload_absent
@@ -288,14 +285,7 @@ def _database_evidence(db_path: Path) -> dict[str, Any]:
 
 
 def _sqlite_jsonl_payloads_match(db_path: Path, audit_path: Path) -> bool:
-    with sqlite3.connect(db_path) as connection:
-        committed = [
-            str(row[0])
-            for row in connection.execute(
-                "SELECT payload_json FROM audit_events ORDER BY rowid ASC"
-            ).fetchall()
-        ]
-    return audit_path.read_text(encoding="utf-8").splitlines() == committed
+    return AuditWriter(db_path, audit_path).exact_jsonl_match()
 
 
 def _forbidden_payload_keys_absent(evidence_dir: Path) -> bool:

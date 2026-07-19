@@ -356,8 +356,13 @@ def test_operator_summary_fails_closed_when_admission_evidence_is_missing(
         store.operator_summary(admitted.mission_id)
 
 
-def test_operator_summary_fails_closed_when_audit_jsonl_lifecycle_drifts(
+@pytest.mark.parametrize(
+    "drift",
+    ["missing", "content_edit_same_head", "missing_terminal_newline"],
+)
+def test_mission_trust_surfaces_fail_closed_when_audit_jsonl_lifecycle_drifts(
     tmp_path: Path,
+    drift: str,
 ) -> None:
     store = _store(tmp_path)
     audit_writer = AuditWriter(store.db_path, tmp_path / "audit.jsonl")
@@ -376,10 +381,32 @@ def test_operator_summary_fails_closed_when_audit_jsonl_lifecycle_drifts(
         audit_event_id=event.event_id,
         audit_event_hash=event.event_hash,
     )
-    audit_writer.jsonl_path.write_text("", encoding="utf-8")
+    if drift == "missing":
+        audit_writer.jsonl_path.write_text("", encoding="utf-8")
+    elif drift == "content_edit_same_head":
+        payload = json.loads(audit_writer.jsonl_path.read_text(encoding="utf-8"))
+        payload["principal"]["id"] = "admin:edited"
+        audit_writer.jsonl_path.write_text(
+            json.dumps(payload, sort_keys=True, separators=(",", ":")) + "\n",
+            encoding="utf-8",
+        )
+    else:
+        audit_writer.jsonl_path.write_bytes(
+            audit_writer.jsonl_path.read_bytes().removesuffix(b"\n")
+        )
 
     with pytest.raises(MissionError, match="audit lifecycle requires recovery"):
         store.operator_summary(admitted.mission_id)
+    session_id = (
+        f"mission:{admitted.mission_id}:mclaim_{'a' * 32}:"
+        f"{admitted.envelope_digest.removeprefix('sha256:')[:16]}"
+    )
+    with pytest.raises(MissionError, match="audit lifecycle requires recovery"):
+        store.governed_run_mission_binding(
+            node_id=admitted.target_node_id,
+            session_id=session_id,
+            now=datetime.now(UTC),
+        )
 
 
 def test_audit_evidence_cannot_finalize_two_missions(tmp_path: Path) -> None:
