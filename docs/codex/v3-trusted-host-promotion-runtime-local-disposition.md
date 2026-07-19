@@ -49,10 +49,17 @@ exact-candidate self-validation. Re-review of commit
 still pass the public checker with contradictory embedded evidence. The current candidate fixes
 `008` by requiring embedded packet evidence to match live packet evidence.
 
-`002` remains deferred because it requires an explicit architecture and public evidence-contract
-decision. `006` remains deferred with the governance-drift evidence that depends on `002`. This
-status does not close the findings or ERG-005; exact-candidate independent re-review is still
-required.
+That review state kept `002` and `006` deferred until an explicit architecture, completed TGB
+implementation, packet-bound governance-drift evidence, and exact-candidate independent re-review
+were available.
+
+The final TGB remediation re-review inspected exact clean commit
+`919858e8d5886129d7c1fefc730795380cd45f73` and focused packet manifest
+`sha256:02b060bb65d41b317b3a426cd1ad9786d101683303622cb9eedb34436bb9ed16`. It found no
+remaining defect in the requested scope and dispositioned `002` and `006` as `fixed`. The
+normalized response passed the exact runtime closure preflight and reached
+`runtime_source_review_ready_for_triage`. `ERG-005` remains blocked, and no runtime placement,
+broader promotion, release, UAT, production-use, or new-power authority is created by this result.
 
 ## Historical Local Disposition
 
@@ -100,9 +107,9 @@ This disposition does not approve:
 
 ## Next Step
 
-Keep ERG-005 runtime source-review closure blocked until the deferred governance-binding decision is
-made, the remaining implementation and evidence work is complete, and an independent reviewer
-rechecks the exact clean remediation candidate.
+Keep ERG-005 blocked while the accepted runtime source-finding disposition is committed and the
+separate enterprise-lane decision is evaluated. Do not treat the fixed findings as promotion,
+release, UAT, production-use, or new-power authorization.
 
 Recommended handoff packet:
 

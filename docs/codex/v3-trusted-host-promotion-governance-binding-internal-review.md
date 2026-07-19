@@ -2,6 +2,8 @@
 
 Status: `implementation_candidate_ready_for_independent_re_review`.
 
+Current response-intake state: `runtime_source_review_ready_for_triage`.
+
 Review date: `2026-07-18`.
 
 Implementation candidate reviewed: `cc6ec9dd6808907efb5455d67f1f06477d7c4b92`.
@@ -89,6 +91,21 @@ The packet generated after this review record is committed must be checked again
 exact clean commit. That packet refresh proves final record/packet identity; it does not convert this
 internal review into external response intake.
 
+## Independent Re-Review Addendum
+
+Independent Sol xhigh packet-and-source re-review of exact clean commit
+`919858e8d5886129d7c1fefc730795380cd45f73` and focused packet manifest
+`sha256:02b060bb65d41b317b3a426cd1ad9786d101683303622cb9eedb34436bb9ed16` reported no
+new findings in the requested remediation scope and dispositioned
+`EXT-TRUSTED-HOST-RUNTIME-002` and `EXT-TRUSTED-HOST-RUNTIME-006` as `fixed`.
+
+The normalized response passed the exact runtime closure preflight with
+`disposition_outcome: runtime_findings_closed` and
+`runtime_source_review_status: runtime_source_review_ready_for_triage`. The preflight kept
+`ERG-005` blocked and every runtime, promotion, host-write, release, UAT, and new-power authority
+false. This addendum records independent source-finding disposition; it does not rewrite the
+historical internal disposition or claim external enterprise-lane closure.
+
 ## Internal Disposition
 
 `TGB-001` through `TGB-006` are internally implemented and evidence-complete for the bounded
@@ -107,6 +124,6 @@ release_approved: false
 uat_accepted: false
 ```
 
-`EXT-TRUSTED-HOST-RUNTIME-002` and `EXT-TRUSTED-HOST-RUNTIME-006` remain deferred until the exact
-final candidate and packet receive a separately normalized independent response through the
-trusted-host response-intake contract.
+`EXT-TRUSTED-HOST-RUNTIME-002` and `EXT-TRUSTED-HOST-RUNTIME-006` are fixed after exact-candidate
+independent response intake. `ERG-005`, trusted-host promotion authority, release approval, and UAT
+remain separately blocked.

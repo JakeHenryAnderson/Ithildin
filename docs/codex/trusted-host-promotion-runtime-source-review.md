@@ -125,9 +125,23 @@ requires the proposal to remain `authority_stale`, the approval to remain approv
 staging effects to remain absent, and verifier restoration to leave the proposal non-revivable.
 The response gate now derives the exact commit from the focused candidate review packet and the
 actual packet identity from the SHA-256 of its artifact-hash manifest; missing, abbreviated, stale,
-or mismatched identities fail closed. These changes remain an implementation candidate until a
-fresh exact-candidate independent response is normalized and separately triaged. `ERG-005`, broad
-trusted-host promotion, release authorization, and UAT remain blocked.
+or mismatched identities fail closed. These changes remained an implementation candidate until the
+fresh exact-candidate independent response described below was normalized and separately triaged.
+`ERG-005`, broad trusted-host promotion, release authorization, and UAT remain blocked.
+
+Fresh independent Sol xhigh packet-and-source review of exact clean commit
+`919858e8d5886129d7c1fefc730795380cd45f73` and focused packet manifest
+`sha256:02b060bb65d41b317b3a426cd1ad9786d101683303622cb9eedb34436bb9ed16` found no new
+defects in the requested remediation scope and dispositioned both
+`EXT-TRUSTED-HOST-RUNTIME-002` and `EXT-TRUSTED-HOST-RUNTIME-006` as `fixed`. The reviewer
+reproduced the missing-verifier restart proof, intentional unsupported-policy-engine precedence,
+exact runtime review identity, three targeted remediation tests, and the 108-test focused promotion
+suite. The separately normalized response passed the runtime closure preflight as
+`runtime_findings_closed` and reached only `runtime_source_review_ready_for_triage`.
+
+This accepted response closes the two tracked source findings; it does not close `ERG-005`, record
+release approval, authorize runtime placement or broader promotion, authorize new powers, or replace
+later operator UAT. Those authority flags remain false.
 
 The committed finding records live under `docs/codex/findings/` with the
 `EXT-TRUSTED-HOST-RUNTIME-###` namespace.
