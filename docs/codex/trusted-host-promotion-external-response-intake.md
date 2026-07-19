@@ -62,6 +62,25 @@ Answer every item from
    runtime behavior, local model invocation, sandbox orchestration, SIEM adapter behavior, or
    production/security-product claims?
 
+## Runtime Exact-Candidate Disposition Answers
+
+For `trusted-host-promotion-runtime`, answer these additional questions against the exact clean
+candidate and runtime source-review packet:
+
+1. Did the reviewer inspect the governance-binding architecture, `TGB-001` through `TGB-006`, the
+   bounded authorization record, exact runtime source, focused tests, and generated evidence?
+2. Does apply-time authority recomputation freshly rehash the exact closed installed inventory
+   selected at startup before any approval/proposal reservation or staging effect?
+3. Does a post-approval installed-file mutation terminally stale the proposal while leaving the
+   approval unconsumed, attempts absent, and the staging root unchanged?
+4. Is `EXT-TRUSTED-HOST-RUNTIME-002` `fixed`, `partially_closed`, `open`, or `regressed`?
+5. Is `EXT-TRUSTED-HOST-RUNTIME-006` `fixed`, `partially_closed`, `open`, or `regressed`?
+6. Are any critical/high implementation findings unresolved?
+7. Does the packet include the governing TGB contracts and distinguish historical review state
+   from the current exact candidate?
+8. Does the response explicitly avoid turning source-review closure into runtime authorization,
+   release approval, broad host promotion, UAT acceptance, or a production-security claim?
+
 ## Finding Extraction Table
 
 Use this exact shape for actionable findings:
@@ -108,11 +127,16 @@ uv run python scripts/external_response_normalize.py \
 The closure gate accepts either the design-level area/namespace pair or the runtime-level
 area/namespace pair, but never a mixed pair. Both remain intake evidence only.
 
+A favorable runtime response must list `EXT-TRUSTED-HOST-RUNTIME-002` and
+`EXT-TRUSTED-HOST-RUNTIME-006` in the finding table with disposition `fixed`; an explicit
+`no findings` statement is not sufficient to close previously deferred findings.
+
 The normalized response is intake evidence only. It sets `mutates_findings: false` and
 `closes_external_review: false`; follow-up commits must separately add reviewer findings, update the
 enterprise gap matrix or post-RC decision register, and rerun release gates.
-If a reviewer response is favorable, record `disposition_outcome: continue_design_only` in the
-normalized response before running
+If a design-level reviewer response is favorable, record
+`disposition_outcome: continue_design_only`. If an exact-candidate runtime response closes both
+deferred findings, record `disposition_outcome: runtime_findings_closed`. Then run
 [trusted-host-promotion-disposition-closure-gate.md](trusted-host-promotion-disposition-closure-gate.md).
 The closure gate still cannot close `ERG-005` by itself.
 
@@ -123,6 +147,12 @@ The intake may record only the outcomes defined in the trusted-host promotion di
 - `continue_design_only`
 - `revise_before_more_planning`
 - `block_runtime_implementation`
+
+The runtime exact-candidate lane may record only:
+
+- `runtime_findings_closed`
+- `runtime_findings_partially_closed`
+- `block_runtime_source_review_closure`
 
 Only a later committed triage update may move `ERG-005` away from `blocked`, and even a favorable
 response can only support later design-only planning or a later implementation-planning decision

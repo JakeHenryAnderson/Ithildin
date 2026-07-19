@@ -276,14 +276,26 @@ def test_verified_launcher_verifies_before_importing_app(monkeypatch: pytest.Mon
 
     sys.modules.pop("ithildin_api.app", None)
     observed: list[str] = []
+    app_kwargs: dict[str, object] = {}
 
-    def verify() -> dict[str, str]:
-        assert "ithildin_api.app" not in sys.modules
-        observed.append("verified")
-        fake_app = types.ModuleType("ithildin_api.app")
-        fake_app.create_app = lambda **_kwargs: "app"  # type: ignore[attr-defined]
-        sys.modules["ithildin_api.app"] = fake_app
-        return _verified_payload()
+    def create_fake_app(**kwargs: object) -> str:
+        app_kwargs.update(kwargs)
+        return "app"
+
+    class Verifier:
+        def __init__(self) -> None:
+            self.calls = 0
+
+        def verify(self) -> dict[str, str]:
+            if self.calls == 0:
+                assert "ithildin_api.app" not in sys.modules
+            observed.append("verified")
+            self.calls += 1
+            if "ithildin_api.app" not in sys.modules:
+                fake_app = types.ModuleType("ithildin_api.app")
+                fake_app.create_app = create_fake_app  # type: ignore[attr-defined]
+                sys.modules["ithildin_api.app"] = fake_app
+            return _verified_payload()
 
     fake_authority = types.ModuleType("ithildin_api.promotion_authority")
 
@@ -296,12 +308,16 @@ def test_verified_launcher_verifies_before_importing_app(monkeypatch: pytest.Mon
     fake_authority.RuntimeCandidateRecord = Candidate  # type: ignore[attr-defined]
     fake_uvicorn = types.ModuleType("uvicorn")
     fake_uvicorn.run = lambda *_args, **_kwargs: observed.append("run")  # type: ignore[attr-defined]
-    monkeypatch.setattr(launcher, "verify_from_environment", verify)
+    monkeypatch.setattr(launcher, "verifier_from_environment", Verifier)
     monkeypatch.setitem(sys.modules, "ithildin_api.promotion_authority", fake_authority)
     monkeypatch.setitem(sys.modules, "uvicorn", fake_uvicorn)
 
     assert launcher.main() == 0
     assert observed == ["verified", "candidate", "run"]
+    verifier = app_kwargs["runtime_candidate_verifier"]
+    assert callable(verifier)
+    verifier()
+    assert observed == ["verified", "candidate", "run", "verified", "candidate"]
 
 
 def _candidate_fixture(

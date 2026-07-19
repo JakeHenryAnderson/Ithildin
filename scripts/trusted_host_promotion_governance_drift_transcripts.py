@@ -158,6 +158,7 @@ MATRIX_ROWS = (
                 "tests/test_runtime_candidate_bootstrap.py",
                 "tests/test_promotion_authority.py::test_runtime_candidate_id_does_not_include_review_packet_digest",
                 "tests/test_api_service.py::test_trusted_host_promotion_every_authority_component_drift_is_terminal",
+                "tests/test_api_service.py::test_trusted_host_promotion_installed_file_drift_is_terminal_before_reservation",
                 "-q",
             ),
         ),

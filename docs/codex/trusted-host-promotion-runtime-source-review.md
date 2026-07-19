@@ -1,6 +1,7 @@
 # Trusted-Host Promotion Runtime Source Review
 
-Status: focused source-review handoff for the implemented staging-only `ERG-005` runtime slice.
+Status: exact-candidate source-review handoff for the implemented staging-only `ERG-005` runtime
+slice and its `TGB-001` through `TGB-006` governance binding.
 
 Finding namespace: `EXT-TRUSTED-HOST-RUNTIME-###`.
 
@@ -102,9 +103,19 @@ self-evidence for the newly generated exact candidate. Re-review of commit
 pass the public checker with contradictory embedded evidence. The current candidate fixes `008` by
 requiring embedded packet evidence to match live packet evidence.
 
-The full principal, trusted-host descriptor, policy, manifest, schema, and reviewed-candidate
-binding remains a deferred architecture decision. Consequently, ERG-005 and runtime source-review
-closure remain blocked and the current candidate still requires exact independent re-review.
+The governance-binding architecture, authorization record, and `TGB-001` through `TGB-006`
+implementation packet now govern the current candidate; the former statement that complete binding
+was only a deferred architecture decision is historical. A later exact-candidate review found that
+the service still reused startup-cached runtime-candidate evidence instead of rehashing the closed
+installed inventory immediately before reservation. That kept `EXT-TRUSTED-HOST-RUNTIME-002` and
+`EXT-TRUSTED-HOST-RUNTIME-006` deferred.
+
+The current remediation retains the startup-selected verifier paths, freshly verifies the closed
+installed inventory during apply-time authority recomputation, terminally stales the proposal on
+verification failure before reservation, and adds a direct post-approval installed-file drift
+proof with no attempt or staging effect. Those changes remain an implementation candidate until a
+fresh exact-candidate independent response is normalized and separately triaged. `ERG-005`, broad
+trusted-host promotion, release authorization, and UAT remain blocked.
 
 The committed finding records live under `docs/codex/findings/` with the
 `EXT-TRUSTED-HOST-RUNTIME-###` namespace.

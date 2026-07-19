@@ -81,6 +81,9 @@ TEST_FILES = [
     "tests/test_workspaces.py",
 ]
 CONTRACT_DOCS = [
+    "docs/codex/trusted-host-promotion-governance-binding-architecture.md",
+    "docs/codex/trusted-host-promotion-governance-binding-implementation-tickets.md",
+    "docs/codex/trusted-host-promotion-governance-binding-authorization-record.md",
     "docs/codex/trusted-host-promotion-runtime-implementation-decision.md",
     "docs/codex/trusted-host-promotion-runtime-implementation.md",
     "docs/codex/v3-trusted-host-promotion-runtime-internal-review.md",
@@ -109,6 +112,7 @@ FOCUSED_TEST_COMMAND = [
     "run",
     "pytest",
     "tests/test_api_service.py::test_trusted_host_promotion_binds_identity_but_keeps_placement_unavailable",
+    "tests/test_api_service.py::test_trusted_host_promotion_production_readiness_requires_candidate_reverification",
     "tests/test_api_service.py::test_trusted_host_promotion_production_readiness_requires_approver_role",
     "tests/test_api_service.py::test_trusted_host_promotion_missing_approver_role_cannot_decide_or_place",
     "tests/test_api_service.py::test_trusted_host_promotion_denies_stale_and_unsafe_inputs",
@@ -123,6 +127,7 @@ FOCUSED_TEST_COMMAND = [
     "tests/test_api_service.py::test_trusted_host_promotion_internal_fixture_concurrent_replay_reserves_once",
     "tests/test_api_service.py::test_trusted_host_promotion_source_drift_is_terminal_before_reservation",
     "tests/test_api_service.py::test_trusted_host_promotion_every_authority_component_drift_is_terminal",
+    "tests/test_api_service.py::test_trusted_host_promotion_installed_file_drift_is_terminal_before_reservation",
     "tests/test_api_service.py::test_trusted_host_promotion_approval_decision_drift_is_terminal",
     "tests/test_api_service.py::test_trusted_host_promotion_postwrite_root_drift_records_recovery",
     "tests/test_api_service.py::test_trusted_host_promotion_success_evidence_failure_records_recovery",

@@ -7,6 +7,7 @@ import json
 import re
 import sqlite3
 import unicodedata
+from collections.abc import Callable
 from dataclasses import dataclass, replace
 from datetime import UTC, datetime
 from pathlib import Path
@@ -79,6 +80,7 @@ PROMOTION_OBLIGATIONS: JsonObject = {
 MAX_PROMOTION_ARTIFACT_BYTES = 4096
 LABEL_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.:/@-]{0,127}$")
 SAFE_NAME_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.@-]{0,127}$")
+RuntimeCandidateVerifier = Callable[[], RuntimeCandidateRecord]
 
 
 class TrustedHostPromotionError(RuntimeError):
@@ -976,6 +978,7 @@ class TrustedHostPromotionService:
         trusted_host_registry: TrustedHostDescriptorRegistry,
         audit_writer: AuditWriter,
         runtime_candidate: RuntimeCandidateRecord | None,
+        runtime_candidate_verifier: RuntimeCandidateVerifier | None,
         staging_root: Path,
         governance_binding_ready: bool = False,
         governance_test_fixture_ready: bool = False,
@@ -995,6 +998,7 @@ class TrustedHostPromotionService:
         self.trusted_host_registry = trusted_host_registry
         self.audit_writer = audit_writer
         self.runtime_candidate = runtime_candidate
+        self.runtime_candidate_verifier = runtime_candidate_verifier
         self.staging_root = staging_root
         self.governance_binding_ready = governance_binding_ready
         self.governance_test_fixture_ready = governance_test_fixture_ready
@@ -1200,15 +1204,7 @@ class TrustedHostPromotionService:
             payload=payload,
             context=context,
         )
-        candidate = self.runtime_candidate
-        if candidate is None:
-            raise TrustedHostPromotionError(
-                PromotionReadinessReason.CANDIDATE_AUTHORIZATION_UNAVAILABLE.value
-            )
-        if not candidate.candidate_id_is_valid():
-            raise TrustedHostPromotionError(
-                PromotionReadinessReason.CANDIDATE_VERIFICATION_FAILED.value
-            )
+        candidate = self._reverify_runtime_candidate()
         snapshot = PromotionAuthoritySnapshot(
             requesting_principal=context,
             trusted_host=trusted_host,
@@ -2021,6 +2017,13 @@ class TrustedHostPromotionService:
             raise TrustedHostPromotionError(
                 PromotionReadinessReason.CANDIDATE_AUTHORIZATION_UNAVAILABLE.value
             )
+        if (
+            self.runtime_candidate_verifier is None
+            and not self.governance_test_fixture_ready
+        ):
+            raise TrustedHostPromotionError(
+                PromotionReadinessReason.CANDIDATE_VERIFICATION_FAILED.value
+            )
 
     def _require_proposal_readiness(self) -> None:
         self._require_governance_binding()
@@ -2047,6 +2050,7 @@ class TrustedHostPromotionService:
             self.runtime_candidate is not None
             and self.runtime_candidate.candidate_id_is_valid()
         )
+        candidate_reverification_ready = self.runtime_candidate_verifier is not None
         database_verified = False
         try:
             verify_database_v2(self.store.db_path)
@@ -2085,6 +2089,7 @@ class TrustedHostPromotionService:
             JsonObject,
             {
                 "verified_runtime_candidate": candidate_verified,
+                "runtime_candidate_reverification": candidate_reverification_ready,
                 "detached_operator_authorization": bool(
                     candidate_verified
                     and self.runtime_candidate is not None
@@ -2135,8 +2140,41 @@ class TrustedHostPromotionService:
             return PromotionReadinessReason.CANDIDATE_AUTHORIZATION_UNAVAILABLE.value
         if not self.runtime_candidate.candidate_id_is_valid():
             return PromotionReadinessReason.CANDIDATE_VERIFICATION_FAILED.value
+        if (
+            self.runtime_candidate_verifier is None
+            and not self.governance_test_fixture_ready
+        ):
+            return PromotionReadinessReason.CANDIDATE_VERIFICATION_FAILED.value
         reason = self.production_readiness.get("reason")
         return reason if isinstance(reason, str) else "trusted_host_promotion_unavailable"
+
+    def _reverify_runtime_candidate(self) -> RuntimeCandidateRecord:
+        candidate = self.runtime_candidate
+        if candidate is None:
+            raise TrustedHostPromotionError(
+                PromotionReadinessReason.CANDIDATE_AUTHORIZATION_UNAVAILABLE.value
+            )
+        verifier = self.runtime_candidate_verifier
+        if verifier is None:
+            if self.governance_test_fixture_ready and candidate.candidate_id_is_valid():
+                return candidate
+            raise TrustedHostPromotionError(
+                PromotionReadinessReason.CANDIDATE_VERIFICATION_FAILED.value
+            )
+        try:
+            verified_candidate = verifier()
+        except Exception as exc:
+            raise TrustedHostPromotionError(
+                PromotionReadinessReason.CANDIDATE_VERIFICATION_FAILED.value
+            ) from exc
+        if (
+            not verified_candidate.candidate_id_is_valid()
+            or verified_candidate != candidate
+        ):
+            raise TrustedHostPromotionError(
+                PromotionReadinessReason.CANDIDATE_VERIFICATION_FAILED.value
+            )
+        return verified_candidate
 
     def _payload_from_proposal(
         self,

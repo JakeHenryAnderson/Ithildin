@@ -27,6 +27,11 @@ AREA_NAMESPACE_PREFIXES = {
     RUNTIME_AREA: "EXT-TRUSTED-HOST-RUNTIME-",
 }
 EXPECTED_OUTCOME = "continue_design_only"
+RUNTIME_EXPECTED_OUTCOME = "runtime_findings_closed"
+RUNTIME_REQUIRED_FIXED_FINDINGS = {
+    "EXT-TRUSTED-HOST-RUNTIME-002",
+    "EXT-TRUSTED-HOST-RUNTIME-006",
+}
 SHA256_PATTERN = re.compile(r"^sha256:[0-9a-f]{64}$")
 
 REQUIRED_PHRASES = [
@@ -44,8 +49,12 @@ REQUIRED_PHRASES = [
     "can_close_source_rows: true",
     "mutates_findings: false",
     "closes_external_review: false",
-    "no critical/high findings",
+    "no unresolved critical/high findings",
     "disposition_outcome: continue_design_only",
+    "disposition_outcome: runtime_findings_closed",
+    "runtime_source_review_ready_for_triage",
+    "EXT-TRUSTED-HOST-RUNTIME-002",
+    "EXT-TRUSTED-HOST-RUNTIME-006",
     "closure_ready: false",
     "erg_005_status: blocked",
     "implementation_planning_allowed: false",
@@ -146,6 +155,12 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     response_report = _validate_normalized_response(normalized_response_path)
     failures.extend(response_report["failures"])
     closure_ready = response_report["closure_ready"]
+    response_area = response_report.get("area")
+    runtime_source_review_status = (
+        "runtime_source_review_ready_for_triage"
+        if closure_ready and response_area == RUNTIME_AREA
+        else "blocked"
+    )
 
     for linked_text, source_name in [
         (readme, "README"),
@@ -184,9 +199,16 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "closure_ready": closure_ready,
         "disposition_outcome": response_report["disposition_outcome"],
         "erg_005_status": (
-            "blocked" if not closure_ready else "ready_for_design_only_decision_record"
+            "ready_for_design_only_decision_record"
+            if closure_ready and response_area == EXPECTED_AREA
+            else "blocked"
         ),
-        "allowed_closure_state": "ready_for_design_only_decision_record",
+        "allowed_closure_state": (
+            "runtime_source_review_ready_for_triage"
+            if response_area == RUNTIME_AREA
+            else "ready_for_design_only_decision_record"
+        ),
+        "runtime_source_review_status": runtime_source_review_status,
         "tool_count": 24,
         "area": EXPECTED_AREA,
         "finding_namespace": EXPECTED_NAMESPACE,
@@ -217,6 +239,7 @@ def _validate_normalized_response(path: Path) -> dict[str, Any]:
             "failures": [],
             "closure_ready": False,
             "disposition_outcome": None,
+            "area": None,
             "reason": "normalized response is absent; ERG-005 remains blocked",
         }
     failures: list[str] = []
@@ -246,9 +269,12 @@ def _validate_normalized_response(path: Path) -> dict[str, Any]:
     if not SHA256_PATTERN.match(str(payload.get("reviewed_packet_hash", ""))):
         failures.append("normalized response reviewed_packet_hash is not a sha256 digest")
     disposition_outcome = payload.get("disposition_outcome")
-    if disposition_outcome != EXPECTED_OUTCOME:
+    expected_outcome = (
+        RUNTIME_EXPECTED_OUTCOME if area == RUNTIME_AREA else EXPECTED_OUTCOME
+    )
+    if disposition_outcome != expected_outcome:
         failures.append(
-            "normalized response disposition_outcome does not permit design-only continuation"
+            "normalized response disposition_outcome does not match the reviewed area"
         )
 
     findings = payload.get("findings", [])
@@ -265,13 +291,30 @@ def _validate_normalized_response(path: Path) -> dict[str, Any]:
             failures.append(f"finding has wrong namespace: {finding_id}")
         if finding.get("area") != area:
             failures.append(f"{finding_id} has wrong area")
-        if str(finding.get("severity", "")).lower() in {"critical", "high"}:
+        if (
+            str(finding.get("severity", "")).lower() in {"critical", "high"}
+            and finding.get("disposition") not in {"fixed", "rejected"}
+        ):
             failures.append(f"{finding_id} is critical/high and blocks closure")
+
+    if area == RUNTIME_AREA:
+        fixed_findings = {
+            str(finding.get("finding_id"))
+            for finding in findings
+            if isinstance(finding, dict) and finding.get("disposition") == "fixed"
+        }
+        missing_fixed = sorted(RUNTIME_REQUIRED_FIXED_FINDINGS - fixed_findings)
+        if missing_fixed:
+            failures.append(
+                "runtime response does not explicitly fix required findings: "
+                + ", ".join(missing_fixed)
+            )
 
     return {
         "failures": failures,
         "closure_ready": not failures,
         "disposition_outcome": disposition_outcome,
+        "area": area,
         "reason": "normalized response validates" if not failures else "normalized response failed",
         "finding_count": len(findings),
     }
@@ -288,6 +331,7 @@ def render_report(report: dict[str, Any]) -> str:
         f"disposition_outcome: {report['disposition_outcome']}",
         f"erg_005_status: {report['erg_005_status']}",
         f"allowed_closure_state: {report['allowed_closure_state']}",
+        f"runtime_source_review_status: {report['runtime_source_review_status']}",
         f"tool_count: {report['tool_count']}",
         f"runtime_area: {report['runtime_area']}",
         f"runtime_finding_namespace: {report['runtime_finding_namespace']}",

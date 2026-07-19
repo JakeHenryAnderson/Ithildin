@@ -33097,6 +33097,11 @@ def test_trusted_host_promotion_external_response_intake_is_wired() -> None:
         "--area trusted-host-promotion-runtime",
         "mutates_findings: false",
         "closes_external_review: false",
+        "runtime_findings_closed",
+        "runtime_findings_partially_closed",
+        "block_runtime_source_review_closure",
+        "EXT-TRUSTED-HOST-RUNTIME-002",
+        "EXT-TRUSTED-HOST-RUNTIME-006",
         "Only a later committed triage update may move `ERG-005` away from `blocked`",
     ]:
         assert phrase in doc
@@ -33204,6 +33209,10 @@ def test_trusted_host_promotion_disposition_closure_gate_is_wired() -> None:
         "mutates_findings: false",
         "closes_external_review: false",
         "disposition_outcome: continue_design_only",
+        "disposition_outcome: runtime_findings_closed",
+        "runtime_source_review_ready_for_triage",
+        "EXT-TRUSTED-HOST-RUNTIME-002",
+        "EXT-TRUSTED-HOST-RUNTIME-006",
         "closure_ready: false",
         "erg_005_status: blocked",
         "trusted_host_promotion_allowed: false",
@@ -33273,13 +33282,20 @@ def test_trusted_host_promotion_closure_gate_accepts_runtime_namespace_pair(
         "mutates_findings": False,
         "closes_external_review": False,
         "reviewed_packet_hash": "sha256:" + "0" * 64,
-        "disposition_outcome": "continue_design_only",
+        "disposition_outcome": "runtime_findings_closed",
         "findings": [
             {
-                "finding_id": "EXT-TRUSTED-HOST-RUNTIME-001",
-                "severity": "low",
+                "finding_id": "EXT-TRUSTED-HOST-RUNTIME-002",
+                "severity": "high",
                 "area": "trusted-host-promotion-runtime",
-            }
+                "disposition": "fixed",
+            },
+            {
+                "finding_id": "EXT-TRUSTED-HOST-RUNTIME-006",
+                "severity": "medium",
+                "area": "trusted-host-promotion-runtime",
+                "disposition": "fixed",
+            },
         ],
     }
     response_path.write_text(json.dumps(payload), encoding="utf-8")
@@ -33292,7 +33308,21 @@ def test_trusted_host_promotion_closure_gate_accepts_runtime_namespace_pair(
     assert runtime_report["failures"] == []
     assert runtime_report["closure_ready"] is True
 
-    payload["findings"][0]["finding_id"] = "EXT-TRUSTED-HOST-001"
+    omitted_finding = payload["findings"].pop()
+    response_path.write_text(json.dumps(payload), encoding="utf-8")
+    incomplete_report = (
+        trusted_host_promotion_disposition_closure_check._validate_normalized_response(
+            response_path
+        )
+    )
+    assert incomplete_report["closure_ready"] is False
+    assert (
+        "runtime response does not explicitly fix required findings: "
+        "EXT-TRUSTED-HOST-RUNTIME-006"
+    ) in incomplete_report["failures"]
+
+    payload["findings"].append(omitted_finding)
+    payload["findings"][0]["finding_id"] = "EXT-TRUSTED-HOST-002"
     response_path.write_text(json.dumps(payload), encoding="utf-8")
     mixed_report = (
         trusted_host_promotion_disposition_closure_check._validate_normalized_response(
@@ -33300,7 +33330,7 @@ def test_trusted_host_promotion_closure_gate_accepts_runtime_namespace_pair(
         )
     )
     assert mixed_report["closure_ready"] is False
-    assert "finding has wrong namespace: EXT-TRUSTED-HOST-001" in mixed_report[
+    assert "finding has wrong namespace: EXT-TRUSTED-HOST-002" in mixed_report[
         "failures"
     ]
 
@@ -34507,6 +34537,13 @@ def test_trusted_host_promotion_runtime_source_review_bundle_is_wired(
     )
     assert "v3-trusted-host-promotion-runtime-review-closure.md" in contracts_bundle
     assert "v3-trusted-host-promotion-runtime-local-disposition.md" in contracts_bundle
+    assert "trusted-host-promotion-governance-binding-architecture.md" in contracts_bundle
+    assert "trusted-host-promotion-governance-binding-implementation-tickets.md" in contracts_bundle
+    assert "trusted-host-promotion-governance-binding-authorization-record.md" in contracts_bundle
+    assert (
+        "test_trusted_host_promotion_installed_file_drift_is_terminal_before_reservation"
+        in tests_bundle
+    )
     assert gate_evidence["existing_packet"] == generated_packet
     assert gate_evidence["existing_packet"]["commit_matches_head"] is True
     assert gate_evidence["existing_packet"]["artifact_hashes_match_files"] is True

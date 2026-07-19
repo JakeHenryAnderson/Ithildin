@@ -71,12 +71,15 @@ approval. OPA is unsupported only for these routes and returns
 `unsupported_policy_engine_for_promotion`; YAML deny, plain allow, incomplete evidence, changed
 authority, duplicate evidence, and unknown obligations fail closed.
 
-Apply reconstructs the complete in-memory authority snapshot, verifies the bound approval decision,
-and reopens the source exactly once through the descriptor-bound no-follow reader. Authority,
-approval-decision, or source drift terminally marks the proposal `authority_stale` before execution
-reservation. Normal runtime proposal/apply remains unavailable unless every non-environment
-readiness component is verified. There is no request field, environment toggle, or operator override
-that can waive a missing component.
+The verified launcher retains the exact startup-selected package root, closed inventory path, and
+detached authorization path. Apply uses that verifier to rehash the installed inventory and
+reconstruct a fresh `RuntimeCandidateRecord`, then reconstructs the complete authority snapshot,
+verifies the bound approval decision, and reopens the source exactly once through the
+descriptor-bound no-follow reader. Runtime-candidate, authority, approval-decision, or source drift
+terminally marks the proposal `authority_stale` before execution reservation. Normal runtime
+proposal/apply remains unavailable unless every non-environment readiness component, including the
+retained runtime-candidate revalidation callback, is verified. There is no request field,
+environment toggle, or operator override that can waive a missing component.
 
 An explicit internal test fixture additionally opens and retains the pre-provisioned staging-root
 descriptor. In one SQLite `BEGIN IMMEDIATE` transaction it compare-and-sets the approved approval
@@ -103,8 +106,9 @@ candidate locations, stack traces, or secrets.
 
 The proposal API accepts only a closed `host-staging://` label and never a raw host path. Normal
 runtime placement is ready only when all of the following are independently verified: current
-runtime candidate and detached operator authorization, current database contract, YAML policy,
-on-disk enforced principal/workspace/trusted-host registries, the exact 24-tool manifest lock,
+runtime candidate, detached operator authorization, retained apply-time inventory revalidation,
+current database contract, YAML policy, on-disk enforced principal/workspace/trusted-host
+registries, the exact 24-tool manifest lock,
 version-2 proposal schema, descriptor-relative platform primitives, an openable staging-root
 descriptor, and disabled internal fixtures. Any false component keeps proposal/apply unavailable.
 

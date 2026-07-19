@@ -36,6 +36,11 @@ REQUIRED_PHRASES = [
     "continue_design_only",
     "revise_before_more_planning",
     "block_runtime_implementation",
+    "runtime_findings_closed",
+    "runtime_findings_partially_closed",
+    "block_runtime_source_review_closure",
+    "EXT-TRUSTED-HOST-RUNTIME-002",
+    "EXT-TRUSTED-HOST-RUNTIME-006",
     "Only a later committed triage update may move `ERG-005` away from `blocked`",
 ]
 
@@ -48,6 +53,11 @@ REQUIRED_QUESTIONS = [
     "Are there any critical/high findings",
     "may the lane continue design-only planning",
     "avoid approving host promotion",
+    "freshly rehash the exact closed installed inventory",
+    "post-approval installed-file mutation terminally stale the proposal",
+    "Is `EXT-TRUSTED-HOST-RUNTIME-002`",
+    "Is `EXT-TRUSTED-HOST-RUNTIME-006`",
+    "critical/high implementation findings unresolved",
 ]
 
 REQUIRED_BLOCKED_BOUNDARIES = [

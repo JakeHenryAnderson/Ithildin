@@ -161,6 +161,7 @@ from ithildin_api.telemetry import Telemetry, configure_telemetry, safe_span_att
 from ithildin_api.tool_calls import GovernedToolCallService
 from ithildin_api.trusted_host_promotions import (
     TRUSTED_HOST_PROMOTION_TOOL,
+    RuntimeCandidateVerifier,
     TrustedHostPromotionError,
     TrustedHostPromotionProposalInput,
     TrustedHostPromotionService,
@@ -192,6 +193,7 @@ def create_app(
     settings: Optional[Settings] = None,
     *,
     runtime_candidate: RuntimeCandidateRecord | None = None,
+    runtime_candidate_verifier: RuntimeCandidateVerifier | None = None,
     trusted_host_promotion_test_fixture_ready: bool = False,
     trusted_host_promotion_placement_test_fixture_ready: bool = False,
 ) -> FastAPI:
@@ -366,6 +368,7 @@ def create_app(
                 trusted_host_registry=trusted_host_registry,
                 audit_writer=audit_writer,
                 runtime_candidate=runtime_candidate,
+                runtime_candidate_verifier=runtime_candidate_verifier,
                 staging_root=resolved_settings.trusted_host_staging_root,
                 governance_binding_ready=(
                     trusted_host_promotion_test_fixture_ready or runtime_candidate is not None

@@ -43,8 +43,11 @@ using the external response normalizer. The expected response shape is:
 - `can_close_source_rows: true`;
 - `mutates_findings: false`;
 - `closes_external_review: false`;
-- no critical/high findings;
-- `disposition_outcome: continue_design_only`.
+- no unresolved critical/high findings;
+- design disposition: `disposition_outcome: continue_design_only`; or
+- runtime disposition: `disposition_outcome: runtime_findings_closed`, with both
+  `EXT-TRUSTED-HOST-RUNTIME-002` and `EXT-TRUSTED-HOST-RUNTIME-006` explicitly recorded as
+  `fixed`.
 
 The area and namespace must be a matching pair. The design-level packet uses
 `trusted-host-promotion` with `EXT-TRUSTED-HOST-###`; the implemented staging-only runtime packet
@@ -63,7 +66,7 @@ trusted_host_promotion_allowed: false
 
 ## Allowed Closure Readiness Result
 
-The only readiness result this gate can support is:
+For the design-level area, the only readiness result this gate can support is:
 
 ```text
 ready_for_design_only_decision_record
@@ -73,6 +76,16 @@ That result does not approve runtime implementation. It means a later committed 
 record may consider whether to move from blocked status to design-only continuation for
 trusted-host promotion planning.
 
+For the runtime area, the only readiness result is:
+
+```text
+runtime_source_review_ready_for_triage
+```
+
+That result means only that a later committed triage update may disposition the exact deferred
+runtime finding records. `ERG-005` remains blocked, and the result does not authorize placement,
+release, promotion, UAT, or production use.
+
 ## Required Later Triage Update
 
 If the closure gate eventually reports `closure_ready: true`, a separate committed triage update
@@ -80,7 +93,8 @@ must still:
 
 - record the raw reviewer response and normalized response path;
 - record reviewer label, source access, reviewed commit, and reviewed packet hash;
-- add or update any `EXT-TRUSTED-HOST-###` finding files;
+- add or update the matching `EXT-TRUSTED-HOST-###` or
+  `EXT-TRUSTED-HOST-RUNTIME-###` finding files;
 - update [enterprise-readiness-gap-matrix.md](enterprise-readiness-gap-matrix.md);
 - update [post-rc-decision-register.md](post-rc-decision-register.md);
 - update [enterprise-sandbox-control-plane-readiness.md](enterprise-sandbox-control-plane-readiness.md);

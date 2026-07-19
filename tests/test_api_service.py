@@ -6,6 +6,7 @@ import json
 import os
 import shutil
 import sqlite3
+from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -73,6 +74,7 @@ from ithildin_audit_core import AuditWriteError, AuditWriter, generate_audit_sig
 from ithildin_policy_core import OpaBundleSource, opa_bundle_hash
 from ithildin_schemas import AuditEventType, JsonObject, PolicyDecision, PolicyInput, sha256_digest
 from pydantic import ValidationError
+from runtime_candidate_bootstrap import RuntimeCandidateVerifier
 
 ADMIN_CONTEXT = AdminPrincipalContext(
     principal_id="admin:local-ui",
@@ -117,6 +119,9 @@ def promotion_ready_app(
     principal_registry_path: Path | None = None,
     workspace_registry_required: bool = True,
     workspace_registry_path: Path | None = None,
+    runtime_candidate: RuntimeCandidateRecord | None = None,
+    runtime_candidate_verifier: Callable[[], RuntimeCandidateRecord] | None = None,
+    configure_runtime_candidate_verifier: bool = True,
 ) -> Any:
     settings.manifest_dir = Path("tool-manifests").resolve()
     settings.manifest_lock_path = Path("tool-manifests.lock.json").resolve()
@@ -151,9 +156,17 @@ rules:
 """,
         encoding="utf-8",
     )
+    candidate = runtime_candidate or runtime_candidate_fixture()
+    verifier = runtime_candidate_verifier
+    if verifier is None and configure_runtime_candidate_verifier:
+        def verify_fixture_candidate() -> RuntimeCandidateRecord:
+            return candidate
+
+        verifier = verify_fixture_candidate
     return create_app(
         settings,
-        runtime_candidate=runtime_candidate_fixture(),
+        runtime_candidate=candidate,
+        runtime_candidate_verifier=verifier,
         trusted_host_promotion_test_fixture_ready=test_fixture_ready,
         trusted_host_promotion_placement_test_fixture_ready=(
             test_fixture_ready and placement_ready
@@ -1110,6 +1123,37 @@ def test_trusted_host_promotion_production_readiness_has_no_operator_bypass(
     assert diagnostics.json()["placement_available"] is True
 
 
+def test_trusted_host_promotion_production_readiness_requires_candidate_reverification(
+    tmp_path: Path,
+) -> None:
+    settings = make_settings(tmp_path, token="correct-token")
+    settings.workspace_root.mkdir()
+    settings.workspace_root.joinpath("summary.txt").write_text(
+        "candidate-reverification fence\n",
+        encoding="utf-8",
+    )
+    settings.trusted_host_staging_root = tmp_path / "trusted-host-staging"
+    settings.trusted_host_staging_root.mkdir(mode=0o700)
+    app = promotion_ready_app(
+        settings,
+        test_fixture_ready=False,
+        configure_runtime_candidate_verifier=False,
+    )
+
+    with TestClient(app) as client:
+        diagnostics = client.get(
+            "/trusted-host-promotions/diagnostics",
+            headers={"Authorization": "Bearer correct-token"},
+        )
+
+    readiness = diagnostics.json()["production_readiness"]
+    assert readiness["ready"] is False
+    assert readiness["reason"] == "runtime_candidate_reverification"
+    assert readiness["components"]["verified_runtime_candidate"] is True
+    assert readiness["components"]["runtime_candidate_reverification"] is False
+    assert readiness["operator_override_available"] is False
+
+
 def test_trusted_host_promotion_production_readiness_requires_enforced_manifest_lock(
     tmp_path: Path,
 ) -> None:
@@ -1789,6 +1833,140 @@ def test_trusted_host_promotion_every_authority_component_drift_is_terminal(
         approval = client.get(f"/approvals/{proposal['approval_id']}", headers=headers).json()
         diagnostics = client.get("/trusted-host-promotions/diagnostics", headers=headers).json()
 
+    assert apply.status_code == 409
+    assert apply.json()["detail"] == "trusted-host promotion authority is stale"
+    assert current["status"] == "authority_stale"
+    assert approval["status"] == "approved"
+    assert diagnostics["attempts"] == []
+    assert list(settings.trusted_host_staging_root.iterdir()) == []
+
+
+def test_trusted_host_promotion_installed_file_drift_is_terminal_before_reservation(
+    tmp_path: Path,
+) -> None:
+    settings = make_settings(tmp_path, token="correct-token")
+    settings.workspace_root.mkdir()
+    settings.workspace_root.joinpath("summary.txt").write_text(
+        "must never be placed after runtime drift\n",
+        encoding="utf-8",
+    )
+    settings.trusted_host_staging_root = tmp_path / "trusted-host-staging"
+    settings.trusted_host_staging_root.mkdir(mode=0o700)
+    package_root = tmp_path / "runtime-package"
+    installed_file = package_root / "apps" / "runtime.py"
+    installed_file.parent.mkdir(parents=True)
+    installed_file.write_text("reviewed = True\n", encoding="utf-8")
+    dependency_lock = package_root / "uv.lock"
+    dependency_lock.write_text("lock\n", encoding="utf-8")
+
+    def file_digest(path: Path) -> str:
+        return "sha256:" + hashlib.sha256(path.read_bytes()).hexdigest()
+
+    files = [
+        {"path": "apps/runtime.py", "sha256": file_digest(installed_file)},
+        {"path": "uv.lock", "sha256": file_digest(dependency_lock)},
+    ]
+    reviewed_inventory_digest = sha256_digest(
+        cast(JsonObject, {"schema_version": "1", "files": files})
+    )
+    candidate_core: JsonObject = {
+        "source_commit": "1" * 40,
+        "inventory_schema_version": "1",
+        "reviewed_inventory_digest": reviewed_inventory_digest,
+        "dependency_lock_digest": file_digest(dependency_lock),
+        "release_artifact_digest": "sha256:" + ("c" * 64),
+        "evidence_schema_version": "1",
+    }
+    candidate_id = sha256_digest(candidate_core)
+    review_packet_digest = "sha256:" + ("d" * 64)
+    inventory_path = package_root / "runtime-candidate-inventory.json"
+    inventory_path.write_text(
+        json.dumps(
+            {
+                "schema_version": "1",
+                "source_commit": "1" * 40,
+                "files": files,
+                "dependency_lock_path": "uv.lock",
+                "dependency_lock_digest": file_digest(dependency_lock),
+                "release_artifact_digest": "sha256:" + ("c" * 64),
+                "review_packet_digest": review_packet_digest,
+                "evidence_schema_version": "1",
+                "reviewed_inventory_digest": reviewed_inventory_digest,
+                "candidate_id": candidate_id,
+            }
+        ),
+        encoding="utf-8",
+    )
+    authorization_path = tmp_path / "runtime-authority" / "api-candidate.json"
+    authorization_path.parent.mkdir()
+    authorization: JsonObject = {
+        "authorization_id": "rca_" + ("a" * 32),
+        "candidate_id": candidate_id,
+        "reviewed_commit": "1" * 40,
+        "inventory_schema_version": "1",
+        "reviewed_inventory_digest": reviewed_inventory_digest,
+        "dependency_lock_digest": file_digest(dependency_lock),
+        "release_artifact_digest": "sha256:" + ("c" * 64),
+        "review_packet_digest": review_packet_digest,
+        "evidence_schema_version": "1",
+        "authorized_at": "2026-07-18T00:00:00+00:00",
+    }
+    authorization["record_hash"] = sha256_digest(authorization)
+    authorization_path.write_text(json.dumps(authorization), encoding="utf-8")
+    installed_file.chmod(0o444)
+    dependency_lock.chmod(0o444)
+    inventory_path.chmod(0o444)
+    package_root.chmod(0o555)
+    authorization_path.chmod(0o444)
+    verifier = RuntimeCandidateVerifier(
+        package_root=package_root,
+        inventory_path=inventory_path,
+        authorization_path=authorization_path,
+        allow_test_paths=True,
+    )
+    candidate = RuntimeCandidateRecord.model_validate(verifier.verify())
+    verification_count = 0
+
+    def verify_installed_candidate() -> RuntimeCandidateRecord:
+        nonlocal verification_count
+        verification_count += 1
+        return RuntimeCandidateRecord.model_validate(verifier.verify())
+
+    app = promotion_ready_app(
+        settings,
+        placement_ready=True,
+        runtime_candidate=candidate,
+        runtime_candidate_verifier=verify_installed_candidate,
+    )
+
+    with TestClient(app) as client:
+        headers = {"Authorization": "Bearer correct-token"}
+        proposal = create_approved_promotion(
+            client,
+            sandbox_id="sandbox-installed-runtime-drift",
+        )
+        installed_file.chmod(0o644)
+        installed_file.write_text("reviewed = False\n", encoding="utf-8")
+        installed_file.chmod(0o444)
+        apply = client.post(
+            f"/trusted-host-promotions/proposals/{proposal['promotion_proposal_id']}/apply",
+            json={"approval_id": proposal["approval_id"]},
+            headers=headers,
+        )
+        current = client.get(
+            f"/trusted-host-promotions/proposals/{proposal['promotion_proposal_id']}",
+            headers=headers,
+        ).json()
+        approval = client.get(
+            f"/approvals/{proposal['approval_id']}",
+            headers=headers,
+        ).json()
+        diagnostics = client.get(
+            "/trusted-host-promotions/diagnostics",
+            headers=headers,
+        ).json()
+
+    assert verification_count == 2
     assert apply.status_code == 409
     assert apply.json()["detail"] == "trusted-host promotion authority is stale"
     assert current["status"] == "authority_stale"

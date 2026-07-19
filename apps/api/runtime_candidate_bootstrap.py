@@ -7,12 +7,31 @@ import json
 import os
 import re
 import stat
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
 
 class RuntimeCandidateVerificationError(RuntimeError):
     """Raised when reviewed runtime identity cannot be established."""
+
+
+@dataclass(frozen=True)
+class RuntimeCandidateVerifier:
+    """Retain the startup-selected candidate evidence paths for later revalidation."""
+
+    package_root: Path
+    inventory_path: Path
+    authorization_path: Path
+    allow_test_paths: bool = False
+
+    def verify(self) -> dict[str, str]:
+        return verify_runtime_candidate(
+            package_root=self.package_root,
+            inventory_path=self.inventory_path,
+            authorization_path=self.authorization_path,
+            allow_test_paths=self.allow_test_paths,
+        )
 
 
 SHA256_RE = re.compile(r"^sha256:[0-9a-f]{64}$")
@@ -167,7 +186,7 @@ def verify_runtime_candidate(
     }
 
 
-def verify_from_environment() -> dict[str, str]:
+def verifier_from_environment() -> RuntimeCandidateVerifier:
     root = Path(os.environ.get("ITHILDIN_RUNTIME_PACKAGE_ROOT", "/app"))
     inventory = Path(
         os.environ.get(
@@ -181,11 +200,15 @@ def verify_from_environment() -> dict[str, str]:
             "/run/ithildin-authority/api-candidate.json",
         )
     )
-    return verify_runtime_candidate(
+    return RuntimeCandidateVerifier(
         package_root=root,
         inventory_path=inventory,
         authorization_path=authorization,
     )
+
+
+def verify_from_environment() -> dict[str, str]:
+    return verifier_from_environment().verify()
 
 
 def _read_closed_json(path: Path, fields: set[str], label: str) -> dict[str, Any]:

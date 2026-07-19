@@ -6,14 +6,15 @@ import logging
 
 from runtime_candidate_bootstrap import (
     RuntimeCandidateVerificationError,
-    verify_from_environment,
+    verifier_from_environment,
 )
 
 
 def main() -> int:
+    verifier = verifier_from_environment()
     verified_payload: dict[str, str] | None = None
     try:
-        verified_payload = verify_from_environment()
+        verified_payload = verifier.verify()
     except RuntimeCandidateVerificationError as exc:
         logging.basicConfig(level=logging.INFO)
         logging.getLogger(__name__).warning(
@@ -30,7 +31,20 @@ def main() -> int:
         if verified_payload is not None
         else None
     )
-    uvicorn.run(create_app(runtime_candidate=candidate), host="0.0.0.0", port=8000)
+
+    def reverify_candidate() -> RuntimeCandidateRecord:
+        return RuntimeCandidateRecord.model_validate(verifier.verify())
+
+    uvicorn.run(
+        create_app(
+            runtime_candidate=candidate,
+            runtime_candidate_verifier=(
+                reverify_candidate if verified_payload is not None else None
+            ),
+        ),
+        host="0.0.0.0",
+        port=8000,
+    )
     return 0
 
 
