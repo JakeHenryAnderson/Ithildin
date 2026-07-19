@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import re
 import sys
@@ -18,10 +19,17 @@ ROOT = Path(__file__).resolve().parents[1]
 DOC_REL = "docs/codex/production-identity-storage-disposition-closure-gate.md"
 DOC_NAME = "production-identity-storage-disposition-closure-gate.md"
 NORMALIZED_RESPONSE_REL = "var/review-runs/production-identity-storage/normalized-response.json"
+REVIEW_PACKET_REL = "var/review-packets/v3/production-identity-storage-external-review"
+REVIEW_PACKET_PROMPT = "01_PRODUCTION_IDENTITY_STORAGE_EXTERNAL_REVIEW_PROMPT.md"
+REVIEW_PACKET_MANIFEST = (
+    "production-identity-storage-external-review-artifact-hashes.json"
+)
 EXPECTED_AREA = "production-identity-storage"
 EXPECTED_NAMESPACE = "EXT-PROD-IAM-STORAGE-###"
 EXPECTED_OUTCOME = "continue_architecture_planning"
 SHA256_PATTERN = re.compile(r"^sha256:[0-9a-f]{64}$")
+FULL_COMMIT_PATTERN = re.compile(r"^[0-9a-f]{40}$")
+PACKET_COMMIT_PATTERN = re.compile(r"^Reviewed commit: `([0-9a-f]{40})`$", re.MULTILINE)
 
 REQUIRED_PHRASES = [
     "Status: fail-closed closure gate for planning-only `ERG-006` and `ERG-007`.",
@@ -38,6 +46,8 @@ REQUIRED_PHRASES = [
     "closes_external_review: false",
     "no critical/high findings",
     "disposition_outcome: continue_architecture_planning",
+    "reviewed commit must be a full commit hash",
+    "reviewed packet hash must match the SHA-256 digest",
     "closure_ready: false",
     "erg_006_status: planning_only",
     "erg_007_status: planning_only",
@@ -108,7 +118,12 @@ def main() -> int:
     return 0 if report["valid"] else 1
 
 
-def build_report(repo_root: Path) -> dict[str, Any]:
+def build_report(
+    repo_root: Path,
+    *,
+    expected_reviewed_commit_override: str | None = None,
+    expected_reviewed_packet_hash_override: str | None = None,
+) -> dict[str, Any]:
     failures: list[str] = []
     doc_path = repo_root / DOC_REL
     normalized_response_path = repo_root / NORMALIZED_RESPONSE_REL
@@ -144,7 +159,36 @@ def build_report(repo_root: Path) -> dict[str, Any]:
                 failures.append(f"closure gate doc contains forbidden phrase: {phrase}")
 
     response_present = normalized_response_path.exists()
-    response_report = _validate_normalized_response(normalized_response_path)
+    if expected_reviewed_commit_override is None:
+        expected_reviewed_commit, commit_failure = _expected_reviewed_commit(repo_root)
+    elif FULL_COMMIT_PATTERN.fullmatch(expected_reviewed_commit_override) is None:
+        expected_reviewed_commit, commit_failure = (
+            None,
+            "reviewed commit override is not a full commit hash",
+        )
+    else:
+        expected_reviewed_commit, commit_failure = expected_reviewed_commit_override, None
+    if expected_reviewed_packet_hash_override is None:
+        expected_reviewed_packet_hash, hash_failure = _expected_reviewed_packet_hash(repo_root)
+    elif SHA256_PATTERN.fullmatch(expected_reviewed_packet_hash_override) is None:
+        expected_reviewed_packet_hash, hash_failure = (
+            None,
+            "reviewed packet hash override is not a sha256 digest",
+        )
+    else:
+        expected_reviewed_packet_hash, hash_failure = (
+            expected_reviewed_packet_hash_override,
+            None,
+        )
+    if response_present and commit_failure:
+        failures.append(commit_failure)
+    if response_present and hash_failure:
+        failures.append(hash_failure)
+    response_report = _validate_normalized_response(
+        normalized_response_path,
+        expected_reviewed_commit=expected_reviewed_commit,
+        expected_reviewed_packet_hash=expected_reviewed_packet_hash,
+    )
     failures.extend(response_report["failures"])
     closure_ready = response_report["closure_ready"]
 
@@ -217,10 +261,17 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "new_power_classes_allowed": False,
         "public_security_product_positioning_allowed": False,
         "response": response_report,
+        "expected_reviewed_commit": expected_reviewed_commit,
+        "expected_reviewed_packet_hash": expected_reviewed_packet_hash,
     }
 
 
-def _validate_normalized_response(path: Path) -> dict[str, Any]:
+def _validate_normalized_response(
+    path: Path,
+    *,
+    expected_reviewed_commit: str | None,
+    expected_reviewed_packet_hash: str | None,
+) -> dict[str, Any]:
     if not path.exists():
         return {
             "failures": [],
@@ -251,8 +302,21 @@ def _validate_normalized_response(path: Path) -> dict[str, Any]:
         failures.append("normalized response must not mutate findings")
     if payload.get("closes_external_review") is not False:
         failures.append("normalized response must not close external review directly")
-    if not SHA256_PATTERN.match(str(payload.get("reviewed_packet_hash", ""))):
+    reviewed_commit = str(payload.get("reviewed_commit", ""))
+    if FULL_COMMIT_PATTERN.fullmatch(reviewed_commit) is None:
+        failures.append("normalized response reviewed_commit is not a full commit hash")
+    elif expected_reviewed_commit is None or reviewed_commit != expected_reviewed_commit:
+        failures.append("normalized response reviewed_commit does not match the review packet")
+    reviewed_packet_hash = str(payload.get("reviewed_packet_hash", ""))
+    if not SHA256_PATTERN.match(reviewed_packet_hash):
         failures.append("normalized response reviewed_packet_hash is not a sha256 digest")
+    elif (
+        expected_reviewed_packet_hash is None
+        or reviewed_packet_hash != expected_reviewed_packet_hash
+    ):
+        failures.append(
+            "normalized response reviewed_packet_hash does not match the exact packet manifest"
+        )
     disposition_outcome = payload.get("disposition_outcome")
     if disposition_outcome != EXPECTED_OUTCOME:
         failures.append(
@@ -284,6 +348,23 @@ def _validate_normalized_response(path: Path) -> dict[str, Any]:
     }
 
 
+def _expected_reviewed_commit(repo_root: Path) -> tuple[str | None, str | None]:
+    prompt = repo_root / REVIEW_PACKET_REL / REVIEW_PACKET_PROMPT
+    if not prompt.is_file():
+        return None, "production identity/storage review packet prompt is missing"
+    match = PACKET_COMMIT_PATTERN.search(prompt.read_text(encoding="utf-8"))
+    if match is None:
+        return None, "production identity/storage review packet commit binding is missing"
+    return match.group(1), None
+
+
+def _expected_reviewed_packet_hash(repo_root: Path) -> tuple[str | None, str | None]:
+    manifest = repo_root / REVIEW_PACKET_REL / REVIEW_PACKET_MANIFEST
+    if not manifest.is_file():
+        return None, "production identity/storage review packet hash manifest is missing"
+    return "sha256:" + hashlib.sha256(manifest.read_bytes()).hexdigest(), None
+
+
 def render_report(report: dict[str, Any]) -> str:
     lines = [
         "Ithildin production identity/storage disposition closure check",
@@ -293,6 +374,8 @@ def render_report(report: dict[str, Any]) -> str:
         f"normalized_response_present: {str(report['normalized_response_present']).lower()}",
         f"closure_ready: {str(report['closure_ready']).lower()}",
         f"disposition_outcome: {report['disposition_outcome']}",
+        f"expected_reviewed_commit: {report['expected_reviewed_commit']}",
+        f"expected_reviewed_packet_hash: {report['expected_reviewed_packet_hash']}",
         f"erg_006_status: {report['erg_006_status']}",
         f"erg_007_status: {report['erg_007_status']}",
         f"allowed_closure_state: {report['allowed_closure_state']}",

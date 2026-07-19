@@ -29,6 +29,9 @@ The dry run verifies that:
   become `closure_ready: true` for later committed triage consideration;
 - packet-only evidence is rejected for closure;
 - malformed packet hashes are rejected;
+- well-formed but wrong packet hashes and reviewed commits are rejected;
+- a response produced through the real normalizer carries the declared disposition into the
+  closure gate;
 - critical/high findings are rejected;
 - responses that try to close external review directly are rejected;
 - the ignored normalized-response path is restored after the dry run.

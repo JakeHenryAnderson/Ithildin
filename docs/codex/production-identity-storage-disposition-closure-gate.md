@@ -39,7 +39,10 @@ using the external response normalizer. The expected response shape is:
 - reviewed area: `production-identity-storage`;
 - source access: `source-level` or `packet-and-source`;
 - finding namespace: `EXT-PROD-IAM-STORAGE-###`;
-- reviewed packet hash: `sha256:<64 lowercase hex chars>`;
+- reviewed commit must be a full commit hash and must match the commit embedded in the exact review
+  packet prompt;
+- reviewed packet hash must match the SHA-256 digest of the exact packet artifact-hash manifest,
+  not merely have valid digest syntax;
 - `can_close_source_rows: true`;
 - `mutates_findings: false`;
 - `closes_external_review: false`;
@@ -47,7 +50,8 @@ using the external response normalizer. The expected response shape is:
 - `disposition_outcome: continue_architecture_planning`.
 
 If that file is absent, malformed, packet-only/docs-only, missing the allowed disposition outcome,
-or contains critical/high findings, the gate must report:
+contains stale or mismatched commit/packet evidence, or contains critical/high findings, the gate
+must report:
 
 ```text
 closure_ready: false

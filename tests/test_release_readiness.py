@@ -8735,6 +8735,18 @@ def test_production_identity_storage_disposition_closure_gate_is_wired() -> None
     assert report["valid"] is True
     assert report["closure_ready"] is False
     assert report["normalized_response_present"] is False
+    expected_reviewed_commit, _ = (
+        production_identity_storage_disposition_closure_check._expected_reviewed_commit(
+            Path.cwd()
+        )
+    )
+    expected_reviewed_packet_hash, _ = (
+        production_identity_storage_disposition_closure_check._expected_reviewed_packet_hash(
+            Path.cwd()
+        )
+    )
+    assert report["expected_reviewed_commit"] == expected_reviewed_commit
+    assert report["expected_reviewed_packet_hash"] == expected_reviewed_packet_hash
     assert report["erg_006_status"] == "planning_only"
     assert report["erg_007_status"] == "planning_only"
     assert report["allowed_closure_state"] == "ready_for_architecture_decision_record"
@@ -8865,9 +8877,12 @@ def test_production_identity_storage_response_dry_run_is_wired() -> None:
     assert report["cases"] == {
         "absent_response_valid": True,
         "absent_response_not_ready": True,
+        "real_normalizer_response_accepts": True,
         "valid_response_accepts": True,
         "packet_only_rejected": True,
         "bad_hash_rejected": True,
+        "wrong_well_formed_hash_rejected": True,
+        "wrong_well_formed_commit_rejected": True,
         "critical_high_finding_rejected": True,
         "direct_external_closure_rejected": True,
     }
@@ -26154,6 +26169,38 @@ def test_external_response_normalization_rejects_malformed_packet_hash() -> None
             reviewed_commit="abcdef1234567890",
             reviewed_packet_hash="sha256:not-a-real-digest",
             area="patch-apply",
+        )
+
+
+def test_external_response_normalization_emits_declared_disposition() -> None:
+    normalized = external_response_normalize.normalize_response(
+        "# Review\n\ncontinue_architecture_planning\n\nfinding_count: 0",
+        reviewer="Independent architecture reviewer",
+        reviewer_type="external_ai",
+        source_access="packet-and-source",
+        reviewed_commit="a" * 40,
+        reviewed_packet_hash="sha256:" + "b" * 64,
+        area="production-identity-storage",
+        disposition_outcome="continue_architecture_planning",
+    )
+
+    assert normalized["disposition_outcome"] == "continue_architecture_planning"
+
+
+def test_external_response_normalization_rejects_undeclared_disposition() -> None:
+    with pytest.raises(
+        external_response_normalize.ExternalResponseNormalizationError,
+        match="not explicitly declared",
+    ):
+        external_response_normalize.normalize_response(
+            "# Review\n\nfinding_count: 0",
+            reviewer="Independent architecture reviewer",
+            reviewer_type="external_ai",
+            source_access="packet-and-source",
+            reviewed_commit="a" * 40,
+            reviewed_packet_hash="sha256:" + "b" * 64,
+            area="production-identity-storage",
+            disposition_outcome="continue_architecture_planning",
         )
 
 

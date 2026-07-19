@@ -84,8 +84,13 @@ uv run python scripts/external_response_normalize.py \
   --reviewed-commit "$(git rev-parse HEAD)" \
   --reviewed-packet-hash "sha256:<packet-hash>" \
   --area production-identity-storage \
+  --disposition-outcome continue_architecture_planning \
   --output var/review-runs/production-identity-storage/normalized-response.json
 ```
+
+The typed disposition must also appear explicitly on its own line in the unmodified raw reviewer
+response. The normalizer rejects a missing or mismatched declaration instead of relying on an
+operator to add the field to JSON afterward.
 
 The normalized response is intake evidence only. It sets `mutates_findings: false` and
 `closes_external_review: false`; follow-up commits must separately add reviewer findings, update the

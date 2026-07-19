@@ -51,7 +51,7 @@ remain false.
 
 ```text
 enterprise IdP -> authenticates a human subject
-Ithildin Manager -> maps (organization_id, normalized issuer, subject) to a local principal and server-owned memberships
+Ithildin Manager -> maps (organization_id, provider configuration, exact issuer, subject) to a local principal and server-owned memberships
 workspace membership -> grants bounded Ithildin roles; token claims do not directly grant roles
 Ithildin Node CA -> authenticates the Node transport identity
 Node Ed25519 key -> signs the existing application request contract
@@ -68,7 +68,11 @@ Production identity must not turn runner or provider reports into Gateway decisi
 - Human sign-in uses OIDC Authorization Code with PKCE through an Ithildin backend-for-frontend.
   SAML, SCIM, password authentication, and direct browser custody of long-lived bearer tokens remain
   later decisions.
-- The immutable external identity key is `(organization_id, normalized issuer, subject)`. Email,
+- The immutable external identity key is `(organization_id, provider_configuration_id, exact
+  issuer, subject)`. The configured issuer, issuer returned by verified discovery, and token `iss`
+  value must match exactly. Case changes, trailing-slash variants, userinfo, Unicode/punycode
+  variants, DNS aliases, and other equivalent-looking forms are rejected rather than normalized
+  into authority. A normalized issuer may exist only as non-authoritative display metadata. Email,
   display name, username, groups, and arbitrary token claims are attributes only and must never be
   principal keys or account-linking keys.
 - The Manager creates a random Ithildin principal ID and stores the external subject mapping.
@@ -134,6 +138,13 @@ Production identity must not turn runner or provider reports into Gateway decisi
 
 - PostgreSQL is the only candidate production runtime backend. SQLite remains the supported
   local-preview backend; setting `postgres_dsn` does not enable production storage.
+- Before `PIS-002` or any database dependency decision, a production database security profile
+  must require TLS with server-identity verification, a Manager database service identity,
+  separate least-privilege runtime and migration roles, external credential custody and rotation,
+  per-deployment connection-pool isolation, an explicit online-storage encryption threat model,
+  backup-encryption key separation, complete encrypted WAL archival, restore-point verification,
+  and fail-closed behavior when any credential or encryption dependency is unavailable. Connection
+  strings and database credentials remain excluded from evidence.
 - A backend-neutral repository/transaction contract must replace direct `sqlite3` access one
   bounded aggregate at a time. This is not a mechanical driver substitution: existing
   `BEGIN IMMEDIATE`, `rowid`, placeholder, migration, and filesystem-mirror assumptions require
@@ -324,6 +335,9 @@ Before implementation, a future decision record must define:
 - export and signing policy;
 - schema compatibility and migration rollback requirements;
 - storage encryption expectations and key-management boundary;
+- PostgreSQL TLS/server-identity verification, least-privilege runtime and migration identities,
+  credential rotation, pool isolation, online-storage encryption, backup-key separation, WAL
+  completeness, and restore-point verification;
 - failure-mode behavior for unavailable storage;
 - custody and notarization non-goals unless a separate trust-root decision exists.
 
@@ -410,9 +424,11 @@ and `fenced`; a successful file copy or database startup is not proof of authori
 
 Any future implementation plan must specify secret-free evidence fields for:
 
-- authenticated subject label and Ithildin principal ID;
-- tenant/team/workspace labels;
-- session ID and authentication method label;
+- a privacy-safe principal reference and Ithildin principal ID, not the raw external subject;
+- privacy-safe organization/team/workspace references, not customer display names;
+- a random `session_audit_id` and authentication-method label. The audit ID is distinct from the
+  opaque browser cookie handle and its keyed lookup digest, cannot authenticate or retrieve a
+  session, and follows an explicit data-class, retention, and redaction policy;
 - decision ID and policy hash;
 - storage backend label and schema version;
 - migration state;
@@ -421,9 +437,10 @@ Any future implementation plan must specify secret-free evidence fields for:
 - audit/export verification status;
 - safe error labels for identity or storage failures.
 
-The evidence must not expose secrets, bearer tokens, session material, private keys, raw IdP claims,
-raw user directory payloads, connection strings, database credentials, prompts, file contents, diffs,
-response bodies, or raw sensitive paths.
+The evidence must not expose secrets, bearer tokens, cookie values, session lookup digests, raw
+external subject identifiers, customer display names, session material, private keys, raw IdP
+claims, raw user directory payloads, connection strings, database credentials, prompts, file
+contents, diffs, response bodies, or raw sensitive paths.
 
 ## Required Before Implementation
 
@@ -502,5 +519,5 @@ make post-rc-decision-register-check
 ```
 
 <!-- production-identity-storage-contract:start -->
-{"document_type":"phase_1_candidate_architecture","schema_version":"1","tool_count":24,"decision_status":"planning_only","deployment_scope":"single_organization_self_hosted","organization_id_required":true,"multi_tenant_hosted_authorized":false,"human_identity_protocol":"oidc_authorization_code_pkce_bff","human_subject_key":["organization_id","issuer","subject"],"human_provisioning":"preprovisioned_no_jit_admin","caller_identity_or_roles_authorized":false,"server_owned_memberships_required":true,"session_model":"opaque_server_side_cookie","session_handle_storage":"keyed_digest_only","session_digest_key_custody":"external_kms_hsm_or_equivalent","session_digest_key_rotation":"invalidates_bound_sessions","oidc_token_persistence_authorized":false,"csrf_protection_required":true,"recent_authentication_for_sensitive_operations_required":true,"remote_admin_tls_required":true,"remote_admin_bearer_token_authorized":false,"break_glass_scope":"loopback_fencing_isolation_recovery_orchestration_only","node_transport":"tls13_mtls_plus_ed25519_request_signatures","node_private_key_backup_authorized":false,"node_private_key_production_custody":"non_exportable_os_keystore_or_equivalent","production_storage_candidate":"postgresql","sqlite_production_authorized":false,"dual_write_authorized":false,"migration_mode":"offline_verify_before_activate","legacy_local_authority_import_authorized":false,"manager_writer_topology":"single_active_deployment_multi_process_fenced","domain_audit_outbox_atomic":true,"production_audit_canonical_store":"postgresql_append_only_hash_chain","audit_head_serialization":"segment_head_for_update","jsonl_production_role":"derived_signed_export_only","external_recovery_watermark_required":true,"external_watermark_protocol":"reserve_anchor_finalize","external_watermark_provider_selected":false,"external_key_custody_decision_required":true,"key_custody_provider_selected":false,"retention_deletion_unit":"sealed_audit_segment_only","ordered_work_packages":["PIS-001","PIS-002","PIS-003","PIS-004","PIS-005","PIS-006","PIS-007","PIS-008"],"runtime_implementation_authorized":false,"production_identity_authorized":false,"runtime_postgres_authorized":false,"remote_node_transport_authorized":false,"release_authorized":false,"uat_required_now":false}
+{"document_type":"phase_1_candidate_architecture","schema_version":"1","tool_count":24,"decision_status":"planning_only","deployment_scope":"single_organization_self_hosted","organization_id_required":true,"multi_tenant_hosted_authorized":false,"human_identity_protocol":"oidc_authorization_code_pkce_bff","human_subject_key":["organization_id","provider_configuration_id","exact_issuer","subject"],"human_issuer_validation":"configured_discovery_and_token_issuer_exact_match","issuer_normalization_authoritative":false,"human_provisioning":"preprovisioned_no_jit_admin","caller_identity_or_roles_authorized":false,"server_owned_memberships_required":true,"session_model":"opaque_server_side_cookie","session_handle_storage":"keyed_digest_only","session_audit_reference":"random_non_authenticating_session_audit_id","raw_subject_evidence_authorized":false,"session_digest_key_custody":"external_kms_hsm_or_equivalent","session_digest_key_rotation":"invalidates_bound_sessions","oidc_token_persistence_authorized":false,"csrf_protection_required":true,"recent_authentication_for_sensitive_operations_required":true,"remote_admin_tls_required":true,"remote_admin_bearer_token_authorized":false,"break_glass_scope":"loopback_fencing_isolation_recovery_orchestration_only","node_transport":"tls13_mtls_plus_ed25519_request_signatures","node_private_key_backup_authorized":false,"node_private_key_production_custody":"non_exportable_os_keystore_or_equivalent","production_storage_candidate":"postgresql","database_transport":"tls_server_identity_verification_required","database_roles":"separate_least_privilege_runtime_and_migration","database_credentials_custody":"external_secret_provider_or_equivalent","database_backup_wal_encryption_required":true,"database_security_profile_required_before_pis_002":true,"sqlite_production_authorized":false,"dual_write_authorized":false,"migration_mode":"offline_verify_before_activate","legacy_local_authority_import_authorized":false,"manager_writer_topology":"single_active_deployment_multi_process_fenced","domain_audit_outbox_atomic":true,"production_audit_canonical_store":"postgresql_append_only_hash_chain","audit_head_serialization":"segment_head_for_update","jsonl_production_role":"derived_signed_export_only","external_recovery_watermark_required":true,"external_watermark_protocol":"reserve_anchor_finalize","external_watermark_provider_selected":false,"external_key_custody_decision_required":true,"key_custody_provider_selected":false,"retention_deletion_unit":"sealed_audit_segment_only","ordered_work_packages":["PIS-001","PIS-002","PIS-003","PIS-004","PIS-005","PIS-006","PIS-007","PIS-008"],"runtime_implementation_authorized":false,"production_identity_authorized":false,"runtime_postgres_authorized":false,"remote_node_transport_authorized":false,"release_authorized":false,"uat_required_now":false}
 <!-- production-identity-storage-contract:end -->

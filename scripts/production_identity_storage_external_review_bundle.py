@@ -152,6 +152,7 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
     for phrase in [
         "enterprise-external-review-queue.md",
         "production-identity-storage-architecture.md",
+        "production-identity-storage-source-review.md",
         "production-identity-storage-disposition-packet.md",
         "post-rc-decision-register.md",
     ]:
@@ -286,6 +287,7 @@ def build_bundle(
                 repo_root,
                 [
                     "docs/codex/production-identity-storage-architecture.md",
+                    "docs/codex/production-identity-storage-source-review.md",
                     "docs/codex/post-rc-decision-register.md",
                     "docs/codex/post-rc-decision-gate.md",
                     "docs/codex/accepted-risk-register.md",
@@ -305,6 +307,7 @@ def build_bundle(
                 repo_root,
                 [
                     "docs/codex/production-identity-storage-architecture.md",
+                    "docs/codex/production-identity-storage-source-review.md",
                     "docs/codex/production-identity-storage-disposition-packet.md",
                     "docs/codex/enterprise-external-review-queue.md",
                     "docs/codex/enterprise-readiness-gap-matrix.md",

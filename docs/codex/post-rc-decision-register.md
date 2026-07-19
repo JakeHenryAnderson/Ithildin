@@ -372,6 +372,12 @@ Current selected capability: `not selected`.
   decision. Its disaster-recovery candidate treats lost Node identities as replaceable rather than
   restorable, requires an external recovery watermark before a restored Manager can regain
   authority, and fails closed on stale snapshots, missing authority epochs, or split-brain risk.
+- Current source-review evidence:
+  `production-identity-storage-source-review.md` records the independent packet-and-source review
+  of commit `531bcfd87f0a42a3818bc6de73ad884cd6d090f2`, its
+  `continue_architecture_planning` disposition, zero critical/high findings, and five medium
+  `EXT-PROD-IAM-STORAGE-###` findings. The follow-up candidate repairs those findings but still
+  requires exact-commit re-review before an architecture decision record can be considered.
 - Current disposition evidence:
   `production-identity-storage-disposition-packet.md` asks whether the current architecture
   evidence is coherent enough for continued planning while runtime identity and storage behavior

@@ -11,6 +11,7 @@ from typing import Any
 if __package__ in {None, ""}:
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+from scripts import external_response_normalize
 from scripts import production_identity_storage_disposition_closure_check as closure
 from scripts.response_dry_run_lock import response_dry_run_lock
 
@@ -39,18 +40,66 @@ def run_dry_run(repo_root: Path) -> dict[str, Any]:
         original = response_path.read_bytes() if response_path.exists() else None
         original_present = original is not None
         cases: dict[str, bool] = {}
+        expected_commit, commit_failure = closure._expected_reviewed_commit(repo_root)
+        expected_packet_hash, hash_failure = closure._expected_reviewed_packet_hash(repo_root)
+        if commit_failure or expected_commit is None:
+            expected_commit = "0" * 40
+        if hash_failure or expected_packet_hash is None:
+            expected_packet_hash = "sha256:" + "0" * 64
+
+        def closure_report() -> dict[str, Any]:
+            return closure.build_report(
+                repo_root,
+                expected_reviewed_commit_override=expected_commit,
+                expected_reviewed_packet_hash_override=expected_packet_hash,
+            )
+
+        def valid_response(**overrides: Any) -> dict[str, Any]:
+            values: dict[str, Any] = {
+                "reviewed_commit": expected_commit or ("0" * 40),
+                "reviewed_packet_hash": expected_packet_hash or ("sha256:" + "0" * 64),
+            }
+            values.update(overrides)
+            return _valid_response(**values)
 
         try:
             if response_path.exists():
                 response_path.unlink()
-            absent_report = closure.build_report(repo_root)
+            absent_report = closure_report()
             cases["absent_response_valid"] = absent_report["valid"] is True
             cases["absent_response_not_ready"] = absent_report["closure_ready"] is False
 
             response_path.parent.mkdir(parents=True, exist_ok=True)
 
-            _write_response(response_path, _valid_response())
-            valid_report = closure.build_report(repo_root)
+            raw_response = "\n".join(
+                [
+                    "# Production Identity And Storage Review",
+                    "",
+                    "continue_architecture_planning",
+                    "",
+                    "finding_count: 0",
+                ]
+            )
+            normalized = external_response_normalize.normalize_response(
+                raw_response,
+                reviewer="dry-run reviewer",
+                reviewer_type="fixture",
+                source_access="packet-and-source",
+                reviewed_commit=expected_commit or ("0" * 40),
+                reviewed_packet_hash=expected_packet_hash
+                or ("sha256:" + "0" * 64),
+                area=closure.EXPECTED_AREA,
+                disposition_outcome=closure.EXPECTED_OUTCOME,
+            )
+            _write_response(response_path, normalized)
+            normalized_report = closure_report()
+            cases["real_normalizer_response_accepts"] = (
+                normalized_report["valid"] is True
+                and normalized_report["closure_ready"] is True
+            )
+
+            _write_response(response_path, valid_response())
+            valid_report = closure_report()
             cases["valid_response_accepts"] = (
                 valid_report["valid"] is True
                 and valid_report["closure_ready"] is True
@@ -58,13 +107,29 @@ def run_dry_run(repo_root: Path) -> dict[str, Any]:
                 and valid_report["erg_007_status"] == "ready_for_architecture_decision_record"
             )
 
-            _write_response(response_path, _valid_response(source_access="packet-only"))
-            cases["packet_only_rejected"] = _is_rejected(closure.build_report(repo_root))
+            _write_response(response_path, valid_response(source_access="packet-only"))
+            cases["packet_only_rejected"] = _is_rejected(closure_report())
 
             _write_response(
-                response_path, _valid_response(reviewed_packet_hash="sha256:not-a-hash")
+                response_path, valid_response(reviewed_packet_hash="sha256:not-a-hash")
             )
-            cases["bad_hash_rejected"] = _is_rejected(closure.build_report(repo_root))
+            cases["bad_hash_rejected"] = _is_rejected(closure_report())
+
+            _write_response(
+                response_path,
+                valid_response(reviewed_packet_hash="sha256:" + "f" * 64),
+            )
+            cases["wrong_well_formed_hash_rejected"] = _is_rejected(
+                closure_report()
+            )
+
+            _write_response(
+                response_path,
+                valid_response(reviewed_commit="f" * 40),
+            )
+            cases["wrong_well_formed_commit_rejected"] = _is_rejected(
+                closure_report()
+            )
 
             high_finding = {
                 "finding_id": "EXT-PROD-IAM-STORAGE-001",
@@ -77,12 +142,12 @@ def run_dry_run(repo_root: Path) -> dict[str, Any]:
                 "disposition": "open",
                 "recommended_fix": "dry-run negative fixture",
             }
-            _write_response(response_path, _valid_response(findings=[high_finding]))
-            cases["critical_high_finding_rejected"] = _is_rejected(closure.build_report(repo_root))
+            _write_response(response_path, valid_response(findings=[high_finding]))
+            cases["critical_high_finding_rejected"] = _is_rejected(closure_report())
 
-            _write_response(response_path, _valid_response(closes_external_review=True))
+            _write_response(response_path, valid_response(closes_external_review=True))
             cases["direct_external_closure_rejected"] = _is_rejected(
-                closure.build_report(repo_root)
+                closure_report()
             )
         finally:
             if original is None:
@@ -154,7 +219,8 @@ def run_dry_run(repo_root: Path) -> dict[str, Any]:
 def _valid_response(
     *,
     source_access: str = "source-level",
-    reviewed_packet_hash: str = "sha256:" + "4" * 64,
+    reviewed_commit: str = "0" * 40,
+    reviewed_packet_hash: str = "sha256:" + "0" * 64,
     findings: list[dict[str, Any]] | None = None,
     closes_external_review: bool = False,
 ) -> dict[str, Any]:
@@ -165,7 +231,7 @@ def _valid_response(
         "reviewer": "dry-run reviewer",
         "reviewer_type": "fixture",
         "source_access": source_access,
-        "reviewed_commit": "abcdef1234567890",
+        "reviewed_commit": reviewed_commit,
         "reviewed_packet_hash": reviewed_packet_hash,
         "area": closure.EXPECTED_AREA,
         "finding_count": len(findings),

@@ -39,6 +39,7 @@ FINDING_PATTERN = re.compile(
 )
 COMMIT_PATTERN = re.compile(r"^[0-9a-f]{7,40}$")
 SHA256_PATTERN = re.compile(r"^sha256:[0-9a-f]{64}$")
+DISPOSITION_OUTCOME_PATTERN = re.compile(r"^[a-z][a-z0-9_]{0,63}$")
 SECRET_MARKERS = (
     "BEGIN PRIVATE KEY",
     "ITHILDIN_ADMIN_TOKEN=",
@@ -61,6 +62,13 @@ def main() -> int:
     parser.add_argument("--reviewed-commit", required=True)
     parser.add_argument("--reviewed-packet-hash", required=True)
     parser.add_argument("--area", required=True)
+    parser.add_argument(
+        "--disposition-outcome",
+        help=(
+            "typed review outcome; the same token must appear on its own line in the raw "
+            "response"
+        ),
+    )
     parser.add_argument("--output", help="write normalized JSON to this path")
     args = parser.parse_args()
 
@@ -73,6 +81,7 @@ def main() -> int:
             reviewed_commit=args.reviewed_commit,
             reviewed_packet_hash=args.reviewed_packet_hash,
             area=args.area,
+            disposition_outcome=args.disposition_outcome,
         )
     except ExternalResponseNormalizationError as exc:
         print(f"external response normalization failed: {exc}", file=sys.stderr)
@@ -95,6 +104,7 @@ def normalize_response(
     reviewed_commit: str,
     reviewed_packet_hash: str,
     area: str,
+    disposition_outcome: str | None = None,
 ) -> dict[str, Any]:
     _reject_secret_markers(text)
     if not reviewer.strip():
@@ -114,9 +124,10 @@ def normalize_response(
         raise ExternalResponseNormalizationError("reviewed area is required")
     if area not in AREA_NAMESPACES:
         raise ExternalResponseNormalizationError(f"unknown reviewed area: {area}")
+    normalized_outcome = _validate_disposition_outcome(text, disposition_outcome)
 
     findings = _extract_findings(text, source_access=source_access, area=area)
-    return {
+    result = {
         "schema_version": "1",
         "response_type": "ithildin.external_review.normalized_response",
         "reviewer": reviewer,
@@ -131,6 +142,26 @@ def normalize_response(
         "mutates_findings": False,
         "closes_external_review": False,
     }
+    if normalized_outcome is not None:
+        result["disposition_outcome"] = normalized_outcome
+    return result
+
+
+def _validate_disposition_outcome(text: str, outcome: str | None) -> str | None:
+    if outcome is None:
+        return None
+    normalized = outcome.strip()
+    if DISPOSITION_OUTCOME_PATTERN.fullmatch(normalized) is None:
+        raise ExternalResponseNormalizationError(
+            "disposition outcome must be a lowercase underscore-delimited token"
+        )
+    declaration = re.compile(rf"(?m)^\s*`?{re.escape(normalized)}`?\s*$")
+    if declaration.search(text) is None:
+        raise ExternalResponseNormalizationError(
+            "typed disposition outcome is not explicitly declared on its own line in the raw "
+            "response"
+        )
+    return normalized
 
 
 def _extract_findings(text: str, *, source_access: str, area: str) -> list[dict[str, str]]:
