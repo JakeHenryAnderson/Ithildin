@@ -3894,7 +3894,7 @@ def test_enterprise_dual_review_handoff_is_wired() -> None:
         "EXT-MC-DISPLAY-###",
         "hash manifest matches files: `true`",
     ]:
-        assert phrase in generated_text
+        assert " ".join(phrase.split()) in " ".join(generated_text.split())
     for phrase in [
         '"handoff_type": "ithildin.enterprise_dual_review"',
         '"ERG-003"',
@@ -4962,8 +4962,8 @@ def test_enterprise_review_handoff_drill_is_wired() -> None:
     assert report["closes_enterprise_lanes"] is False
     for phrase in [
         "Status: generated operator drill for enterprise review send/receive readiness.",
-        "Active enterprise route: `ERG-006`/`ERG-007` production identity/storage "
-        "architecture review.",
+        "Active enterprise route: `PIS-001` threat-model and dependency-decision planning "
+        "under the recorded `ERG-006`/`ERG-007` architecture decision.",
         "make enterprise-review-handoff-drill",
         "make enterprise-review-handoff-drill-check",
         "make enterprise-review-submission-prompt",
@@ -4981,8 +4981,8 @@ def test_enterprise_review_handoff_drill_is_wired() -> None:
     for phrase in [
         "Enterprise Review Handoff Drill",
         "Historical Dual-Send Set",
-        "Active enterprise route: `ERG-006`/`ERG-007` production identity/storage "
-        "architecture review.",
+        "Active enterprise route: `PIS-001` threat-model and dependency-decision planning "
+        "under the recorded `ERG-006`/`ERG-007` architecture decision.",
         "ERG-003",
         "ERG-002",
         "Operator sequence",
@@ -4999,7 +4999,7 @@ def test_enterprise_review_handoff_drill_is_wired() -> None:
         "normalizes_real_responses: `false`",
         "closes_enterprise_lanes: `false`",
     ]:
-        assert phrase in generated_text
+        assert " ".join(phrase.split()) in " ".join(generated_text.split())
     for phrase in [
         '"drill_type": "ithildin.enterprise_review_handoff_drill"',
         '"ERG-003"',

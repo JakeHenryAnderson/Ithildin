@@ -165,6 +165,7 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
         hash_manifest = {"artifacts": []}
         failures.append("enterprise review handoff drill hashes are not valid JSON")
 
+    normalized_markdown_text = " ".join(markdown_text.split())
     for phrase in [
         "Status: generated operator drill for enterprise review send/receive readiness.",
         "make enterprise-review-handoff-drill",
@@ -180,8 +181,8 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
     for phrase in [
         "Enterprise Review Handoff Drill",
         "Historical Dual-Send Set",
-        "Active enterprise route: `ERG-006`/`ERG-007` production identity/storage "
-        "architecture review.",
+        "Active enterprise route: `PIS-001` threat-model and dependency-decision planning "
+        "under the recorded `ERG-006`/`ERG-007` architecture decision.",
         "ERG-003",
         "ERG-002",
         "Operator sequence",
@@ -196,7 +197,7 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
         "normalizes_real_responses: `false`",
         "closes_enterprise_lanes: `false`",
     ]:
-        if phrase not in markdown_text:
+        if " ".join(phrase.split()) not in normalized_markdown_text:
             failures.append(f"generated handoff drill is missing phrase: {phrase}")
     for phrase in [
         '"drill_type": "ithildin.enterprise_review_handoff_drill"',
