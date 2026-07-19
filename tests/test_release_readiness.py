@@ -33284,9 +33284,9 @@ def test_trusted_host_promotion_closure_gate_accepts_runtime_namespace_pair(
         / trusted_host_promotion_disposition_closure_check.RUNTIME_REVIEW_HASH_MANIFEST_REL
     )
     packet_path.parent.mkdir(parents=True)
-    expected_commit = "a" * 40
+    fixture_commit = "a" * 40
     packet_path.write_text(
-        json.dumps({"source_commit": expected_commit}),
+        json.dumps({"source_commit": fixture_commit}),
         encoding="utf-8",
     )
     manifest_path.write_text("[]\n", encoding="utf-8")
@@ -33297,6 +33297,7 @@ def test_trusted_host_promotion_closure_gate_accepts_runtime_namespace_pair(
     )
     assert identity_failures == []
     assert expected_commit is not None
+    assert expected_commit == fixture_commit
     assert expected_packet_hash is not None
     payload: dict[str, Any] = {
         "response_type": "ithildin.external_review.normalized_response",
