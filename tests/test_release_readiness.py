@@ -33274,9 +33274,25 @@ def test_trusted_host_promotion_closure_gate_accepts_runtime_namespace_pair(
     tmp_path: Path,
 ) -> None:
     response_path = tmp_path / "normalized-response.json"
+    repo_root = tmp_path / "repo"
+    packet_path = (
+        repo_root
+        / trusted_host_promotion_disposition_closure_check.RUNTIME_REVIEW_PACKET_REL
+    )
+    manifest_path = (
+        repo_root
+        / trusted_host_promotion_disposition_closure_check.RUNTIME_REVIEW_HASH_MANIFEST_REL
+    )
+    packet_path.parent.mkdir(parents=True)
+    expected_commit = "a" * 40
+    packet_path.write_text(
+        json.dumps({"source_commit": expected_commit}),
+        encoding="utf-8",
+    )
+    manifest_path.write_text("[]\n", encoding="utf-8")
     expected_commit, expected_packet_hash, identity_failures = (
         trusted_host_promotion_disposition_closure_check._runtime_review_identity(
-            Path.cwd()
+            repo_root
         )
     )
     assert identity_failures == []
@@ -33312,7 +33328,7 @@ def test_trusted_host_promotion_closure_gate_accepts_runtime_namespace_pair(
     runtime_report = (
         trusted_host_promotion_disposition_closure_check._validate_normalized_response(
             response_path,
-            repo_root=Path.cwd(),
+            repo_root=repo_root,
         )
     )
     assert runtime_report["failures"] == []
@@ -33355,7 +33371,7 @@ def test_trusted_host_promotion_closure_gate_accepts_runtime_namespace_pair(
         identity_report = (
             trusted_host_promotion_disposition_closure_check._validate_normalized_response(
                 response_path,
-                repo_root=Path.cwd(),
+                repo_root=repo_root,
             )
         )
         assert identity_report["closure_ready"] is False
@@ -33366,7 +33382,7 @@ def test_trusted_host_promotion_closure_gate_accepts_runtime_namespace_pair(
     incomplete_report = (
         trusted_host_promotion_disposition_closure_check._validate_normalized_response(
             response_path,
-            repo_root=Path.cwd(),
+            repo_root=repo_root,
         )
     )
     assert incomplete_report["closure_ready"] is False
@@ -33381,7 +33397,7 @@ def test_trusted_host_promotion_closure_gate_accepts_runtime_namespace_pair(
     mixed_report = (
         trusted_host_promotion_disposition_closure_check._validate_normalized_response(
             response_path,
-            repo_root=Path.cwd(),
+            repo_root=repo_root,
         )
     )
     assert mixed_report["closure_ready"] is False
