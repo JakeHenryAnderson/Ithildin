@@ -8262,6 +8262,18 @@ def test_production_identity_storage_architecture_is_wired() -> None:
     assert report["erg_006_status"] == "planning_only"
     assert report["erg_007_status"] == "planning_only"
     assert report["tool_count"] == 24
+    assert report["phase_1_candidate_specified"] is True
+    assert report["deployment_scope"] == "single_organization_self_hosted"
+    assert report["ordered_work_packages"] == [
+        "PIS-001",
+        "PIS-002",
+        "PIS-003",
+        "PIS-004",
+        "PIS-005",
+        "PIS-006",
+        "PIS-007",
+        "PIS-008",
+    ]
     assert report["runtime_changes_allowed"] is False
     assert report["production_identity_allowed"] is False
     assert report["enterprise_rbac_allowed"] is False
@@ -8278,12 +8290,30 @@ def test_production_identity_storage_architecture_is_wired() -> None:
         "`ERG-007`: durable runtime storage and retention.",
         "local principal labels, not enterprise authentication",
         "SQLite runtime storage, not runtime Postgres",
+        "Phase 1 Self-Hosted Candidate",
+        "single-organization, self-hosted Manager",
+        "OIDC Authorization Code with PKCE",
+        "tokens are consumed during callback validation and are not persisted",
+        "pre-provisioned subject mappings",
+        "An external receipt may anchor a recovery discontinuity; it cannot substitute",
+        "mTLS is additive to, not a replacement for, the current Ed25519",
+        "PostgreSQL is the only candidate production runtime backend",
+        "Domain mutation, the authoritative audit event, and an export-outbox record",
+        "derived, signed, checkpoint-bound export",
+        "Dual write is forbidden",
+        "legacy_local_preview",
+        "Only one Manager deployment epoch may hold write authority",
+        "multiple Manager API processes within one active deployment epoch",
+        "reserve-anchor-finalize ordering",
+        "sealed, exported, signed, independently verified segment",
+        "Candidate Work-Package Order",
         "Future Identity Architecture Questions",
         "Future Storage Architecture Questions",
         "Evidence Contract",
         "Required Before Implementation",
         "external architecture review",
         "The current decision is `planning_only`.",
+        "Planning Status Axes",
         "Runtime implementation remains blocked",
     ]:
         assert phrase in doc
@@ -8308,6 +8338,24 @@ def test_production_identity_storage_architecture_is_wired() -> None:
     assert "production-identity-storage-architecture.md" in runway
     assert "production-identity-storage-architecture.md" in gap_matrix
     assert "production-identity-storage-architecture.md" in decision_register
+
+
+def test_production_identity_storage_contract_rejects_duplicate_keys() -> None:
+    contract_start = production_identity_storage_architecture_check.CONTRACT_START
+    contract_end = production_identity_storage_architecture_check.CONTRACT_END
+    with pytest.raises(ValueError, match="duplicate contract key"):
+        production_identity_storage_architecture_check._contract(
+            f'{contract_start}\n{{"tool_count":24,"tool_count":25}}\n{contract_end}'
+        )
+
+
+def test_production_identity_storage_contract_rejects_reversed_markers() -> None:
+    contract_start = production_identity_storage_architecture_check.CONTRACT_START
+    contract_end = production_identity_storage_architecture_check.CONTRACT_END
+    with pytest.raises(ValueError, match="start marker must precede end marker"):
+        production_identity_storage_architecture_check._contract(
+            f'{contract_end}\n{contract_start}\n{{"tool_count":24}}'
+        )
 
 
 def test_production_identity_storage_disposition_packet_is_wired(tmp_path: Path) -> None:
