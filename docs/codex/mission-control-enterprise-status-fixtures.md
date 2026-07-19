@@ -78,7 +78,16 @@ The valid fixture may display only these checked action commands:
 - `make enterprise-send-quick-check`;
 - `make enterprise-send-now`;
 - `make enterprise-response-intake-refresh`;
-- `make trusted-host-descriptor-contract-check`.
+- `make trusted-host-descriptor-contract-check`;
+- `make production-identity-storage-architecture-check`;
+- `make production-identity-storage-disposition-packet-check`;
+- `make production-identity-storage-external-review-bundle-check`;
+- `make production-identity-storage-response-kit-check`;
+- `make production-identity-storage-response-dry-run`;
+- `make production-identity-storage-external-response-intake-check`;
+- `make production-identity-storage-disposition-closure-check`;
+- `make no-new-powers-guardrail`;
+- `make tool-surface-invariant-gate`.
 
 The final two fixtures are explicit handoff-safety cases: `MC-STATUS-NEG-011` rejects unsafe
 action commands with `unsupported_action_command`, and `MC-STATUS-NEG-012` rejects unsafe handoff

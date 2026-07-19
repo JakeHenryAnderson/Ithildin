@@ -109,6 +109,7 @@ ALLOWED_ENTERPRISE_NEXT_ACTIONS = {
     "prepare_erg004_runtime_implementation_gate",
     "prepare_erg004_descriptor_only_runtime_planning",
     "prepare_erg005_trusted_host_promotion_review",
+    "prepare_erg006_erg007_production_identity_storage_architecture_review",
 }
 
 
@@ -128,9 +129,7 @@ def main() -> int:
 def build_report(repo_root: Path) -> dict[str, Any]:
     reports = {
         "technical_mvp_ticket_map": technical_mvp_ticket_map.build_report(repo_root),
-        "v1_operator_trial_checklist": v1_operator_trial_checklist_check.build_report(
-            repo_root
-        ),
+        "v1_operator_trial_checklist": v1_operator_trial_checklist_check.build_report(repo_root),
         "v1_operator_trial_record": v1_operator_trial_record.build_record(
             repo_root,
             repo_root / "var/review-packets/v1.0/operator-trial",
@@ -144,12 +143,8 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "workbench_readiness": workbench_readiness.build_report(repo_root),
         "demo_flow_readiness": demo_flow_readiness.build_report(repo_root),
         "demo_evidence_readiness": demo_evidence_readiness.build_report(repo_root),
-        "operator_sandbox_demo_readiness": operator_sandbox_demo_readiness.build_report(
-            repo_root
-        ),
-        "enterprise_operator_next_action": enterprise_operator_next_action.build_report(
-            repo_root
-        ),
+        "operator_sandbox_demo_readiness": operator_sandbox_demo_readiness.build_report(repo_root),
+        "enterprise_operator_next_action": enterprise_operator_next_action.build_report(repo_root),
     }
     failures = _report_failures(reports)
     failures.extend(_wiring_failures(repo_root))
@@ -188,13 +183,9 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "latest_implemented_tool": ticket_map.get("latest_implemented_tool"),
         "selected_capability": ticket_map.get("selected_capability"),
         "technical_mvp_state": (
-            "operator_trial_observed"
-            if observed_trial_passed
-            else "ready_for_operator_trial"
+            "operator_trial_observed" if observed_trial_passed else "ready_for_operator_trial"
         ),
-        "operator_trial_ready": all(
-            reports[name].get("valid") is True for name in READY_STATES
-        ),
+        "operator_trial_ready": all(reports[name].get("valid") is True for name in READY_STATES),
         "operator_trial_observed": observed_trial_passed,
         "hands_on_trial_required": not observed_trial_passed,
         "observed_trial": {
@@ -206,17 +197,13 @@ def build_report(repo_root: Path) -> dict[str, Any]:
             ),
             "demo_result_path": observed.get("demo_result_path"),
         },
-        "recommended_next_enterprise_review": next_action.get(
-            "recommended_next_enterprise_review"
-        ),
+        "recommended_next_enterprise_review": next_action.get("recommended_next_enterprise_review"),
         "recommended_send_set": next_action.get("recommended_send_set"),
         "enterprise_next_action": next_action.get("next_action"),
         "response_present_count": next_action.get("response_present_count"),
         "recommended_trial_commands": RECOMMENDED_TRIAL_COMMANDS,
         "recommended_review_commands": RECOMMENDED_REVIEW_COMMANDS,
-        "ready_checks": {
-            name: _summary(report) for name, report in reports.items()
-        },
+        "ready_checks": {name: _summary(report) for name, report in reports.items()},
         "runtime_changes_allowed": False,
         "capability_expansion_allowed": False,
         "new_power_classes_allowed": False,
@@ -335,9 +322,7 @@ def _wiring_failures(repo_root: Path) -> list[str]:
     if DOC_TITLE not in review_index:
         failures.append("review docs index is missing technical MVP operator-trial readiness")
     if "technical-mvp-operator-trial-readiness" not in release_guardrails:
-        failures.append(
-            "release guardrails do not require technical MVP operator-trial readiness"
-        )
+        failures.append("release guardrails do not require technical MVP operator-trial readiness")
     return failures
 
 

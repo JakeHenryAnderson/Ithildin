@@ -34,7 +34,7 @@ MARKDOWN_NAME = "ENTERPRISE_REVIEW_HANDOFF_DRILL.md"
 JSON_NAME = "enterprise-review-handoff-drill.json"
 HASH_NAME = "enterprise-review-handoff-drill-artifact-hashes.json"
 RECOMMENDED_GAPS = ["ERG-003", "ERG-002"]
-ACTIVE_SEND_SET = ["ERG-005"]
+ACTIVE_SEND_SET = ["ERG-006", "ERG-007"]
 BOUNDARY_FLAGS = {
     "runtime_changes_allowed": False,
     "mission_control_runtime_allowed": False,
@@ -180,7 +180,8 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
     for phrase in [
         "Enterprise Review Handoff Drill",
         "Historical Dual-Send Set",
-        "Active enterprise route: `ERG-005` trusted-host promotion review.",
+        "Active enterprise route: `ERG-006`/`ERG-007` production identity/storage "
+        "architecture review.",
         "ERG-003",
         "ERG-002",
         "Operator sequence",
@@ -265,9 +266,7 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
         "route_scope": "historical_dual_send_handoff_drill",
         "legacy_route_scope": "historical_dual_send_handoff_drill",
         "tool_count": 24,
-        "artifact_hashes_match_files": _artifact_hashes_match_files(
-            output_dir, hash_manifest
-        ),
+        "artifact_hashes_match_files": _artifact_hashes_match_files(output_dir, hash_manifest),
         **BOUNDARY_FLAGS,
     }
 
@@ -310,9 +309,7 @@ def _drill_payload(
     inbox_by_gap = {lane["gap"]: lane for lane in inbox_payload["lanes"]}
     for packet in manifest_payload["send_set"]:
         inbox_lane = inbox_by_gap[packet["gap"]]
-        raw_response_file = (
-            f"{_repo_rel(repo_root, inbox_dir)}/{inbox_lane['raw_response_file']}"
-        )
+        raw_response_file = f"{_repo_rel(repo_root, inbox_dir)}/{inbox_lane['raw_response_file']}"
         send_set.append(
             {
                 "gap": packet["gap"],
@@ -392,20 +389,18 @@ def _render_markdown(payload: dict[str, Any]) -> str:
         for packet in payload["send_set"]
     )
     sequence = "\n".join(
-        f"{index}. {step}"
-        for index, step in enumerate(payload["operator_sequence"], 1)
+        f"{index}. {step}" for index, step in enumerate(payload["operator_sequence"], 1)
     )
     blocked = "\n".join(
-        f"- {key}: `{str(value).lower()}`"
-        for key, value in payload["blocked_boundaries"].items()
+        f"- {key}: `{str(value).lower()}`" for key, value in payload["blocked_boundaries"].items()
     )
     return f"""# Enterprise Review Handoff Drill
 
 Status: generated operator drill for enterprise review send/receive readiness.
 
-Reviewed commit: `{payload['commit']}`
+Reviewed commit: `{payload["commit"]}`
 
-Dirty state when generated: `{str(payload['dirty']).lower()}`
+Dirty state when generated: `{str(payload["dirty"]).lower()}`
 
 Tool count remains `24`.
 
@@ -413,7 +408,7 @@ Current selected capability: `not selected`.
 
 Route scope: historical `ERG-003`/`ERG-002` dual-send handoff drill.
 
-Active enterprise route: `ERG-005` trusted-host promotion review.
+Active enterprise route: `ERG-006`/`ERG-007` production identity/storage architecture review.
 
 This drill ties together the historical send-ready outbox, send manifest, submission prompt, send
 receipt template, response inbox, response status board, and fixture-only intake drill. It does not
@@ -425,15 +420,15 @@ record external review, does not normalize real responses, and does not close an
 | --- | --- | --- | ---: | --- |
 {send_rows}
 
-Outbox root: `{payload['outbox_dir']}`
+Outbox root: `{payload["outbox_dir"]}`
 
-Outbox hash manifest: `{payload['outbox_hash_manifest']}`
+Outbox hash manifest: `{payload["outbox_hash_manifest"]}`
 
-Send manifest root: `{payload['send_manifest_dir']}`
+Send manifest root: `{payload["send_manifest_dir"]}`
 
-Submission prompt root: `{payload['submission_prompt_dir']}`
+Submission prompt root: `{payload["submission_prompt_dir"]}`
 
-Send receipt template root: `{payload['receipt_template_dir']}`
+Send receipt template root: `{payload["receipt_template_dir"]}`
 
 ## Operator sequence
 
@@ -445,16 +440,16 @@ Send receipt template root: `{payload['receipt_template_dir']}`
 | --- | --- | --- | --- | --- |
 {response_rows}
 
-Response inbox root: `{payload['response_inbox_dir']}`
+Response inbox root: `{payload["response_inbox_dir"]}`
 
-Response inbox hash manifest: `{payload['response_inbox_hash_manifest']}`
+Response inbox hash manifest: `{payload["response_inbox_hash_manifest"]}`
 
 ## Current waiting state
 
-- send_ready: `{str(payload['send_ready']).lower()}`
-- intake_drill_valid: `{str(payload['intake_drill_valid']).lower()}`
-- response_present_count: `{payload['response_present_count']}`
-- closure_ready_count: `{payload['closure_ready_count']}`
+- send_ready: `{str(payload["send_ready"]).lower()}`
+- intake_drill_valid: `{str(payload["intake_drill_valid"]).lower()}`
+- response_present_count: `{payload["response_present_count"]}`
+- closure_ready_count: `{payload["closure_ready_count"]}`
 
 ## Blocked boundaries
 

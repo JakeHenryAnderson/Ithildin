@@ -14,19 +14,19 @@ make enterprise-active-route-clarity
 
 ## Active Route
 
-The completed local-development disposition route is `ERG-004`.
+The completed source-finding disposition route is `ERG-005`.
 
-Current expected action: `prepare_erg005_trusted_host_promotion_review`.
+Current expected action: `prepare_erg006_erg007_production_identity_storage_architecture_review`.
 
 Current active packet:
-`var/review-packets/v3/trusted-host-promotion-external-review/`.
+`var/review-packets/v3/production-identity-storage-external-review/`.
 
-Current active send set: `ERG-005`.
+Current active send set: `ERG-006`, `ERG-007`.
 
 Current response kit:
-`var/review-packets/v3/trusted-host-promotion-response-kit/`.
+`var/review-packets/v3/production-identity-storage-response-kit/`.
 
-Current trusted-host finding namespace: `EXT-TRUSTED-HOST-###`.
+Current production identity/storage finding namespace: `EXT-PROD-IAM-STORAGE-###`.
 
 The committed `sandbox-vm-live-poc-runtime-gate-readiness-decision-record.md` records an internal
 High proxy disposition for descriptor-only implementation planning. The descriptor-only runtime
@@ -55,7 +55,9 @@ The distinction is intentional:
 
 - historical dual-send artifacts preserve evidence for prior review packets;
 - completed local-development disposition artifacts preserve the `ERG-004` descriptor-only lane;
-- active operator checkpoint artifacts now point to `ERG-005`;
+- the accepted source-finding disposition preserves the bounded `ERG-005` review result without
+  closing ERG-005;
+- active operator checkpoint artifacts now point to `ERG-006`/`ERG-007`;
 - current implementation planning remains external-review-gated before runtime.
 
 ## What This Does Not Approve

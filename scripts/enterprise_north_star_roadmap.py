@@ -13,6 +13,7 @@ if __package__ in {None, ""}:
 
 from scripts import (
     enterprise_dependency_ladder,
+    enterprise_operator_next_action,
     enterprise_readiness_gap_matrix_check,
     enterprise_response_status_board,
     enterprise_transition_map,
@@ -31,7 +32,7 @@ REQUIRED_DOC_PHRASES = [
     "Current selected capability: `not selected`",
     "make enterprise-north-star-roadmap",
     "v1.0 local-preview RC candidate",
-    "Active enterprise route: `ERG-005` trusted-host promotion review.",
+    "Active enterprise route: `ERG-006`/`ERG-007` production identity/storage architecture review.",
     "Historical dual-send route: `ERG-003` then `ERG-002`.",
     "`ERG-003`: static sandbox/VM preflight disposition",
     "`ERG-002`: Mission Control display/import planning review",
@@ -132,6 +133,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     gap_matrix = enterprise_readiness_gap_matrix_check.build_report(repo_root)
     response_status = enterprise_response_status_board.build_report(repo_root)
     capability = next_capability_readiness.build_report(repo_root)
+    operator_next_action = enterprise_operator_next_action.build_report(repo_root)
 
     for label, report in [
         ("enterprise-dependency-ladder", ladder),
@@ -140,6 +142,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         ("enterprise-readiness-gap-matrix", gap_matrix),
         ("enterprise-response-status-board", response_status),
         ("next-capability-readiness", capability),
+        ("enterprise-operator-next-action", operator_next_action),
     ]:
         if report.get("valid") is not True:
             failures.append(f"{label} is not valid")
@@ -233,8 +236,10 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "roadmap_doc": DOC_REL,
         "tool_count": 24,
         "selected_capability": capability.get("next_candidate"),
-        "recommended_send_set": ["ERG-005"],
-        "recommended_next_enterprise_review": "ERG-005",
+        "recommended_send_set": operator_next_action.get("recommended_send_set", []),
+        "recommended_next_enterprise_review": operator_next_action.get(
+            "recommended_next_enterprise_review"
+        ),
         "historical_dual_send_set": ["ERG-003", "ERG-002"],
         "historical_next_enterprise_review": "ERG-003",
         "enterprise_gap_count": gap_matrix.get("gap_count"),
@@ -252,12 +257,10 @@ def render_report(report: dict[str, Any]) -> str:
         f"roadmap_doc: {report['roadmap_doc']}",
         f"tool_count: {report['tool_count']}",
         f"selected_capability: {report.get('selected_capability', 'unknown')}",
-        "recommended_send_set: "
-        + ", ".join(report.get("recommended_send_set") or []),
+        "recommended_send_set: " + ", ".join(report.get("recommended_send_set") or []),
         "recommended_next_enterprise_review: "
         f"{report.get('recommended_next_enterprise_review', 'unknown')}",
-        "historical_dual_send_set: "
-        + ", ".join(report.get("historical_dual_send_set") or []),
+        "historical_dual_send_set: " + ", ".join(report.get("historical_dual_send_set") or []),
         "historical_next_enterprise_review: "
         f"{report.get('historical_next_enterprise_review', 'unknown')}",
         f"enterprise_gap_count: {report.get('enterprise_gap_count', 'unknown')}",

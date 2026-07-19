@@ -45,6 +45,10 @@ TRUSTED_HOST_EXTERNAL_REVIEW_DIR = (
 TRUSTED_HOST_RESPONSE_KIT_DIR = (
     "var/review-packets/v3/trusted-host-promotion-response-kit"
 )
+PIS_EXTERNAL_REVIEW_DIR = (
+    "var/review-packets/v3/production-identity-storage-external-review"
+)
+PIS_RESPONSE_KIT_DIR = "var/review-packets/v3/production-identity-storage-response-kit"
 
 
 def main() -> int:
@@ -219,6 +223,20 @@ def _recommended_next_commands(
             "make no-new-powers-guardrail",
             "make tool-surface-invariant-gate",
         ]
+    if enterprise_next.get("next_action") == (
+        "prepare_erg006_erg007_production_identity_storage_architecture_review"
+    ):
+        return [
+            "make production-identity-storage-architecture-check",
+            "make production-identity-storage-disposition-packet-check",
+            "make production-identity-storage-external-review-bundle-check",
+            "make production-identity-storage-response-kit-check",
+            "make production-identity-storage-response-dry-run",
+            "make production-identity-storage-external-response-intake-check",
+            "make production-identity-storage-disposition-closure-check",
+            "make no-new-powers-guardrail",
+            "make tool-surface-invariant-gate",
+        ]
     return ["make dev-check"]
 
 
@@ -266,6 +284,12 @@ def _handoff_paths(repo_root: Path, enterprise_next: dict[str, Any]) -> dict[str
             "active_send_now": ENTERPRISE_SEND_NOW_DIR,
             "trusted_host_external_review": TRUSTED_HOST_EXTERNAL_REVIEW_DIR,
             "trusted_host_response_kit": TRUSTED_HOST_RESPONSE_KIT_DIR,
+        }
+    if enterprise_next.get("recommended_send_set") == ["ERG-006", "ERG-007"]:
+        return {
+            "active_send_now": ENTERPRISE_SEND_NOW_DIR,
+            "production_identity_storage_external_review": PIS_EXTERNAL_REVIEW_DIR,
+            "production_identity_storage_response_kit": PIS_RESPONSE_KIT_DIR,
         }
 
     path = repo_root / SEND_MANIFEST_JSON

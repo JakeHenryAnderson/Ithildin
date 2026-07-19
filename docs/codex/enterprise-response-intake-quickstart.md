@@ -4,7 +4,7 @@ Status: operator quickstart for applying `ERG-003` and `ERG-002` reviewer respon
 
 Route scope: historical `ERG-003`/`ERG-002` dual-response intake.
 
-Active enterprise route: `ERG-005` trusted-host promotion review.
+Active enterprise route: `ERG-006`/`ERG-007` production identity/storage architecture review.
 
 Current governed tool count: `24`.
 

@@ -34,7 +34,7 @@ REQUIRED_PHRASES = [
     "Runtime changes: blocked",
     "Public/security-product positioning: blocked",
     "Enterprise readiness gap count: `10`",
-    "Recommended next enterprise review: `ERG-005`",
+    "Recommended next enterprise review: `ERG-006`/`ERG-007`",
     "Historical/fallback review route: `ERG-003` and `ERG-002`",
     "Core governed local tool gateway | `92-96%`",
     "v1.0 local-preview RC foundation | `84-90%`",
@@ -46,7 +46,7 @@ REQUIRED_PHRASES = [
     "Technical MVP state: `operator_trial_observed`",
     "Enterprise send package ready: `true`",
     "same-commit `make release-check` and `make review-candidate`",
-    "independent source-review disposition for the `ERG-005` staging-only slice",
+    "accepted staging-only ERG-005 source-finding disposition",
     "Mission Control remains a display/import layer",
     "Blocked Claims",
 ]
@@ -152,12 +152,20 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     post_disposition_mode = enterprise_send.get("preflight_mode") == POST_DISPOSITION_MODE
     if enterprise_send.get("valid") is not True:
         failures.append("enterprise send preflight is not valid")
-    if operator_next.get("recommended_send_set") != ["ERG-005"]:
-        failures.append("operator next action does not identify ERG-005 as the active send set")
-    if operator_next.get("recommended_next_enterprise_review") != "ERG-005":
-        failures.append("operator next action does not identify ERG-005 as the next review")
-    if operator_next.get("next_action") != "prepare_erg005_trusted_host_promotion_review":
-        failures.append("operator next action is not the ERG-005 trusted-host review path")
+    if operator_next.get("recommended_send_set") != ["ERG-006", "ERG-007"]:
+        failures.append(
+            "operator next action does not identify ERG-006/ERG-007 as the active send set"
+        )
+    if operator_next.get("recommended_next_enterprise_review") != "ERG-006/ERG-007":
+        failures.append(
+            "operator next action does not identify ERG-006/ERG-007 as the next review"
+        )
+    if operator_next.get("next_action") != (
+        "prepare_erg006_erg007_production_identity_storage_architecture_review"
+    ):
+        failures.append(
+            "operator next action is not the ERG-006/ERG-007 architecture review path"
+        )
     if (
         not post_disposition_mode
         and enterprise_send.get("artifact_commits_match_current") is not True

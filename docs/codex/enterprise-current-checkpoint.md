@@ -26,70 +26,56 @@ close enterprise lanes, approve runtime behavior, or approve public/security-pro
 - Enterprise response evidence is not present yet.
 - `ERG-004`: descriptor-only sandbox/VM live POC runtime source review is locally dispositioned
   for continued local-development progress only.
-- `ERG-005`: staging-only trusted-host promotion runtime is locally dispositioned for continued
-  local-preview development and focused source-review handoff; external/human source review remains
-  pending for broader claims.
-- Handoff readiness marker: `ERG-005`: staging-only trusted-host promotion runtime source review is ready.
+- `ERG-005`: staging-only trusted-host promotion runtime source findings are dispositioned for the
+  bounded local-preview slice; ERG-005, placement authority, broader promotion, release, and UAT
+  remain blocked.
+- Handoff readiness marker: `ERG-006`/`ERG-007`: production identity/storage architecture review is next.
 - The descriptor-only runtime slice has both an internal source review and a high-effort internal
   proxy disposition with no findings. That is not external review and does not approve live
   VM/container runtime behavior.
 
-Validate the active ERG-005 trusted-host promotion review surface with:
+Validate the active planning-only ERG-006/ERG-007 architecture-review surface with:
 
 ```sh
-make trusted-host-descriptor-contract-check
-make trusted-host-promotion-decision-intake-check
-make trusted-host-promotion-state-machine-check
-make trusted-host-promotion-negative-fixtures-check
-make trusted-host-promotion-zone-contract-check
-make trusted-host-promotion-implementation-plan-check
-make trusted-host-promotion-limited-runtime-plan-check
-make trusted-host-promotion-limited-runtime-ticket-check
-make trusted-host-promotion-runtime-implementation-decision-check
-make trusted-host-promotion-negative-transcripts
-make trusted-host-promotion-runtime-source-review-bundle-check
-make trusted-host-promotion-source-review-packet-check
-make trusted-host-promotion-disposition-packet-check
-make trusted-host-promotion-external-review-bundle-check
-make trusted-host-promotion-response-kit-check
+make production-identity-storage-architecture-check
+make production-identity-storage-disposition-packet-check
+make production-identity-storage-external-review-bundle-check
+make production-identity-storage-response-kit-check
 make no-new-powers-guardrail
 make tool-surface-invariant-gate
 ```
 
-The committed `sandbox-vm-live-poc-runtime-gate-readiness-decision-record.md` allows only
-descriptor-only implementation planning. The descriptor-only plan and implementation ticket record
-the next non-runtime checkpoints before any future descriptor slice is considered. The ERG-005
-limited runtime plan, ticket skeleton, runtime decision, implementation record, negative
-transcripts, internal review, and source-review bundle now cover the implemented staging-only
-single-artifact slice. Those records still do not approve broad trusted-host promotion, approved
-output publishing, live VM/container inspection, sandbox orchestration, Mission Control runtime
-behavior (historical name for the current Ithildin Command Center runtime-authority boundary),
-local model invocation, arbitrary host writes, network expansion, API/MCP profile loading, or new
-governed tool powers.
+The accepted ERG-005 response closes only its two tracked runtime source findings. The active
+ERG-006/ERG-007 packet asks whether the existing production identity, tenancy, session, storage,
+migration, retention, recovery, and custody architecture is coherent enough for continued
+planning. It does not approve PIS implementation packages, production identity, enterprise RBAC,
+remote administration, runtime Postgres, migrations, production Node transport, or new governed
+tool powers.
 
 ## Recommended Next Actions
 
-The historical dual-send artifacts remain below for lineage and response-intake fallback. They are
-not the active post-disposition route while `make enterprise-operator-next-action` reports
-`prepare_erg005_trusted_host_promotion_review`.
+The historical ERG-005 and dual-send artifacts remain below for lineage and response-intake
+fallback. They are not the active post-disposition route while
+`make enterprise-operator-next-action` reports
+`prepare_erg006_erg007_production_identity_storage_architecture_review`.
 
 The current recommended enterprise handoff set is:
 
-1. `ERG-005`: trusted-host artifact promotion review.
+1. `ERG-006`/`ERG-007`: production identity and durable-storage architecture review.
 
 Generate or refresh the active source-review artifact with:
 
 ```sh
 make enterprise-send-now
-make trusted-host-promotion-runtime-source-review-bundle
-make trusted-host-promotion-response-kit
+make production-identity-storage-external-review-bundle
+make production-identity-storage-response-kit
 ```
 
-The active ERG-005 runtime source-review packet and response kit are:
+The active ERG-006/ERG-007 architecture-review packet and response kit are:
 
 ```sh
-var/review-packets/v3/trusted-host-promotion-runtime-source-review/
-var/review-packets/v3/trusted-host-promotion-response-kit/
+var/review-packets/v3/production-identity-storage-external-review/
+var/review-packets/v3/production-identity-storage-response-kit/
 ```
 
 The bounded implementation-planning checkpoint for the next ERG-005 slice is:
@@ -114,16 +100,25 @@ approve broad trusted-host promotion, direct arbitrary host writes, automatic pr
 Control runtime behavior (historical name for the current Ithildin Command Center
 runtime-authority boundary), sandbox orchestration, or new governed tool powers.
 
-After a real ERG-005 trusted-host reviewer response arrives, do not edit status docs directly.
+The Ithildin Command Center runtime-authority boundary remains unchanged: Command Center displays
+and initiates governed workflows, while Gateway policy, approval, execution, and audit remain
+authoritative.
+
+Historical lineage: `ERG-005`: staging-only trusted-host promotion runtime source review is ready,
+and its source findings are dispositioned. This lineage marker does not make ERG-005 the current
+operator route or authorize broader promotion.
+
+After a real ERG-006/ERG-007 production identity/storage reviewer response arrives, do not edit
+status docs directly.
 Run the lane-specific response checks before any committed disposition update:
 
 ```sh
-make trusted-host-promotion-response-dry-run
-make trusted-host-promotion-disposition-closure-check
+make production-identity-storage-response-dry-run
+make production-identity-storage-disposition-closure-check
 ```
 
-Follow the descriptor-only response application playbook before any committed disposition update.
-The general enterprise response flow remains documented by:
+Follow the production identity/storage response kit before any committed disposition update. The
+general enterprise response flow remains documented by:
 
 ```sh
 make enterprise-response-waiting-room
@@ -148,6 +143,10 @@ The historical ERG-003/ERG-002 dual-send commands remain available only for line
   `var/review-runs/sandbox-vm-live-poc-runtime-descriptor-only-response-inbox/`
 - `ERG-005` runtime source-review packet:
   `var/review-packets/v3/trusted-host-promotion-runtime-source-review/`
+- `ERG-006`/`ERG-007` architecture-review packet:
+  `var/review-packets/v3/production-identity-storage-external-review/`
+- `ERG-006`/`ERG-007` response kit:
+  `var/review-packets/v3/production-identity-storage-response-kit/`
 - dual-review outbox: `var/review-packets/v3/enterprise-dual-review-outbox/`
 - send manifest: `var/review-packets/v3/enterprise-review-send-manifest/`
 - send quickstart: `var/review-packets/v3/enterprise-review-send-quickstart/`

@@ -52,6 +52,15 @@ ERG005_NEXT_AFTER_SEND_COMMANDS = [
     "make enterprise-response-now",
 ]
 
+PIS_NEXT_AFTER_SEND_COMMANDS = [
+    "make production-identity-storage-response-kit-check",
+    "make production-identity-storage-response-dry-run",
+    "make production-identity-storage-external-response-intake-check",
+    "make production-identity-storage-disposition-closure-check",
+    "make enterprise-response-waiting-room",
+    "make enterprise-response-now",
+]
+
 RESPONSE_COMMANDS = [
     "make enterprise-response-intake-refresh",
 ]
@@ -118,6 +127,18 @@ ERG005_TRUSTED_HOST_COMMANDS = [
     "make trusted-host-promotion-runtime-implementation-decision-check",
     "make trusted-host-promotion-negative-transcripts",
     "make trusted-host-promotion-runtime-source-review-bundle-check",
+    "make no-new-powers-guardrail",
+    "make tool-surface-invariant-gate",
+]
+
+PIS_ARCHITECTURE_REVIEW_COMMANDS = [
+    "make production-identity-storage-architecture-check",
+    "make production-identity-storage-disposition-packet-check",
+    "make production-identity-storage-external-review-bundle-check",
+    "make production-identity-storage-response-kit-check",
+    "make production-identity-storage-response-dry-run",
+    "make production-identity-storage-external-response-intake-check",
+    "make production-identity-storage-disposition-closure-check",
     "make no-new-powers-guardrail",
     "make tool-surface-invariant-gate",
 ]
@@ -522,6 +543,29 @@ ERG005_TRUSTED_HOST_ARTIFACTS = [
     },
 ]
 
+PIS_ARCHITECTURE_REVIEW_ARTIFACTS = [
+    {
+        "label": "production_identity_storage_architecture",
+        "path": "docs/codex/production-identity-storage-architecture.md",
+        "description": "planning-only Phase 1 identity and storage architecture",
+    },
+    {
+        "label": "production_identity_storage_disposition_packet",
+        "path": "var/review-packets/v3/production-identity-storage-disposition",
+        "description": "ERG-006/ERG-007 architecture-disposition packet",
+    },
+    {
+        "label": "production_identity_storage_external_review_bundle",
+        "path": "var/review-packets/v3/production-identity-storage-external-review",
+        "description": "focused production identity/storage architecture-review bundle",
+    },
+    {
+        "label": "production_identity_storage_response_kit",
+        "path": "var/review-packets/v3/production-identity-storage-response-kit",
+        "description": "fail-closed response-intake kit for ERG-006/ERG-007",
+    },
+]
+
 REQUIRED_DOC_PHRASES = [
     "Status: checked read-only operator next-action summary",
     "Current governed tool count: `24`",
@@ -531,34 +575,24 @@ REQUIRED_DOC_PHRASES = [
     "If the dual-response disposition record, runtime-ticket internal review, runtime "
     "gate-readiness",
     "descriptor_only_local_preview_disposition_ready",
-    "implemented staging-only `ERG-005` trusted-host promotion runtime",
-    "make trusted-host-descriptor-contract-check",
-    "make trusted-host-promotion-decision-intake-check",
-    "make trusted-host-promotion-state-machine-check",
-    "make trusted-host-promotion-negative-fixtures-check",
-    "make trusted-host-promotion-zone-contract-check",
-    "make trusted-host-promotion-implementation-plan-check",
-    "make trusted-host-promotion-source-review-packet-check",
-    "make trusted-host-promotion-disposition-packet-check",
-    "make trusted-host-promotion-external-review-bundle-check",
-    "make trusted-host-promotion-response-kit-check",
-    "make trusted-host-promotion-response-dry-run",
-    "make trusted-host-promotion-internal-review-check",
-    "make trusted-host-promotion-implementation-gate-decision-check",
-    "make trusted-host-promotion-limited-runtime-plan-check",
-    "make trusted-host-promotion-limited-runtime-ticket-check",
-    "make trusted-host-promotion-runtime-implementation-decision-check",
-    "make trusted-host-promotion-negative-transcripts",
-    "make trusted-host-promotion-runtime-source-review-bundle-check",
+    "accepted staging-only",
+    "`ERG-005` source-finding disposition",
+    "make production-identity-storage-architecture-check",
+    "make production-identity-storage-disposition-packet-check",
+    "make production-identity-storage-external-review-bundle-check",
+    "make production-identity-storage-response-kit-check",
+    "make production-identity-storage-response-dry-run",
+    "make production-identity-storage-external-response-intake-check",
+    "make production-identity-storage-disposition-closure-check",
     "make no-new-powers-guardrail",
     "make tool-surface-invariant-gate",
     "make enterprise-review-send-refresh",
     "make handoff-dry-run",
     "make enterprise-send-now",
     "handoff_artifacts",
-    "When a real reviewer response is available for the current active `ERG-005` route",
+    "When a real reviewer response is available for the current active `ERG-006`/`ERG-007` route",
     "For the current active route, the primary lane is:",
-    "`ERG-005`: use the trusted-host promotion response kit",
+    "`ERG-006`/`ERG-007`: use the production identity/storage response kit",
     "Historical fallback lanes remain available only when the operator next-action command reports",
     "`ERG-003`: static sandbox/VM preflight disposition",
     "`ERG-002`: Mission Control display/import planning review",
@@ -620,6 +654,9 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     descriptor_only_disposition_recorded = _descriptor_only_disposition_recorded(
         repo_root
     )
+    erg005_runtime_source_findings_disposition_recorded = (
+        _erg005_runtime_source_findings_disposition_recorded(repo_root)
+    )
     next_action = _next_action(
         response_present_count,
         closure_ready_count,
@@ -627,6 +664,9 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         internal_review_recorded=internal_review_recorded,
         runtime_gate_decision_recorded=runtime_gate_decision_recorded,
         descriptor_only_disposition_recorded=descriptor_only_disposition_recorded,
+        erg005_runtime_source_findings_disposition_recorded=(
+            erg005_runtime_source_findings_disposition_recorded
+        ),
     )
     if next_action == "send_erg_003_and_erg_002":
         action_commands = SEND_COMMANDS
@@ -653,6 +693,13 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         handoff_artifacts = ERG005_TRUSTED_HOST_ARTIFACTS
         recommended_send_set = ["ERG-005"]
         recommended_next_enterprise_review = "ERG-005"
+    elif next_action == (
+        "prepare_erg006_erg007_production_identity_storage_architecture_review"
+    ):
+        action_commands = PIS_ARCHITECTURE_REVIEW_COMMANDS
+        handoff_artifacts = PIS_ARCHITECTURE_REVIEW_ARTIFACTS
+        recommended_send_set = ["ERG-006", "ERG-007"]
+        recommended_next_enterprise_review = "ERG-006/ERG-007"
     else:
         action_commands = RESPONSE_COMMANDS
         handoff_artifacts = RESPONSE_ARTIFACTS
@@ -753,10 +800,16 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "runtime_ticket_internal_review_recorded": internal_review_recorded,
         "runtime_gate_readiness_decision_recorded": runtime_gate_decision_recorded,
         "descriptor_only_disposition_recorded": descriptor_only_disposition_recorded,
+        "erg005_runtime_source_findings_disposition_recorded": (
+            erg005_runtime_source_findings_disposition_recorded
+        ),
         "next_action": next_action,
         "action_commands": action_commands,
         "next_after_send_commands": (
-            ERG005_NEXT_AFTER_SEND_COMMANDS
+            PIS_NEXT_AFTER_SEND_COMMANDS
+            if next_action
+            == "prepare_erg006_erg007_production_identity_storage_architecture_review"
+            else ERG005_NEXT_AFTER_SEND_COMMANDS
             if next_action == "prepare_erg005_trusted_host_promotion_review"
             else NEXT_AFTER_SEND_COMMANDS
         ),
@@ -818,11 +871,14 @@ def _next_action(
     internal_review_recorded: bool,
     runtime_gate_decision_recorded: bool,
     descriptor_only_disposition_recorded: bool,
+    erg005_runtime_source_findings_disposition_recorded: bool,
 ) -> str:
     if closure_ready_count > 0:
         return "run_lane_specific_closure_playbook"
     if response_present_count > 0:
         return "run_response_intake_preflight"
+    if erg005_runtime_source_findings_disposition_recorded:
+        return "prepare_erg006_erg007_production_identity_storage_architecture_review"
     if descriptor_only_disposition_recorded:
         return "prepare_erg005_trusted_host_promotion_review"
     if runtime_gate_decision_recorded:
@@ -888,6 +944,44 @@ def _descriptor_only_disposition_recorded(repo_root: Path) -> bool:
         and "finding_count: `0`" in text
         and "not external review" in text
         and "not live VM/container runtime approval" in text
+    )
+
+
+def _erg005_runtime_source_findings_disposition_recorded(repo_root: Path) -> bool:
+    source_review = _read(
+        repo_root / "docs/codex/trusted-host-promotion-runtime-source-review.md"
+    )
+    finding_002 = _read(
+        repo_root
+        / "docs/codex/findings/ext-trusted-host-runtime-002-governance-bindings.md"
+    )
+    finding_006 = _read(
+        repo_root
+        / "docs/codex/findings/ext-trusted-host-runtime-006-adversarial-coverage.md"
+    )
+    exact_commit = "919858e8d5886129d7c1fefc730795380cd45f73"
+    exact_packet = (
+        "sha256:02b060bb65d41b317b3a426cd1ad9786d101683303622cb9eedb34436bb9ed16"
+    )
+    shared_finding_markers = (
+        f"exact clean commit {exact_commit}",
+        f"focused packet manifest {exact_packet}",
+        "- Disposition: fixed",
+        "does not close ERG-005",
+        "authorize promotion, placement, release, UAT, production use, or new powers",
+    )
+    return (
+        exact_commit in source_review
+        and exact_packet in source_review
+        and "`EXT-TRUSTED-HOST-RUNTIME-002` and `EXT-TRUSTED-HOST-RUNTIME-006` as `fixed`"
+        in source_review
+        and "`runtime_findings_closed`" in source_review
+        and "`runtime_source_review_ready_for_triage`" in source_review
+        and "This accepted response closes the two tracked source findings; it does not "
+        "close `ERG-005`"
+        in source_review
+        and all(marker in finding_002 for marker in shared_finding_markers)
+        and all(marker in finding_006 for marker in shared_finding_markers)
     )
 
 

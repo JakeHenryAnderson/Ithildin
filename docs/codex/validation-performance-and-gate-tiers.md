@@ -154,7 +154,7 @@ uv run python scripts/validation_timing.py --command "make enterprise-response-p
 Handoff-oriented timing profiles are measurement aids, not proof gates:
 
 - `enterprise-status`: times the no-refresh `make enterprise-status-quick` operator-status lane.
-- `enterprise-send-refresh`: times regeneration of the current ERG-005 send/status artifacts.
+- `enterprise-send-refresh`: times regeneration of the current ERG-006/ERG-007 send/status artifacts.
   Historical ERG-003/ERG-002 send artifacts remain lineage only.
 - `handoff-dry-run`: times the cheap current-artifact readiness path without rebuilding the full
   review candidate.

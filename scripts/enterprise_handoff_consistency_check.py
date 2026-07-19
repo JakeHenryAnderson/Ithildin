@@ -16,7 +16,7 @@ from scripts import review_docs
 ROOT = Path(__file__).resolve().parents[1]
 DOC_REL = "docs/codex/enterprise-handoff-consistency.md"
 DOC_TITLE = "Enterprise Handoff Consistency"
-ACTIVE_SEND_SET = ["ERG-005"]
+ACTIVE_SEND_SET = ["ERG-006", "ERG-007"]
 HISTORICAL_DUAL_SEND_SET = ["ERG-003", "ERG-002"]
 DUAL_INBOX_ROOT = "var/review-runs/enterprise-dual-response-inbox"
 RAW_RESPONSE_PATHS = [
@@ -43,10 +43,10 @@ CURRENT_FLOW_COMMANDS = [
     "make enterprise-response-paste-preflight",
 ]
 ACTIVE_RESPONSE_COMMANDS = [
-    "make trusted-host-promotion-response-kit-check",
-    "make trusted-host-promotion-response-dry-run",
-    "make trusted-host-promotion-external-response-intake-check",
-    "make trusted-host-promotion-disposition-closure-check",
+    "make production-identity-storage-response-kit-check",
+    "make production-identity-storage-response-dry-run",
+    "make production-identity-storage-external-response-intake-check",
+    "make production-identity-storage-disposition-closure-check",
     "make enterprise-response-waiting-room",
     "make enterprise-response-now",
 ]
@@ -159,9 +159,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     release_guardrails = _read(repo_root / "scripts/release_guardrails.py")
     consistency_doc = _read(repo_root / DOC_REL)
     release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
-    review_candidate_body = makefile.partition("review-candidate:")[2].partition(
-        "\n\n"
-    )[0]
+    review_candidate_body = makefile.partition("review-candidate:")[2].partition("\n\n")[0]
 
     wiring_checks = {
         "Make target": ("enterprise-handoff-consistency-check:", makefile),
@@ -225,8 +223,7 @@ def render_report(report: dict[str, Any]) -> str:
         f"valid: {str(report['valid']).lower()}",
         f"tool_count: {report['tool_count']}",
         f"selected_capability: {report['selected_capability']}",
-        "historical_dual_send_set: "
-        + ", ".join(report["historical_dual_send_set"]),
+        "historical_dual_send_set: " + ", ".join(report["historical_dual_send_set"]),
         "active_send_set: " + ", ".join(report["active_send_set"]),
         "current_send_set_legacy_alias: " + ", ".join(report["current_send_set"]),
         f"dual_response_inbox_root: {report['dual_response_inbox_root']}",

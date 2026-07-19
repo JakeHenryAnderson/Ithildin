@@ -30,11 +30,14 @@ POST_DISPOSITION_ACTION = "prepare_erg004_runtime_implementation_gate"
 DESCRIPTOR_ONLY_PLANNING_ACTION = "prepare_erg004_descriptor_only_runtime_planning"
 ERG005_SEND_SET = ["ERG-005"]
 ERG005_ACTION = "prepare_erg005_trusted_host_promotion_review"
+PIS_SEND_SET = ["ERG-006", "ERG-007"]
+PIS_ACTION = "prepare_erg006_erg007_production_identity_storage_architecture_review"
 ALLOWED_ACTIONS = {
     EXPECTED_ACTION,
     POST_DISPOSITION_ACTION,
     DESCRIPTOR_ONLY_PLANNING_ACTION,
     ERG005_ACTION,
+    PIS_ACTION,
 }
 BOUNDARY_FLAGS = {
     "records_external_review": False,
@@ -108,6 +111,22 @@ ERG005_DOC_PHRASES = [
     "does not record external review",
     "does not normalize responses",
     "does not close `ERG-005`",
+]
+
+PIS_DOC_PHRASES = [
+    "Status: checked final operator preflight for the current enterprise review send.",
+    "make enterprise-review-send-preflight",
+    "current send set: `ERG-006`/`ERG-007`",
+    "production-identity-storage-external-review",
+    "production-identity-storage-response-kit",
+    "EXT-PROD-IAM-STORAGE-###",
+    "make production-identity-storage-external-review-bundle-check",
+    "make production-identity-storage-response-kit-check",
+    "make production-identity-storage-response-dry-run",
+    "The accepted ERG-005 source-finding disposition remains recorded",
+    "does not record external review",
+    "does not normalize responses",
+    "does not close `ERG-006` or `ERG-007`",
 ]
 
 class ArtifactSpec(TypedDict):
@@ -247,6 +266,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         POST_DISPOSITION_ACTION,
         DESCRIPTOR_ONLY_PLANNING_ACTION,
         ERG005_ACTION,
+        PIS_ACTION,
     }
 
     state_reports = {
@@ -261,7 +281,9 @@ def build_report(repo_root: Path) -> dict[str, Any]:
             failures.append(f"{name} is not valid")
             failures.extend(f"{name}: {failure}" for failure in report.get("failures", []))
 
-    if next_action == ERG005_ACTION:
+    if next_action == PIS_ACTION:
+        active_send_set = PIS_SEND_SET
+    elif next_action == ERG005_ACTION:
         active_send_set = ERG005_SEND_SET
     elif post_disposition_mode:
         active_send_set = POST_DISPOSITION_SEND_SET
@@ -317,7 +339,9 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "\n\n"
     )[0]
 
-    if next_action == ERG005_ACTION:
+    if next_action == PIS_ACTION:
+        required_doc_phrases = PIS_DOC_PHRASES
+    elif next_action == ERG005_ACTION:
         required_doc_phrases = ERG005_DOC_PHRASES
     elif post_disposition_mode:
         required_doc_phrases = DESCRIPTOR_ONLY_DOC_PHRASES

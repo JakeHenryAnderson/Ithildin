@@ -949,19 +949,19 @@ def test_enterprise_send_now_reports_send_ready_batches() -> None:
             }
         )
     assert report["tool_count"] == 24
-    assert report["recommended_gaps"] == ["ERG-005"]
-    assert report["current_send_set"] == ["ERG-005"]
+    assert report["recommended_gaps"] == ["ERG-006", "ERG-007"]
+    assert report["current_send_set"] == ["ERG-006", "ERG-007"]
     assert report["lane_count"] == 1
     assert report["batch_count"] == 1
     for command in [
         "make enterprise-response-waiting-room",
         "make enterprise-response-now",
         "record reviewer response using "
-        "docs/codex/trusted-host-promotion-external-response-intake.md",
-        "make trusted-host-promotion-response-kit-check",
-        "make trusted-host-promotion-response-dry-run",
-        "make trusted-host-promotion-external-response-intake-check",
-        "make trusted-host-promotion-disposition-closure-check",
+        "docs/codex/production-identity-storage-external-response-intake.md",
+        "make production-identity-storage-response-kit-check",
+        "make production-identity-storage-response-dry-run",
+        "make production-identity-storage-external-response-intake-check",
+        "make production-identity-storage-disposition-closure-check",
     ]:
         assert command in report["next_after_send"]
     assert report["records_external_review"] is False
@@ -980,9 +980,9 @@ def test_enterprise_send_now_reports_send_ready_batches() -> None:
     assert "enterprise-send-now-artifact-check:" in makefile
     assert "make enterprise-send-now" in readme
     assert "make enterprise-send-now-artifact" in readme
-    assert any(lane["gap"] == "ERG-005" for lane in report["lanes"])
+    assert any(lane["gap"] == "ERG-006/ERG-007" for lane in report["lanes"])
     assert any(
-        lane["finding_namespace"] == "EXT-TRUSTED-HOST-###"
+        lane["finding_namespace"] == "EXT-PROD-IAM-STORAGE-###"
         for lane in report["lanes"]
     )
     assert artifact_report["artifact_written"] is True
@@ -1347,6 +1347,7 @@ def test_artifact_freshness_and_status_now_report_current_posture() -> None:
     assert freshness["enterprise_next_action"] in {
         "prepare_erg004_descriptor_only_runtime_planning",
         "prepare_erg005_trusted_host_promotion_review",
+        "prepare_erg006_erg007_production_identity_storage_architecture_review",
     }
     assert set(freshness["checks"]) >= {
         "enterprise_send_artifact_commits_match_current",
@@ -1375,18 +1376,18 @@ def test_artifact_freshness_and_status_now_report_current_posture() -> None:
     assert status["mission_control_execution_allowed"] is False
     assert status["public_security_product_positioning_allowed"] is False
     assert status["enterprise_next_action"] == (
-        "prepare_erg005_trusted_host_promotion_review"
+        "prepare_erg006_erg007_production_identity_storage_architecture_review"
     )
     if freshness["valid"]:
         assert freshness["enterprise_next_action"] == status["enterprise_next_action"]
     assert status["recommended_next_commands"]
     assert status["handoff_paths"] == {
         "active_send_now": "var/review-packets/v3/enterprise-send-now",
-        "trusted_host_external_review": (
-            "var/review-packets/v3/trusted-host-promotion-external-review"
+        "production_identity_storage_external_review": (
+            "var/review-packets/v3/production-identity-storage-external-review"
         ),
-        "trusted_host_response_kit": (
-            "var/review-packets/v3/trusted-host-promotion-response-kit"
+        "production_identity_storage_response_kit": (
+            "var/review-packets/v3/production-identity-storage-response-kit"
         ),
     }
     assert status_now._recommended_next_commands(
@@ -1653,11 +1654,11 @@ def test_v1_rc_roadmap_is_wired(tmp_path: Path) -> None:
     assert "compose_demo_ready" in rendered_trial_record
     assert "docker_daemon_status" in rendered_trial_record
     assert operator_trial_record_report["enterprise_review_state"]["next_action"] == (
-        "prepare_erg005_trusted_host_promotion_review"
+        "prepare_erg006_erg007_production_identity_storage_architecture_review"
     )
     assert operator_trial_record_report["enterprise_review_state"][
         "recommended_send_set"
-    ] == ["ERG-005"]
+    ] == ["ERG-006", "ERG-007"]
     assert (
         operator_trial_record_report["enterprise_review_state"]["candidate_response_count"]
         == 0
@@ -2079,15 +2080,15 @@ def test_v1_rc_packet_includes_current_artifact_map(tmp_path: Path) -> None:
     assert "validation decision summary" in trial_record
     assert "Enterprise Review State" in trial_record
     assert (
-        "- next_action: `prepare_erg005_trusted_host_promotion_review`"
+        "- next_action: `prepare_erg006_erg007_production_identity_storage_architecture_review`"
         in trial_record
     )
-    assert "- recommended_send_set: `ERG-005`" in trial_record
+    assert "- recommended_send_set: `ERG-006`, `ERG-007`" in trial_record
     assert "- candidate_response_count: `0`" in trial_record
     assert "- placeholder_count: `1`" in trial_record
     assert "- waiting_room_next_action: `wait_for_external_response`" in trial_record
-    assert "`trusted_host_decision_intake`" in trial_record
-    assert "`trusted_host_response_kit`" in trial_record
+    assert "`production_identity_storage_architecture`" in trial_record
+    assert "`production_identity_storage_response_kit`" in trial_record
     assert "Ithildin v1.0 Observed Operator Trial Evidence" in observed_trial
     assert "patch_apply_status" in observed_trial
     assert "audit_verification_valid" in observed_trial
@@ -2292,9 +2293,11 @@ def test_enterprise_readiness_gap_matrix_is_wired() -> None:
     assert report["tool_count"] == 24
     assert report["selected_capability"] == "not selected"
     assert report["active_route_source"] == "enterprise-operator-next-action"
-    assert report["active_send_set"] == ["ERG-005"]
-    assert report["recommended_next_enterprise_review"] == "ERG-005"
-    assert report["next_action"] == "prepare_erg005_trusted_host_promotion_review"
+    assert report["active_send_set"] == ["ERG-006", "ERG-007"]
+    assert report["recommended_next_enterprise_review"] == "ERG-006/ERG-007"
+    assert report["next_action"] == (
+        "prepare_erg006_erg007_production_identity_storage_architecture_review"
+    )
     assert report["historical_fallback_route"] == ["ERG-003", "ERG-002"]
     assert report["runtime_changes_allowed"] is False
     assert report["mission_control_runtime_allowed"] is False
@@ -2332,9 +2335,10 @@ def test_enterprise_readiness_gap_matrix_is_wired() -> None:
         "Allowed current claims",
         "Blocked current claims",
         "Mission Control outside execution, policy, approval, audit authority",
-        "Current active route: `ERG-005` trusted-host promotion review.",
+        "Current active route: `ERG-006`/`ERG-007` production identity/storage "
+        "architecture review.",
         "Historical/fallback route: `ERG-003` static sandbox/VM preflight",
-        "prepare_erg005_trusted_host_promotion_review",
+        "prepare_erg006_erg007_production_identity_storage_architecture_review",
     ]:
         assert phrase in doc
     for phrase in [
@@ -2390,11 +2394,11 @@ def test_enterprise_external_review_queue_is_wired() -> None:
     assert report["tool_count"] == 24
     assert report["selected_capability"] == "not selected"
     assert report["queue_row_count"] == 8
-    assert report["active_route"] == "ERG-005"
-    assert report["recommended_next_review"] == "ERG-005"
+    assert report["active_route"] == "ERG-006/ERG-007"
+    assert report["recommended_next_review"] == "ERG-006/ERG-007"
     assert report["historical_recommended_review"] == "ERG-003"
     assert report["expected_action"] == (
-        "prepare_erg005_trusted_host_promotion_review"
+        "prepare_erg006_erg007_production_identity_storage_architecture_review"
     )
     assert report["runtime_changes_allowed"] is False
     assert report["mission_control_runtime_allowed"] is False
@@ -2409,9 +2413,10 @@ def test_enterprise_external_review_queue_is_wired() -> None:
         "Current governed tool count: `24`.",
         "Current selected capability: `not selected`.",
         "Active Route Versus Historical Queue",
-        "Current active route: `ERG-005` trusted-host promotion review.",
+        "Current active route: `ERG-006`/`ERG-007` production identity/storage "
+        "architecture review.",
         "Historical recommended review: `ERG-003` static sandbox/VM preflight disposition.",
-        "`prepare_erg005_trusted_host_promotion_review`",
+        "`prepare_erg006_erg007_production_identity_storage_architecture_review`",
         "sandbox-vm-static-preflight-disposition-packet.md",
         "mission-control-integration-readiness-packet.md",
         "trusted-host-promotion-disposition-packet.md",
@@ -2673,76 +2678,41 @@ def test_enterprise_current_checkpoint_is_wired() -> None:
     assert report["valid"] is True
     assert report["tool_count"] == 24
     assert report["selected_capability"] == "not selected"
-    assert report["recommended_send_set"] == ["ERG-005"]
-    assert report["recommended_next_enterprise_review"] == "ERG-005"
-    assert report["next_action"] == "prepare_erg005_trusted_host_promotion_review"
+    assert report["recommended_send_set"] == ["ERG-006", "ERG-007"]
+    assert report["recommended_next_enterprise_review"] == "ERG-006/ERG-007"
+    assert report["next_action"] == (
+        "prepare_erg006_erg007_production_identity_storage_architecture_review"
+    )
     assert report["action_commands"] == [
-        "make trusted-host-descriptor-contract-check",
-        "make trusted-host-promotion-decision-intake-check",
-        "make trusted-host-promotion-state-machine-check",
-        "make trusted-host-promotion-negative-fixtures-check",
-        "make trusted-host-promotion-zone-contract-check",
-        "make trusted-host-promotion-implementation-plan-check",
-        "make trusted-host-promotion-source-review-packet-check",
-        "make trusted-host-promotion-disposition-packet-check",
-        "make trusted-host-promotion-external-review-bundle-check",
-        "make trusted-host-promotion-response-kit-check",
-        "make trusted-host-promotion-response-dry-run",
-        "make trusted-host-promotion-internal-review-check",
-        "make trusted-host-promotion-implementation-gate-decision-check",
-        "make trusted-host-promotion-limited-runtime-plan-check",
-        "make trusted-host-promotion-limited-runtime-ticket-check",
-        "make trusted-host-promotion-runtime-implementation-decision-check",
-        "make trusted-host-promotion-negative-transcripts",
-        "make trusted-host-promotion-runtime-source-review-bundle-check",
+        "make production-identity-storage-architecture-check",
+        "make production-identity-storage-disposition-packet-check",
+        "make production-identity-storage-external-review-bundle-check",
+        "make production-identity-storage-response-kit-check",
+        "make production-identity-storage-response-dry-run",
+        "make production-identity-storage-external-response-intake-check",
+        "make production-identity-storage-disposition-closure-check",
         "make no-new-powers-guardrail",
         "make tool-surface-invariant-gate",
     ]
     assert report["next_after_send_commands"] == [
-        "make trusted-host-promotion-response-kit-check",
-        "make trusted-host-promotion-response-dry-run",
-        "make trusted-host-promotion-external-response-intake-check",
-        "make trusted-host-promotion-disposition-closure-check",
+        "make production-identity-storage-response-kit-check",
+        "make production-identity-storage-response-dry-run",
+        "make production-identity-storage-external-response-intake-check",
+        "make production-identity-storage-disposition-closure-check",
         "make enterprise-response-waiting-room",
         "make enterprise-response-now",
     ]
     assert [artifact["label"] for artifact in report["handoff_artifacts"]] == [
-        "trusted_host_descriptor_contract",
-        "trusted_host_decision_intake",
-        "trusted_host_state_machine",
-        "trusted_host_negative_fixtures",
-        "trusted_host_zone_contract",
-        "trusted_host_implementation_plan",
-        "trusted_host_source_review_packet",
-        "trusted_host_disposition_packet",
-        "trusted_host_external_review_bundle",
-        "trusted_host_response_kit",
-        "trusted_host_goal_c_decision",
-            "trusted_host_limited_runtime_plan",
-            "trusted_host_limited_runtime_ticket",
-            "trusted_host_runtime_implementation_decision",
-            "trusted_host_runtime_implementation",
-            "trusted_host_runtime_internal_review",
-            "trusted_host_runtime_source_review_bundle",
+        "production_identity_storage_architecture",
+        "production_identity_storage_disposition_packet",
+        "production_identity_storage_external_review_bundle",
+        "production_identity_storage_response_kit",
         ]
     assert {artifact["path"] for artifact in report["handoff_artifacts"]} == {
-        "docs/codex/trusted-host-descriptor-contract.md",
-        "docs/codex/trusted-host-promotion-decision-intake.md",
-        "docs/codex/trusted-host-promotion-state-machine.md",
-        "docs/codex/trusted-host-promotion-negative-fixtures.md",
-        "docs/codex/trusted-host-promotion-zone-contract.md",
-        "docs/codex/trusted-host-promotion-implementation-plan.md",
-        "var/review-packets/v3/trusted-host-promotion-source-review",
-        "var/review-packets/v3/trusted-host-promotion-disposition",
-        "var/review-packets/v3/trusted-host-promotion-external-review",
-        "var/review-packets/v3/trusted-host-promotion-response-kit",
-        "docs/codex/trusted-host-promotion-implementation-gate-decision.md",
-        "docs/codex/trusted-host-promotion-limited-runtime-plan.md",
-        "docs/codex/trusted-host-promotion-limited-runtime-ticket.md",
-        "docs/codex/trusted-host-promotion-runtime-implementation-decision.md",
-        "docs/codex/trusted-host-promotion-runtime-implementation.md",
-        "docs/codex/v3-trusted-host-promotion-runtime-internal-review.md",
-        "var/review-packets/v3/trusted-host-promotion-runtime-source-review",
+        "docs/codex/production-identity-storage-architecture.md",
+        "var/review-packets/v3/production-identity-storage-disposition",
+        "var/review-packets/v3/production-identity-storage-external-review",
+        "var/review-packets/v3/production-identity-storage-response-kit",
     }
     assert report["operator_next_action_doc"] == (
         "docs/codex/enterprise-operator-next-action.md"
@@ -2766,11 +2736,12 @@ def test_enterprise_current_checkpoint_is_wired() -> None:
         "v1.0 local-preview RC packet generation is ready through `make review-candidate`",
         "`ERG-004`: descriptor-only sandbox/VM live POC runtime source review "
         "is locally dispositioned",
-        "`ERG-005`: staging-only trusted-host promotion runtime source review is ready",
-        "make trusted-host-promotion-decision-intake-check",
-        "make trusted-host-promotion-runtime-source-review-bundle-check",
-        "make trusted-host-promotion-response-kit-check",
-        "make trusted-host-promotion-disposition-closure-check",
+        "`ERG-005`: staging-only trusted-host promotion runtime source findings are dispositioned",
+        "`ERG-006`/`ERG-007`: production identity/storage architecture review is next",
+        "make production-identity-storage-architecture-check",
+        "make production-identity-storage-external-review-bundle-check",
+        "make production-identity-storage-response-kit-check",
+        "make production-identity-storage-disposition-closure-check",
         "The historical ERG-003/ERG-002 dual-send commands remain available only for "
         "lineage and fallback.",
         "What This Checkpoint Does Not Approve",
@@ -2806,26 +2777,13 @@ def test_enterprise_progress_model_is_wired() -> None:
     assert report["valid"] is True
     assert report["tool_count"] == 24
     assert report["selected_capability"] == "not selected"
-    assert report["recommended_send_set"] == ["ERG-005"]
-    assert report["recommended_next_enterprise_review"] == "ERG-005"
+    assert report["recommended_send_set"] == ["ERG-006", "ERG-007"]
+    assert report["recommended_next_enterprise_review"] == "ERG-006/ERG-007"
     assert [artifact["label"] for artifact in report["handoff_artifacts"]] == [
-        "trusted_host_descriptor_contract",
-        "trusted_host_decision_intake",
-        "trusted_host_state_machine",
-        "trusted_host_negative_fixtures",
-        "trusted_host_zone_contract",
-        "trusted_host_implementation_plan",
-        "trusted_host_source_review_packet",
-        "trusted_host_disposition_packet",
-        "trusted_host_external_review_bundle",
-        "trusted_host_response_kit",
-        "trusted_host_goal_c_decision",
-        "trusted_host_limited_runtime_plan",
-        "trusted_host_limited_runtime_ticket",
-        "trusted_host_runtime_implementation_decision",
-        "trusted_host_runtime_implementation",
-        "trusted_host_runtime_internal_review",
-        "trusted_host_runtime_source_review_bundle",
+        "production_identity_storage_architecture",
+        "production_identity_storage_disposition_packet",
+        "production_identity_storage_external_review_bundle",
+        "production_identity_storage_response_kit",
     ]
     assert report["response_present_count"] == 0
     assert report["closure_ready_count"] == 0
@@ -2849,8 +2807,8 @@ def test_enterprise_progress_model_is_wired() -> None:
         "Status: checked progress model",
         "Governed tool count: `24`",
         "Current selected capability: `not selected`",
-        "Recommended next enterprise review: `ERG-005`",
-        "Recommended send set: `ERG-005`",
+        "Recommended next enterprise review: `ERG-006/ERG-007`",
+        "Recommended send set: `ERG-006`, `ERG-007`",
         "Local governed tool gateway | `92-96%`",
         "v1.0 local-preview RC | `84-90%`",
         "Operator workbench and demo path | `78-86%`",
@@ -2858,9 +2816,9 @@ def test_enterprise_progress_model_is_wired() -> None:
         "Enterprise send package ready: `true`",
         "Enterprise control-plane architecture | `35-50%`",
         "Checkpoint C: Sandbox/VM Static Preflight Disposition",
-        "descriptor-only local-development disposition is recorded",
-        "make trusted-host-promotion-decision-intake-check",
-        "make trusted-host-promotion-response-kit-check",
+        "ERG-005 staging-only runtime source findings are dispositioned",
+        "make production-identity-storage-architecture-check",
+        "make production-identity-storage-response-kit-check",
         "Do not manually promote a lane",
         "public/security-product positioning",
         "new governed tool powers",
@@ -3065,8 +3023,8 @@ def test_enterprise_status_export_is_wired(tmp_path: Path) -> None:
     assert report["status"] == "display_only"
     assert report["tool_count"] == 24
     assert report["selected_capability"] == "not selected"
-    assert report["recommended_send_set"] == ["ERG-005"]
-    assert report["recommended_next_enterprise_review"] == "ERG-005"
+    assert report["recommended_send_set"] == ["ERG-006", "ERG-007"]
+    assert report["recommended_next_enterprise_review"] == "ERG-006/ERG-007"
     assert report["response_present_count"] == 0
     assert report["closure_ready_count"] == 0
     assert report["enterprise_gap_count"] == 10
@@ -3093,7 +3051,7 @@ def test_enterprise_status_export_is_wired(tmp_path: Path) -> None:
     }
     assert [
         row["gap"] for row in report["review_lanes"] if row["recommended_to_send_now"]
-    ] == ["ERG-005"]
+    ] == ["ERG-006/ERG-007"]
     for row in report["review_lanes"]:
         assert row["packet_handoff_ready"] is True
         assert row["implementation_allowed"] is False
@@ -3123,15 +3081,15 @@ def test_enterprise_status_export_is_wired(tmp_path: Path) -> None:
     for phrase in [
         "Enterprise Status Export",
         "display-only enterprise status export",
-        "recommended_send_set: `ERG-005`",
-        "next_action: `prepare_erg005_trusted_host_promotion_review`",
-        "`make trusted-host-promotion-decision-intake-check`",
-        "`make trusted-host-promotion-response-kit-check`",
+        "recommended_send_set: `ERG-006, ERG-007`",
+        "next_action: `prepare_erg006_erg007_production_identity_storage_architecture_review`",
+        "`make production-identity-storage-architecture-check`",
+        "`make production-identity-storage-response-kit-check`",
         "handoff_artifacts:",
-        "`trusted_host_decision_intake`: "
-        "`docs/codex/trusted-host-promotion-decision-intake.md`",
-        "`trusted_host_response_kit`: "
-        "`var/review-packets/v3/trusted-host-promotion-response-kit`",
+        "`production_identity_storage_architecture`: "
+        "`docs/codex/production-identity-storage-architecture.md`",
+        "`production_identity_storage_response_kit`: "
+        "`var/review-packets/v3/production-identity-storage-response-kit`",
         "## Packet Paths",
         "`enterprise_review_send_package`: `var/review-packets/v3/enterprise-review-send-package`",
         "`enterprise_review_send_session_record`: "
@@ -3145,18 +3103,18 @@ def test_enterprise_status_export_is_wired(tmp_path: Path) -> None:
         '"artifact_type": "ithildin.enterprise_status_export"',
         '"status": "display_only"',
         '"tool_count": 24',
-        '"next_action": "prepare_erg005_trusted_host_promotion_review"',
+        '"next_action": "prepare_erg006_erg007_production_identity_storage_architecture_review"',
         '"handoff_artifacts": [',
-        '"label": "trusted_host_decision_intake"',
-        '"label": "trusted_host_response_kit"',
+        '"label": "production_identity_storage_architecture"',
+        '"label": "production_identity_storage_response_kit"',
         '"enterprise_review_send_quickstart": '
         '"var/review-packets/v3/enterprise-review-send-quickstart"',
         '"enterprise_review_send_package": '
         '"var/review-packets/v3/enterprise-review-send-package"',
         '"enterprise_review_send_session_record": '
         '"var/review-runs/enterprise-review-send-session-record"',
-        '"make trusted-host-promotion-decision-intake-check"',
-        '"make trusted-host-promotion-response-kit-check"',
+        '"make production-identity-storage-architecture-check"',
+        '"make production-identity-storage-response-kit-check"',
         '"runtime_changes_allowed": false',
         '"new_power_classes_allowed": false',
     ]:
@@ -3211,8 +3169,8 @@ def test_mission_control_enterprise_status_import_contract_is_wired() -> None:
     assert report["source_artifact_type"] == "ithildin.enterprise_status_export"
     assert report["source_status"] == "display_only"
     assert report["tool_count"] == 24
-    assert report["recommended_send_set"] == ["ERG-005"]
-    assert report["recommended_next_enterprise_review"] == "ERG-005"
+    assert report["recommended_send_set"] == ["ERG-006", "ERG-007"]
+    assert report["recommended_next_enterprise_review"] == "ERG-006/ERG-007"
     assert "next_action" in report["allowed_import_fields"]
     assert "action_commands" in report["allowed_import_fields"]
     assert "next_after_send_commands" in report["allowed_import_fields"]
@@ -3635,7 +3593,7 @@ def test_enterprise_response_application_protocol_is_wired() -> None:
     assert report["tool_count"] == 24
     assert report["selected_capability"] == "not selected"
     assert report["route_scope"] == "historical_dual_response_path"
-    assert report["active_send_set"] == ["ERG-005"]
+    assert report["active_send_set"] == ["ERG-006", "ERG-007"]
     assert report["recommended_send_set"] == ["ERG-003", "ERG-002"]
     assert report["response_present_count"] == 0
     assert report["closure_ready_count"] == 0
@@ -3652,7 +3610,8 @@ def test_enterprise_response_application_protocol_is_wired() -> None:
     for phrase in [
         "Status: checked operator protocol for applying enterprise external-review responses.",
         "make enterprise-response-application-protocol",
-        "Active enterprise route: `ERG-005` trusted-host promotion review.",
+        "Active enterprise route: `ERG-006`/`ERG-007` production identity/storage "
+        "architecture review.",
         "Historical dual-response route: `ERG-003` then `ERG-002`.",
         "make enterprise-dual-response-inbox",
         "var/review-runs/enterprise-dual-response-inbox/ENTERPRISE_DUAL_RESPONSE_CHEATSHEET.md",
@@ -5003,7 +4962,8 @@ def test_enterprise_review_handoff_drill_is_wired() -> None:
     assert report["closes_enterprise_lanes"] is False
     for phrase in [
         "Status: generated operator drill for enterprise review send/receive readiness.",
-        "Active enterprise route: `ERG-005` trusted-host promotion review.",
+        "Active enterprise route: `ERG-006`/`ERG-007` production identity/storage "
+        "architecture review.",
         "make enterprise-review-handoff-drill",
         "make enterprise-review-handoff-drill-check",
         "make enterprise-review-submission-prompt",
@@ -5021,7 +4981,8 @@ def test_enterprise_review_handoff_drill_is_wired() -> None:
     for phrase in [
         "Enterprise Review Handoff Drill",
         "Historical Dual-Send Set",
-        "Active enterprise route: `ERG-005` trusted-host promotion review.",
+        "Active enterprise route: `ERG-006`/`ERG-007` production identity/storage "
+        "architecture review.",
         "ERG-003",
         "ERG-002",
         "Operator sequence",
@@ -6189,7 +6150,7 @@ def test_enterprise_handoff_consistency_check_is_wired() -> None:
     assert report["tool_count"] == 24
     assert report["selected_capability"] == "not selected"
     assert report["historical_dual_send_set"] == ["ERG-003", "ERG-002"]
-    assert report["active_send_set"] == ["ERG-005"]
+    assert report["active_send_set"] == ["ERG-006", "ERG-007"]
     # Backward-compatible alias retained for older generated consumers.
     assert report["current_send_set"] == ["ERG-003", "ERG-002"]
     assert report["dual_response_inbox_root"] == (
@@ -6209,10 +6170,10 @@ def test_enterprise_handoff_consistency_check_is_wired() -> None:
         "make enterprise-response-paste-preflight",
     ]
     assert report["required_active_response_commands"] == [
-        "make trusted-host-promotion-response-kit-check",
-        "make trusted-host-promotion-response-dry-run",
-        "make trusted-host-promotion-external-response-intake-check",
-        "make trusted-host-promotion-disposition-closure-check",
+        "make production-identity-storage-response-kit-check",
+        "make production-identity-storage-response-dry-run",
+        "make production-identity-storage-external-response-intake-check",
+        "make production-identity-storage-disposition-closure-check",
         "make enterprise-response-waiting-room",
         "make enterprise-response-now",
     ]
@@ -6258,7 +6219,7 @@ def test_enterprise_handoff_consistency_check_is_wired() -> None:
         "make enterprise-handoff-consistency-check",
         "This is a lineage/fallback gate, not the active next-send route.",
         "Historical dual-send set: `ERG-003`, `ERG-002`.",
-        "Active send set: `ERG-004`.",
+        "Active send set: `ERG-006`, `ERG-007`.",
         "Active route reminder: run `make enterprise-active-route-clarity`",
         "var/review-runs/enterprise-dual-response-inbox",
         "var/review-runs/enterprise-dual-response-inbox/RAW_RESPONSE_ERG-003.md",
@@ -6274,9 +6235,9 @@ def test_enterprise_handoff_consistency_check_is_wired() -> None:
         "make enterprise-dual-response-inbox",
         "make enterprise-response-waiting-room",
         "make enterprise-response-paste-preflight",
-        "The required active `ERG-004` response commands are:",
-        "make sandbox-vm-live-poc-runtime-descriptor-only-send-receipt-check",
-        "make sandbox-vm-live-poc-runtime-descriptor-only-response-inbox",
+        "The required active `ERG-006`/`ERG-007` response commands are:",
+        "make production-identity-storage-response-kit-check",
+        "make production-identity-storage-disposition-closure-check",
         "does not record external review",
         "does not normalize responses",
         "does not close `ERG-003` or `ERG-002`",
@@ -6318,8 +6279,10 @@ def test_enterprise_review_send_preflight_is_wired() -> None:
     assert report["valid"] is True
     assert report["tool_count"] == 24
     assert report["selected_capability"] == "not selected"
-    assert report["current_send_set"] == ["ERG-005"]
-    assert report["expected_action"] == "prepare_erg005_trusted_host_promotion_review"
+    assert report["current_send_set"] == ["ERG-006", "ERG-007"]
+    assert report["expected_action"] == (
+        "prepare_erg006_erg007_production_identity_storage_architecture_review"
+    )
     assert report["preflight_mode"] == "post_disposition_next_review"
     assert report["current_commit"]
     assert isinstance(report["current_dirty"], bool)
@@ -6367,21 +6330,21 @@ def test_enterprise_review_send_preflight_is_wired() -> None:
         "Status: checked final operator preflight for the current enterprise review send.",
         "make enterprise-review-send-preflight",
         "make enterprise-review-send-refresh",
-        "current send set: `ERG-005`",
-        "trusted-host-promotion-external-review",
-        "trusted-host-promotion-response-kit",
-        "EXT-TRUSTED-HOST-###",
-        "make trusted-host-promotion-external-review-bundle-check",
-        "make trusted-host-promotion-response-kit-check",
+        "current send set: `ERG-006`/`ERG-007`",
+        "production-identity-storage-external-review",
+        "production-identity-storage-response-kit",
+        "EXT-PROD-IAM-STORAGE-###",
+        "make production-identity-storage-external-review-bundle-check",
+        "make production-identity-storage-response-kit-check",
         "make enterprise-send-now",
-        "make trusted-host-promotion-response-dry-run",
-        "make trusted-host-promotion-disposition-closure-check",
+        "make production-identity-storage-response-dry-run",
+        "make production-identity-storage-disposition-closure-check",
         "For speed, the preflight does not recursively rebuild every component.",
         "When the worktree is clean, the preflight also enforces",
         "When the worktree is dirty during development, that freshness check",
         "does not record external review",
         "does not normalize responses",
-        "does not close `ERG-005`",
+        "does not close `ERG-006` or `ERG-007`",
     ]:
         assert phrase in doc
     assert "current send set: `ERG-003`, then `ERG-002`" not in doc
@@ -6464,8 +6427,8 @@ def test_enterprise_north_star_roadmap_is_wired() -> None:
     assert report["valid"] is True
     assert report["tool_count"] == 24
     assert report["selected_capability"] == "not selected"
-    assert report["recommended_send_set"] == ["ERG-005"]
-    assert report["recommended_next_enterprise_review"] == "ERG-005"
+    assert report["recommended_send_set"] == ["ERG-006", "ERG-007"]
+    assert report["recommended_next_enterprise_review"] == "ERG-006/ERG-007"
     assert report["historical_dual_send_set"] == ["ERG-003", "ERG-002"]
     assert report["historical_next_enterprise_review"] == "ERG-003"
     assert report["enterprise_gap_count"] == 10
@@ -6539,70 +6502,49 @@ def test_enterprise_operator_next_action_is_wired() -> None:
     assert report["valid"] is True
     assert report["tool_count"] == 24
     assert report["selected_capability"] == "not selected"
-    assert report["recommended_send_set"] == ["ERG-005"]
-    assert report["recommended_next_enterprise_review"] == "ERG-005"
+    assert report["recommended_send_set"] == ["ERG-006", "ERG-007"]
+    assert report["recommended_next_enterprise_review"] == "ERG-006/ERG-007"
     assert report["response_present_count"] == 0
     assert report["closure_ready_count"] == 0
-    assert report["next_action"] == "prepare_erg005_trusted_host_promotion_review"
+    assert report["next_action"] == (
+        "prepare_erg006_erg007_production_identity_storage_architecture_review"
+    )
     assert report["action_commands"] == [
-        "make trusted-host-descriptor-contract-check",
-        "make trusted-host-promotion-decision-intake-check",
-        "make trusted-host-promotion-state-machine-check",
-        "make trusted-host-promotion-negative-fixtures-check",
-        "make trusted-host-promotion-zone-contract-check",
-        "make trusted-host-promotion-implementation-plan-check",
-        "make trusted-host-promotion-source-review-packet-check",
-        "make trusted-host-promotion-disposition-packet-check",
-        "make trusted-host-promotion-external-review-bundle-check",
-        "make trusted-host-promotion-response-kit-check",
-        "make trusted-host-promotion-response-dry-run",
-        "make trusted-host-promotion-internal-review-check",
-        "make trusted-host-promotion-implementation-gate-decision-check",
-        "make trusted-host-promotion-limited-runtime-plan-check",
-        "make trusted-host-promotion-limited-runtime-ticket-check",
-        "make trusted-host-promotion-runtime-implementation-decision-check",
-        "make trusted-host-promotion-negative-transcripts",
-        "make trusted-host-promotion-runtime-source-review-bundle-check",
+        "make production-identity-storage-architecture-check",
+        "make production-identity-storage-disposition-packet-check",
+        "make production-identity-storage-external-review-bundle-check",
+        "make production-identity-storage-response-kit-check",
+        "make production-identity-storage-response-dry-run",
+        "make production-identity-storage-external-response-intake-check",
+        "make production-identity-storage-disposition-closure-check",
         "make no-new-powers-guardrail",
         "make tool-surface-invariant-gate",
     ]
     assert report["next_after_send_commands"] == [
-        "make trusted-host-promotion-response-kit-check",
-        "make trusted-host-promotion-response-dry-run",
-        "make trusted-host-promotion-external-response-intake-check",
-        "make trusted-host-promotion-disposition-closure-check",
+        "make production-identity-storage-response-kit-check",
+        "make production-identity-storage-response-dry-run",
+        "make production-identity-storage-external-response-intake-check",
+        "make production-identity-storage-disposition-closure-check",
         "make enterprise-response-waiting-room",
         "make enterprise-response-now",
     ]
     assert [artifact["label"] for artifact in report["handoff_artifacts"]] == [
-        "trusted_host_descriptor_contract",
-        "trusted_host_decision_intake",
-        "trusted_host_state_machine",
-        "trusted_host_negative_fixtures",
-        "trusted_host_zone_contract",
-        "trusted_host_implementation_plan",
-        "trusted_host_source_review_packet",
-        "trusted_host_disposition_packet",
-        "trusted_host_external_review_bundle",
-        "trusted_host_response_kit",
-        "trusted_host_goal_c_decision",
-        "trusted_host_limited_runtime_plan",
-        "trusted_host_limited_runtime_ticket",
-        "trusted_host_runtime_implementation_decision",
-        "trusted_host_runtime_implementation",
-        "trusted_host_runtime_internal_review",
-        "trusted_host_runtime_source_review_bundle",
+        "production_identity_storage_architecture",
+        "production_identity_storage_disposition_packet",
+        "production_identity_storage_external_review_bundle",
+        "production_identity_storage_response_kit",
     ]
     assert any(
-        artifact["path"]
-        == "docs/codex/trusted-host-promotion-decision-intake.md"
+        artifact["path"] == "docs/codex/production-identity-storage-architecture.md"
         for artifact in report["handoff_artifacts"]
     )
     assert any(
         artifact["path"]
-        == "var/review-packets/v3/trusted-host-promotion-response-kit"
+        == "var/review-packets/v3/production-identity-storage-response-kit"
         for artifact in report["handoff_artifacts"]
     )
+    assert report["erg005_runtime_source_findings_disposition_recorded"] is True
+    assert report["normalized_response_paths"] == []
     assert report["runtime_changes_allowed"] is False
     assert report["mission_control_runtime_allowed"] is False
     assert report["live_vm_inspection_allowed"] is False
@@ -6622,11 +6564,12 @@ def test_enterprise_operator_next_action_is_wired() -> None:
         "make handoff-dry-run",
         "handoff_artifacts",
         "var/review-packets/v3/enterprise-review-send-manifest",
-        "When a real reviewer response is available for the current active `ERG-005` route",
-        "make trusted-host-promotion-response-kit-check",
-        "make trusted-host-promotion-disposition-closure-check",
+        "When a real reviewer response is available for the current active "
+        "`ERG-006`/`ERG-007` route",
+        "make production-identity-storage-response-kit-check",
+        "make production-identity-storage-disposition-closure-check",
         "For the current active route, the primary lane is:",
-        "`ERG-005`: use the trusted-host promotion response kit",
+        "`ERG-006`/`ERG-007`: use the production identity/storage response kit",
         (
             "Historical fallback lanes remain available only when the operator next-action "
             "command reports"
@@ -6666,6 +6609,57 @@ def test_enterprise_operator_next_action_is_wired() -> None:
     )
     assert "$(MAKE) enterprise-operator-next-action" in (
         release_guardrails.REQUIRED_REVIEW_CANDIDATE_STEPS
+    )
+
+
+def test_enterprise_operator_next_action_erg005_disposition_marker_fails_closed(
+    tmp_path: Path,
+) -> None:
+    source_root = Path.cwd()
+    rels = [
+        "docs/codex/trusted-host-promotion-runtime-source-review.md",
+        "docs/codex/findings/ext-trusted-host-runtime-002-governance-bindings.md",
+        "docs/codex/findings/ext-trusted-host-runtime-006-adversarial-coverage.md",
+    ]
+    for rel in rels:
+        target = tmp_path / rel
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text((source_root / rel).read_text(encoding="utf-8"), encoding="utf-8")
+
+    assert (
+        enterprise_operator_next_action._erg005_runtime_source_findings_disposition_recorded(
+            tmp_path
+        )
+        is True
+    )
+
+    finding_006 = tmp_path / rels[2]
+    original_finding_006 = finding_006.read_text(encoding="utf-8")
+    finding_006.write_text(
+        original_finding_006.replace("- Disposition: fixed", "- Disposition: deferred"),
+        encoding="utf-8",
+    )
+    assert (
+        enterprise_operator_next_action._erg005_runtime_source_findings_disposition_recorded(
+            tmp_path
+        )
+        is False
+    )
+
+    finding_006.write_text(original_finding_006, encoding="utf-8")
+    source_review = tmp_path / rels[0]
+    source_review.write_text(
+        source_review.read_text(encoding="utf-8").replace(
+            "sha256:02b060bb65d41b317b3a426cd1ad9786d101683303622cb9eedb34436bb9ed16",
+            "sha256:wrong",
+        ),
+        encoding="utf-8",
+    )
+    assert (
+        enterprise_operator_next_action._erg005_runtime_source_findings_disposition_recorded(
+            tmp_path
+        )
+        is False
     )
 
 
@@ -30839,9 +30833,11 @@ def test_enterprise_active_route_clarity_is_wired() -> None:
 
     assert report["valid"] is True
     assert report["tool_count"] == 24
-    assert report["active_send_set"] == ["ERG-005"]
+    assert report["active_send_set"] == ["ERG-006", "ERG-007"]
     assert report["historical_dual_send_set"] == ["ERG-003", "ERG-002"]
-    assert report["expected_action"] == "prepare_erg005_trusted_host_promotion_review"
+    assert report["expected_action"] == (
+        "prepare_erg006_erg007_production_identity_storage_architecture_review"
+    )
     assert report["active_route_sources"][0] == (
         "enterprise-operator-next-action (canonical state reader)"
     )
@@ -30855,10 +30851,10 @@ def test_enterprise_active_route_clarity_is_wired() -> None:
     assert report["new_power_classes_allowed"] is False
 
     for phrase in [
-        "The completed local-development disposition route is `ERG-004`.",
-        "var/review-packets/v3/trusted-host-promotion-external-review/",
-        "var/review-packets/v3/trusted-host-promotion-response-kit/",
-        "EXT-TRUSTED-HOST-###",
+        "The completed source-finding disposition route is `ERG-005`.",
+        "var/review-packets/v3/production-identity-storage-external-review/",
+        "var/review-packets/v3/production-identity-storage-response-kit/",
+        "EXT-PROD-IAM-STORAGE-###",
         "EXT-LIVE-DESC-###",
         "Historical dual-send route: `ERG-003`, then `ERG-002`.",
         "Older ERG-003/ERG-002 generated packet surfaces remain",
@@ -30904,9 +30900,9 @@ def test_enterprise_gap_matrix_fails_closed_on_stale_active_route() -> None:
     }
     failures = enterprise_readiness_gap_matrix_check._active_route_failures(stale_route)
 
-    assert "active enterprise send set is not ERG-005" in failures
-    assert "active enterprise review is not ERG-005" in failures
-    assert "active enterprise action is not ERG-005 trusted-host review" in failures
+    assert "active enterprise send set is not ERG-006/ERG-007" in failures
+    assert "active enterprise review is not ERG-006/ERG-007" in failures
+    assert "active enterprise action is not ERG-006/ERG-007 architecture review" in failures
 
 
 def test_post_erg005_parallel_work_queue_is_wired() -> None:
@@ -35813,8 +35809,10 @@ def test_technical_mvp_ticket_map_is_wired() -> None:
     assert report["tool_count"] == 24
     assert report["selected_capability"] == "not selected"
     assert report["latest_implemented_tool"] == "sandbox.artifact.write_text"
-    assert report["recommended_next_enterprise_review"] == "ERG-005"
-    assert report["next_action"] == "prepare_erg005_trusted_host_promotion_review"
+    assert report["recommended_next_enterprise_review"] == "ERG-006/ERG-007"
+    assert report["next_action"] == (
+        "prepare_erg006_erg007_production_identity_storage_architecture_review"
+    )
     assert report["response_present_count"] == 0
     assert report["capability_expansion_allowed"] is False
     assert report["public_security_product_positioning_allowed"] is False
@@ -35869,13 +35867,15 @@ def test_technical_mvp_execution_board_is_wired() -> None:
     assert report["latest_implemented_tool"] == "sandbox.artifact.write_text"
     assert report["selected_capability"] == "not selected"
     assert report["technical_mvp_state"] == "operator_trial_observed"
-    assert report["enterprise_next_action"] == "prepare_erg005_trusted_host_promotion_review"
+    assert report["enterprise_next_action"] == (
+        "prepare_erg006_erg007_production_identity_storage_architecture_review"
+    )
     assert report["active_resume_checkpoint"] == "ENT-001"
     assert report["response_present_count"] == 0
     assert report["closure_ready_count"] == 0
     assert report["technical_milestone_count"] == 10
     assert report["enterprise_milestone_count"] == 12
-    assert report["current_send_set"] == ["ERG-005"]
+    assert report["current_send_set"] == ["ERG-006", "ERG-007"]
     assert report["runtime_changes_allowed"] is False
     assert report["capability_expansion_allowed"] is False
     assert report["mission_control_runtime_allowed"] is False
@@ -35916,11 +35916,12 @@ def test_technical_mvp_execution_board_is_wired() -> None:
         "Status: checked technical-MVP execution board and batch-control map.",
         "Current governed tool count: `24`",
         "Technical MVP state: `operator_trial_observed`",
-        "Current enterprise next action: `prepare_erg005_trusted_host_promotion_review`",
+        "Current enterprise next action: "
+        "`prepare_erg006_erg007_production_identity_storage_architecture_review`",
         "Active resume checkpoint: `ENT-001`",
         (
             "The paused umbrella goal resumes through the post-`ENT-001` "
-            "trusted-host promotion review slice"
+            "production identity/storage architecture"
         ),
         "Development Validation Ladder",
         "Stop Conditions",
@@ -35928,9 +35929,10 @@ def test_technical_mvp_execution_board_is_wired() -> None:
         assert phrase in technical_doc
     for phrase in [
         "Status: checked enterprise roadmap control board",
-        "Current send set: `ERG-005`",
+        "Current send set: `ERG-006`, `ERG-007`",
         "Active resume checkpoint: `ENT-001`",
-        "The current resumed goal is limited to post-`ENT-001` trusted-host promotion review",
+        "The current resumed goal is limited to post-`ENT-001` production identity/storage "
+        "architecture review",
         "Enterprise Target Definition",
         "Non-Negotiable Gates",
     ]:
@@ -35940,7 +35942,8 @@ def test_technical_mvp_execution_board_is_wired() -> None:
         "Tier 1: inner loop",
         "Tier 2: batch checkpoint",
         "Tier 3: handoff freeze",
-            "`ERG-005` trusted-host promotion review | active resume checkpoint",
+        "`ERG-006`/`ERG-007` production identity/storage architecture review | "
+        "active resume checkpoint",
         "Safe Batch Shapes",
         "Unsafe Batch Shapes",
     ]:
@@ -35998,7 +36001,9 @@ def test_technical_mvp_operator_trial_readiness_is_wired() -> None:
     if report["operator_trial_observed"]:
         assert report["observed_trial"]["patch_apply_status"] == "completed"
         assert report["observed_trial"]["audit_verification_valid"] == "true"
-    assert report["enterprise_next_action"] == "prepare_erg005_trusted_host_promotion_review"
+    assert report["enterprise_next_action"] == (
+        "prepare_erg006_erg007_production_identity_storage_architecture_review"
+    )
     assert report["response_present_count"] == 0
     assert report["runtime_changes_allowed"] is False
     assert report["capability_expansion_allowed"] is False
@@ -36064,7 +36069,9 @@ def test_development_efficiency_status_is_wired() -> None:
     }
     assert isinstance(report["operator_trial_ready"], bool)
     assert isinstance(report["operator_trial_observed"], bool)
-    assert report["enterprise_next_action"] == "prepare_erg005_trusted_host_promotion_review"
+    assert report["enterprise_next_action"] == (
+        "prepare_erg006_erg007_production_identity_storage_architecture_review"
+    )
     assert isinstance(report["enterprise_send_ready"], bool)
     assert isinstance(report["enterprise_send_artifact_commits_match_current"], bool)
     assert isinstance(report["enterprise_send_artifact_payloads_clean"], bool)

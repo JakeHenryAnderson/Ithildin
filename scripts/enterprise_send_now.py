@@ -19,8 +19,7 @@ from scripts import (  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[1]
 UPLOAD_STAGING_JSON = Path(
-    "var/review-packets/v3/enterprise-review-upload-staging/"
-    "enterprise-review-upload-staging.json"
+    "var/review-packets/v3/enterprise-review-upload-staging/enterprise-review-upload-staging.json"
 )
 DUAL_RESPONSE_INBOX_JSON = Path(
     "var/review-runs/enterprise-dual-response-inbox/enterprise-dual-response-inbox.json"
@@ -38,8 +37,12 @@ ERG004_RESPONSE_INBOX_JSON = Path(
 TRUSTED_HOST_EXTERNAL_REVIEW_DIR = Path(
     "var/review-packets/v3/trusted-host-promotion-external-review"
 )
-TRUSTED_HOST_RESPONSE_KIT_DIR = Path(
-    "var/review-packets/v3/trusted-host-promotion-response-kit"
+TRUSTED_HOST_RESPONSE_KIT_DIR = Path("var/review-packets/v3/trusted-host-promotion-response-kit")
+PRODUCTION_IDENTITY_STORAGE_EXTERNAL_REVIEW_DIR = Path(
+    "var/review-packets/v3/production-identity-storage-external-review"
+)
+PRODUCTION_IDENTITY_STORAGE_RESPONSE_KIT_DIR = Path(
+    "var/review-packets/v3/production-identity-storage-response-kit"
 )
 DEFAULT_OUTPUT_DIR = Path("var/review-packets/v3/enterprise-send-now")
 JSON_NAME = "enterprise-send-now.json"
@@ -74,6 +77,8 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         return _build_erg004_report(repo_root, freshness, next_action)
     if next_action.get("recommended_send_set") == ["ERG-005"]:
         return _build_erg005_report(repo_root, freshness, next_action)
+    if next_action.get("recommended_send_set") == ["ERG-006", "ERG-007"]:
+        return _build_production_identity_storage_report(repo_root, freshness, next_action)
 
     upload = _read_json(repo_root / UPLOAD_STAGING_JSON)
     inbox = _read_json(repo_root / DUAL_RESPONSE_INBOX_JSON)
@@ -149,13 +154,11 @@ def build_check_report(repo_root: Path, output_dir: Path) -> dict[str, Any]:
 
     if not json_path.exists():
         failures.append(
-            "send-now JSON artifact is missing: "
-            f"{_repo_rel_path(repo_root, json_path)}"
+            f"send-now JSON artifact is missing: {_repo_rel_path(repo_root, json_path)}"
         )
     if not md_path.exists():
         failures.append(
-            "send-now Markdown artifact is missing: "
-            f"{_repo_rel_path(repo_root, md_path)}"
+            f"send-now Markdown artifact is missing: {_repo_rel_path(repo_root, md_path)}"
         )
     if json_path.exists():
         try:
@@ -416,18 +419,105 @@ def _erg005_lane_report(source_dir: Path, response_dir: Path) -> dict[str, Any]:
     return {
         "gap": "ERG-005",
         "name": "Trusted-host artifact promotion review",
-        "prompt": (
-            source_dir / "01_TRUSTED_HOST_PROMOTION_SOURCE_REVIEW_PROMPT.md"
-        ).as_posix(),
+        "prompt": (source_dir / "01_TRUSTED_HOST_PROMOTION_SOURCE_REVIEW_PROMPT.md").as_posix(),
         "finding_namespace": "EXT-TRUSTED-HOST-###",
-        "raw_response_path": (
-            response_dir / "RAW_RESPONSE_TRUSTED_HOST_PROMOTION.md"
-        ).as_posix(),
+        "raw_response_path": (response_dir / "RAW_RESPONSE_TRUSTED_HOST_PROMOTION.md").as_posix(),
         "dry_run": "make trusted-host-promotion-response-dry-run",
         "closure_gate": "make trusted-host-promotion-disposition-closure-check",
         "batches": [
             {
                 "batch_id": "trusted-host-review-bundle",
+                "path": source_dir.as_posix(),
+                "attachment_count": attachment_count,
+            }
+        ],
+        "reviewed_packet_path": source_dir.as_posix(),
+        "reviewed_packet_hash": None,
+    }
+
+
+def _build_production_identity_storage_report(
+    repo_root: Path,
+    freshness: dict[str, Any],
+    next_action: dict[str, Any],
+) -> dict[str, Any]:
+    commit = _git(repo_root, ["rev-parse", "HEAD"])
+    source_dir = repo_root / PRODUCTION_IDENTITY_STORAGE_EXTERNAL_REVIEW_DIR
+    response_dir = repo_root / PRODUCTION_IDENTITY_STORAGE_RESPONSE_KIT_DIR
+    lanes = [_production_identity_storage_lane_report(source_dir, response_dir)]
+    failures: list[str] = []
+    if not source_dir.exists():
+        failures.append("ERG-006/ERG-007 external-review bundle is missing")
+    if not response_dir.exists():
+        failures.append("ERG-006/ERG-007 response kit is missing")
+    if not _fresh_enough_to_write_send_now(freshness):
+        failures.append("handoff artifacts are stale; run make review-candidate")
+    return {
+        "schema_version": "1",
+        "valid": not failures,
+        "failures": failures,
+        "commit": commit,
+        "dirty": bool(_git(repo_root, ["status", "--short"])),
+        "tool_count": 24,
+        "selected_capability": "not selected",
+        "current_send_set": ["ERG-006", "ERG-007"],
+        "recommended_gaps": ["ERG-006", "ERG-007"],
+        "upload_staging_path": PRODUCTION_IDENTITY_STORAGE_EXTERNAL_REVIEW_DIR.as_posix(),
+        "response_inbox_path": PRODUCTION_IDENTITY_STORAGE_RESPONSE_KIT_DIR.as_posix(),
+        "send_now_artifact_path": DEFAULT_OUTPUT_DIR.as_posix(),
+        "lane_count": len(lanes),
+        "batch_count": sum(len(lane["batches"]) for lane in lanes),
+        "lanes": lanes,
+        "next_after_send": [
+            "record reviewer response using "
+            "docs/codex/production-identity-storage-external-response-intake.md",
+            "make production-identity-storage-response-kit-check",
+            "make production-identity-storage-response-dry-run",
+            "make production-identity-storage-external-response-intake-check",
+            "make production-identity-storage-disposition-closure-check",
+            "make enterprise-response-waiting-room",
+            "make enterprise-response-now",
+        ],
+        "records_external_review": False,
+        "normalizes_responses": False,
+        "writes_response_files": False,
+        "closes_erg_003": False,
+        "closes_erg_002": False,
+        "closes_erg_004": False,
+        "runtime_changes_allowed": False,
+        "mission_control_runtime_allowed": False,
+        "live_vm_inspection_allowed": False,
+        "local_model_invocation_allowed": False,
+        "sandbox_orchestration_allowed": False,
+        "trusted_host_promotion_allowed": False,
+        "siem_adapter_allowed": False,
+        "compliance_automation_allowed": False,
+        "public_security_product_positioning_allowed": False,
+        "new_power_classes_allowed": False,
+        "enterprise_next_action": next_action.get("next_action"),
+    }
+
+
+def _production_identity_storage_lane_report(
+    source_dir: Path, response_dir: Path
+) -> dict[str, Any]:
+    attachment_count = len([path for path in source_dir.glob("*") if path.is_file()])
+    return {
+        "gap": "ERG-006/ERG-007",
+        "name": "Production identity and durable storage architecture review",
+        "prompt": (
+            source_dir / "01_PRODUCTION_IDENTITY_STORAGE_EXTERNAL_REVIEW_PROMPT.md"
+        ).as_posix(),
+        "finding_namespace": "EXT-PROD-IAM-STORAGE-###",
+        "raw_response_path": (
+            Path("var/review-runs/production-identity-storage") / "raw-response.md"
+        ).as_posix(),
+        "response_kit": response_dir.as_posix(),
+        "dry_run": "make production-identity-storage-response-dry-run",
+        "closure_gate": "make production-identity-storage-disposition-closure-check",
+        "batches": [
+            {
+                "batch_id": "production-identity-storage-architecture-review-bundle",
                 "path": source_dir.as_posix(),
                 "attachment_count": attachment_count,
             }
@@ -597,10 +687,7 @@ def _fresh_enough_to_write_send_now(freshness: dict[str, Any]) -> bool:
     stale = freshness.get("stale_or_missing", [])
     if not isinstance(stale, list):
         return freshness.get("valid") is True
-    return all(
-        isinstance(item, str) and item.startswith("enterprise_send_now_")
-        for item in stale
-    )
+    return all(isinstance(item, str) and item.startswith("enterprise_send_now_") for item in stale)
 
 
 def _read_json(path: Path) -> dict[str, Any]:

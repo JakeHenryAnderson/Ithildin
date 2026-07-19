@@ -13,6 +13,7 @@ if __package__ in {None, ""}:
 
 from scripts import (
     enterprise_dual_response_readiness,
+    enterprise_operator_next_action,
     enterprise_response_application_protocol,
     enterprise_response_command_matrix,
     review_docs,
@@ -60,6 +61,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     readiness = enterprise_dual_response_readiness.build_report(repo_root)
     command_matrix = enterprise_response_command_matrix.build_report(repo_root)
     application_protocol = enterprise_response_application_protocol.build_report(repo_root)
+    operator_next_action = enterprise_operator_next_action.build_report(repo_root)
 
     if readiness.get("valid") is not True:
         failures.append("enterprise dual-response readiness is not valid")
@@ -67,6 +69,8 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         failures.append("enterprise response command matrix is not valid")
     if application_protocol.get("valid") is not True:
         failures.append("enterprise response application protocol is not valid")
+    if operator_next_action.get("valid") is not True:
+        failures.append("enterprise operator next action is not valid")
 
     if readiness.get("recommended_gaps") != ["ERG-003", "ERG-002"]:
         failures.append("quickstart expected ERG-003/ERG-002 as historical dual response lanes")
@@ -97,7 +101,8 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     required_doc_phrases = [
         "Status: operator quickstart for applying `ERG-003` and `ERG-002` reviewer responses.",
         "Route scope: historical `ERG-003`/`ERG-002` dual-response intake.",
-        "Active enterprise route: `ERG-005` trusted-host promotion review.",
+        "Active enterprise route: `ERG-006`/`ERG-007` production identity/storage "
+        "architecture review.",
         "Current governed tool count: `24`.",
         "make enterprise-response-intake-quickstart",
         "make enterprise-dual-response-inbox",
@@ -169,8 +174,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "dual readiness": "enterprise-response-intake-quickstart" in dual_readiness,
         "status board": "enterprise-response-intake-quickstart" in status_board,
         "command matrix": "enterprise-response-intake-quickstart" in command_matrix_doc,
-        "application protocol": "enterprise-response-intake-quickstart"
-        in application_protocol_doc,
+        "application protocol": "enterprise-response-intake-quickstart" in application_protocol_doc,
         "current checkpoint": "enterprise-response-intake-quickstart" in current_checkpoint,
         "send checklist": "enterprise-response-intake-quickstart" in send_checklist_doc,
     }
@@ -186,7 +190,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "tool_count": 24,
         "route_scope": "historical_dual_response_path",
         "legacy_route_scope": "historical_dual_response_path",
-        "active_send_set": ["ERG-005"],
+        "active_send_set": operator_next_action.get("recommended_send_set", []),
         "recommended_gaps": ["ERG-003", "ERG-002"],
         "legacy_recommended_gaps": ["ERG-003", "ERG-002"],
         "response_present_count": readiness.get("response_present_count"),
@@ -211,8 +215,7 @@ def render_report(report: dict[str, Any]) -> str:
         f"response_present_count: {report['response_present_count']}",
         f"closure_ready_count: {report['closure_ready_count']}",
         f"send_checklist_valid: {str(report['send_checklist_valid']).lower()}",
-        "dual_response_readiness_valid: "
-        f"{str(report['dual_response_readiness_valid']).lower()}",
+        f"dual_response_readiness_valid: {str(report['dual_response_readiness_valid']).lower()}",
         f"command_matrix_valid: {str(report['command_matrix_valid']).lower()}",
         f"application_protocol_valid: {str(report['application_protocol_valid']).lower()}",
     ]

@@ -27,11 +27,15 @@ PRE_DISPOSITION_ACTION = "send_erg_003_and_erg_002"
 POST_DISPOSITION_ACTION = "prepare_erg004_runtime_implementation_gate"
 DESCRIPTOR_ONLY_PLANNING_ACTION = "prepare_erg004_descriptor_only_runtime_planning"
 ERG005_TRUSTED_HOST_ACTION = "prepare_erg005_trusted_host_promotion_review"
+PIS_ARCHITECTURE_REVIEW_ACTION = (
+    "prepare_erg006_erg007_production_identity_storage_architecture_review"
+)
 ALLOWED_NEXT_ACTIONS = {
     PRE_DISPOSITION_ACTION,
     POST_DISPOSITION_ACTION,
     DESCRIPTOR_ONLY_PLANNING_ACTION,
     ERG005_TRUSTED_HOST_ACTION,
+    PIS_ARCHITECTURE_REVIEW_ACTION,
 }
 
 REQUIRED_PHRASES = [
@@ -45,17 +49,12 @@ REQUIRED_PHRASES = [
     "Public/security-product positioning remains blocked",
     "Enterprise response evidence is not present yet",
     "`ERG-004`: descriptor-only sandbox/VM live POC runtime source review is locally dispositioned",
-    "`ERG-005`: staging-only trusted-host promotion runtime source review is ready",
-    "make trusted-host-promotion-decision-intake-check",
-    "make trusted-host-promotion-state-machine-check",
-    "make trusted-host-promotion-negative-fixtures-check",
-    "make trusted-host-promotion-zone-contract-check",
-    "make trusted-host-promotion-implementation-plan-check",
-    "make trusted-host-promotion-runtime-source-review-bundle-check",
-    "make trusted-host-promotion-source-review-packet-check",
-    "make trusted-host-promotion-disposition-packet-check",
-    "make trusted-host-promotion-external-review-bundle-check",
-    "make trusted-host-promotion-response-kit-check",
+    "`ERG-005`: staging-only trusted-host promotion runtime source findings are dispositioned",
+    "`ERG-006`/`ERG-007`: production identity/storage architecture review is next",
+    "make production-identity-storage-architecture-check",
+    "make production-identity-storage-disposition-packet-check",
+    "make production-identity-storage-external-review-bundle-check",
+    "make production-identity-storage-response-kit-check",
     "The historical ERG-003/ERG-002 dual-send commands remain available only for "
     "lineage and fallback.",
     "What This Checkpoint Does Not Approve",
@@ -146,6 +145,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     post_disposition_mode = next_action == POST_DISPOSITION_ACTION
     descriptor_only_mode = next_action == DESCRIPTOR_ONLY_PLANNING_ACTION
     erg005_mode = next_action == ERG005_TRUSTED_HOST_ACTION
+    pis_mode = next_action == PIS_ARCHITECTURE_REVIEW_ACTION
     if (
         not post_disposition_mode
         and send_readiness.get("recommended_now") != ["ERG-003", "ERG-002"]
@@ -158,6 +158,13 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     if erg005_mode and operator_next_action.get("recommended_send_set") != ["ERG-005"]:
         failures.append(
             "operator next action must recommend ERG-005 after descriptor-only disposition"
+        )
+    if pis_mode and operator_next_action.get("recommended_send_set") != [
+        "ERG-006",
+        "ERG-007",
+    ]:
+        failures.append(
+            "operator next action must recommend ERG-006/ERG-007 after ERG-005 source disposition"
         )
     if next_action not in ALLOWED_NEXT_ACTIONS:
         failures.append("operator next action is not an allowed enterprise flow")

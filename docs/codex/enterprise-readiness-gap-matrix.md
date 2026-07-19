@@ -63,13 +63,16 @@ Blocked current claims, written without product-marketing claim phrases:
 
 ## Next Enterprise Action
 
-Current active route: `ERG-005` trusted-host promotion review.
+Current active route: `ERG-006`/`ERG-007` production identity/storage architecture review.
 
-Current expected action: `prepare_erg005_trusted_host_promotion_review`.
+Current expected action:
+`prepare_erg006_erg007_production_identity_storage_architecture_review`.
 
-The operator should prepare the existing staging-only trusted-host promotion runtime source-review
-slice for independent review. That readiness does not approve trusted-host promotion, broad host
-writes, response evidence, disposition, closure, or runtime expansion.
+The operator should prepare the existing planning-only production identity/storage architecture
+packet for independent review. The accepted ERG-005 source-finding disposition is committed, but
+ERG-005 itself remains blocked. The new route does not approve production identity, enterprise
+RBAC, remote administration, runtime Postgres, migrations, response evidence, disposition,
+closure, or runtime expansion.
 
 Historical/fallback route: `ERG-003` static sandbox/VM preflight and `ERG-002` Mission Control
 display/import review. Their packet and response machinery remains for provenance and fallback, but

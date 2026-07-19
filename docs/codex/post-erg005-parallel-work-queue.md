@@ -41,7 +41,7 @@ Good tasks:
 
 - tighten the first-read order for the ERG-005 walkthrough packet;
 - add expected-observation checklists for each step;
-- reduce duplicate historical routing language where it confuses the active ERG-005 path;
+- reduce duplicate historical routing language where it confused the then-active ERG-005 path;
 - add reset and cleanup notes that do not run services or mutate runtime state.
 
 Done when: an operator can start from `05_LIVE_WALKTHROUGH_PREP.md` and understand the exact
@@ -68,7 +68,7 @@ Goal: reduce reviewer confusion in the generated enterprise packets.
 
 Good tasks:
 
-- clarify active `ERG-005` versus historical `ERG-003`/`ERG-002` references;
+- clarify the then-active `ERG-005` route versus historical `ERG-003`/`ERG-002` references;
 - add front-door navigation notes to generated or committed review docs;
 - tighten wording around `ready`, `blocked`, `planning_only`, and `external_pending`;
 - keep historical lineage where required by gates, but make the current next action obvious.

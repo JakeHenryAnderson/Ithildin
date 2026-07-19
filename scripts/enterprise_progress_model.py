@@ -28,14 +28,15 @@ ALLOWED_NEXT_ACTIONS = {
     "prepare_erg004_runtime_implementation_gate",
     "prepare_erg004_descriptor_only_runtime_planning",
     "prepare_erg005_trusted_host_promotion_review",
+    "prepare_erg006_erg007_production_identity_storage_architecture_review",
 }
 
 REQUIRED_PHRASES = [
     "Status: checked progress model",
     "Governed tool count: `24`",
     "Current selected capability: `not selected`",
-    "Recommended next enterprise review: `ERG-005`",
-    "Recommended send set: `ERG-005`",
+    "Recommended next enterprise review: `ERG-006/ERG-007`",
+    "Recommended send set: `ERG-006`, `ERG-007`",
     "Enterprise response evidence present: `0`",
     "Enterprise closure-ready lanes: `0`",
     "Capability expansion: blocked",
@@ -54,18 +55,16 @@ REQUIRED_PHRASES = [
     "Checkpoint D: Live Sandbox/VM Proof Of Concept",
     "Checkpoint E: Trusted-Host Promotion",
     "Checkpoint F: Enterprise Architecture Lanes",
-    "descriptor-only local-development disposition is recorded",
-    "make trusted-host-promotion-decision-intake-check",
-    "make trusted-host-promotion-state-machine-check",
-    "make trusted-host-promotion-negative-fixtures-check",
-    "make trusted-host-promotion-zone-contract-check",
-    "make trusted-host-promotion-implementation-plan-check",
-    "make trusted-host-promotion-source-review-packet-check",
-    "make trusted-host-promotion-disposition-packet-check",
-    "make trusted-host-promotion-external-review-bundle-check",
-    "make trusted-host-promotion-response-kit-check",
-    "make trusted-host-promotion-response-dry-run",
-    "make trusted-host-promotion-internal-review-check",
+    "ERG-005 staging-only runtime source findings are dispositioned",
+    "make production-identity-storage-architecture-check",
+    "make production-identity-storage-disposition-packet-check",
+    "make production-identity-storage-external-review-bundle-check",
+    "make production-identity-storage-response-kit-check",
+    "make production-identity-storage-response-dry-run",
+    "make production-identity-storage-external-response-intake-check",
+    "make production-identity-storage-disposition-closure-check",
+    "make no-new-powers-guardrail",
+    "make tool-surface-invariant-gate",
     "Do not manually promote a lane",
 ]
 
@@ -125,8 +124,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         for failure in operator_next_action["failures"]
     )
     failures.extend(
-        f"enterprise-response-status-board: {failure}"
-        for failure in response_status["failures"]
+        f"enterprise-response-status-board: {failure}" for failure in response_status["failures"]
     )
     failures.extend(f"v1-progress-assessment: {failure}" for failure in progress["failures"])
     failures.extend(f"enterprise-gap-matrix: {failure}" for failure in gap_matrix["failures"])
@@ -244,8 +242,7 @@ def render_report(report: dict[str, Any]) -> str:
         f"progress_model_doc: {report['progress_model_doc']}",
         f"tool_count: {report['tool_count']}",
         f"selected_capability: {report.get('selected_capability', 'unknown')}",
-        "recommended_send_set: "
-        + ", ".join(report.get("recommended_send_set") or []),
+        "recommended_send_set: " + ", ".join(report.get("recommended_send_set") or []),
         "recommended_next_enterprise_review: "
         f"{report.get('recommended_next_enterprise_review', 'unknown')}",
         f"next_action: {report.get('next_action', 'unknown')}",
@@ -261,16 +258,13 @@ def render_report(report: dict[str, Any]) -> str:
         f"enterprise_gap_count: {report.get('enterprise_gap_count', 'unknown')}",
         "progress_bands:",
     ]
-    lines.extend(
-        f"- {name}: {band}" for name, band in report["progress_bands"].items()
-    )
+    lines.extend(f"- {name}: {band}" for name, band in report["progress_bands"].items())
     lines.extend(
         [
             f"runtime_changes_allowed: {str(report['runtime_changes_allowed']).lower()}",
             "mission_control_runtime_allowed: "
             f"{str(report['mission_control_runtime_allowed']).lower()}",
-            "live_vm_inspection_allowed: "
-            f"{str(report['live_vm_inspection_allowed']).lower()}",
+            f"live_vm_inspection_allowed: {str(report['live_vm_inspection_allowed']).lower()}",
             "sandbox_orchestration_allowed: "
             f"{str(report['sandbox_orchestration_allowed']).lower()}",
             "trusted_host_promotion_allowed: "

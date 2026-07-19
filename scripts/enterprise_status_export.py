@@ -97,14 +97,12 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     failures: list[str] = []
     failures.extend(f"enterprise-current-checkpoint: {failure}" for failure in current["failures"])
     failures.extend(
-        f"enterprise-operator-next-action: {failure}"
-        for failure in next_action["failures"]
+        f"enterprise-operator-next-action: {failure}" for failure in next_action["failures"]
     )
     failures.extend(f"enterprise-progress-model: {failure}" for failure in progress["failures"])
     failures.extend(f"enterprise-review-send-readiness: {failure}" for failure in send["failures"])
     failures.extend(
-        f"enterprise-response-status-board: {failure}"
-        for failure in responses["failures"]
+        f"enterprise-response-status-board: {failure}" for failure in responses["failures"]
     )
 
     doc = _read(repo_root / DOC_REL)
@@ -180,7 +178,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
             "status": row["status"],
             "packet_path": row["packet_path"],
             "packet_handoff_ready": row["packet_handoff_ready"],
-            "recommended_to_send_now": row["gap"] in active_send_set,
+            "recommended_to_send_now": _gap_selected(row["gap"], active_send_set),
             "closure_ready": row["closure_ready"],
             "normalized_response_present": row["normalized_response_present"],
             "implementation_allowed": row["implementation_allowed"],
@@ -201,9 +199,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "tool_count": 24,
         "selected_capability": current.get("selected_capability"),
         "recommended_send_set": current.get("recommended_send_set"),
-        "recommended_next_enterprise_review": current.get(
-            "recommended_next_enterprise_review"
-        ),
+        "recommended_next_enterprise_review": current.get("recommended_next_enterprise_review"),
         "next_action": next_action.get("next_action"),
         "action_commands": next_action.get("action_commands"),
         "next_after_send_commands": next_action.get("next_after_send_commands"),
@@ -261,16 +257,12 @@ def render_report(report: dict[str, Any]) -> str:
         f"tool_count: {report['tool_count']}",
         f"selected_capability: {report['selected_capability']}",
         "recommended_send_set: " + ", ".join(report["recommended_send_set"]),
-        "recommended_next_enterprise_review: "
-        f"{report['recommended_next_enterprise_review']}",
+        f"recommended_next_enterprise_review: {report['recommended_next_enterprise_review']}",
         f"next_action: {report['next_action']}",
         "action_commands:",
         *[f"- {command}" for command in report.get("action_commands") or []],
         "next_after_send_commands:",
-        *[
-            f"- {command}"
-            for command in report.get("next_after_send_commands") or []
-        ],
+        *[f"- {command}" for command in report.get("next_after_send_commands") or []],
         "handoff_artifacts:",
         *[
             f"- {artifact['label']}: {artifact['path']}"
@@ -281,16 +273,13 @@ def render_report(report: dict[str, Any]) -> str:
         f"enterprise_gap_count: {report['enterprise_gap_count']}",
         "progress_bands:",
     ]
-    lines.extend(
-        f"- {name}: {band}" for name, band in report["progress_bands"].items()
-    )
+    lines.extend(f"- {name}: {band}" for name, band in report["progress_bands"].items())
     lines.extend(
         [
             f"runtime_changes_allowed: {str(report['runtime_changes_allowed']).lower()}",
             "mission_control_runtime_allowed: "
             f"{str(report['mission_control_runtime_allowed']).lower()}",
-            "live_vm_inspection_allowed: "
-            f"{str(report['live_vm_inspection_allowed']).lower()}",
+            f"live_vm_inspection_allowed: {str(report['live_vm_inspection_allowed']).lower()}",
             "sandbox_orchestration_allowed: "
             f"{str(report['sandbox_orchestration_allowed']).lower()}",
             "trusted_host_promotion_allowed: "
@@ -322,18 +311,14 @@ def render_markdown(report: dict[str, Any]) -> str:
         for row in report["review_lanes"]
     )
     progress_rows = "\n".join(
-        f"| {name} | `{band}` |"
-        for name, band in report["progress_bands"].items()
+        f"| {name} | `{band}` |" for name, band in report["progress_bands"].items()
     )
-    public_positioning = str(
-        report["public_security_product_positioning_allowed"]
-    ).lower()
+    public_positioning = str(report["public_security_product_positioning_allowed"]).lower()
     action_command_lines = "\n".join(
         f"  - `{command}`" for command in report.get("action_commands") or []
     )
     next_after_send_command_lines = "\n".join(
-        f"  - `{command}`"
-        for command in report.get("next_after_send_commands") or []
+        f"  - `{command}`" for command in report.get("next_after_send_commands") or []
     )
     handoff_artifact_lines = "\n".join(
         f"  - `{artifact['label']}`: `{artifact['path']}`"
@@ -352,25 +337,25 @@ runtime behavior, and not an enterprise lane closure record.
 
 ## Snapshot
 
-- schema_version: `{report['schema_version']}`
-- artifact_type: `{report['artifact_type']}`
-- status: `{report['status']}`
-- commit: `{report['git']['commit']}`
-- dirty: `{str(report['git']['dirty']).lower()}`
-- tool_count: `{report['tool_count']}`
-- selected_capability: `{report['selected_capability']}`
-- recommended_send_set: `{', '.join(report['recommended_send_set'])}`
-- recommended_next_enterprise_review: `{report['recommended_next_enterprise_review']}`
-- next_action: `{report['next_action']}`
+- schema_version: `{report["schema_version"]}`
+- artifact_type: `{report["artifact_type"]}`
+- status: `{report["status"]}`
+- commit: `{report["git"]["commit"]}`
+- dirty: `{str(report["git"]["dirty"]).lower()}`
+- tool_count: `{report["tool_count"]}`
+- selected_capability: `{report["selected_capability"]}`
+- recommended_send_set: `{", ".join(report["recommended_send_set"])}`
+- recommended_next_enterprise_review: `{report["recommended_next_enterprise_review"]}`
+- next_action: `{report["next_action"]}`
 - action_commands:
 {action_command_lines}
 - next_after_send_commands:
 {next_after_send_command_lines}
 - handoff_artifacts:
 {handoff_artifact_lines}
-- response_present_count: `{report['response_present_count']}`
-- closure_ready_count: `{report['closure_ready_count']}`
-- enterprise_gap_count: `{report['enterprise_gap_count']}`
+- response_present_count: `{report["response_present_count"]}`
+- closure_ready_count: `{report["closure_ready_count"]}`
+- enterprise_gap_count: `{report["enterprise_gap_count"]}`
 
 ## Progress Bands
 
@@ -390,15 +375,15 @@ runtime behavior, and not an enterprise lane closure record.
 
 ## Blocked Authority
 
-- runtime_changes_allowed: `{str(report['runtime_changes_allowed']).lower()}`
-- mission_control_runtime_allowed: `{str(report['mission_control_runtime_allowed']).lower()}`
-- live_vm_inspection_allowed: `{str(report['live_vm_inspection_allowed']).lower()}`
-- sandbox_orchestration_allowed: `{str(report['sandbox_orchestration_allowed']).lower()}`
-- trusted_host_promotion_allowed: `{str(report['trusted_host_promotion_allowed']).lower()}`
-- siem_adapter_allowed: `{str(report['siem_adapter_allowed']).lower()}`
-- compliance_automation_allowed: `{str(report['compliance_automation_allowed']).lower()}`
+- runtime_changes_allowed: `{str(report["runtime_changes_allowed"]).lower()}`
+- mission_control_runtime_allowed: `{str(report["mission_control_runtime_allowed"]).lower()}`
+- live_vm_inspection_allowed: `{str(report["live_vm_inspection_allowed"]).lower()}`
+- sandbox_orchestration_allowed: `{str(report["sandbox_orchestration_allowed"]).lower()}`
+- trusted_host_promotion_allowed: `{str(report["trusted_host_promotion_allowed"]).lower()}`
+- siem_adapter_allowed: `{str(report["siem_adapter_allowed"]).lower()}`
+- compliance_automation_allowed: `{str(report["compliance_automation_allowed"]).lower()}`
 - public_security_product_positioning_allowed: `{public_positioning}`
-- new_power_classes_allowed: `{str(report['new_power_classes_allowed']).lower()}`
+- new_power_classes_allowed: `{str(report["new_power_classes_allowed"]).lower()}`
 
 ## What This Export Does Not Approve
 
@@ -416,6 +401,13 @@ def _build_artifacts(report: dict[str, Any]) -> dict[str, str]:
     }
 
 
+def _gap_selected(gap: str, active_send_set: set[str]) -> bool:
+    if gap in active_send_set:
+        return True
+    combined_gaps = set(gap.split("/"))
+    return len(combined_gaps) > 1 and combined_gaps.issubset(active_send_set)
+
+
 def _validate_generated_artifacts(artifacts: dict[str, str]) -> list[str]:
     failures: list[str] = []
     required = {MARKDOWN_NAME, JSON_NAME}
@@ -425,29 +417,22 @@ def _validate_generated_artifacts(artifacts: dict[str, str]) -> list[str]:
     json_text = artifacts.get(JSON_NAME, "")
     for phrase in [
         "display-only enterprise status export",
-        "recommended_send_set: `ERG-005`",
-        "next_action: `prepare_erg005_trusted_host_promotion_review`",
-        "`make trusted-host-promotion-decision-intake-check`",
-        "`make trusted-host-promotion-state-machine-check`",
-        "`make trusted-host-promotion-negative-fixtures-check`",
-        "`make trusted-host-promotion-zone-contract-check`",
-        "`make trusted-host-promotion-implementation-plan-check`",
-        "`make trusted-host-promotion-source-review-packet-check`",
-        "`make trusted-host-promotion-disposition-packet-check`",
-        "`make trusted-host-promotion-external-review-bundle-check`",
-        "`make trusted-host-promotion-response-kit-check`",
-        "`make trusted-host-promotion-response-dry-run`",
-        "`make trusted-host-promotion-internal-review-check`",
+        "recommended_send_set: `ERG-006, ERG-007`",
+        "next_action: `prepare_erg006_erg007_production_identity_storage_architecture_review`",
+        "`make production-identity-storage-architecture-check`",
+        "`make production-identity-storage-disposition-packet-check`",
+        "`make production-identity-storage-external-review-bundle-check`",
+        "`make production-identity-storage-response-kit-check`",
+        "`make production-identity-storage-response-dry-run`",
+        "`make production-identity-storage-external-response-intake-check`",
+        "`make production-identity-storage-disposition-closure-check`",
         "`make no-new-powers-guardrail`",
         "`make tool-surface-invariant-gate`",
         "handoff_artifacts:",
-        "trusted-host-promotion-decision-intake.md",
-        "trusted-host-promotion-state-machine.md",
-        "trusted-host-promotion-negative-fixtures.md",
-        "trusted-host-promotion-zone-contract.md",
-        "trusted-host-promotion-implementation-plan.md",
-        "trusted-host-promotion-source-review",
-        "trusted-host-promotion-external-review",
+        "production-identity-storage-architecture.md",
+        "production-identity-storage-disposition",
+        "production-identity-storage-external-review",
+        "production-identity-storage-response-kit",
         "runtime_changes_allowed: `false`",
         "does not approve Mission Control runtime behavior",
         "does not approve new governed tool powers",
@@ -458,24 +443,19 @@ def _validate_generated_artifacts(artifacts: dict[str, str]) -> list[str]:
         '"artifact_type": "ithildin.enterprise_status_export"',
         '"status": "display_only"',
         '"tool_count": 24',
-        '"next_action": "prepare_erg005_trusted_host_promotion_review"',
+        '"next_action": "prepare_erg006_erg007_production_identity_storage_architecture_review"',
         '"handoff_artifacts": [',
-        "trusted-host-promotion-decision-intake.md",
-        "trusted-host-promotion-state-machine.md",
-        "trusted-host-promotion-negative-fixtures.md",
-        "trusted-host-promotion-zone-contract.md",
-        "trusted-host-promotion-implementation-plan.md",
-        '"make trusted-host-promotion-decision-intake-check"',
-        '"make trusted-host-promotion-state-machine-check"',
-        '"make trusted-host-promotion-negative-fixtures-check"',
-        '"make trusted-host-promotion-zone-contract-check"',
-        '"make trusted-host-promotion-implementation-plan-check"',
-        '"make trusted-host-promotion-source-review-packet-check"',
-        '"make trusted-host-promotion-disposition-packet-check"',
-        '"make trusted-host-promotion-external-review-bundle-check"',
-        '"make trusted-host-promotion-response-kit-check"',
-        '"make trusted-host-promotion-response-dry-run"',
-        '"make trusted-host-promotion-internal-review-check"',
+        "production-identity-storage-architecture.md",
+        "production-identity-storage-disposition",
+        "production-identity-storage-external-review",
+        "production-identity-storage-response-kit",
+        '"make production-identity-storage-architecture-check"',
+        '"make production-identity-storage-disposition-packet-check"',
+        '"make production-identity-storage-external-review-bundle-check"',
+        '"make production-identity-storage-response-kit-check"',
+        '"make production-identity-storage-response-dry-run"',
+        '"make production-identity-storage-external-response-intake-check"',
+        '"make production-identity-storage-disposition-closure-check"',
         '"make no-new-powers-guardrail"',
         '"make tool-surface-invariant-gate"',
         '"runtime_changes_allowed": false',

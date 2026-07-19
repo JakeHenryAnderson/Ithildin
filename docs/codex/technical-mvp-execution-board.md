@@ -11,16 +11,17 @@ Current governed tool count: `24`
 Current selected capability: `not selected`
 Latest implemented tool: `sandbox.artifact.write_text`
 Technical MVP state: `operator_trial_observed`
-Current enterprise next action: `prepare_erg005_trusted_host_promotion_review`
+Current enterprise next action: `prepare_erg006_erg007_production_identity_storage_architecture_review`
 Active resume checkpoint: `ENT-001`
 
 ## Active Resume Scope
 
-The paused umbrella goal resumes through the post-`ENT-001` trusted-host promotion review slice
-only: use the recorded `ERG-004` descriptor-only local-development disposition to move into the
-blocked `ERG-005` trusted-host review lane. This resume slice does not add runtime behavior,
-implement Mission Control integration, start sandbox/VM control, promote artifacts into trusted
-host zones, or select a new capability.
+The paused umbrella goal resumes through the post-`ENT-001` production identity/storage architecture
+review slice only: use the accepted `ERG-005` source-finding disposition to move into the
+planning-only `ERG-006`/`ERG-007` architecture lane. This resume slice does not add runtime
+behavior, implement production identity, enable Postgres or migrations, implement Mission Control
+execution, start sandbox/VM control, promote artifacts into trusted host zones, or select a new
+runtime capability.
 
 ## Boundary
 
@@ -49,8 +50,8 @@ promotion engine, public/security-product release, or broad write platform.
 
 | Batch | Status | Subtasks | Fast gate | Escalation gate |
 | --- | --- | --- | --- | --- |
-| Prepare `ERG-005` trusted-host promotion review | active | Validate the trusted-host decision intake, state machine, zone contract, negative fixtures, source-review/disposition packet, response kit, and internal review while keeping promotion runtime behavior, host writes, overwrite/delete/move behavior, live VM/container inspection, lifecycle control, Mission Control runtime authority, local model invocation, network expansion, API/MCP profile loading, and new powers blocked. | `make trusted-host-promotion-decision-intake-check`; `make trusted-host-promotion-state-machine-check`; `make trusted-host-promotion-zone-contract-check`; `make trusted-host-promotion-disposition-packet-check`; `make no-new-powers-guardrail`; `make tool-surface-invariant-gate` | later trusted-host reviewer disposition and decision record |
-| Intake future `ERG-005` response | blocked on review response | Run the trusted-host response dry run and closure gate before any committed triage update. | `make trusted-host-promotion-response-dry-run` | lane-specific closure gate |
+| Prepare `ERG-006`/`ERG-007` identity/storage architecture review | active | Validate the planning-only architecture, disposition packet, external-review bundle, response kit, and fail-closed closure path while keeping production identity, enterprise RBAC, remote administration, runtime Postgres, migrations, retention enforcement, and new powers blocked. | `make production-identity-storage-architecture-check`; `make production-identity-storage-disposition-packet-check`; `make production-identity-storage-external-review-bundle-check`; `make no-new-powers-guardrail`; `make tool-surface-invariant-gate` | later architecture disposition and separate PIS-001 decision record |
+| Intake future `ERG-006`/`ERG-007` response | blocked on review response | Run the production identity/storage response dry run and closure gate before any committed triage update. | `make production-identity-storage-response-dry-run` | lane-specific closure gate |
 | Track `EXT-MC-DISPLAY-001` | later advisory | Improve Mission Control launch-bundle artifact coverage before implementation, without blocking design-only continuation. | `make reviewer-findings-check` | `make review-findings-summary` |
 
 ## Development Validation Ladder

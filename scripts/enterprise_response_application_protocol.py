@@ -12,6 +12,7 @@ if __package__ in {None, ""}:
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from scripts import (
+    enterprise_operator_next_action,
     enterprise_response_normalization_coverage,
     enterprise_response_status_board,
     next_capability_readiness,
@@ -27,7 +28,7 @@ REQUIRED_PHRASES = [
     "make enterprise-response-application-protocol",
     "Current governed tool count: `24`",
     "Current selected capability: `not selected`",
-    "Active enterprise route: `ERG-005` trusted-host promotion review.",
+    "Active enterprise route: `ERG-006`/`ERG-007` production identity/storage architecture review.",
     "Historical dual-response route: `ERG-003` then `ERG-002`.",
     "Enterprise response evidence is not present yet.",
     "Enterprise closure-ready count is `0`.",
@@ -109,17 +110,18 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     capability = next_capability_readiness.build_report(repo_root)
     status_board = enterprise_response_status_board.build_report(repo_root)
     coverage = enterprise_response_normalization_coverage.build_report(repo_root)
+    operator_next_action = enterprise_operator_next_action.build_report(repo_root)
 
+    failures.extend(f"next-capability-readiness: {failure}" for failure in capability["failures"])
     failures.extend(
-        f"next-capability-readiness: {failure}" for failure in capability["failures"]
+        f"enterprise-response-status-board: {failure}" for failure in status_board["failures"]
     )
     failures.extend(
-        f"enterprise-response-status-board: {failure}"
-        for failure in status_board["failures"]
+        f"enterprise-response-normalization-coverage: {failure}" for failure in coverage["failures"]
     )
     failures.extend(
-        f"enterprise-response-normalization-coverage: {failure}"
-        for failure in coverage["failures"]
+        f"enterprise-operator-next-action: {failure}"
+        for failure in operator_next_action["failures"]
     )
 
     doc_path = repo_root / DOC_REL
@@ -213,7 +215,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "selected_capability": status_board.get("selected_capability", "not selected"),
         "route_scope": "historical_dual_response_path",
         "legacy_route_scope": "historical_dual_response_path",
-        "active_send_set": ["ERG-005"],
+        "active_send_set": operator_next_action.get("recommended_send_set", []),
         "recommended_send_set": ["ERG-003", "ERG-002"],
         "legacy_recommended_send_set": ["ERG-003", "ERG-002"],
         "response_present_count": status_board.get("response_present_count"),

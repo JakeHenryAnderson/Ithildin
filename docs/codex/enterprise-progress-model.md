@@ -11,8 +11,8 @@ compliance claim, or permission to add runtime powers.
 
 - Governed tool count: `24`.
 - Current selected capability: `not selected`.
-- Recommended next enterprise review: `ERG-005`.
-- Recommended send set: `ERG-005`.
+- Recommended next enterprise review: `ERG-006/ERG-007`.
+- Recommended send set: `ERG-006`, `ERG-007`.
 - Technical MVP state: `operator_trial_observed`.
 - Enterprise send package ready: `true`.
 - Enterprise response evidence present: `0`.
@@ -89,23 +89,22 @@ behavior can be added.
 
 ## Current Best Next Action
 
-The best next action is the ERG-005 trusted-host promotion review lane. The ERG-004
-descriptor-only local-development disposition is recorded, but it does not approve live VM runtime,
-local model invocation, sandbox orchestration, or broader enterprise claims.
+The best next action is the combined ERG-006/ERG-007 production identity and durable storage
+architecture review. The ERG-005 staging-only runtime source findings are dispositioned, but that
+evidence does not approve production identity, runtime Postgres, schema migrations, hosted control
+plane behavior, live VM runtime, local model invocation, sandbox orchestration, or broader
+enterprise claims.
 
 ```sh
-make trusted-host-descriptor-contract-check
-make trusted-host-promotion-decision-intake-check
-make trusted-host-promotion-state-machine-check
-make trusted-host-promotion-negative-fixtures-check
-make trusted-host-promotion-zone-contract-check
-make trusted-host-promotion-implementation-plan-check
-make trusted-host-promotion-source-review-packet-check
-make trusted-host-promotion-disposition-packet-check
-make trusted-host-promotion-external-review-bundle-check
-make trusted-host-promotion-response-kit-check
-make trusted-host-promotion-response-dry-run
-make trusted-host-promotion-internal-review-check
+make production-identity-storage-architecture-check
+make production-identity-storage-disposition-packet-check
+make production-identity-storage-external-review-bundle-check
+make production-identity-storage-response-kit-check
+make production-identity-storage-response-dry-run
+make production-identity-storage-external-response-intake-check
+make production-identity-storage-disposition-closure-check
+make no-new-powers-guardrail
+make tool-surface-invariant-gate
 ```
 
 This gate draft remains non-runtime work. If a later implementation packet receives a response,

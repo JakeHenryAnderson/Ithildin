@@ -22,12 +22,18 @@ from scripts import (
 ROOT = Path(__file__).resolve().parents[1]
 DOC_REL = "docs/codex/technical-mvp-ticket-map.md"
 DOC_TITLE = "Ithildin Technical MVP Ticket Map"
-ALLOWED_NEXT_ENTERPRISE_REVIEWS = {"ERG-003", "ERG-004", "ERG-005"}
+ALLOWED_NEXT_ENTERPRISE_REVIEWS = {
+    "ERG-003",
+    "ERG-004",
+    "ERG-005",
+    "ERG-006/ERG-007",
+}
 ALLOWED_NEXT_ACTIONS = {
     "send_erg_003_and_erg_002",
     "prepare_erg004_runtime_implementation_gate",
     "prepare_erg004_descriptor_only_runtime_planning",
     "prepare_erg005_trusted_host_promotion_review",
+    "prepare_erg006_erg007_production_identity_storage_architecture_review",
 }
 
 REQUIRED_PHRASES = [
@@ -195,9 +201,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "latest_implemented_tool": "sandbox.artifact.write_text",
         "selected_capability": capability.get("next_candidate"),
         "technical_mvp_ticket_count": 10,
-        "recommended_next_enterprise_review": progress.get(
-            "recommended_next_enterprise_review"
-        ),
+        "recommended_next_enterprise_review": progress.get("recommended_next_enterprise_review"),
         "next_action": next_action.get("next_action"),
         "response_present_count": next_action.get("response_present_count"),
         "capability_expansion_allowed": False,
@@ -216,8 +220,7 @@ def render_report(report: dict[str, Any]) -> str:
         f"latest_implemented_tool: {report['latest_implemented_tool']}",
         f"selected_capability: {report['selected_capability']}",
         f"technical_mvp_ticket_count: {report['technical_mvp_ticket_count']}",
-        "recommended_next_enterprise_review: "
-        f"{report['recommended_next_enterprise_review']}",
+        f"recommended_next_enterprise_review: {report['recommended_next_enterprise_review']}",
         f"next_action: {report['next_action']}",
         f"response_present_count: {report['response_present_count']}",
         f"capability_expansion_allowed: {str(report['capability_expansion_allowed']).lower()}",

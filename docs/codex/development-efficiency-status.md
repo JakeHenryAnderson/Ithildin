@@ -19,7 +19,7 @@ The command consolidates:
 - `make release-check-profile` for the static shape of the full release gate.
 - `make technical-mvp-operator-trial-readiness` for the local-preview operator-trial state.
 - `make enterprise-current-checkpoint` for the current enterprise handoff action.
-- `make enterprise-review-send-preflight` for the current ERG-005 trusted-host review artifact
+- `make enterprise-review-send-preflight` for the current ERG-006/ERG-007 production identity/storage review artifact
   freshness.
 - `make artifact-freshness-check` when packet/handoff freshness needs to be checked before a long
   gate.
@@ -49,7 +49,7 @@ The report is intentionally small and operator-facing. It records:
   clean tree, and hash-consistent;
 - review-candidate artifact freshness for the compact v1.0 RC packet and captured release-check
   transcript;
-- enterprise response/closure counts and the current ERG-005 trusted-host review action;
+- enterprise response/closure counts and the current ERG-006/ERG-007 production identity/storage review action;
 - historical ERG-003/ERG-002 handoff artifacts only as lineage, not the current send action;
 - readiness warnings when strict handoff artifacts are stale or a downstream checkpoint gate is not
   currently green;

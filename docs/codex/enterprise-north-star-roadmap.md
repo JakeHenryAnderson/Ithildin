@@ -38,12 +38,12 @@ implemented surface is the local governed MCP/tool gateway, local review console
 evidence surfaces, demo/handoff packets, and bounded local-preview tools. The latest local-preview
 RC packet is generated through `make review-candidate`.
 
-Active enterprise route: `ERG-005` trusted-host promotion review.
+Active enterprise route: `ERG-006`/`ERG-007` production identity/storage architecture review.
 
 Historical dual-send route: `ERG-003` then `ERG-002`.
 
 The old dual-send packet flow remains available for provenance and response-intake rehearsal, but
-the active operator checkpoint now points at `ERG-005`.
+the active operator checkpoint now points at the combined `ERG-006`/`ERG-007` architecture review.
 
 The historical enterprise handoff set is:
 
@@ -58,7 +58,7 @@ The historical enterprise handoff set is:
 | `erg_003_static_preflight` | `external_review_required` | `make enterprise-next-review-ready-check` | static preflight local-preview closure only | live VM/container inspection, VM lifecycle, local model invocation, sandbox orchestration |
 | `erg_002_mission_control_display` | `planning_only` | `make mission-control-display-next-review-ready-check` | Mission Control-side design-only decision record | Mission Control runtime importer behavior, execution authority, polling or mutating Ithildin APIs |
 | `erg_004_live_sandbox_vm_poc` | `blocked` | `make sandbox-vm-live-poc-preconditions-ready-check` | live POC implementation planning only after `ERG-003` | live implementation, VM lifecycle management, sandbox orchestration |
-| `erg_005_trusted_host_promotion` | `blocked` | `make trusted-host-promotion-disposition-packet-check` | promotion implementation planning only after its own disposition | direct host writes, overwrite/delete/move behavior, automatic promotion |
+| `erg_005_trusted_host_promotion` | `staging_only_source_findings_dispositioned` | `make trusted-host-promotion-runtime-source-review-bundle-check` | evidence-complete staging-only source review | production host promotion, direct host writes, overwrite/delete/move behavior, automatic promotion |
 | `enterprise_architecture_lanes` | `planning_only_or_blocked` | `make enterprise-readiness-gap-matrix-check` | architecture decision records only | production identity, runtime Postgres, SIEM adapters, compliance automation, public positioning |
 
 ## Immediate Operator Sequence
@@ -78,8 +78,15 @@ The historical enterprise handoff set is:
    make enterprise-active-route-clarity
    ```
 
-3. Prepare the active `ERG-005` trusted-host promotion review packet set named by
-   `make enterprise-operator-next-action`.
+3. Prepare the active `ERG-006`/`ERG-007` production identity/storage architecture-review packet
+   set named by `make enterprise-operator-next-action`:
+
+   ```sh
+   make production-identity-storage-architecture-check
+   make production-identity-storage-disposition-packet-check
+   make production-identity-storage-external-review-bundle-check
+   make production-identity-storage-response-kit-check
+   ```
 
 4. If revisiting the historical dual-send path, use `make enterprise-review-send-refresh`,
    `make handoff-dry-run`, and `make enterprise-send-now` only as the legacy ERG-003/ERG-002 packet

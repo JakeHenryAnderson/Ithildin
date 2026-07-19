@@ -66,6 +66,7 @@ ALLOWED_ENTERPRISE_NEXT_ACTIONS = {
     "prepare_erg004_runtime_implementation_gate",
     "prepare_erg004_descriptor_only_runtime_planning",
     "prepare_erg005_trusted_host_promotion_review",
+    "prepare_erg006_erg007_production_identity_storage_architecture_review",
 }
 BLOCKED_PHRASES = [
     "production deployment readiness",
@@ -184,9 +185,7 @@ def build_record(repo_root: Path, output_dir: Path) -> dict[str, Any]:
                 "recommended_next_enterprise_review"
             ),
             "handoff_artifacts": enterprise_next_action.get("handoff_artifacts", []),
-            "candidate_response_count": enterprise_waiting_room.get(
-                "candidate_response_count"
-            ),
+            "candidate_response_count": enterprise_waiting_room.get("candidate_response_count"),
             "placeholder_count": enterprise_waiting_room.get("placeholder_count"),
             "missing_count": enterprise_waiting_room.get("missing_count"),
             "invalid_count": enterprise_waiting_room.get("invalid_count"),
@@ -266,15 +265,11 @@ def render_record_markdown(report: dict[str, Any]) -> str:
         "| --- | --- | ---: |",
     ]
     for name, check in report["checks"].items():
-        lines.append(
-            f"| `{name}` | `{str(check['valid']).lower()}` | `{check['failure_count']}` |"
-        )
+        lines.append(f"| `{name}` | `{str(check['valid']).lower()}` | `{check['failure_count']}` |")
     lines.extend(["", "## Artifacts", "", "| Artifact | Exists | Bytes | SHA-256 |"])
     lines.append("| --- | --- | ---: | --- |")
     for artifact in report["artifacts"]:
-        lines.append(
-            "| `{path}` | `{exists}` | `{bytes}` | `{sha256}` |".format(**artifact)
-        )
+        lines.append("| `{path}` | `{exists}` | `{bytes}` | `{sha256}` |".format(**artifact))
     validation = report["validation_decision"]
     lines.extend(
         [
@@ -292,9 +287,7 @@ def render_record_markdown(report: dict[str, Any]) -> str:
     lines.extend(f"  - `{command}`" for command in validation["next_development_commands"])
     if validation["deferred_handoff_commands"]:
         lines.append("- deferred_handoff_commands:")
-        lines.extend(
-            f"  - `{command}`" for command in validation["deferred_handoff_commands"]
-        )
+        lines.extend(f"  - `{command}`" for command in validation["deferred_handoff_commands"])
     enterprise = report["enterprise_review_state"]
     lines.extend(
         [
@@ -329,8 +322,7 @@ def render_record_markdown(report: dict[str, Any]) -> str:
             "release requirement.",
             "",
             f"- compose_demo_ready: `{str(live_environment['compose_demo_ready']).lower()}`",
-            "- docker_cli_available: "
-            f"`{str(live_environment['docker_cli_available']).lower()}`",
+            f"- docker_cli_available: `{str(live_environment['docker_cli_available']).lower()}`",
             f"- docker_compose_status: `{live_environment['docker_compose_status']}`",
             f"- docker_daemon_status: `{live_environment['docker_daemon_status']}`",
             f"- rosetta_check_status: `{live_environment['rosetta_check_status']}`",
@@ -442,9 +434,7 @@ def _wiring_failures(repo_root: Path) -> list[str]:
     readme = (repo_root / "README.md").read_text(encoding="utf-8")
     docs_site = (repo_root / "scripts/build_docs_site.py").read_text(encoding="utf-8")
     packet_script = (repo_root / "scripts/v1_rc_packet.py").read_text(encoding="utf-8")
-    review_index = (repo_root / "docs/codex/review-docs-index.md").read_text(
-        encoding="utf-8"
-    )
+    review_index = (repo_root / "docs/codex/review-docs-index.md").read_text(encoding="utf-8")
     release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
     review_candidate_body = makefile.partition("review-candidate:")[2].partition("\n\n")[0]
     text = DOC_PATH.read_text(encoding="utf-8") if DOC_PATH.exists() else ""

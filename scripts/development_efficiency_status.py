@@ -36,9 +36,9 @@ REQUIRED_DOC_PHRASES = [
     "make technical-mvp-operator-trial-readiness",
     "make enterprise-current-checkpoint",
     "make enterprise-review-send-preflight",
-    "current ERG-005 trusted-host review artifact",
+    "current ERG-006/ERG-007 production identity/storage review artifact",
     "freshness",
-    "current ERG-005 trusted-host review action",
+    "current ERG-006/ERG-007 production identity/storage review action",
     "historical ERG-003/ERG-002 handoff artifacts only as lineage",
     "make progress-check",
     "make progress-check ARGS=--refresh-stale",
@@ -119,9 +119,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     handoff_status = _handoff_artifact_status(repo_root, current_commit=commit)
     next_development_commands = list(validation.get("next_development_commands", []))
     deferred_handoff_commands = list(validation.get("deferred_handoff_commands", []))
-    recommended_now_commands = (
-        next_development_commands if dirty else ["make dev-check"]
-    )
+    recommended_now_commands = next_development_commands if dirty else ["make dev-check"]
 
     return {
         "schema_version": "1",
@@ -211,13 +209,11 @@ def render_report(report: dict[str, Any]) -> str:
         "enterprise_send_artifacts:",
         "- commits_match_current: "
         f"{str(report['enterprise_send_artifact_commits_match_current']).lower()}",
-        "- payloads_clean: "
-        f"{str(report['enterprise_send_artifact_payloads_clean']).lower()}",
+        f"- payloads_clean: {str(report['enterprise_send_artifact_payloads_clean']).lower()}",
         "- hashes_match_files: "
         f"{str(report['enterprise_send_artifact_hashes_match_files']).lower()}",
         "review_candidate_artifacts:",
-        "- v1_rc_packet_exists: "
-        f"{str(report['v1_rc_packet_exists']).lower()}",
+        f"- v1_rc_packet_exists: {str(report['v1_rc_packet_exists']).lower()}",
         "- v1_rc_packet_commit_matches_current: "
         f"{str(report['v1_rc_packet_commit_matches_current']).lower()}",
         "- release_check_transcript_exists: "
@@ -254,9 +250,7 @@ def render_report(report: dict[str, Any]) -> str:
     if report["readiness_warnings"]:
         warning_count = report["readiness_warning_count"]
         lines.append(f"readiness_warnings: {warning_count}")
-        rendered_warnings = report["readiness_warnings"][
-            :MAX_RENDERED_READINESS_WARNINGS
-        ]
+        rendered_warnings = report["readiness_warnings"][:MAX_RENDERED_READINESS_WARNINGS]
         lines.extend(f"- {warning}" for warning in rendered_warnings)
         omitted_count = warning_count - len(rendered_warnings)
         if omitted_count > 0:
@@ -283,9 +277,7 @@ def _wiring_failures(repo_root: Path) -> list[str]:
         lowered = doc.lower()
         for phrase in REQUIRED_DOC_PHRASES:
             if phrase not in doc:
-                failures.append(
-                    f"development efficiency status doc is missing phrase: {phrase}"
-                )
+                failures.append(f"development efficiency status doc is missing phrase: {phrase}")
         for phrase in FORBIDDEN_PHRASES:
             if phrase.lower() in lowered:
                 failures.append(

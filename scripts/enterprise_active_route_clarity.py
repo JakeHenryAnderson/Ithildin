@@ -26,27 +26,28 @@ ROOT = Path(__file__).resolve().parents[1]
 DOC_REL = "docs/codex/enterprise-active-route-clarity.md"
 DOC_TITLE = "Enterprise Active Route Clarity"
 TARGET = "enterprise-active-route-clarity"
-ACTIVE_SEND_SET = ["ERG-004"]
-NEXT_SEND_SET = ["ERG-005"]
+ACTIVE_SEND_SET = ["ERG-005"]
+NEXT_SEND_SET = ["ERG-006", "ERG-007"]
 HISTORICAL_SEND_SET = ["ERG-003", "ERG-002"]
-EXPECTED_ACTION = "prepare_erg005_trusted_host_promotion_review"
+EXPECTED_ACTION = "prepare_erg006_erg007_production_identity_storage_architecture_review"
 
 REQUIRED_DOC_PHRASES = [
     "Status: checked active-route clarification for the current enterprise review path.",
     "Current governed tool count: `24`.",
     "Current selected capability: `not selected`.",
     "make enterprise-active-route-clarity",
-    "The completed local-development disposition route is `ERG-004`.",
-    "Current expected action: `prepare_erg005_trusted_host_promotion_review`.",
-    "var/review-packets/v3/trusted-host-promotion-external-review/",
-    "Current active send set: `ERG-005`.",
-    "var/review-packets/v3/trusted-host-promotion-response-kit/",
+    "The completed source-finding disposition route is `ERG-005`.",
+    "Current expected action: "
+    "`prepare_erg006_erg007_production_identity_storage_architecture_review`.",
+    "var/review-packets/v3/production-identity-storage-external-review/",
+    "Current active send set: `ERG-006`, `ERG-007`.",
+    "var/review-packets/v3/production-identity-storage-response-kit/",
     "EXT-LIVE-DESC-###",
-    "EXT-TRUSTED-HOST-###",
+    "EXT-PROD-IAM-STORAGE-###",
     "Older ERG-003/ERG-002 generated packet surfaces remain in the repository for provenance",
     "Historical dual-send route: `ERG-003`, then `ERG-002`.",
     "completed local-development disposition artifacts preserve the `ERG-004` descriptor-only lane",
-    "active operator checkpoint artifacts now point to `ERG-005`",
+    "active operator checkpoint artifacts now point to `ERG-006`/`ERG-007`",
     "What This Does Not Approve",
 ]
 
@@ -96,37 +97,37 @@ def build_report(repo_root: Path) -> dict[str, Any]:
             failures.extend(f"{label}: {failure}" for failure in report.get("failures", []))
 
     if preflight.get("current_send_set") != NEXT_SEND_SET:
-        failures.append("preflight current send set is not ERG-005")
+        failures.append("preflight current send set is not ERG-006/ERG-007")
     if preflight.get("expected_action") != EXPECTED_ACTION:
-        failures.append("preflight expected action is not ERG-005 trusted-host review")
+        failures.append("preflight expected action is not ERG-006/ERG-007 architecture review")
     if checkpoint.get("recommended_send_set") != NEXT_SEND_SET:
-        failures.append("current checkpoint recommended send set is not ERG-005")
-    if checkpoint.get("recommended_next_enterprise_review") != "ERG-005":
-        failures.append("current checkpoint next enterprise review is not ERG-005")
+        failures.append("current checkpoint recommended send set is not ERG-006/ERG-007")
+    if checkpoint.get("recommended_next_enterprise_review") != "ERG-006/ERG-007":
+        failures.append("current checkpoint next enterprise review is not ERG-006/ERG-007")
     if checkpoint.get("next_action") != EXPECTED_ACTION:
-        failures.append("current checkpoint next action is not ERG-005 trusted-host review")
+        failures.append("current checkpoint next action is not ERG-006/ERG-007 architecture review")
     if operator_next.get("recommended_send_set") != NEXT_SEND_SET:
-        failures.append("operator next-action send set is not ERG-005")
-    if operator_next.get("recommended_next_enterprise_review") != "ERG-005":
-        failures.append("operator next-action enterprise review is not ERG-005")
+        failures.append("operator next-action send set is not ERG-006/ERG-007")
+    if operator_next.get("recommended_next_enterprise_review") != "ERG-006/ERG-007":
+        failures.append("operator next-action enterprise review is not ERG-006/ERG-007")
     if operator_next.get("next_action") != EXPECTED_ACTION:
-        failures.append("operator next-action is not ERG-005 trusted-host review")
+        failures.append("operator next-action is not ERG-006/ERG-007 architecture review")
     if technical_board.get("current_send_set") != NEXT_SEND_SET:
-        failures.append("technical MVP execution board current send set is not ERG-005")
+        failures.append("technical MVP execution board current send set is not ERG-006/ERG-007")
     if technical_board.get("enterprise_next_action") != EXPECTED_ACTION:
         failures.append(
-            "technical MVP execution board next action is not ERG-005 trusted-host review"
+            "technical MVP execution board next action is not ERG-006/ERG-007 architecture review"
         )
     if historical_readiness.get("recommended_now") != HISTORICAL_SEND_SET:
         failures.append("historical dual-send readiness no longer records ERG-003/ERG-002 lineage")
     if progress_assessment.get("recommended_send_set") != NEXT_SEND_SET:
-        failures.append("v1 progress assessment active send set is not ERG-005")
-    if progress_assessment.get("recommended_next_enterprise_review") != "ERG-005":
-        failures.append("v1 progress assessment next review is not ERG-005")
+        failures.append("v1 progress assessment active send set is not ERG-006/ERG-007")
+    if progress_assessment.get("recommended_next_enterprise_review") != "ERG-006/ERG-007":
+        failures.append("v1 progress assessment next review is not ERG-006/ERG-007")
     if gap_matrix.get("active_send_set") != NEXT_SEND_SET:
-        failures.append("enterprise gap matrix active send set is not ERG-005")
-    if gap_matrix.get("recommended_next_enterprise_review") != "ERG-005":
-        failures.append("enterprise gap matrix next review is not ERG-005")
+        failures.append("enterprise gap matrix active send set is not ERG-006/ERG-007")
+    if gap_matrix.get("recommended_next_enterprise_review") != "ERG-006/ERG-007":
+        failures.append("enterprise gap matrix next review is not ERG-006/ERG-007")
 
     boundary_flags = {
         "runtime_changes_allowed": False,

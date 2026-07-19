@@ -57,9 +57,9 @@ REQUIRED_PHRASES = [
     "Blocked current claims",
     "post-RC decision record",
     "Mission Control outside execution, policy, approval, audit authority",
-    "Current active route: `ERG-005` trusted-host promotion review.",
+    "Current active route: `ERG-006`/`ERG-007` production identity/storage architecture review.",
     "Historical/fallback route: `ERG-003` static sandbox/VM preflight",
-    "prepare_erg005_trusted_host_promotion_review",
+    "prepare_erg006_erg007_production_identity_storage_architecture_review",
 ]
 
 REQUIRED_BLOCKED_PHRASES = [
@@ -220,12 +220,16 @@ def _active_route_failures(operator_next: dict[str, Any]) -> list[str]:
     ]
     if operator_next.get("valid") is not True:
         failures.append("enterprise operator next action is not valid")
-    if operator_next.get("recommended_send_set") != ["ERG-005"]:
-        failures.append("active enterprise send set is not ERG-005")
-    if operator_next.get("recommended_next_enterprise_review") != "ERG-005":
-        failures.append("active enterprise review is not ERG-005")
-    if operator_next.get("next_action") != "prepare_erg005_trusted_host_promotion_review":
-        failures.append("active enterprise action is not ERG-005 trusted-host review")
+    if operator_next.get("recommended_send_set") != ["ERG-006", "ERG-007"]:
+        failures.append("active enterprise send set is not ERG-006/ERG-007")
+    if operator_next.get("recommended_next_enterprise_review") != "ERG-006/ERG-007":
+        failures.append("active enterprise review is not ERG-006/ERG-007")
+    if operator_next.get("next_action") != (
+        "prepare_erg006_erg007_production_identity_storage_architecture_review"
+    ):
+        failures.append(
+            "active enterprise action is not ERG-006/ERG-007 architecture review"
+        )
     return failures
 
 
