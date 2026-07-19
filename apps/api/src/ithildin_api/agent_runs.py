@@ -304,6 +304,47 @@ class AgentRunStore:
             "summary": _runs_summary(runs, filters),
         }
 
+    def mission_candidates(self, mission_id: str) -> list[JsonObject]:
+        """Return every run carrying one exact server-written mission binding."""
+
+        if (
+            len(mission_id) != 40
+            or not mission_id.startswith("mission_")
+            or any(character not in "0123456789abcdef" for character in mission_id[8:])
+        ):
+            raise AgentRunError("invalid mission correlation ID")
+        with sqlite3.connect(self.db_path) as connection:
+            invalid = connection.execute(
+                "SELECT 1 FROM agent_runs WHERE json_valid(metadata_json) = 0 LIMIT 1"
+            ).fetchone()
+            if invalid is not None:
+                raise AgentRunError("failed to decode agent run metadata")
+            rows = connection.execute(
+                """
+                SELECT
+                    run_id,
+                    principal_id,
+                    principal_type,
+                    principal_roles_json,
+                    workspace_id,
+                    session_id,
+                    status,
+                    tool_call_count,
+                    created_at,
+                    updated_at,
+                    last_request_id,
+                    policy_hash,
+                    last_tool_name,
+                    last_tool_manifest_hash,
+                    metadata_json
+                FROM agent_runs
+                WHERE json_extract(metadata_json, '$.mission_id') = ?
+                ORDER BY updated_at DESC, run_id ASC
+                """,
+                (mission_id,),
+            ).fetchall()
+        return [_record_from_row(row).summary() for row in rows]
+
     def get_run(self, run_id: str) -> JsonObject:
         with sqlite3.connect(self.db_path) as connection:
             row = connection.execute(

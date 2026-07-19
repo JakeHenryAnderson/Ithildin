@@ -753,11 +753,25 @@ def create_app(
             ) from exc
 
         registry = cast(ToolRegistry, api.state.registry)
+        try:
+            mission_binding = cast(
+                MissionStore,
+                api.state.mission_store,
+            ).governed_run_mission_binding(
+                node_id=node.node_id,
+                session_id=governed_request.session_id,
+            )
+        except MissionError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="mission governed-run session binding conflicts",
+            ) from exc
         service = _node_governed_tool_service(
             api,
             context.principal_registry,
             node=node,
             context=context,
+            mission_binding=mission_binding,
         )
         try:
             registered_tool = registry.get_tool(governed_request.tool_name)
@@ -1646,7 +1660,26 @@ def create_app(
                 detail="mission claim expiry reconciliation failed",
             ) from exc
         limit = _bounded_query_limit(request.query_params.get("limit"), default=50, maximum=200)
-        missions = cast(MissionStore, api.state.mission_store).list_admitted(limit=limit)
+        try:
+            mission_store = cast(MissionStore, api.state.mission_store)
+            admitted = mission_store.list_admitted(limit=limit)
+            agent_run_store = cast(AgentRunStore, api.state.agent_run_store)
+            agent_runs = [
+                run
+                for mission in admitted
+                for run in agent_run_store.mission_candidates(
+                    cast(str, mission["mission_id"])
+                )
+            ]
+            missions = cast(
+                MissionStore,
+                api.state.mission_store,
+            ).list_operator_summaries(limit=limit, agent_runs=agent_runs)
+        except (AgentRunError, MissionError) as exc:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="mission cockpit evidence validation failed",
+            ) from exc
         return {
             "missions": cast(JsonValue, missions),
             "count": len(missions),
@@ -1663,9 +1696,13 @@ def create_app(
                 MissionClaimService,
                 api.state.mission_claim_service,
             ).reconcile_expired_claims()
-            return cast(MissionStore, api.state.mission_store).get_admitted(
+            agent_runs = cast(AgentRunStore, api.state.agent_run_store).mission_candidates(
                 mission_id
-            ).safe_summary()
+            )
+            return cast(MissionStore, api.state.mission_store).operator_summary(
+                mission_id,
+                agent_runs=agent_runs,
+            )
         except MissionClaimError as exc:
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
@@ -1673,6 +1710,11 @@ def create_app(
             ) from exc
         except MissionNotFoundError as exc:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+        except (AgentRunError, MissionError) as exc:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="mission cockpit evidence validation failed",
+            ) from exc
 
     @api.post("/missions/{mission_id}/cancel")
     async def cancel_mission(
@@ -2651,6 +2693,7 @@ def _node_governed_tool_service(
     *,
     node: NodeRecord,
     context: NodeGovernedAccessContext,
+    mission_binding: JsonObject | None = None,
 ) -> GovernedToolCallService:
     return GovernedToolCallService(
         registry=cast(ToolRegistry, api.state.registry),
@@ -2676,6 +2719,7 @@ def _node_governed_tool_service(
             "configuration_digest": context.configuration_digest,
             "offline_fallback_allowed": False,
             "runner_enforcement_proven": False,
+            **(mission_binding or {}),
         },
         sandbox_artifact_service=cast(
             SandboxArtifactWriteService, api.state.sandbox_artifact_service

@@ -184,6 +184,7 @@ type FetchMockOptions = {
   auditExportFailure?: boolean;
   decision?: "deny" | "require_approval";
   emptyRuns?: boolean;
+  emptyMissions?: boolean;
   emptyTimeline?: boolean;
   invalidBinding?: boolean;
   noApprovals?: boolean;
@@ -192,6 +193,8 @@ type FetchMockOptions = {
   nodeRevokeFailure?: boolean;
   nodeRun?: boolean;
   nodeRunOriginMismatch?: boolean;
+  missionOverrides?: Record<string, unknown>;
+  additionalMissions?: Record<string, unknown>[];
   runEvidenceRevisionMismatch?: boolean;
   nodeStatus?: "enrolled" | "revoked";
   proposalStatus?: "applied" | "proposed";
@@ -214,6 +217,80 @@ type FetchMockOptions = {
     | "executed"
     | "legacy_unbound";
 };
+
+function missionSummary(overrides: Record<string, unknown> = {}) {
+  const missionId = "mission_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+  return {
+    mission_id: missionId,
+    requester_principal_id: "admin:local-ui",
+    requester_identity_generation: "sha256:requestergeneration",
+    client_request_id: "operator-mission-001",
+    admission_request_digest: "sha256:admissionrequest",
+    authority_snapshot_hash: "sha256:authoritysnapshot",
+    target_node_id: "node_11111111111111111111111111111111",
+    target_node_principal_id: "agent:node.node_11111111111111111111111111111111",
+    workspace_id: "demo",
+    configuration_generation: 1,
+    configuration_digest: "sha256:desiredconfiguration",
+    policy_digest: "sha256:policyhash",
+    manifest_lock_digest: "sha256:manifestlock",
+    mission_template_id: "synthetic_read_review_v1",
+    template_registry_generation: "sha256:templateregistry",
+    template_payload_digest: "sha256:templatepayload",
+    envelope_digest: "sha256:missionenvelope",
+    requested_timeout_seconds: 300,
+    lifecycle_state: "queued",
+    lifecycle_revision: 1,
+    created_at: "2026-07-18T12:00:00Z",
+    updated_at: "2026-07-18T12:00:00Z",
+    admitted_at: "2026-07-18T12:00:00Z",
+    lifecycle_authority: "gateway",
+    runner_state_authority: "runner_reported_only",
+    model_provider_state_known: false,
+    delivery: {
+      authority: "gateway_node_claim",
+      state: "not_claimed",
+      claim: null,
+    },
+    evidence: {
+      authority: "gateway_audit_binding",
+      state: "complete",
+      transitions: [{
+        transition_id: "mtransition_11111111111111111111111111111111",
+        evidence_status: "complete",
+      }],
+    },
+    runner_reports: {
+      authority: "runner_reported_through_authenticated_node",
+      latest: null,
+      receipts: [],
+      quarantined_count: 0,
+      report_conflict_count: 0,
+    },
+    governed_agent_runs: {
+      authority: "gateway_agent_run_evidence",
+      correlation_basis: "gateway_validated_claim_session",
+      count: 0,
+      runs: [],
+      rejected_correlation_count: 0,
+    },
+    cancellation: {
+      authority: "gateway_decision_and_runner_reported_observation",
+      recorded: false,
+      observed_by_node: false,
+      runner_reported_canceled: false,
+      runner_process_stop_proven: false,
+    },
+    attention_codes: [],
+    model_provider: {
+      state: "unknown",
+      authority: "external_runner_or_provider",
+      inference_known: false,
+      output_verified: false,
+    },
+    ...overrides,
+  };
+}
 
 type TestJsonValue = string | number | boolean | null | TestJsonValue[] | TestJsonObject;
 type TestJsonObject = { [key: string]: TestJsonValue };
@@ -349,6 +426,12 @@ function trustedHostProposal(
 }
 
 function installFetchMock(status = systemStatus(), options: FetchMockOptions = {}) {
+  let missionRecords = options.emptyMissions
+    ? []
+    : [
+        missionSummary(options.missionOverrides),
+        ...(options.additionalMissions ?? []).map((mission) => missionSummary(mission)),
+      ];
   const approvalForScenario = {
     ...approvalReview,
     approval: {
@@ -388,6 +471,63 @@ function installFetchMock(status = systemStatus(), options: FetchMockOptions = {
     const url = String(input);
     const path = url.replace(API_BASE, "");
     if (path === "/system/status") return jsonResponse(status);
+    if (path === "/mission-templates") {
+      return jsonResponse({
+        registry_generation: "sha256:templateregistry",
+        template_count: 1,
+        templates: [
+          {
+            mission_template_id: "synthetic_read_review_v1",
+            template_payload_digest: "sha256:templatepayload",
+            payload_included: false,
+            freeform_objective_allowed: false,
+            runner_launch_authorized: false,
+          },
+        ],
+      });
+    }
+    if (path === "/missions?limit=50") {
+      return jsonResponse({
+        missions: missionRecords,
+        count: missionRecords.length,
+        lifecycle_authority: "gateway",
+        runner_state_authority: "runner_reported_only",
+        model_provider_state_known: false,
+        template_payloads_included: false,
+      });
+    }
+    if (path === "/missions" && init?.method === "POST") {
+      const created = missionSummary({
+        mission_id: "mission_bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        client_request_id: "mission-ui-created",
+      });
+      missionRecords = [created, ...missionRecords];
+      return jsonResponse(created);
+    }
+    if (path.startsWith("/missions/") && path.endsWith("/cancel") && init?.method === "POST") {
+      const missionId = path.split("/")[2];
+      missionRecords = missionRecords.map((mission) =>
+        mission.mission_id === missionId
+          ? missionSummary({
+              ...mission,
+              lifecycle_state: "canceled",
+              lifecycle_revision: Number(mission.lifecycle_revision) + 1,
+              cancellation: {
+                ...mission.cancellation,
+                recorded: true,
+              },
+            })
+          : mission,
+      );
+      return jsonResponse(missionRecords.find((mission) => mission.mission_id === missionId));
+    }
+    if (path.startsWith("/missions/") && !path.endsWith("/cancel")) {
+      const missionId = path.split("/")[2];
+      const mission = missionRecords.find((candidate) => candidate.mission_id === missionId);
+      return mission
+        ? jsonResponse(mission)
+        : jsonResponse({ detail: "unknown mission" }, { status: 404, statusText: "Not Found" });
+    }
     if (path === "/tools") {
       return jsonResponse({
         tools: [
@@ -1192,6 +1332,189 @@ describe("Review console interactions", () => {
     expect(screen.getByText("Gateway is authoritative")).toBeInTheDocument();
   });
 
+  it("presents mission admission and every authority source without runner or provider overclaim", async () => {
+    const fetchMock = installFetchMock();
+    const user = await saveToken();
+    await user.click(screen.getByRole("link", { name: "Missions" }));
+
+    const cockpit = screen.getByRole("region", { name: "Mission Command panel" });
+    expect(within(cockpit).getByRole("heading", { name: "Mission Command" })).toBeInTheDocument();
+    expect(within(cockpit).getByLabelText("Eligible Gateway Node")).toHaveValue(
+      "node_11111111111111111111111111111111",
+    );
+    expect(within(cockpit).getByLabelText("Server-owned mission template")).toHaveValue(
+      "synthetic_read_review_v1",
+    );
+    expect(within(cockpit).getByLabelText("Delivery review timeout in seconds")).toHaveValue(300);
+    expect(within(cockpit).getByText("Gateway lifecycle")).toBeInTheDocument();
+    expect(within(cockpit).getByText("Node delivery")).toBeInTheDocument();
+    expect(within(cockpit).getByText("Runner report")).toBeInTheDocument();
+    expect(within(cockpit).getByText("Governed Agent Runs")).toBeInTheDocument();
+    expect(within(cockpit).getByText("Model provider")).toBeInTheDocument();
+    expect(within(cockpit).getAllByText("Unknown").length).toBeGreaterThan(0);
+    expect(within(cockpit).getByText(/operating-system process stopped/i)).toBeInTheDocument();
+
+    await user.click(within(cockpit).getByRole("button", { name: "Admit synthetic mission" }));
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith(
+        `${API_BASE}/missions`,
+        expect.objectContaining({ method: "POST" }),
+      );
+    });
+    const admissionCall = fetchMock.mock.calls.find(
+      ([input, init]) => String(input) === `${API_BASE}/missions` && init?.method === "POST",
+    );
+    const admissionBody = JSON.parse(String(admissionCall?.[1]?.body));
+    expect(Object.keys(admissionBody).sort()).toEqual([
+      "client_request_id",
+      "mission_template_id",
+      "requested_timeout_seconds",
+      "target_node_id",
+    ]);
+    expect(admissionBody).not.toHaveProperty("objective");
+    expect(await within(cockpit).findByText(/was admitted by the Gateway/i)).toBeInTheDocument();
+  });
+
+  it("shows an explicit empty Mission Command state", async () => {
+    installFetchMock(systemStatus(), { emptyMissions: true });
+    const user = await saveToken();
+    await user.click(screen.getByRole("link", { name: "Missions" }));
+
+    const cockpit = screen.getByRole("region", { name: "Mission Command panel" });
+    expect(
+      within(cockpit).getByText(/No missions are admitted/i),
+    ).toBeInTheDocument();
+    expect(within(cockpit).queryByLabelText("Selected mission record")).toBeNull();
+  });
+
+  it("records cancellation as a Gateway decision without claiming process stop", async () => {
+    const fetchMock = installFetchMock();
+    const user = await saveToken();
+    await user.click(screen.getByRole("link", { name: "Missions" }));
+    const cockpit = screen.getByRole("region", { name: "Mission Command panel" });
+
+    await user.click(
+      within(cockpit).getByRole("button", { name: "Request Gateway cancellation" }),
+    );
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith(
+        `${API_BASE}/missions/mission_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/cancel`,
+        expect.objectContaining({ method: "POST" }),
+      );
+    });
+    expect(
+      await within(cockpit).findByText(/does not prove that a runner process stopped/i),
+    ).toBeInTheDocument();
+    expect(within(cockpit).getByText("Gateway recorded").parentElement).toHaveTextContent("Yes");
+    expect(within(cockpit).getByText("Node observed").parentElement).toHaveTextContent("Not reported");
+  });
+
+  it("routes mission evidence exceptions into keyboard-accessible Attention remediation", async () => {
+    installFetchMock(systemStatus(), {
+      noApprovals: true,
+      proposalStatus: "applied",
+      missionOverrides: {
+        attention_codes: ["claim_expiry", "quarantine", "report_conflict"],
+        lifecycle_state: "claim_expired_review_required",
+      },
+    });
+    const user = await saveToken();
+    const attention = screen.getByRole("region", { name: "Attention" });
+    expect(
+      within(attention).getAllByText("Claim delivery expired with ambiguity").length,
+    ).toBeGreaterThan(0);
+
+    const reviewButton = within(attention).getByRole("button", {
+      name: "Review mission evidence",
+    });
+    reviewButton.focus();
+    await user.keyboard("{Enter}");
+    const remediation = screen.getByRole("region", { name: "Mission remediation guidance" });
+    await waitFor(() => expect(remediation).toHaveFocus());
+    expect(
+      within(remediation).getAllByText("Claim delivery expired with ambiguity").length,
+    ).toBeGreaterThan(0);
+    expect(within(remediation).getByText("Authenticated report evidence was quarantined")).toBeInTheDocument();
+    expect(within(remediation).getByText("Runner report conflicts with current Gateway state")).toBeInTheDocument();
+  });
+
+  it("binds delayed mission detail responses to the latest selected mission", async () => {
+    const secondMissionId = "mission_cccccccccccccccccccccccccccccccc";
+    const fetchMock = installFetchMock(systemStatus(), {
+      additionalMissions: [{ mission_id: secondMissionId }],
+    });
+    const user = await saveToken();
+    await user.click(screen.getByRole("link", { name: "Missions" }));
+    const cockpit = screen.getByRole("region", { name: "Mission Command panel" });
+    const originalImplementation = fetchMock.getMockImplementation()!;
+    const firstSelection = deferredResponse();
+    const secondSelection = deferredResponse();
+    fetchMock.mockImplementation((input, init) => {
+      const path = String(input).replace(API_BASE, "");
+      if (path === `/missions/${secondMissionId}`) return firstSelection.promise;
+      if (path === "/missions/mission_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa") {
+        return secondSelection.promise;
+      }
+      return originalImplementation(input, init);
+    });
+
+    await user.click(
+      within(cockpit).getByRole("button", { name: `Open mission ${secondMissionId}` }),
+    );
+    expect(within(cockpit).getByText("Refreshing selected mission evidence…")).toBeInTheDocument();
+    await user.click(
+      within(cockpit).getByRole("button", {
+        name: "Open mission mission_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      }),
+    );
+    await act(async () => {
+      secondSelection.resolve(jsonResponse(missionSummary({ lifecycle_state: "canceled" })));
+    });
+    await waitFor(() => {
+      expect(within(cockpit).getAllByText("canceled").length).toBeGreaterThan(0);
+    });
+    await act(async () => {
+      firstSelection.resolve(
+        jsonResponse(missionSummary({
+          mission_id: secondMissionId,
+          lifecycle_state: "runner_reported_succeeded",
+        })),
+      );
+    });
+    expect(within(cockpit).getAllByText("canceled").length).toBeGreaterThan(0);
+    expect(within(cockpit).queryAllByText("runner reported succeeded")).toHaveLength(0);
+  });
+
+  it("shows mission-detail errors without replacing the selected inventory record", async () => {
+    const secondMissionId = "mission_cccccccccccccccccccccccccccccccc";
+    const fetchMock = installFetchMock(systemStatus(), {
+      additionalMissions: [{ mission_id: secondMissionId }],
+    });
+    const user = await saveToken();
+    await user.click(screen.getByRole("link", { name: "Missions" }));
+    const originalImplementation = fetchMock.getMockImplementation()!;
+    fetchMock.mockImplementation((input, init) => {
+      if (String(input) === `${API_BASE}/missions/${secondMissionId}`) {
+        return Promise.resolve(
+          jsonResponse(
+            { detail: "mission cockpit evidence validation failed" },
+            { status: 503, statusText: "Service Unavailable" },
+          ),
+        );
+      }
+      return originalImplementation(input, init);
+    });
+    const cockpit = screen.getByRole("region", { name: "Mission Command panel" });
+
+    await user.click(
+      within(cockpit).getByRole("button", { name: `Open mission ${secondMissionId}` }),
+    );
+    expect(
+      await within(cockpit).findByRole("alert"),
+    ).toHaveTextContent("mission cockpit evidence validation failed");
+    expect(within(cockpit).getAllByText(secondMissionId).length).toBeGreaterThan(0);
+  });
+
   it("presents Gateway-derived Node identity without claiming runner health", async () => {
     const fetchMock = installFetchMock();
     const user = await saveToken();
@@ -1289,7 +1612,9 @@ describe("Review console interactions", () => {
       }),
     );
 
-    const missions = screen.getByRole("region", { name: "Agent runs" });
+    const missions = screen.getByRole("region", {
+      name: "Mission Command and Agent Runs",
+    });
     expect(within(missions).getByLabelText("Principal")).toHaveValue(
       "agent:node.node_11111111111111111111111111111111",
     );
@@ -1329,7 +1654,9 @@ describe("Review console interactions", () => {
     });
 
     await user.click(within(navigation).getByRole("link", { name: "Missions" }));
-    const missions = screen.getByRole("region", { name: "Agent runs" });
+    const missions = screen.getByRole("region", {
+      name: "Mission Command and Agent Runs",
+    });
     const authority = await within(missions).findByRole("region", {
       name: "Node governed-run authority",
     });
@@ -1419,7 +1746,9 @@ describe("Review console interactions", () => {
     });
 
     await user.click(within(navigation).getByRole("link", { name: "Missions" }));
-    const missions = screen.getByRole("region", { name: "Agent runs" });
+    const missions = screen.getByRole("region", {
+      name: "Mission Command and Agent Runs",
+    });
     const authority = await within(missions).findByRole("region", {
       name: "Node governed-run authority",
     });

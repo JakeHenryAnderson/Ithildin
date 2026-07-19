@@ -4526,3 +4526,394 @@ td,
     justify-self: start;
   }
 }
+
+.mission-command-boundary {
+  align-items: start;
+  background: linear-gradient(90deg, rgb(16 58 72 / 72%), rgb(10 31 45 / 88%));
+  border-bottom: 1px solid #315468;
+  color: #b9cad4;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: auto minmax(0, 1fr);
+  padding: 16px 20px;
+}
+
+.mission-command-boundary svg {
+  color: #72d2ca;
+  margin-top: 2px;
+}
+
+.mission-command-boundary p,
+.mission-command-boundary strong {
+  display: block;
+  margin: 0;
+}
+
+.mission-command-boundary strong {
+  color: #f0f6f8;
+  margin-bottom: 4px;
+}
+
+.mission-command-summary {
+  background: #091725;
+  border-bottom: 1px solid #2b4050;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.mission-command-summary span {
+  color: #91a6b4;
+  display: grid;
+  font-size: 0.7rem;
+  gap: 2px;
+  padding: 14px 18px;
+  text-transform: uppercase;
+}
+
+.mission-command-summary span + span {
+  border-left: 1px solid #2b4050;
+}
+
+.mission-command-summary strong {
+  color: #eef4f7;
+  font-size: 1.08rem;
+}
+
+.mission-create-form {
+  align-items: end;
+  background: #0d1d2b;
+  border-bottom: 1px solid #30495b;
+  display: grid;
+  gap: 14px;
+  grid-template-columns: minmax(210px, 1.2fr) minmax(210px, 1fr) minmax(150px, 0.55fr) minmax(230px, 1fr) auto;
+  padding: 18px 20px;
+}
+
+.mission-create-heading {
+  align-items: center;
+  display: flex;
+  grid-column: 1 / -1;
+  justify-content: space-between;
+}
+
+.mission-create-heading h3,
+.mission-detail-heading h3,
+.mission-cancel-state h4,
+.mission-attention h4 {
+  color: #f0f5f7;
+  margin: 2px 0 0;
+}
+
+.mission-create-form label {
+  color: #a7bac6;
+  display: grid;
+  font-size: 0.72rem;
+  gap: 7px;
+}
+
+.mission-create-form input,
+.mission-create-form select {
+  background: #071522;
+  border: 1px solid #3a5264;
+  color: #e5edf1;
+  min-height: 42px;
+  padding: 9px 10px;
+}
+
+.mission-create-form input:focus-visible,
+.mission-create-form select:focus-visible,
+.mission-inventory-row:focus-visible,
+.mission-cancel-state button:focus-visible {
+  outline: 2px solid #e7b64d;
+  outline-offset: 2px;
+}
+
+.mission-template-contract {
+  display: grid;
+  gap: 3px;
+  min-height: 42px;
+}
+
+.mission-template-contract strong {
+  color: #dfe9ed;
+  font-size: 0.76rem;
+}
+
+.mission-template-contract span,
+.mission-template-contract small,
+.mission-form-guidance {
+  color: #8fa5b3;
+  font-size: 0.68rem;
+  line-height: 1.45;
+}
+
+.mission-form-guidance {
+  grid-column: 1 / -1;
+  margin: 0;
+}
+
+.mission-operation-message {
+  background: #0f2a32;
+  border-bottom: 1px solid #2f555f;
+  color: #bce0dd;
+  padding: 12px 20px;
+}
+
+.mission-operation-message.error {
+  background: #351b22;
+  border-color: #70404c;
+  color: #ffd2d7;
+}
+
+.mission-cockpit-layout {
+  display: grid;
+  grid-template-columns: minmax(300px, 0.72fr) minmax(0, 1.65fr);
+  min-height: 590px;
+}
+
+.mission-inventory {
+  background: #091725;
+  border-right: 1px solid #30495b;
+}
+
+.mission-inventory > div + div {
+  border-top: 1px solid #283d4d;
+}
+
+.mission-inventory-row {
+  background: transparent;
+  border: 0;
+  color: #b9c8d1;
+  display: grid;
+  gap: 7px;
+  padding: 15px 16px;
+  text-align: left;
+  width: 100%;
+}
+
+.mission-inventory-row:hover {
+  background: #122638;
+}
+
+.mission-inventory-row.selected {
+  background: #1a2d3e;
+  box-shadow: inset 3px 0 #e6ad2f, inset 0 0 0 1px #765b27;
+}
+
+.mission-inventory-heading {
+  align-items: center;
+  display: flex;
+  gap: 10px;
+  justify-content: space-between;
+}
+
+.mission-inventory-heading strong {
+  color: #eef4f7;
+}
+
+.mission-inventory-row small {
+  color: #718a9a;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  overflow-wrap: anywhere;
+}
+
+.mission-row-attention,
+.mission-row-clear {
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.mission-row-attention {
+  color: #f1bd5b;
+}
+
+.mission-row-clear {
+  color: #70c7a8;
+}
+
+.mission-detail {
+  background: #0c1b29;
+  min-width: 0;
+  padding: 20px;
+}
+
+.mission-detail-heading {
+  align-items: start;
+  border-bottom: 1px solid #2d4353;
+  display: flex;
+  justify-content: space-between;
+  padding-bottom: 16px;
+}
+
+.mission-detail-heading p:last-child {
+  color: #7892a2;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.72rem;
+  margin: 6px 0 0;
+  overflow-wrap: anywhere;
+}
+
+.mission-detail-loading {
+  color: #9fc5cd;
+  margin: 12px 0 0;
+}
+
+.mission-truth-grid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-top: 16px;
+}
+
+.mission-truth-card {
+  background: #0a1724;
+  border: 1px solid #2d4353;
+  display: grid;
+  gap: 5px;
+  min-height: 126px;
+  padding: 14px;
+}
+
+.mission-truth-card > span {
+  color: #7e98a8;
+  font-size: 0.67rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.mission-truth-card strong {
+  color: #edf3f6;
+  font-size: 0.91rem;
+}
+
+.mission-truth-card small {
+  color: #69c7c0;
+  font-size: 0.66rem;
+}
+
+.mission-truth-card p {
+  color: #91a5b2;
+  font-size: 0.7rem;
+  line-height: 1.4;
+  margin: 2px 0 0;
+}
+
+.mission-cancel-state,
+.mission-attention {
+  background: #0a1724;
+  border: 1px solid #2d4353;
+  margin-top: 14px;
+  padding: 16px;
+}
+
+.mission-cancel-state ol {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  list-style: none;
+  margin: 14px 0;
+  padding: 0;
+}
+
+.mission-cancel-state li {
+  border-left: 3px solid #465765;
+  display: grid;
+  gap: 3px;
+  padding: 8px 10px;
+}
+
+.mission-cancel-state li.complete {
+  border-left-color: #65c59e;
+}
+
+.mission-cancel-state li strong {
+  color: #dce6ea;
+  font-size: 0.74rem;
+}
+
+.mission-cancel-state li span,
+.mission-cancel-state > p {
+  color: #8ea3af;
+  font-size: 0.7rem;
+}
+
+.mission-cancel-state .danger-action {
+  background: #6e2d38;
+  border: 1px solid #a44a5b;
+  color: #fff2f3;
+  min-height: 38px;
+  padding: 8px 12px;
+}
+
+.mission-attention {
+  border-color: #725b2e;
+}
+
+.mission-attention-heading {
+  align-items: start;
+  color: #e9b74f;
+  display: flex;
+  gap: 10px;
+}
+
+.mission-attention ul {
+  display: grid;
+  gap: 10px;
+  list-style: none;
+  margin: 14px 0 0;
+  padding: 0;
+}
+
+.mission-attention li {
+  background: #191b1c;
+  border-left: 3px solid #d39a37;
+  display: grid;
+  gap: 4px;
+  padding: 10px 12px;
+}
+
+.mission-attention li strong {
+  color: #f0d6a3;
+  font-size: 0.76rem;
+}
+
+.mission-attention li span {
+  color: #aaaca8;
+  font-size: 0.7rem;
+  line-height: 1.45;
+}
+
+@media (max-width: 1280px) {
+  .mission-create-form {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .mission-create-form .primary-action {
+    justify-self: start;
+  }
+
+  .mission-truth-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 900px) {
+  .mission-command-summary,
+  .mission-create-form,
+  .mission-cockpit-layout,
+  .mission-truth-grid,
+  .mission-cancel-state ol {
+    grid-template-columns: 1fr;
+  }
+
+  .mission-command-summary span + span {
+    border-left: 0;
+    border-top: 1px solid #2b4050;
+  }
+
+  .mission-inventory {
+    border-bottom: 1px solid #30495b;
+    border-right: 0;
+  }
+}

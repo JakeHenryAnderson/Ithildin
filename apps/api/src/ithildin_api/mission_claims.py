@@ -25,6 +25,8 @@ from ithildin_api.missions import (
     MissionRecord,
     MissionStore,
     MissionTransitionAttempt,
+    mission_claim_expiry_audit_metadata,
+    mission_claim_transition_audit_metadata,
 )
 from ithildin_api.node_configuration import (
     NodeConfigurationNotFoundError,
@@ -120,7 +122,9 @@ class MissionClaimService:
                 request_id=f"req_{uuid4().hex}",
                 principal={"id": authenticated_node.principal_id, "roles": []},
                 input_hash=staged.transition.request_digest,
-                metadata=_claim_audit_metadata(staged.transition, staged.claim, mission),
+                metadata=mission_claim_transition_audit_metadata(
+                    staged.transition, staged.claim, mission
+                ),
                 timestamp=effective_now,
             )
         except AuditWriteError as exc:
@@ -171,7 +175,7 @@ class MissionClaimService:
                     request_id=f"req_{uuid4().hex}",
                     principal={"id": "gateway:mission-expiry", "roles": []},
                     input_hash=staged.transition.request_digest,
-                    metadata=_claim_expiry_audit_metadata(
+                    metadata=mission_claim_expiry_audit_metadata(
                         staged.transition,
                         staged.claim,
                         staged.mission,
@@ -340,55 +344,3 @@ class MissionClaimService:
             )
         except MissionError:
             pass
-
-
-def _claim_audit_metadata(
-    transition: MissionTransitionAttempt,
-    claim: MissionClaimRecord,
-    mission: MissionRecord,
-) -> JsonObject:
-    return {
-        "transition_id": transition.transition_id,
-        "mission_id": mission.mission_id,
-        "claim_id": claim.claim_id,
-        "transition_kind": transition.transition_kind,
-        "prior_lifecycle_state": transition.prior_lifecycle_state,
-        "prior_lifecycle_revision": transition.prior_lifecycle_revision,
-        "proposed_lifecycle_state": transition.proposed_lifecycle_state,
-        "proposed_lifecycle_revision": transition.proposed_lifecycle_revision,
-        "request_digest": transition.request_digest,
-        "evidence_status": "pending",
-        "target_node_id": mission.target_node_id,
-        "workspace_id": mission.workspace_id,
-        "envelope_digest": mission.envelope_digest,
-        "authority_snapshot_hash": claim.authority_snapshot_hash,
-        "claim_expires_at": claim.expires_at,
-        "staged_proposal_only": True,
-        "runner_started_proven": False,
-        "model_provider_state_known": False,
-    }
-
-
-def _claim_expiry_audit_metadata(
-    transition: MissionTransitionAttempt,
-    claim: MissionClaimRecord,
-    mission: MissionRecord,
-) -> JsonObject:
-    return {
-        "transition_id": transition.transition_id,
-        "mission_id": mission.mission_id,
-        "claim_id": claim.claim_id,
-        "transition_kind": transition.transition_kind,
-        "prior_lifecycle_state": transition.prior_lifecycle_state,
-        "prior_lifecycle_revision": transition.prior_lifecycle_revision,
-        "proposed_lifecycle_state": transition.proposed_lifecycle_state,
-        "proposed_lifecycle_revision": transition.proposed_lifecycle_revision,
-        "request_digest": transition.request_digest,
-        "evidence_status": "pending",
-        "target_node_id": mission.target_node_id,
-        "envelope_digest": mission.envelope_digest,
-        "claim_expires_at": claim.expires_at,
-        "staged_proposal_only": True,
-        "automatic_requeue": False,
-        "runner_state_authority": "runner_reported_only",
-    }

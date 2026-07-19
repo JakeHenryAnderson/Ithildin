@@ -26,10 +26,12 @@ from ithildin_api.missions import (
     MissionRecord,
     MissionRunnerReportPayload,
     MissionStore,
+    mission_claim_transition_audit_metadata,
     mission_transition_audit_metadata,
 )
 from ithildin_api.promotion_authority import AdminPrincipalContext
-from ithildin_schemas import JsonObject
+from ithildin_audit_core import AuditWriter
+from ithildin_schemas import AuditEventType, JsonObject
 from pydantic import ValidationError
 
 SHA_A = "sha256:" + ("a" * 64)
@@ -155,6 +157,204 @@ def test_admission_finalizes_only_with_bound_audit_evidence(tmp_path: Path) -> N
         )
 
 
+def test_operator_summary_keeps_mission_truth_sources_separate(tmp_path: Path) -> None:
+    store = _store(tmp_path)
+    audit_writer = AuditWriter(store.db_path, tmp_path / "audit.jsonl")
+    audit_writer.initialize()
+    staged = store.stage_admission(_payload(), authority=_authority())
+    admission_event = audit_writer.write_event(
+        event_id="evt_" + ("7" * 32),
+        event_type=AuditEventType.MISSION_ADMISSION_STAGED,
+        request_id="req_operator_summary_admission",
+        principal={"id": "admin:local-ui", "roles": ["Admin"]},
+        input_hash=staged.transition.request_digest,
+        metadata=mission_transition_audit_metadata(staged.transition, staged.mission),
+    )
+    admitted = store.finalize_admission(
+        staged.transition.transition_id,
+        audit_event_id=admission_event.event_id,
+        audit_event_hash=admission_event.event_hash,
+    )
+    claim_authority = _claim_authority(admitted)
+    staged_claim = store.stage_claim(
+        admitted.mission_id,
+        MissionClaimRequestPayload(protocol_version="1"),
+        authority=claim_authority,
+    )
+    claim_event = audit_writer.write_event(
+        event_id="evt_" + ("6" * 32),
+        event_type=AuditEventType.MISSION_CLAIM_STAGED,
+        request_id="req_operator_summary_claim",
+        principal={"id": admitted.target_node_principal_id, "roles": []},
+        input_hash=staged_claim.transition.request_digest,
+        metadata=mission_claim_transition_audit_metadata(
+            staged_claim.transition,
+            staged_claim.claim,
+            admitted,
+        ),
+    )
+    claim = store.finalize_claim(
+        staged_claim.transition.transition_id,
+        audit_event_id=claim_event.event_id,
+        audit_event_hash=claim_event.event_hash,
+        authority_precondition=lambda: claim_authority,
+    )
+    admitted = store.get(admitted.mission_id)
+    matching_run: JsonObject = {
+        "run_id": "run_matching",
+        "principal_id": admitted.target_node_principal_id,
+        "workspace_id": admitted.workspace_id,
+        "status": "active",
+        "tool_call_count": 2,
+        "updated_at": admitted.updated_at,
+        "metadata": {
+            "mission_id": admitted.mission_id,
+            "ingress_kind": "node_governed_access",
+            "identity_source": "gateway_derived_node",
+            "node_id": admitted.target_node_id,
+            "mission_claim_id": claim.claim_id,
+            "mission_envelope_digest": admitted.envelope_digest,
+            "mission_binding_source": "gateway_validated_claim_session",
+        },
+    }
+    mismatched_run: JsonObject = {
+        **matching_run,
+        "run_id": "run_mismatch",
+        "workspace_id": "wrong-workspace",
+    }
+
+    summary = store.operator_summary(
+        admitted.mission_id,
+        agent_runs=[matching_run, mismatched_run],
+    )
+
+    assert summary["lifecycle_state"] == MISSION_CLAIMED
+    assert summary["delivery"] == {
+        "authority": "gateway_node_claim",
+        "state": "claim_delivered",
+        "claim": claim.safe_summary(),
+    }
+    assert summary["runner_reports"] == {
+        "authority": "runner_reported_through_authenticated_node",
+        "latest": None,
+        "receipts": [],
+        "quarantined_count": 0,
+        "report_conflict_count": 0,
+    }
+    assert summary["governed_agent_runs"]["count"] == 1
+    assert summary["governed_agent_runs"]["runs"] == [
+        {
+            "run_id": "run_matching",
+            "principal_id": admitted.target_node_principal_id,
+            "workspace_id": admitted.workspace_id,
+            "status": "active",
+            "tool_call_count": 2,
+            "updated_at": admitted.updated_at,
+        }
+    ]
+    assert summary["governed_agent_runs"]["rejected_correlation_count"] == 1
+    assert summary["attention_codes"] == ["agent_run_correlation_mismatch"]
+    assert summary["model_provider"] == {
+        "state": "unknown",
+        "authority": "external_runner_or_provider",
+        "inference_known": False,
+        "output_verified": False,
+    }
+    mission_session = (
+        f"mission:{admitted.mission_id}:{claim.claim_id}:"
+        f"{admitted.envelope_digest.removeprefix('sha256:')[:16]}"
+    )
+    before_expiry = datetime.fromisoformat(claim.expires_at) - timedelta(seconds=1)
+    assert (
+        store.governed_run_mission_binding(
+            node_id=admitted.target_node_id,
+            session_id=mission_session,
+            now=before_expiry,
+        )["mission_id"]
+        == admitted.mission_id
+    )
+    with pytest.raises(MissionConflictError, match="session binding conflicts"):
+        store.governed_run_mission_binding(
+            node_id=admitted.target_node_id,
+            session_id=mission_session,
+            now=datetime.fromisoformat(claim.expires_at),
+        )
+    cancellation = store.stage_cancellation(
+        admitted.mission_id,
+        MissionCancellationPayload(client_request_id="operator-summary-cancel"),
+        requester=_authority().requesting_principal,
+    )
+    store.mark_transition_evidence_incomplete(
+        cancellation.transition.transition_id,
+        failure_reason_code="audit_write_failed",
+    )
+    with pytest.raises(MissionConflictError, match="operator recovery"):
+        store.governed_run_mission_binding(
+            node_id=admitted.target_node_id,
+            session_id=mission_session,
+            now=before_expiry,
+        )
+
+
+@pytest.mark.parametrize("tamper", ["binding", "event", "payload", "transition"])
+def test_operator_summary_fails_closed_when_admission_evidence_is_missing(
+    tmp_path: Path,
+    tamper: str,
+) -> None:
+    store = _store(tmp_path)
+    audit_writer = AuditWriter(store.db_path, tmp_path / "audit.jsonl")
+    audit_writer.initialize()
+    staged = store.stage_admission(_payload(), authority=_authority())
+    admission_event = audit_writer.write_event(
+        event_id="evt_" + ("7" * 32),
+        event_type=AuditEventType.MISSION_ADMISSION_STAGED,
+        request_id="req_operator_tamper_admission",
+        principal={"id": "admin:local-ui", "roles": ["Admin"]},
+        input_hash=staged.transition.request_digest,
+        metadata=mission_transition_audit_metadata(staged.transition, staged.mission),
+    )
+    admitted = store.finalize_admission(
+        staged.transition.transition_id,
+        audit_event_id=admission_event.event_id,
+        audit_event_hash=admission_event.event_hash,
+    )
+    with sqlite3.connect(store.db_path) as connection:
+        if tamper == "binding":
+            connection.execute(
+                "DELETE FROM mission_audit_evidence_bindings WHERE owner_id = ?",
+                (staged.transition.transition_id,),
+            )
+        elif tamper == "event":
+            connection.execute(
+                "DELETE FROM audit_events WHERE event_id = ?",
+                (admission_event.event_id,),
+            )
+        elif tamper == "payload":
+            row = connection.execute(
+                "SELECT payload_json FROM audit_events WHERE event_id = ?",
+                (admission_event.event_id,),
+            ).fetchone()
+            assert row is not None
+            payload = json.loads(str(row[0]))
+            payload["principal"] = {"id": "attacker", "roles": []}
+            connection.execute(
+                "UPDATE audit_events SET payload_json = ? WHERE event_id = ?",
+                (
+                    json.dumps(payload, sort_keys=True, separators=(",", ":")),
+                    admission_event.event_id,
+                ),
+            )
+        else:
+            connection.execute(
+                "DELETE FROM mission_transition_attempts WHERE transition_id = ?",
+                (staged.transition.transition_id,),
+            )
+        connection.commit()
+
+    with pytest.raises(MissionError, match="evidence|admission|audit"):
+        store.operator_summary(admitted.mission_id)
+
+
 def test_audit_evidence_cannot_finalize_two_missions(tmp_path: Path) -> None:
     store = _store(tmp_path)
     first = store.stage_admission(_payload(), authority=_authority())
@@ -218,9 +418,7 @@ def test_queued_cancellation_is_staged_audited_and_idempotent(tmp_path: Path) ->
         audit_event_id="evt_" + ("1" * 32),
         audit_event_hash=SHA_A,
     )
-    cancellation_payload = MissionCancellationPayload(
-        client_request_id="cancel-request-001"
-    )
+    cancellation_payload = MissionCancellationPayload(client_request_id="cancel-request-001")
 
     staged = store.stage_cancellation(
         admitted.mission_id,
@@ -254,6 +452,10 @@ def test_queued_cancellation_is_staged_audited_and_idempotent(tmp_path: Path) ->
                         "event_id": cancellation_event_id,
                         "event_hash": SHA_B,
                         "event_type": "mission.cancellation.staged",
+                        "principal": {
+                            "id": "admin:local-ui",
+                            "roles": ["Admin"],
+                        },
                         "input_hash": staged.transition.request_digest,
                         "metadata": mission_transition_audit_metadata(
                             staged.transition,
@@ -486,9 +688,10 @@ def test_claim_expiry_enters_attention_without_requeue(tmp_path: Path) -> None:
     assert expired.lifecycle_revision == 3
     assert store.get_claim(mission.mission_id).claim_status == "expired_review_required"
     assert store.get_transition(claim.transition.transition_id).evidence_status == EVIDENCE_COMPLETE
-    assert store.get_transition(
-        staged_expiry.transition.transition_id
-    ).evidence_status == EVIDENCE_COMPLETE
+    assert (
+        store.get_transition(staged_expiry.transition.transition_id).evidence_status
+        == EVIDENCE_COMPLETE
+    )
     assert store.due_delivered_claims(now=now + timedelta(days=1)) == []
     with pytest.raises(MissionNotFoundError, match="no queued mission"):
         store.next_queued_for_node(NODE_ID)
@@ -619,6 +822,7 @@ def test_report_at_claim_deadline_is_staged_for_quarantine(tmp_path: Path) -> No
         connection.commit()
 
     assert staged_report.receipt.receipt_posture["proposed_disposition"] == "quarantined"
+    assert staged_report.receipt.receipt_posture["quarantine_reason_code"] == ("claim_expired")
     assert store.get(mission.mission_id).lifecycle_state == MISSION_CLAIMED
     assert store.get_report_transition(report.report_id) is None
 
@@ -784,8 +988,7 @@ def test_stored_transition_metadata_tamper_fails_closed(tmp_path: Path) -> None:
         )
         metadata["workspace_id"] = "tampered"
         connection.execute(
-            "UPDATE mission_transition_attempts SET safe_metadata_json = ? "
-            "WHERE transition_id = ?",
+            "UPDATE mission_transition_attempts SET safe_metadata_json = ? WHERE transition_id = ?",
             (json.dumps(metadata), staged.transition.transition_id),
         )
         connection.commit()

@@ -221,6 +221,99 @@ type IthildinNode = {
   };
 };
 
+type MissionTemplateSummary = {
+  mission_template_id: "synthetic_read_review_v1";
+  template_payload_digest: string;
+  payload_included: false;
+  freeform_objective_allowed: false;
+  runner_launch_authorized: false;
+};
+
+type MissionClaimSummary = {
+  claim_id: string;
+  mission_id: string;
+  node_id: string;
+  node_identity_key_id: string;
+  envelope_digest: string;
+  authority_snapshot_hash: string;
+  lifecycle_revision: number;
+  claim_status: string;
+  claimed_at: string;
+  expires_at: string;
+};
+
+type MissionReportReceiptSummary = {
+  report_id: string;
+  mission_id: string;
+  claim_id: string;
+  expected_lifecycle_revision: number;
+  report_kind: string;
+  outcome_code: string;
+  reason_code: string | null;
+  artifact_digest: string | null;
+  receipt_disposition: string;
+  evidence_status: string;
+  failure_reason_code: string | null;
+  received_at: string;
+  finalized_at: string | null;
+};
+
+type MissionOperatorSummary = {
+  mission_id: string;
+  requester_principal_id: string;
+  target_node_id: string;
+  target_node_principal_id: string;
+  workspace_id: string;
+  mission_template_id: "synthetic_read_review_v1";
+  requested_timeout_seconds: number;
+  lifecycle_state: string;
+  lifecycle_revision: number;
+  created_at: string;
+  updated_at: string;
+  admitted_at: string | null;
+  lifecycle_authority: "gateway";
+  runner_state_authority: "runner_reported_only";
+  model_provider_state_known: false;
+  delivery: {
+    authority: "gateway_node_claim";
+    state: string;
+    claim: MissionClaimSummary | null;
+  };
+  evidence: {
+    authority: "gateway_audit_binding";
+    state: string;
+    transitions: JsonObject[];
+  };
+  runner_reports: {
+    authority: "runner_reported_through_authenticated_node";
+    latest: MissionReportReceiptSummary | null;
+    receipts: MissionReportReceiptSummary[];
+    quarantined_count: number;
+    report_conflict_count: number;
+  };
+  governed_agent_runs: {
+    authority: "gateway_agent_run_evidence";
+    correlation_basis: "gateway_validated_claim_session";
+    count: number;
+    runs: JsonObject[];
+    rejected_correlation_count: number;
+  };
+  cancellation: {
+    authority: "gateway_decision_and_runner_reported_observation";
+    recorded: boolean;
+    observed_by_node: boolean;
+    runner_reported_canceled: boolean;
+    runner_process_stop_proven: false;
+  };
+  attention_codes: string[];
+  model_provider: {
+    state: "unknown";
+    authority: "external_runner_or_provider";
+    inference_known: false;
+    output_verified: false;
+  };
+};
+
 type NodeIdentityKeyRotation = {
   rotation_id: string;
   current_key_id: string;
@@ -563,13 +656,15 @@ type DashboardData = {
   trustedHostDiagnostics: TrustedHostPromotionDiagnostics | null;
   runs: AgentRun[];
   nodes: IthildinNode[];
+  missionTemplates: MissionTemplateSummary[];
+  missions: MissionOperatorSummary[];
   runSummary: AgentRunSummary | null;
   auditEvents: AuditEvent[];
   verification: AuditVerification | null;
 };
 
 type AttentionItem = {
-  source: "approval" | "failure" | "recovery" | "proposal" | "node";
+  source: "approval" | "failure" | "recovery" | "proposal" | "node" | "mission";
   title: string;
   status: string;
   bindingStatus: string | null;
@@ -583,6 +678,7 @@ type AttentionItem = {
   runId: string | null;
   proposalId: string | null;
   nodeId: string | null;
+  missionId?: string | null;
   targetId: "missions" | "approvals" | "artifacts" | "evidence" | "nodes";
   actionLabel: string;
   occurredAt: string | null;
@@ -640,6 +736,8 @@ function emptyDashboardData(): DashboardData {
     trustedHostDiagnostics: null,
     runs: [],
     nodes: [],
+    missionTemplates: [],
+    missions: [],
     runSummary: null,
     auditEvents: [],
     verification: null,
@@ -695,6 +793,15 @@ export function App() {
     setSelectedNodeVersionCohortKey,
   ] = useState<string | null>(null);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+  const [selectedMissionId, setSelectedMissionId] = useState<string | null>(null);
+  const [selectedMission, setSelectedMission] = useState<MissionOperatorSummary | null>(null);
+  const [missionDetailLoading, setMissionDetailLoading] = useState(false);
+  const [missionError, setMissionError] = useState<string | null>(null);
+  const [missionMutationLoading, setMissionMutationLoading] = useState(false);
+  const [missionNotice, setMissionNotice] = useState<string | null>(null);
+  const [missionTargetNodeId, setMissionTargetNodeId] = useState("");
+  const [missionTemplateId, setMissionTemplateId] = useState("synthetic_read_review_v1");
+  const [missionTimeoutSeconds, setMissionTimeoutSeconds] = useState("300");
   const [selectedRunId, setSelectedRunId] = useState<string | null>(null);
   const [selectedRun, setSelectedRun] = useState<AgentRunDetail | null>(null);
   const [selectedRunEvidence, setSelectedRunEvidence] = useState<RunEvidenceExport | null>(null);
@@ -723,6 +830,7 @@ export function App() {
   const [dashboardError, setDashboardError] = useState<string | null>(null);
   const dashboardRequest = useRef(0);
   const proposalRequest = useRef(0);
+  const missionDetailRequest = useRef(0);
   const runDetailRequest = useRef(0);
   const runEvidenceRequest = useRef(0);
   const decidingApprovalIds = useRef(new Set<string>());
@@ -820,6 +928,17 @@ export function App() {
     () => visibleNodes.find((node) => node.node_id === selectedNodeId) ?? visibleNodes[0] ?? null,
     [selectedNodeId, visibleNodes],
   );
+  const missionEligibleNodes = useMemo(
+    () => data.nodes.filter((node) => missionNodeEligibility(node).eligible),
+    [data.nodes],
+  );
+  const selectedMissionFromInventory = useMemo(
+    () =>
+      data.missions.find((mission) => mission.mission_id === selectedMissionId) ??
+      data.missions[0] ??
+      null,
+    [data.missions, selectedMissionId],
+  );
   const selectedProposalApprovals = useMemo(
     () =>
       data.approvalHistory.filter(
@@ -858,11 +977,17 @@ export function App() {
     setSelectedToolName("");
     if (!activeToken) {
       proposalRequest.current += 1;
+      missionDetailRequest.current += 1;
       runDetailRequest.current += 1;
       runEvidenceRequest.current += 1;
       setData(emptyDashboardData());
       setSelectedProposalId(null);
       setSelectedProposal(null);
+      setSelectedMissionId(null);
+      setSelectedMission(null);
+      setMissionDetailLoading(false);
+      setMissionError(null);
+      setMissionNotice(null);
       setSelectedRunId(null);
       setSelectedRun(null);
       setSelectedRunEvidence(null);
@@ -881,11 +1006,17 @@ export function App() {
     setData(emptyDashboardData());
     setSelectedProposalId(null);
     setSelectedProposal(null);
+    setSelectedMissionId(null);
+    setSelectedMission(null);
+    setMissionDetailLoading(false);
+    setMissionError(null);
+    setMissionNotice(null);
     setSelectedRunId(null);
     setSelectedRun(null);
     setSelectedRunEvidence(null);
     setRunEvidenceError(null);
     proposalRequest.current += 1;
+    missionDetailRequest.current += 1;
     runDetailRequest.current += 1;
     runEvidenceRequest.current += 1;
     try {
@@ -900,6 +1031,8 @@ export function App() {
         trustedHostDiagnostics,
         runsResponse,
         nodesResponse,
+        missionTemplatesResponse,
+        missionsResponse,
         auditResponse,
         verificationResponse,
       ] = await Promise.all([
@@ -922,6 +1055,8 @@ export function App() {
           activeToken,
         ),
         apiRequest<{ nodes: IthildinNode[] }>("/nodes", activeToken),
+        apiRequest<{ templates: MissionTemplateSummary[] }>("/mission-templates", activeToken),
+        apiRequest<{ missions: MissionOperatorSummary[] }>("/missions?limit=50", activeToken),
         apiRequest<{ audit_events: AuditEvent[] }>("/audit-events?limit=100", activeToken),
         apiRequest<AuditVerification>("/audit-events/verify", activeToken),
       ]);
@@ -939,6 +1074,8 @@ export function App() {
         trustedHostDiagnostics,
         runs: runsResponse.runs,
         nodes: nodesResponse.nodes,
+        missionTemplates: missionTemplatesResponse.templates,
+        missions: missionsResponse.missions,
         runSummary: runsResponse.summary,
         auditEvents: auditResponse.audit_events,
         verification: verificationResponse,
@@ -961,6 +1098,22 @@ export function App() {
       if (nextProposalId) {
         void loadProposalDetail(nextProposalId, activeToken);
       }
+      const nextMissionId = missionsResponse.missions.some(
+        (mission) => mission.mission_id === selectedMissionId,
+      )
+        ? selectedMissionId
+        : missionsResponse.missions[0]?.mission_id ?? null;
+      setSelectedMissionId(nextMissionId);
+      if (nextMissionId) {
+        void loadMissionDetail(nextMissionId, activeToken);
+      }
+      setMissionTargetNodeId((current) =>
+        nodesResponse.nodes.some(
+          (node) => node.node_id === current && missionNodeEligibility(node).eligible,
+        )
+          ? current
+          : nodesResponse.nodes.find((node) => missionNodeEligibility(node).eligible)?.node_id ?? "",
+      );
       const nextRunId = runsResponse.runs.some((run) => run.run_id === selectedRunId)
         ? selectedRunId
         : runsResponse.runs[0]?.run_id ?? null;
@@ -1006,6 +1159,129 @@ export function App() {
     } finally {
       if (requestId === proposalRequest.current) {
         setDetailLoading(false);
+      }
+    }
+  }
+
+  async function loadMissionDetail(missionId: string, activeToken = token) {
+    if (!activeToken) {
+      return;
+    }
+    const requestId = ++missionDetailRequest.current;
+    setSelectedMission(null);
+    setMissionDetailLoading(true);
+    setMissionError(null);
+    try {
+      const mission = await apiRequest<MissionOperatorSummary>(
+        `/missions/${encodeURIComponent(missionId)}`,
+        activeToken,
+      );
+      if (
+        requestId === missionDetailRequest.current &&
+        mission.mission_id === missionId
+      ) {
+        setSelectedMission(mission);
+      }
+    } catch (caught) {
+      if (requestId === missionDetailRequest.current) {
+        setMissionError(errorMessage(caught));
+      }
+    } finally {
+      if (requestId === missionDetailRequest.current) {
+        setMissionDetailLoading(false);
+      }
+    }
+  }
+
+  function selectMission(missionId: string) {
+    setSelectedMissionId(missionId);
+    setMissionNotice(null);
+    void loadMissionDetail(missionId);
+  }
+
+  async function createMission(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!token || !missionTargetNodeId || !missionTemplateId) {
+      return;
+    }
+    const timeout = Number(missionTimeoutSeconds);
+    if (!Number.isInteger(timeout) || timeout < 60 || timeout > 3600) {
+      setMissionError("Mission timeout must be a whole number from 60 through 3600 seconds.");
+      return;
+    }
+    const activeToken = token;
+    const operationAuthGeneration = authGeneration.current;
+    setMissionMutationLoading(true);
+    setMissionError(null);
+    setMissionNotice(null);
+    try {
+      const created = await apiRequest<MissionOperatorSummary>("/missions", activeToken, {
+        method: "POST",
+        body: JSON.stringify({
+          target_node_id: missionTargetNodeId,
+          mission_template_id: missionTemplateId,
+          requested_timeout_seconds: timeout,
+          client_request_id: operatorRequestId("mission-ui"),
+        }),
+      });
+      if (operationAuthGeneration !== authGeneration.current) {
+        return;
+      }
+      await loadDashboard(activeToken);
+      if (operationAuthGeneration !== authGeneration.current) {
+        return;
+      }
+      setSelectedMissionId(created.mission_id);
+      setMissionNotice(`Mission ${created.mission_id} was admitted by the Gateway.`);
+      void loadMissionDetail(created.mission_id, activeToken);
+    } catch (caught) {
+      if (operationAuthGeneration === authGeneration.current) {
+        setMissionError(errorMessage(caught));
+      }
+    } finally {
+      if (operationAuthGeneration === authGeneration.current) {
+        setMissionMutationLoading(false);
+      }
+    }
+  }
+
+  async function cancelMission(mission: MissionOperatorSummary) {
+    if (!token || !missionCanRequestCancellation(mission)) {
+      return;
+    }
+    const activeToken = token;
+    const operationAuthGeneration = authGeneration.current;
+    setMissionMutationLoading(true);
+    setMissionError(null);
+    setMissionNotice(null);
+    try {
+      await apiRequest<MissionOperatorSummary>(
+        `/missions/${encodeURIComponent(mission.mission_id)}/cancel`,
+        activeToken,
+        {
+          method: "POST",
+          body: JSON.stringify({ client_request_id: operatorRequestId("mission-cancel-ui") }),
+        },
+      );
+      if (operationAuthGeneration !== authGeneration.current) {
+        return;
+      }
+      await loadDashboard(activeToken);
+      if (operationAuthGeneration !== authGeneration.current) {
+        return;
+      }
+      setSelectedMissionId(mission.mission_id);
+      setMissionNotice(
+        "Gateway cancellation was recorded. This does not prove that a runner process stopped.",
+      );
+      void loadMissionDetail(mission.mission_id, activeToken);
+    } catch (caught) {
+      if (operationAuthGeneration === authGeneration.current) {
+        setMissionError(errorMessage(caught));
+      }
+    } finally {
+      if (operationAuthGeneration === authGeneration.current) {
+        setMissionMutationLoading(false);
       }
     }
   }
@@ -1078,12 +1354,18 @@ export function App() {
     } else {
       dashboardRequest.current += 1;
       proposalRequest.current += 1;
+      missionDetailRequest.current += 1;
       runDetailRequest.current += 1;
       runEvidenceRequest.current += 1;
       sessionStorage.removeItem(TOKEN_STORAGE_KEY);
       setData(emptyDashboardData());
       setSelectedProposalId(null);
       setSelectedProposal(null);
+      setSelectedMissionId(null);
+      setSelectedMission(null);
+      setMissionDetailLoading(false);
+      setMissionError(null);
+      setMissionNotice(null);
       setSelectedRunId(null);
       setSelectedRun(null);
       setSelectedRunEvidence(null);
@@ -1172,6 +1454,16 @@ export function App() {
       setSelectedNodeConfigurationCohortKey(null);
       setSelectedNodeVersionCohortKey(null);
       setSelectedNodeId(item.nodeId);
+    }
+    if (item.missionId) {
+      setSelectedMissionId(item.missionId);
+      void loadMissionDetail(item.missionId).then(() => {
+        window.setTimeout(
+          () => scrollAndFocusElement(`mission-remediation-${item.missionId}`),
+          0,
+        );
+      });
+      return;
     }
     const targetElementId = item.nodeId ? `node-${item.nodeId}` : item.targetId;
     window.setTimeout(() => scrollAndFocusElement(targetElementId), 0);
@@ -1466,7 +1758,7 @@ export function App() {
         <nav className="command-nav" aria-label="Command Center sections">
           {([
             ["attention", "Attention", "What needs a decision now", <BellRing size={20} />],
-            ["missions", "Missions", "Follow agent work end to end", <FolderKanban size={20} />],
+            ["missions", "Missions", "Admit and monitor governed work", <FolderKanban size={20} />],
             ["nodes", "Nodes", "Enroll and observe enforcement points", <Server size={20} />],
             ["artifacts", "Artifacts", "Review outputs and movement", <Boxes size={20} />],
             ["approvals", "Approvals", "Authorize bounded actions", <ListChecks size={20} />],
@@ -3026,12 +3318,36 @@ export function App() {
         </Panel>
       </section>
 
-      <section className="run-section destination-screen" data-screen="missions" id="missions" aria-label="Agent runs" tabIndex={-1}>
+      <section className="run-section destination-screen" data-screen="missions" id="missions" aria-label="Mission Command and Agent Runs" tabIndex={-1}>
         <DestinationHeading
-          eyebrow="Mission workbench"
-          title="Observed agent runs"
-          description="Reconstruct Ithildin-mediated activity from request through recorded evidence closeout."
+          eyebrow="Mission and evidence workbench"
+          title="Mission Command"
+          description="Admit synthetic missions, inspect Node delivery, and correlate runner reports with governed Gateway evidence without collapsing their authority sources."
           icon={<FolderKanban size={24} />}
+        />
+        <MissionCommandCockpit
+          token={token}
+          loading={loading}
+          nodes={data.nodes}
+          eligibleNodes={missionEligibleNodes}
+          templates={data.missionTemplates}
+          missions={data.missions}
+          selectedMissionId={selectedMissionId}
+          selectedMission={selectedMission}
+          selectedMissionFromInventory={selectedMissionFromInventory}
+          detailLoading={missionDetailLoading}
+          mutationLoading={missionMutationLoading}
+          error={missionError}
+          notice={missionNotice}
+          targetNodeId={missionTargetNodeId}
+          templateId={missionTemplateId}
+          timeoutSeconds={missionTimeoutSeconds}
+          onTargetNodeChange={setMissionTargetNodeId}
+          onTemplateChange={setMissionTemplateId}
+          onTimeoutChange={setMissionTimeoutSeconds}
+          onCreate={createMission}
+          onSelect={selectMission}
+          onCancel={cancelMission}
         />
         <Panel
           title="Agent Runs"
@@ -4252,6 +4568,7 @@ function operatorAttentionItems(data: DashboardData) {
     auditEvents: [...data.auditEvents],
     nodes: [...data.nodes],
     patches: [...data.patches],
+    missions: [...data.missions],
   };
 
   while (items.length < 8) {
@@ -4281,6 +4598,13 @@ function operatorAttentionItems(data: DashboardData) {
         ...remaining,
         nodes: remaining.nodes.filter((candidate) => candidate.node_id !== item.nodeId),
       };
+    } else if (item.source === "mission") {
+      remaining = {
+        ...remaining,
+        missions: remaining.missions.filter(
+          (candidate) => candidate.mission_id !== item.missionId,
+        ),
+      };
     } else {
       remaining = {
         ...remaining,
@@ -4294,7 +4618,7 @@ function operatorAttentionItems(data: DashboardData) {
 }
 
 function attentionItemKey(item: AttentionItem) {
-  return `${item.source}:${item.requestId || item.proposalId || item.nodeId || item.title}`;
+  return `${item.source}:${item.requestId || item.proposalId || item.nodeId || item.missionId || item.title}`;
 }
 
 function firstOperatorAttentionItem(data: DashboardData): AttentionItem | null {
@@ -4329,6 +4653,11 @@ function firstOperatorAttentionItem(data: DashboardData): AttentionItem | null {
       actionLabel: validBinding ? "Review decision" : "Review binding evidence",
       occurredAt: approval.expires_at,
     };
+  }
+
+  const mission = firstMissionAttentionItem(data.missions);
+  if (mission) {
+    return mission;
   }
 
   const authorityNode = firstNodeAttentionItem(data.nodes, "authority");
@@ -4420,6 +4749,61 @@ function firstOperatorAttentionItem(data: DashboardData): AttentionItem | null {
   }
 
   return null;
+}
+
+function firstMissionAttentionItem(
+  missions: MissionOperatorSummary[],
+): AttentionItem | null {
+  const priority = [
+    "evidence_incomplete",
+    "claim_expiry",
+    "report_conflict",
+    "quarantine",
+    "agent_run_correlation_mismatch",
+  ];
+  const candidates = missions
+    .flatMap((mission) =>
+      mission.attention_codes.map((code) => ({
+        mission,
+        code,
+        rank: priority.indexOf(code) === -1 ? priority.length : priority.indexOf(code),
+      })),
+    )
+    .sort(
+      (left, right) =>
+        left.rank - right.rank ||
+        right.mission.updated_at.localeCompare(left.mission.updated_at) ||
+        left.mission.mission_id.localeCompare(right.mission.mission_id),
+    );
+  const selected = candidates[0];
+  if (!selected) {
+    return null;
+  }
+  const guidance = missionAttentionGuidance(selected.mission, null).find(
+    (item) => item.code === selected.code,
+  );
+  return {
+    source: "mission",
+    title: guidance?.title ?? "Mission evidence requires review",
+    status: humanize(selected.code),
+    bindingStatus: selected.code === "evidence_incomplete" ? "fail closed" : null,
+    consequence:
+      guidance?.guidance ??
+      "Review the selected mission's Gateway, Node-delivery, and runner-reported evidence separately.",
+    missionLabel: "Synthetic read review mission",
+    workspaceId: selected.mission.workspace_id,
+    requestingIdentity: selected.mission.requester_principal_id,
+    toolName: "Ithildin Gateway Mission Command",
+    requestId: "",
+    policyReason: "Gateway mission evidence projection",
+    runId: null,
+    proposalId: null,
+    nodeId: null,
+    missionId: selected.mission.mission_id,
+    targetId: "missions",
+    actionLabel: "Review mission evidence",
+    occurredAt: selected.mission.updated_at,
+  };
 }
 
 function nodeNeedsAttention(node: IthildinNode) {
@@ -5064,6 +5448,357 @@ function Panel({
 
 function EmptyState({ text }: { text: string }) {
   return <div className="empty-state">{text}</div>;
+}
+
+function MissionCommandCockpit({
+  token,
+  loading,
+  nodes,
+  eligibleNodes,
+  templates,
+  missions,
+  selectedMissionId,
+  selectedMission,
+  selectedMissionFromInventory,
+  detailLoading,
+  mutationLoading,
+  error,
+  notice,
+  targetNodeId,
+  templateId,
+  timeoutSeconds,
+  onTargetNodeChange,
+  onTemplateChange,
+  onTimeoutChange,
+  onCreate,
+  onSelect,
+  onCancel,
+}: {
+  token: string;
+  loading: boolean;
+  nodes: IthildinNode[];
+  eligibleNodes: IthildinNode[];
+  templates: MissionTemplateSummary[];
+  missions: MissionOperatorSummary[];
+  selectedMissionId: string | null;
+  selectedMission: MissionOperatorSummary | null;
+  selectedMissionFromInventory: MissionOperatorSummary | null;
+  detailLoading: boolean;
+  mutationLoading: boolean;
+  error: string | null;
+  notice: string | null;
+  targetNodeId: string;
+  templateId: string;
+  timeoutSeconds: string;
+  onTargetNodeChange: (value: string) => void;
+  onTemplateChange: (value: string) => void;
+  onTimeoutChange: (value: string) => void;
+  onCreate: (event: FormEvent<HTMLFormElement>) => void;
+  onSelect: (missionId: string) => void;
+  onCancel: (mission: MissionOperatorSummary) => void;
+}) {
+  const displayedMission =
+    selectedMission?.mission_id === selectedMissionId
+      ? selectedMission
+      : selectedMissionFromInventory;
+  const targetNode = displayedMission
+    ? nodes.find((node) => node.node_id === displayedMission.target_node_id) ?? null
+    : null;
+  const attentionGuidance = displayedMission
+    ? missionAttentionGuidance(displayedMission, targetNode)
+    : [];
+  const template = templates.find(
+    (candidate) => candidate.mission_template_id === templateId,
+  );
+
+  return (
+    <Panel
+      title="Mission Command"
+      purpose="Gateway-authoritative mission admission and truth-source-aware delivery monitoring."
+      icon={<FolderKanban size={18} />}
+    >
+      <div className="mission-command-boundary" role="note">
+        <ShieldCheck aria-hidden="true" size={18} />
+        <p>
+          <strong>Control-plane boundary</strong>
+          Missions are Gateway decisions. Node delivery and runner reports are authenticated
+          observations. Model inference, chain of thought, output correctness, and process health
+          remain unknown.
+        </p>
+      </div>
+
+      <div className="mission-command-summary" aria-label="Mission Command summary">
+        <span><strong>{missions.length}</strong> loaded missions</span>
+        <span><strong>{missions.filter((mission) => mission.attention_codes.length > 0).length}</strong> with Gateway-recorded attention</span>
+        <span><strong>{eligibleNodes.length}</strong> eligible target Nodes</span>
+        <span><strong>{missions.reduce((count, mission) => count + mission.governed_agent_runs.count, 0)}</strong> exactly correlated Agent Runs</span>
+      </div>
+
+      <form className="mission-create-form" onSubmit={onCreate} aria-label="Admit a new synthetic mission">
+        <div className="mission-create-heading">
+          <div>
+            <p className="eyebrow">New mission</p>
+            <h3>Admit reviewed synthetic work</h3>
+          </div>
+          <StatusPill status={eligibleNodes.length > 0 ? "admission_ready" : "no_eligible_node"} />
+        </div>
+        <label>
+          <span>Eligible Gateway Node</span>
+          <select
+            aria-label="Eligible Gateway Node"
+            value={targetNodeId}
+            onChange={(event) => onTargetNodeChange(event.target.value)}
+            disabled={!token || loading || mutationLoading || eligibleNodes.length === 0}
+            required
+          >
+            {eligibleNodes.length === 0 ? <option value="">No eligible Nodes</option> : null}
+            {eligibleNodes.map((node) => (
+              <option key={node.node_id} value={node.node_id}>
+                {node.display_name} · {node.workspace_id}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          <span>Server-owned mission template</span>
+          <select
+            aria-label="Server-owned mission template"
+            value={templateId}
+            onChange={(event) => onTemplateChange(event.target.value)}
+            disabled={!token || loading || mutationLoading || templates.length === 0}
+            required
+          >
+            {templates.length === 0 ? <option value="">No templates loaded</option> : null}
+            {templates.map((candidate) => (
+              <option key={candidate.mission_template_id} value={candidate.mission_template_id}>
+                Synthetic read review
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          <span>Delivery review timeout (seconds)</span>
+          <input
+            aria-label="Delivery review timeout in seconds"
+            type="number"
+            min="60"
+            max="3600"
+            step="1"
+            value={timeoutSeconds}
+            onChange={(event) => onTimeoutChange(event.target.value)}
+            disabled={!token || loading || mutationLoading}
+            required
+          />
+        </label>
+        <div className="mission-template-contract">
+          <strong>Closed contract</strong>
+          <span>Template payload hidden · free-form objective prohibited · runner launch not authorized</span>
+          {template ? <small>Digest · {compactDigest(template.template_payload_digest)}</small> : null}
+        </div>
+        <button
+          className="primary-action"
+          type="submit"
+          disabled={
+            !token ||
+            loading ||
+            mutationLoading ||
+            eligibleNodes.length === 0 ||
+            templates.length === 0
+          }
+        >
+          <FolderKanban aria-hidden="true" size={16} />
+          {mutationLoading ? "Recording mission…" : "Admit synthetic mission"}
+        </button>
+        {nodes.length > 0 && eligibleNodes.length === 0 ? (
+          <p className="mission-form-guidance">
+            No loaded Node currently satisfies Gateway admission prerequisites. Open Nodes to
+            resolve stale heartbeat, incomplete evidence, configuration drift, version posture, or
+            governed-access blocks.
+          </p>
+        ) : null}
+      </form>
+
+      {error ? <div className="mission-operation-message error" role="alert">{error}</div> : null}
+      {notice ? <div className="mission-operation-message" role="status">{notice}</div> : null}
+      {loading ? <div className="mission-operation-message" role="status">Loading mission inventory…</div> : null}
+
+      {!loading && token && missions.length === 0 ? (
+        <EmptyState text="No missions are admitted. Choose one eligible Node and the reviewed synthetic template to create the first Gateway mission record." />
+      ) : !token ? (
+        <EmptyState text="Sign in to load Mission Command inventory and admission eligibility." />
+      ) : missions.length > 0 ? (
+        <div className="mission-cockpit-layout">
+          <div className="mission-inventory" role="list" aria-label="Mission inventory">
+            {missions.map((mission) => {
+              const selected = mission.mission_id === displayedMission?.mission_id;
+              return (
+                <div key={mission.mission_id} role="listitem">
+                  <button
+                    type="button"
+                    className={selected ? "mission-inventory-row selected" : "mission-inventory-row"}
+                    aria-pressed={selected}
+                    aria-label={`Open mission ${mission.mission_id}`}
+                    onClick={() => onSelect(mission.mission_id)}
+                  >
+                    <span className="mission-inventory-heading">
+                      <strong>Synthetic read review</strong>
+                      <StatusPill status={mission.lifecycle_state} />
+                    </span>
+                    <span>{mission.workspace_id} · {compactId(mission.target_node_id)}</span>
+                    <small>{mission.mission_id}</small>
+                    <span className={mission.attention_codes.length > 0 ? "mission-row-attention" : "mission-row-clear"}>
+                      {mission.attention_codes.length > 0
+                        ? `${mission.attention_codes.length} Gateway-recorded attention ${mission.attention_codes.length === 1 ? "condition" : "conditions"}`
+                        : "No mission evidence exception recorded"}
+                    </span>
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+
+          {displayedMission ? (
+            <article className="mission-detail" aria-label="Selected mission record">
+              <header className="mission-detail-heading">
+                <div>
+                  <p className="eyebrow">Selected mission</p>
+                  <h3>Synthetic read review</h3>
+                  <p>{displayedMission.mission_id}</p>
+                </div>
+                <StatusPill status={displayedMission.lifecycle_state} />
+              </header>
+              {detailLoading ? (
+                <p className="mission-detail-loading" role="status" aria-live="polite">
+                  Refreshing selected mission evidence…
+                </p>
+              ) : null}
+
+              <div className="mission-truth-grid" aria-label="Mission truth sources">
+                <MissionTruthCard
+                  label="Gateway lifecycle"
+                  value={humanize(displayedMission.lifecycle_state)}
+                  source="Gateway authoritative"
+                  detail={`Revision ${displayedMission.lifecycle_revision}`}
+                />
+                <MissionTruthCard
+                  label="Node delivery"
+                  value={humanize(displayedMission.delivery.state)}
+                  source="Gateway claim record"
+                  detail={displayedMission.delivery.claim
+                    ? `Claim ${compactId(displayedMission.delivery.claim.claim_id)}`
+                    : "No claim issued"}
+                />
+                <MissionTruthCard
+                  label="Runner report"
+                  value={displayedMission.runner_reports.latest
+                    ? humanize(displayedMission.runner_reports.latest.report_kind)
+                    : "No accepted report"}
+                  source="Runner reported through Node"
+                  detail={`${displayedMission.runner_reports.quarantined_count} quarantined receipts`}
+                />
+                <MissionTruthCard
+                  label="Governed Agent Runs"
+                  value={`${displayedMission.governed_agent_runs.count} exactly correlated`}
+                  source="Gateway mediated evidence"
+                  detail="Gateway-validated active claim session only"
+                />
+                <MissionTruthCard
+                  label="Model provider"
+                  value="Unknown"
+                  source="External provider authority"
+                  detail="Inference and output not verified"
+                />
+                <MissionTruthCard
+                  label="Evidence binding"
+                  value={humanize(displayedMission.evidence.state)}
+                  source="Gateway audit binding"
+                  detail={`${displayedMission.evidence.transitions.length} recorded transitions`}
+                />
+              </div>
+
+              <section className="mission-cancel-state" aria-label="Mission cancellation state">
+                <div>
+                  <p className="eyebrow">Cancellation semantics</p>
+                  <h4>Decision, observation, and runner outcome stay separate</h4>
+                </div>
+                <ol>
+                  <li className={displayedMission.cancellation.recorded ? "complete" : "pending"}>
+                    <strong>Gateway recorded</strong>
+                    <span>{displayedMission.cancellation.recorded ? "Yes" : "No"}</span>
+                  </li>
+                  <li className={displayedMission.cancellation.observed_by_node ? "complete" : "pending"}>
+                    <strong>Node observed</strong>
+                    <span>{displayedMission.cancellation.observed_by_node ? "Runner-reported observation" : "Not reported"}</span>
+                  </li>
+                  <li className={displayedMission.cancellation.runner_reported_canceled ? "complete" : "pending"}>
+                    <strong>Runner reported canceled</strong>
+                    <span>{displayedMission.cancellation.runner_reported_canceled ? "Reported" : "Not reported"}</span>
+                  </li>
+                </ol>
+                <p>None of these records proves that an operating-system process stopped.</p>
+                {missionCanRequestCancellation(displayedMission) ? (
+                  <button
+                    className="danger-action"
+                    type="button"
+                    disabled={mutationLoading}
+                    onClick={() => onCancel(displayedMission)}
+                  >
+                    Request Gateway cancellation
+                  </button>
+                ) : null}
+              </section>
+
+              {attentionGuidance.length > 0 ? (
+                <section
+                  className="mission-attention"
+                  id={`mission-remediation-${displayedMission.mission_id}`}
+                  aria-label="Mission remediation guidance"
+                  tabIndex={-1}
+                >
+                  <div className="mission-attention-heading">
+                    <AlertTriangle aria-hidden="true" size={18} />
+                    <div>
+                      <p className="eyebrow">Attention</p>
+                      <h4>Operator review required</h4>
+                    </div>
+                  </div>
+                  <ul>
+                    {attentionGuidance.map((guidance) => (
+                      <li key={guidance.code}>
+                        <strong>{guidance.title}</strong>
+                        <span>{guidance.guidance}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              ) : null}
+            </article>
+          ) : null}
+        </div>
+      ) : null}
+    </Panel>
+  );
+}
+
+function MissionTruthCard({
+  label,
+  value,
+  source,
+  detail,
+}: {
+  label: string;
+  value: string;
+  source: string;
+  detail: string;
+}) {
+  return (
+    <div className="mission-truth-card">
+      <span>{label}</span>
+      <strong>{value}</strong>
+      <small>{source}</small>
+      <p>{detail}</p>
+    </div>
+  );
 }
 
 function OperatorWorkbenchGuide() {
@@ -6897,6 +7632,130 @@ function shortId(value: string) {
 
 function shortHash(value: string) {
   return value.replace("sha256:", "").slice(0, 12);
+}
+
+function compactId(value: string) {
+  return shortId(value);
+}
+
+function compactDigest(value: string) {
+  return value.startsWith("sha256:") ? `sha256:${shortHash(value)}` : shortId(value);
+}
+
+function humanize(value: string) {
+  return value.replace(/_/g, " ");
+}
+
+function operatorRequestId(prefix: string) {
+  const randomPart = globalThis.crypto?.randomUUID?.() ??
+    `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  return `${prefix}-${randomPart}`;
+}
+
+function missionNodeEligibility(node: IthildinNode) {
+  const eligible =
+    node.status === "enrolled" &&
+    node.evidence_status === "complete" &&
+    node.observed_state === "observed_connected" &&
+    node.configuration_state === "stored_current_not_enforced" &&
+    node.version_posture === "meets_minimum" &&
+    node.governed_access.state === "ready_read_only";
+  return {
+    eligible,
+    reason: eligible
+      ? "all_gateway_prerequisites_current"
+      : node.governed_access.reason_code || node.observed_state,
+  };
+}
+
+function missionCanRequestCancellation(mission: MissionOperatorSummary) {
+  return ["queued", "claimed", "runner_reported_running"].includes(
+    mission.lifecycle_state,
+  );
+}
+
+type MissionAttentionGuidance = {
+  code: string;
+  title: string;
+  guidance: string;
+};
+
+function missionAttentionGuidance(
+  mission: MissionOperatorSummary,
+  node: IthildinNode | null,
+) {
+  const guidance: MissionAttentionGuidance[] = [];
+  const add = (item: MissionAttentionGuidance) => {
+    if (!guidance.some((candidate) => candidate.code === item.code)) {
+      guidance.push(item);
+    }
+  };
+  for (const code of mission.attention_codes) {
+    if (code === "evidence_incomplete") {
+      add({
+        code,
+        title: "Mission evidence is incomplete",
+        guidance:
+          "Do not retry, clone, cancel, or reinterpret the lifecycle automatically. Review the bound transition and audit evidence; recovery requires a separately reviewed path.",
+      });
+    } else if (code === "claim_expiry") {
+      add({
+        code,
+        title: "Claim delivery expired with ambiguity",
+        guidance:
+          "Delivery may have occurred. Keep the mission out of automatic reassignment and review Node and report evidence before admitting replacement work.",
+      });
+    } else if (code === "quarantine") {
+      add({
+        code,
+        title: "Authenticated report evidence was quarantined",
+        guidance:
+          "The receipt remains evidence, but it did not advance Gateway lifecycle. Review its receipt-time Node posture and do not treat it as execution authority.",
+      });
+    } else if (code === "report_conflict") {
+      add({
+        code,
+        title: "Runner report conflicts with current Gateway state",
+        guidance:
+          "Preserve both records. Review lifecycle revision, cancellation timing, and report disposition; do not rewrite history or infer a winning external state.",
+      });
+    } else if (code === "agent_run_correlation_mismatch") {
+      add({
+        code,
+        title: "Agent Run correlation was rejected",
+        guidance:
+          "A claimed mission ID did not match the Gateway-derived Node, principal, and workspace bindings. Do not rely on that run as mission evidence.",
+      });
+    }
+  }
+  if (node?.observed_state === "stale" || node?.observed_state === "never_observed") {
+    add({
+      code: "stale_node",
+      title: "Target Node connectivity is not current",
+      guidance:
+        "Review the latest accepted signed heartbeat in Nodes. A stale or missing heartbeat blocks new authority and does not prove runner health.",
+    });
+  }
+  if (
+    node &&
+    (node.evidence_status !== "complete" || node.observed_state === "evidence_incomplete")
+  ) {
+    add({
+      code: "node_evidence_incomplete",
+      title: "Target Node evidence is incomplete",
+      guidance:
+        "Review enrollment, lifecycle, and heartbeat audit evidence before relying on the Node identity or admitting related work.",
+    });
+  }
+  if (node?.configuration_state === "configuration_drift") {
+    add({
+      code: "configuration_drift",
+      title: "Target Node configuration is drifted",
+      guidance:
+        "Compare Gateway desired state with the Node storage acknowledgment. Enforcement remains unknown; resolve the signed configuration posture before new delivery.",
+    });
+  }
+  return guidance;
 }
 
 function formatBytes(value: number) {
