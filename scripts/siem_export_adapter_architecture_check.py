@@ -15,6 +15,9 @@ from scripts import review_docs, siem_evidence_design_check
 
 ROOT = Path(__file__).resolve().parents[1]
 DOC = ROOT / "docs/codex/siem-export-adapter-architecture.md"
+CONTRACT_START = "<!-- siem-export-adapter-contract:start -->"
+CONTRACT_END = "<!-- siem-export-adapter-contract:end -->"
+ORDERED_WORK_PACKAGES = [f"SEA-{index:03d}" for index in range(1, 6)]
 
 REQUIRED_PHRASES = [
     "Status: design-only architecture packet for `ERG-008`.",
@@ -22,6 +25,31 @@ REQUIRED_PHRASES = [
     "Current selected capability: `not selected`",
     "`ERG-008`: SIEM-shaped export adapter",
     "siem-shaped-evidence-design.md",
+    "Phase 1 Offline Handoff Candidate",
+    "operator-retrieved, offline, signed evidence handoff bundle",
+    "Authority And Data Flow",
+    "canonical audit store remains the authority",
+    "Current Source Gap",
+    "current local-preview signed audit export does **not** satisfy this candidate",
+    "Row position or download order must not be silently promoted",
+    "Closed Bundle Layout",
+    "ithildin.security_export_manifest.v1",
+    "ithildin.security_event.v1",
+    "ithildin.security_export_signature.v1",
+    "Security Event Envelope",
+    "optional principal reference is an opaque server-owned Ithildin principal ID",
+    "Category Registry And Mapping Rules",
+    "historical binding is immutable",
+    "semantic correction is a new canonical audit event",
+    "Redaction And Data Minimization",
+    "Ordering, Idempotency, And Replay",
+    "Failure, Retry, And Backpressure",
+    "There is no `delivered`, `accepted_by_siem`, or `in_custody` state",
+    "Trust, Key Custody, And Verification",
+    "Compatibility Contract",
+    "Candidate Work-Package Order",
+    "`SEA-001`",
+    "`SEA-005`",
     "Future Adapter Architecture Questions",
     "Event Schema Requirements",
     "Delivery Requirements",
@@ -30,6 +58,7 @@ REQUIRED_PHRASES = [
     "external/source review",
     "The current decision is `planning_only`.",
     "Runtime adapter implementation remains blocked",
+    "does not change `PRD-SIEM-EXPORT-001` from `no_go`",
     "make siem-export-adapter-architecture-check",
 ]
 
@@ -42,6 +71,11 @@ REQUIRED_DELIVERY_PHRASES = [
     "signing and verification story",
     "idempotency and replay handling",
     "operator-visible diagnostics",
+    "deterministic allowlist mapper",
+    "there is no persistent incremental cursor",
+    "One bundle may cover only one mapper/redaction-policy activation segment",
+    "must request separate bundles",
+    "out-of-band trusted public key",
 ]
 
 REQUIRED_NON_EXPORT_PHRASES = [
@@ -109,6 +143,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     evidence_design_report = siem_evidence_design_check.build_report(repo_root)
 
     text = ""
+    contract: dict[str, Any] = {}
     if not doc_path.exists():
         failures.append("SIEM export adapter architecture doc is missing")
     else:
@@ -133,6 +168,75 @@ def build_report(repo_root: Path) -> dict[str, Any]:
                 failures.append(
                     f"SIEM export adapter architecture contains forbidden phrase: {phrase}"
                 )
+        try:
+            contract = _contract(text)
+        except ValueError as exc:
+            failures.append(f"SIEM export adapter contract is invalid: {exc}")
+
+    expected_contract: dict[str, Any] = {
+        "document_type": "offline_signed_evidence_handoff_candidate",
+        "schema_version": "1",
+        "tool_count": _tool_count(repo_root, failures),
+        "decision_status": "planning_only",
+        "adapter_profile": "operator_retrieved_offline_signed_bundle",
+        "source_authority": "verified_canonical_audit_export",
+        "current_signed_export_satisfies_candidate": False,
+        "explicit_deployment_epoch_required": True,
+        "explicit_source_sequence_required": True,
+        "event_schema": "ithildin.security_event.v1",
+        "manifest_schema": "ithildin.security_export_manifest.v1",
+        "signature_schema": "ithildin.security_export_signature.v1",
+        "bundle_layout": "manifest_events_signature_detached",
+        "event_identity": "deployment_epoch_plus_canonical_event_id",
+        "ordering_scope": "deployment_epoch_audit_sequence",
+        "range_selection_model": "stateless_explicit_contiguous_range",
+        "range_version_scope": "single_mapper_and_redaction_activation",
+        "cross_activation_range_authorized": False,
+        "persistent_cursor_authorized": False,
+        "mapping_mode": "deterministic_allowlist_only",
+        "mapping_version_binding": "immutable_source_sequence_activation",
+        "retroactive_remap_authorized": False,
+        "unknown_source_event_behavior": "fail_export_range",
+        "not_exportable_behavior": "counted_omission_receipt_only",
+        "manifest_binds_source_export_digest": True,
+        "manifest_binds_event_bytes_digest": True,
+        "signature_scope": "canonical_manifest_bytes",
+        "embedded_signing_key_trusted": False,
+        "remote_delivery_authorized": False,
+        "destination_credentials_authorized": False,
+        "arbitrary_directory_watch_authorized": False,
+        "archive_extraction_required": False,
+        "downstream_ack_authoritative": False,
+        "automatic_retry_authorized": False,
+        "dead_letter_mode": "attempt_receipts_only_no_event_copy",
+        "canonical_action_backpressure_authorized": False,
+        "partial_bundle_import_authorized": False,
+        "signature_algorithm": "ed25519",
+        "trusted_key_source": "out_of_band_only",
+        "signing_key_custody_selected": False,
+        "compatibility_policy": (
+            "separate_event_manifest_signature_major_mapper_and_redaction_versions"
+        ),
+        "ordered_work_packages": ORDERED_WORK_PACKAGES,
+        "runtime_implementation_authorized": False,
+        "siem_adapter_authorized": False,
+        "hosted_telemetry_authorized": False,
+        "remote_delivery_claim_authorized": False,
+        "custody_claim_authorized": False,
+        "compliance_claim_authorized": False,
+        "uat_required_now": False,
+    }
+    for key, expected in expected_contract.items():
+        if contract.get(key) != expected:
+            failures.append(
+                f"SIEM export adapter contract has unexpected {key}: {contract.get(key)!r}"
+            )
+    unexpected_contract_keys = sorted(set(contract) - set(expected_contract))
+    if unexpected_contract_keys:
+        failures.append(
+            "SIEM export adapter contract has unreviewed keys: "
+            + ", ".join(unexpected_contract_keys)
+        )
 
     failures.extend(
         f"SIEM-shaped evidence design: {failure}"
@@ -170,6 +274,10 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "architecture_doc": doc_rel,
         "erg_008_status": "planning_only",
         "tool_count": 24,
+        "candidate_profile_specified": bool(contract),
+        "adapter_profile": contract.get("adapter_profile"),
+        "event_schema": contract.get("event_schema"),
+        "ordered_work_packages": contract.get("ordered_work_packages", []),
         "runtime_changes_allowed": False,
         "siem_adapter_allowed": False,
         "hosted_telemetry_allowed": False,
@@ -188,6 +296,9 @@ def render_report(report: dict[str, Any]) -> str:
         f"architecture_doc: {report['architecture_doc']}",
         f"erg_008_status: {report['erg_008_status']}",
         f"tool_count: {report['tool_count']}",
+        f"candidate_profile_specified: {str(report['candidate_profile_specified']).lower()}",
+        f"adapter_profile: {report['adapter_profile']}",
+        f"event_schema: {report['event_schema']}",
         f"runtime_changes_allowed: {str(report['runtime_changes_allowed']).lower()}",
         f"siem_adapter_allowed: {str(report['siem_adapter_allowed']).lower()}",
         f"hosted_telemetry_allowed: {str(report['hosted_telemetry_allowed']).lower()}",
@@ -202,6 +313,52 @@ def render_report(report: dict[str, Any]) -> str:
         lines.append("failures:")
         lines.extend(f"- {failure}" for failure in report["failures"])
     return "\n".join(lines)
+
+
+def _contract(text: str) -> dict[str, Any]:
+    if text.count(CONTRACT_START) != 1 or text.count(CONTRACT_END) != 1:
+        raise ValueError("contract markers must each occur exactly once")
+    start_index = text.index(CONTRACT_START)
+    end_index = text.index(CONTRACT_END)
+    if start_index >= end_index:
+        raise ValueError("contract start marker must precede end marker")
+    payload_start = start_index + len(CONTRACT_START)
+    payload = text[payload_start:end_index].strip()
+    try:
+        document = json.loads(payload, object_pairs_hook=_reject_duplicate_keys)
+    except json.JSONDecodeError as exc:
+        raise ValueError("contract must be valid JSON") from exc
+    if not isinstance(document, dict):
+        raise ValueError("contract must be a JSON object")
+    return document
+
+
+def _reject_duplicate_keys(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+    document: dict[str, Any] = {}
+    for key, value in pairs:
+        if key in document:
+            raise ValueError(f"duplicate contract key: {key}")
+        document[key] = value
+    return document
+
+
+def _tool_count(repo_root: Path, failures: list[str]) -> int:
+    lock_path = repo_root / "tool-manifests.lock.json"
+    try:
+        lock = json.loads(
+            lock_path.read_text(encoding="utf-8"),
+            object_pairs_hook=_reject_duplicate_keys,
+        )
+    except (OSError, json.JSONDecodeError, ValueError):
+        failures.append("tool manifest lock is unavailable or ambiguous")
+        return -1
+    manifests = lock.get("manifests") if isinstance(lock, dict) else None
+    if not isinstance(manifests, list):
+        failures.append("tool manifest lock has no manifest list")
+        return -1
+    if len(manifests) != 24:
+        failures.append(f"actual governed tool count changed: {len(manifests)}")
+    return len(manifests)
 
 
 if __name__ == "__main__":

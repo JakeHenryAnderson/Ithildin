@@ -28657,6 +28657,7 @@ def test_siem_export_adapter_architecture_is_wired() -> None:
     architecture = Path("docs/codex/siem-export-adapter-architecture.md").read_text(
         encoding="utf-8"
     )
+    normalized_architecture = " ".join(architecture.split())
     readme = Path("README.md").read_text(encoding="utf-8")
     makefile = Path("Makefile").read_text(encoding="utf-8")
     docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
@@ -28673,6 +28674,16 @@ def test_siem_export_adapter_architecture_is_wired() -> None:
     assert report["valid"] is True
     assert report["erg_008_status"] == "planning_only"
     assert report["tool_count"] == 24
+    assert report["candidate_profile_specified"] is True
+    assert report["adapter_profile"] == "operator_retrieved_offline_signed_bundle"
+    assert report["event_schema"] == "ithildin.security_event.v1"
+    assert report["ordered_work_packages"] == [
+        "SEA-001",
+        "SEA-002",
+        "SEA-003",
+        "SEA-004",
+        "SEA-005",
+    ]
     assert report["runtime_changes_allowed"] is False
     assert report["siem_adapter_allowed"] is False
     assert report["hosted_telemetry_allowed"] is False
@@ -28687,6 +28698,27 @@ def test_siem_export_adapter_architecture_is_wired() -> None:
         "Current selected capability: `not selected`",
         "`ERG-008`: SIEM-shaped export adapter",
         "siem-shaped-evidence-design.md",
+        "Phase 1 Offline Handoff Candidate",
+        "operator-retrieved, offline, signed evidence handoff bundle",
+        "canonical audit store remains the authority",
+        "Current Source Gap",
+        "current local-preview signed audit export does **not** satisfy this candidate",
+        "Row position or download order must not be silently promoted",
+        "ithildin.security_export_manifest.v1",
+        "ithildin.security_event.v1",
+        "ithildin.security_export_signature.v1",
+        "optional principal reference is an opaque server-owned Ithildin principal ID",
+        "deterministic allowlist mapper",
+        "historical binding is immutable",
+        "semantic correction is a new canonical audit event",
+        "there is no persistent incremental cursor",
+        "One bundle may cover only one mapper/redaction-policy activation segment",
+        "must request separate bundles",
+        "There is no `delivered`, `accepted_by_siem`, or `in_custody` state",
+        "out-of-band trusted public key",
+        "Candidate Work-Package Order",
+        "`SEA-001`",
+        "`SEA-005`",
         "Future Adapter Architecture Questions",
         "Event Schema Requirements",
         "Delivery Requirements",
@@ -28695,8 +28727,9 @@ def test_siem_export_adapter_architecture_is_wired() -> None:
         "external/source review",
         "The current decision is `planning_only`.",
         "Runtime adapter implementation remains blocked",
+        "does not change `PRD-SIEM-EXPORT-001` from `no_go`",
     ]:
-        assert phrase in architecture
+        assert phrase in normalized_architecture
     for phrase in [
         "SIEM adapter is implemented",
         "hosted telemetry is enabled",
@@ -28717,6 +28750,24 @@ def test_siem_export_adapter_architecture_is_wired() -> None:
     assert "siem-export-adapter-architecture.md" in runway
     assert "siem-export-adapter-architecture.md" in gap_matrix
     assert "siem-export-adapter-architecture.md" in decision_register
+
+
+def test_siem_export_adapter_contract_rejects_duplicate_keys() -> None:
+    contract_start = siem_export_adapter_architecture_check.CONTRACT_START
+    contract_end = siem_export_adapter_architecture_check.CONTRACT_END
+    with pytest.raises(ValueError, match="duplicate contract key"):
+        siem_export_adapter_architecture_check._contract(
+            f'{contract_start}\n{{"tool_count":24,"tool_count":25}}\n{contract_end}'
+        )
+
+
+def test_siem_export_adapter_contract_rejects_reversed_markers() -> None:
+    contract_start = siem_export_adapter_architecture_check.CONTRACT_START
+    contract_end = siem_export_adapter_architecture_check.CONTRACT_END
+    with pytest.raises(ValueError, match="start marker must precede end marker"):
+        siem_export_adapter_architecture_check._contract(
+            f'{contract_end}\n{contract_start}\n{{"tool_count":24}}'
+        )
 
 
 def test_siem_export_adapter_disposition_packet_is_wired(tmp_path: Path) -> None:
