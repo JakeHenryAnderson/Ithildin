@@ -416,8 +416,9 @@ class MissionReportReceiptFinalization:
 class MissionStore:
     """Persist staged mission authority without exposing incomplete lifecycle claims."""
 
-    def __init__(self, db_path: Path) -> None:
+    def __init__(self, db_path: Path, audit_jsonl_path: Path | None = None) -> None:
         self.db_path = db_path
+        self.audit_jsonl_path = audit_jsonl_path or _mission_audit_jsonl_path(db_path)
 
     def initialize(self) -> None:
         verify_database_v2(self.db_path)
@@ -1673,7 +1674,7 @@ class MissionStore:
         """
 
         _require_mission_id(mission_id)
-        _verify_mission_audit_chain(self.db_path)
+        _verify_mission_audit_chain(self.db_path, self.audit_jsonl_path)
         with _mission_connection(self.db_path) as connection:
             mission = _mission_by_id(connection, mission_id)
             if mission.lifecycle_state == MISSION_UNADMITTED:
@@ -1847,7 +1848,7 @@ class MissionStore:
             return None
         mission_id, claim_id, envelope_prefix = match.groups()
         _require_node_id(node_id)
-        _verify_mission_audit_chain(self.db_path)
+        _verify_mission_audit_chain(self.db_path, self.audit_jsonl_path)
         with _mission_connection(self.db_path) as connection:
             mission = _mission_by_id(connection, mission_id)
             claim = _claim_by_mission(connection, mission_id)
@@ -2871,18 +2872,28 @@ def _quarantined_receipt_conflicts_with_mission(
     return receipt.receipt_posture.get("quarantine_reason_code") == "lifecycle_conflict"
 
 
-def _verify_mission_audit_chain(db_path: Path) -> None:
+def _verify_mission_audit_chain(db_path: Path, audit_jsonl_path: Path) -> None:
     """Require the canonical audit chain before trusting mission projections."""
 
+    writer = AuditWriter(db_path, audit_jsonl_path)
     try:
-        verification = AuditWriter(
-            db_path,
-            db_path.with_name(".ithildin-unused-audit-verification.jsonl"),
-        ).verify_chain()
+        verification = writer.verify_chain()
     except AuditWriteError as exc:
         raise MissionError("stored mission audit chain is unavailable") from exc
     if not verification.valid:
         raise MissionError("stored mission audit chain is invalid")
+    diagnostics = writer.diagnostics()
+    lifecycle = diagnostics.get("lifecycle")
+    if not isinstance(lifecycle, dict) or lifecycle.get("status") != "clean":
+        raise MissionError("stored mission audit lifecycle requires recovery")
+
+
+def _mission_audit_jsonl_path(db_path: Path) -> Path:
+    """Resolve the configured colocated audit mirror for mission validation."""
+
+    if db_path.parent.name == "db":
+        return db_path.parent.parent / "logs/audit.jsonl"
+    return db_path.with_name("audit.jsonl")
 
 
 def _verify_operator_lifecycle_chain(

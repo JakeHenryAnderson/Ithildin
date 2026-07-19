@@ -34,6 +34,7 @@ externally closed.
 - [Capability Decision](mission-command-control-plane-capability-decision.md)
 - [Architecture](mission-command-control-plane-architecture.md)
 - [Implementation Tickets](mission-command-control-plane-implementation-tickets.md)
+- [MCC-006 POC Evidence Contract](mission-command-control-plane-poc-evidence-contract.md)
 - [Authorization Record](mission-command-control-plane-authorization-record.md)
 
 ## Track B Node Signed Configuration

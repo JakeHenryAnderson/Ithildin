@@ -5241,7 +5241,9 @@ def test_audit_event_list_returns_structured_error_for_corrupt_payload(
     assert response.json()["detail"] == "failed to decode audit event payload"
 
 
-def test_audit_export_reflects_failed_verification(tmp_path: Path) -> None:
+def test_audit_export_fails_closed_when_sqlite_payload_diverges_from_jsonl(
+    tmp_path: Path,
+) -> None:
     settings = make_settings(tmp_path, token="correct-token")
     app = create_app(settings)
 
@@ -5270,9 +5272,8 @@ def test_audit_export_reflects_failed_verification(tmp_path: Path) -> None:
             headers={"Authorization": "Bearer correct-token"},
         )
 
-    metadata = json.loads(export_response.text.splitlines()[0])["metadata"]
-    assert metadata["verification"]["valid"] is False
-    assert metadata["verification"]["failure"]["reason"] == "event hash mismatch"
+    assert export_response.status_code == 409
+    assert export_response.json()["detail"] == "audit lifecycle recovery is required"
 
 
 def test_app_startup_fails_for_invalid_manifest(tmp_path: Path) -> None:
@@ -9372,6 +9373,117 @@ def test_mission_admission_audit_failure_remains_unadmitted_and_recovery_require
         assert connection.execute(
             "SELECT evidence_status, failure_reason_code FROM mission_transition_attempts"
         ).fetchone() == ("evidence_incomplete", "audit_write_failed")
+        assert connection.execute(
+            "SELECT count(*) FROM mission_audit_evidence_bindings"
+        ).fetchone() == (0,)
+
+
+def test_mission_admission_audit_failure_after_jsonl_append_rolls_back_audit_commit(
+    tmp_path: Path,
+) -> None:
+    settings = _mission_ready_settings(tmp_path)
+    admin_headers = {"Authorization": f"Bearer {settings.admin_token}"}
+    api = create_app(settings)
+    with TestClient(api) as client:
+        node_id = _ready_mission_node(client, settings, nonce_prefix="c")
+        with sqlite3.connect(settings.db_path) as connection:
+            audit_count_before = int(
+                connection.execute("SELECT count(*) FROM audit_events").fetchone()[0]
+            )
+        jsonl_count_before = len(settings.audit_log_path.read_text(encoding="utf-8").splitlines())
+
+        class FailAfterJsonlAppendAuditWriter(AuditWriter):
+            def _persist_event(
+                self,
+                connection: sqlite3.Connection,
+                event: Any,
+            ) -> None:
+                super()._persist_event(connection, event)
+                raise sqlite3.OperationalError("simulated interruption after JSONL append")
+
+        api.state.mission_admission_service.audit_writer = FailAfterJsonlAppendAuditWriter(
+            settings.db_path,
+            settings.audit_log_path,
+        )
+        failed = client.post(
+            "/missions",
+            headers=admin_headers,
+            json={
+                "target_node_id": node_id,
+                "mission_template_id": "synthetic_read_review_v1",
+                "requested_timeout_seconds": 300,
+                "client_request_id": "after-jsonl-append-001",
+            },
+        )
+
+        assert failed.status_code == 409
+        assert failed.json()["detail"] == "mission transition audit evidence failed"
+        assert len(settings.audit_log_path.read_text(encoding="utf-8").splitlines()) == (
+            jsonl_count_before + 1
+        )
+        with pytest.raises(AuditWriteError, match="lifecycle recovery is required"):
+            AuditWriter(settings.db_path, settings.audit_log_path).write_event(
+                event_id="evt_" + ("9" * 32),
+                event_type=AuditEventType.MISSION_ADMISSION_STAGED,
+                request_id="after-jsonl-append-followup",
+                principal={"id": "admin:local-ui", "roles": ["Admin"]},
+            )
+        assert len(settings.audit_log_path.read_text(encoding="utf-8").splitlines()) == (
+            jsonl_count_before + 1
+        )
+
+    with sqlite3.connect(settings.db_path) as connection:
+        assert connection.execute("SELECT count(*) FROM audit_events").fetchone() == (
+            audit_count_before,
+        )
+        assert connection.execute(
+            "SELECT lifecycle_state, lifecycle_revision FROM missions"
+        ).fetchone() == ("unadmitted", 0)
+        assert connection.execute(
+            "SELECT evidence_status, failure_reason_code FROM mission_transition_attempts"
+        ).fetchone() == ("evidence_incomplete", "audit_write_failed")
+
+
+def test_mission_admission_audit_failure_after_audit_commit_remains_unadmitted(
+    tmp_path: Path,
+) -> None:
+    settings = _mission_ready_settings(tmp_path)
+    admin_headers = {"Authorization": f"Bearer {settings.admin_token}"}
+    api = create_app(settings)
+    with TestClient(api) as client:
+        node_id = _ready_mission_node(client, settings, nonce_prefix="d")
+        real_audit_writer = api.state.mission_admission_service.audit_writer
+
+        class FailAfterAuditCommitWriter:
+            def write_event(self, **kwargs: object) -> None:
+                real_audit_writer.write_event(**kwargs)
+                raise AuditWriteError("simulated interruption after audit commit")
+
+        api.state.mission_admission_service.audit_writer = FailAfterAuditCommitWriter()
+        failed = client.post(
+            "/missions",
+            headers=admin_headers,
+            json={
+                "target_node_id": node_id,
+                "mission_template_id": "synthetic_read_review_v1",
+                "requested_timeout_seconds": 300,
+                "client_request_id": "after-audit-commit-001",
+            },
+        )
+
+        assert failed.status_code == 409
+        assert failed.json()["detail"] == "mission transition audit evidence failed"
+
+    with sqlite3.connect(settings.db_path) as connection:
+        assert connection.execute(
+            "SELECT lifecycle_state, lifecycle_revision FROM missions"
+        ).fetchone() == ("unadmitted", 0)
+        assert connection.execute(
+            "SELECT evidence_status, failure_reason_code FROM mission_transition_attempts"
+        ).fetchone() == ("evidence_incomplete", "audit_write_failed")
+        assert connection.execute(
+            "SELECT count(*) FROM audit_events WHERE event_type = 'mission.admission.staged'"
+        ).fetchone() == (1,)
         assert connection.execute(
             "SELECT count(*) FROM mission_audit_evidence_bindings"
         ).fetchone() == (0,)

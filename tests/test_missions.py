@@ -4,6 +4,7 @@ import json
 import sqlite3
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from typing import cast
 
 import pytest
 from ithildin_api.database import initialize_database
@@ -241,8 +242,9 @@ def test_operator_summary_keeps_mission_truth_sources_separate(tmp_path: Path) -
         "quarantined_count": 0,
         "report_conflict_count": 0,
     }
-    assert summary["governed_agent_runs"]["count"] == 1
-    assert summary["governed_agent_runs"]["runs"] == [
+    governed_agent_runs = cast(JsonObject, summary["governed_agent_runs"])
+    assert governed_agent_runs["count"] == 1
+    assert governed_agent_runs["runs"] == [
         {
             "run_id": "run_matching",
             "principal_id": admitted.target_node_principal_id,
@@ -252,7 +254,7 @@ def test_operator_summary_keeps_mission_truth_sources_separate(tmp_path: Path) -
             "updated_at": admitted.updated_at,
         }
     ]
-    assert summary["governed_agent_runs"]["rejected_correlation_count"] == 1
+    assert governed_agent_runs["rejected_correlation_count"] == 1
     assert summary["attention_codes"] == ["agent_run_correlation_mismatch"]
     assert summary["model_provider"] == {
         "state": "unknown",
@@ -265,14 +267,13 @@ def test_operator_summary_keeps_mission_truth_sources_separate(tmp_path: Path) -
         f"{admitted.envelope_digest.removeprefix('sha256:')[:16]}"
     )
     before_expiry = datetime.fromisoformat(claim.expires_at) - timedelta(seconds=1)
-    assert (
-        store.governed_run_mission_binding(
-            node_id=admitted.target_node_id,
-            session_id=mission_session,
-            now=before_expiry,
-        )["mission_id"]
-        == admitted.mission_id
+    binding = store.governed_run_mission_binding(
+        node_id=admitted.target_node_id,
+        session_id=mission_session,
+        now=before_expiry,
     )
+    assert binding is not None
+    assert binding["mission_id"] == admitted.mission_id
     with pytest.raises(MissionConflictError, match="session binding conflicts"):
         store.governed_run_mission_binding(
             node_id=admitted.target_node_id,
@@ -352,6 +353,32 @@ def test_operator_summary_fails_closed_when_admission_evidence_is_missing(
         connection.commit()
 
     with pytest.raises(MissionError, match="evidence|admission|audit"):
+        store.operator_summary(admitted.mission_id)
+
+
+def test_operator_summary_fails_closed_when_audit_jsonl_lifecycle_drifts(
+    tmp_path: Path,
+) -> None:
+    store = _store(tmp_path)
+    audit_writer = AuditWriter(store.db_path, tmp_path / "audit.jsonl")
+    audit_writer.initialize()
+    staged = store.stage_admission(_payload(), authority=_authority())
+    event = audit_writer.write_event(
+        event_id="evt_" + ("8" * 32),
+        event_type=AuditEventType.MISSION_ADMISSION_STAGED,
+        request_id="req_operator_jsonl_drift",
+        principal={"id": "admin:local-ui", "roles": ["Admin"]},
+        input_hash=staged.transition.request_digest,
+        metadata=mission_transition_audit_metadata(staged.transition, staged.mission),
+    )
+    admitted = store.finalize_admission(
+        staged.transition.transition_id,
+        audit_event_id=event.event_id,
+        audit_event_hash=event.event_hash,
+    )
+    audit_writer.jsonl_path.write_text("", encoding="utf-8")
+
+    with pytest.raises(MissionError, match="audit lifecycle requires recovery"):
         store.operator_summary(admitted.mission_id)
 
 

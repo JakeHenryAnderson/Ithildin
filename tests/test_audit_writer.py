@@ -1056,3 +1056,44 @@ def test_audit_writer_blocks_when_jsonl_cannot_be_written(tmp_path: Path) -> Non
         row_count = connection.execute("SELECT COUNT(*) FROM audit_events").fetchone()[0]
 
     assert row_count == 0
+
+
+@pytest.mark.parametrize("drift", ["orphan", "missing", "tampered", "invalid_utf8"])
+def test_audit_writer_blocks_new_events_when_committed_jsonl_lifecycle_drifts(
+    tmp_path: Path,
+    drift: str,
+) -> None:
+    writer = make_writer(tmp_path)
+    writer.write_event(
+        event_id="evt_1",
+        timestamp=NOW,
+        event_type=AuditEventType.POLICY_EVALUATED,
+        request_id="req_1",
+        principal={"id": "agent:local-dev"},
+    )
+    original = writer.jsonl_path.read_text(encoding="utf-8")
+    if drift == "orphan":
+        writer.jsonl_path.write_text(original + "{}\n", encoding="utf-8")
+    elif drift == "missing":
+        writer.jsonl_path.write_text("", encoding="utf-8")
+    elif drift == "tampered":
+        writer.jsonl_path.write_text(
+            original.replace("policy.evaluated", "policy.tampered"),
+            encoding="utf-8",
+        )
+    else:
+        writer.jsonl_path.write_bytes(b"\xff\n")
+    drifted = writer.jsonl_path.read_bytes()
+
+    with pytest.raises(AuditWriteError, match="lifecycle recovery is required"):
+        writer.write_event(
+            event_id="evt_2",
+            timestamp=NOW,
+            event_type=AuditEventType.POLICY_EVALUATED,
+            request_id="req_2",
+            principal={"id": "agent:local-dev"},
+        )
+
+    with sqlite3.connect(writer.db_path) as connection:
+        assert connection.execute("SELECT COUNT(*) FROM audit_events").fetchone() == (1,)
+    assert writer.jsonl_path.read_bytes() == drifted

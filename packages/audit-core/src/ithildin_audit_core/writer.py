@@ -134,6 +134,7 @@ class AuditWriter:
             self.jsonl_path.parent.mkdir(parents=True, exist_ok=True)
             connection = sqlite3.connect(self.db_path, isolation_level=None)
             connection.execute("BEGIN IMMEDIATE")
+            self._require_clean_committed_lifecycle(connection)
             row = connection.execute(
                 "SELECT event_hash FROM audit_events ORDER BY rowid DESC LIMIT 1"
             ).fetchone()
@@ -149,6 +150,10 @@ class AuditWriter:
             if connection is not None and connection.in_transaction:
                 connection.execute("ROLLBACK")
             raise AuditWriteError("invalid audit event") from exc
+        except AuditWriteError:
+            if connection is not None and connection.in_transaction:
+                connection.execute("ROLLBACK")
+            raise
         except (OSError, sqlite3.Error) as exc:
             if connection is not None and connection.in_transaction:
                 connection.execute("ROLLBACK")
@@ -328,7 +333,7 @@ class AuditWriter:
                     jsonl_lines = [line for line in jsonl_file if line.strip()]
                 jsonl_line_count = len(jsonl_lines)
                 jsonl_head_hash = _jsonl_head_hash(jsonl_lines)
-            except OSError as exc:
+            except (OSError, UnicodeError) as exc:
                 jsonl_error = str(exc)
 
         if not db_exists:
@@ -445,6 +450,31 @@ class AuditWriter:
         )
         with self.jsonl_path.open("a", encoding="utf-8") as jsonl_file:
             jsonl_file.write(payload_json + "\n")
+
+    def _require_clean_committed_lifecycle(self, connection: sqlite3.Connection) -> None:
+        """Refuse new evidence when committed SQLite and JSONL history diverge.
+
+        The caller holds ``BEGIN IMMEDIATE``, which serializes all writers using
+        this database while the committed JSONL mirror is compared byte-for-byte.
+        An orphan append, missing line, partial line, or edited mirror therefore
+        requires explicit operator recovery before the chain can advance.
+        """
+
+        sqlite_payloads = [
+            str(row[0])
+            for row in connection.execute(
+                "SELECT payload_json FROM audit_events ORDER BY rowid ASC"
+            ).fetchall()
+        ]
+        if not self.jsonl_path.exists():
+            jsonl_payloads: list[str] = []
+        else:
+            try:
+                jsonl_payloads = self.jsonl_path.read_text(encoding="utf-8").splitlines()
+            except (OSError, UnicodeError) as exc:
+                raise AuditWriteError("audit lifecycle recovery is required") from exc
+        if jsonl_payloads != sqlite_payloads:
+            raise AuditWriteError("audit lifecycle recovery is required")
 
 
 def _redact_json(value: JsonObject, redact_fields: set[str]) -> JsonObject:

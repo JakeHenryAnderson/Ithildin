@@ -17,6 +17,7 @@ NODE_RELEASE_BUNDLE ?= var/node-release-artifact/node-release-$(NODE_RELEASE_VER
 .PHONY: dev-check capability-check evidence-check docs-check quick-check readiness-check smart-check smart-handoff-check progress-check validation-decision validation-decision-run validation-plan validation-recommendation validation-timing artifact-freshness-check status-now release-check-profile release-check-slice release-check-impact release-check-transcript-summary packet-check-recursion-guard
 .PHONY: hermes-governance-poc-plan-check mission-command-control-plane-plan-check track-b-node-decision-check track-b-node-configuration-decision-check track-b-node-governed-access-decision-check track-b-node-manual-rollback-decision-check track-b-node-configuration-trust-rotation-decision-check track-b-node-version-posture-decision-check track-b-node-identity-key-rotation-decision-check track-b-node-service-lifecycle-decision-check track-b-node-release-artifact-decision-check track-b-node-evidence-check track-b-node-configuration-evidence-check track-b-node-governed-access-evidence-check track-b-node-configuration-trust-rotation-evidence-check track-b-node-version-posture-evidence-check track-b-node-identity-key-rotation-evidence-check track-b-node-service-lifecycle-evidence-check track-b-node-release-artifact-evidence-check node-configuration-keygen node-configuration-signing-status node-service-image node-service-compose-check node-release-image node-release-artifact-keygen node-release-artifact-sign node-release-artifact-verify
 .PHONY: hermes-poc-image hermes-poc-config-check hermes-poc-run hermes-poc-stop
+.PHONY: mission-command-control-plane-poc mission-command-control-plane-poc-check mission-command-control-plane-focused-gates
 
 test:
 	uv run pytest
@@ -39,6 +40,21 @@ hermes-governance-poc-plan-check:
 
 mission-command-control-plane-plan-check:
 	uv run python scripts/mission_command_control_plane_plan_check.py
+
+mission-command-control-plane-poc:
+	uv run python scripts/mission_command_control_plane_poc.py --replace
+
+mission-command-control-plane-poc-check:
+	uv run python scripts/mission_command_control_plane_poc_evidence_check.py
+
+mission-command-control-plane-focused-gates:
+	uv run pytest \
+		tests/test_missions.py \
+		tests/test_api_service.py \
+		tests/test_audit_writer.py \
+		tests/test_mission_database_migration.py \
+		tests/test_mission_command_control_plane_poc_evidence.py \
+		-q
 
 track-b-node-decision-check:
 	uv run python scripts/track_b_node_decision_check.py
@@ -1857,7 +1873,7 @@ review-candidate-release-transcript:
 	@{ echo "$$ make release-check"; $(MAKE) release-check; rc=$$?; echo "returncode=$$rc"; exit $$rc; } > var/review-packets/v3/review-candidate-release-check.txt 2>&1 || (cat var/review-packets/v3/review-candidate-release-check.txt; exit 1)
 	@echo "release-check transcript: var/review-packets/v3/review-candidate-release-check.txt"
 
-review-candidate:
+review-candidate: mission-command-control-plane-poc-check
 	$(MAKE) review-candidate-release-transcript
 	$(MAKE) filesystem-contract-check
 	$(MAKE) signed-evidence-demo

@@ -219,7 +219,10 @@ def create_app(
             node_store = NodeStore(resolved_settings.db_path)
             node_store.initialize()
             app_instance.state.node_store = node_store
-            mission_store = MissionStore(resolved_settings.db_path)
+            mission_store = MissionStore(
+                resolved_settings.db_path,
+                resolved_settings.audit_log_path,
+            )
             mission_store.initialize()
             app_instance.state.mission_store = mission_store
             mission_template_registry = MissionTemplateRegistry.startup()
