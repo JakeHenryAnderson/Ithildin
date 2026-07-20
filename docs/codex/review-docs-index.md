@@ -453,6 +453,7 @@ externally closed.
 - [Docs/Claims Public-Preview Disposition Closure Gate](docs-claims-public-preview-disposition-closure-gate.md)
 - [Production Identity And Storage Architecture Decision Record](production-identity-storage-architecture-decision-record.md)
 - [Production Identity And Storage PIS-001 Planning Gate](production-identity-storage-pis-001-planning-gate.md)
+- [Production Identity And Storage PIS-001 Threat Model And Dependency Decision](production-identity-storage-pis-001-threat-model-and-dependency-decision.md)
 - [Production Identity And Storage Architecture](production-identity-storage-architecture.md)
 - [Production Identity And Storage Disposition Packet](production-identity-storage-disposition-packet.md)
 - [Production Identity And Storage External Review Bundle](production-identity-storage-external-review-bundle.md)

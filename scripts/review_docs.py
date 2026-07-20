@@ -399,6 +399,7 @@ REVIEW_DOCS = [
     "docs/codex/docs-claims-public-preview-disposition-closure-gate.md",
     "docs/codex/production-identity-storage-architecture-decision-record.md",
     "docs/codex/production-identity-storage-pis-001-planning-gate.md",
+    "docs/codex/production-identity-storage-pis-001-threat-model-and-dependency-decision.md",
     "docs/codex/production-identity-storage-architecture.md",
     "docs/codex/production-identity-storage-disposition-packet.md",
     "docs/codex/production-identity-storage-external-review-bundle.md",

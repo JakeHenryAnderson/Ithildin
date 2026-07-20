@@ -32,6 +32,11 @@ The artifact must freeze the Phase 1 threat model, non-goals, dependency recomme
 rejections, and exact identity/storage contract. It may recommend a later PIS-002 entry decision;
 it may not grant that decision.
 
+The resulting artifact is
+[production-identity-storage-pis-001-threat-model-and-dependency-decision.md](production-identity-storage-pis-001-threat-model-and-dependency-decision.md)
+and is validated with `make production-identity-storage-pis-001-decision-check`. Its presence does
+not by itself satisfy the done criteria or authorize PIS-002.
+
 ## Allowed Work
 
 - inspect current source, dependency manifests, lock files, database boundaries, authentication
@@ -151,6 +156,7 @@ failures of the same applicable gate.
 Run:
 
 ```sh
+make production-identity-storage-pis-001-decision-check
 make production-identity-storage-pis-001-planning-gate-check
 make production-identity-storage-architecture-decision-record-check
 make production-identity-storage-architecture-check

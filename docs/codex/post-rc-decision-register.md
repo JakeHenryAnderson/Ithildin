@@ -371,7 +371,9 @@ Current selected capability: `not selected`.
   approve dependency changes, PIS-002, schemas, migrations, production identity, runtime
   PostgreSQL, remote administration, or runtime work. Both enterprise gaps remain `planning_only`.
   The bounded execution contract is
-  `production-identity-storage-pis-001-planning-gate.md`.
+  `production-identity-storage-pis-001-planning-gate.md`. The resulting planning artifact is
+  `production-identity-storage-pis-001-threat-model-and-dependency-decision.md`; its validator keeps
+  PIS-002 behind a separate entry decision and all runtime/dependency authority false.
 - Current warning language: Ithildin may discuss production identity and durable storage
   architecture, but the current runtime remains local-preview with local principal labels and SQLite.
 - Current architecture evidence:

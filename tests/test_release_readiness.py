@@ -196,6 +196,7 @@ from scripts import (
     production_identity_storage_disposition_packet,
     production_identity_storage_external_response_intake_check,
     production_identity_storage_external_review_bundle,
+    production_identity_storage_pis_001_decision_check,
     production_identity_storage_pis_001_planning_gate_check,
     production_identity_storage_response_dry_run,
     production_identity_storage_response_kit,
@@ -8343,6 +8344,63 @@ def test_production_identity_storage_pis_001_planning_gate_rejects_authority() -
     )
 
     assert any("forbidden phrase: pis-002 is approved" in item for item in failures)
+
+
+def test_production_identity_storage_pis_001_decision_is_wired() -> None:
+    report = production_identity_storage_pis_001_decision_check.build_report(Path.cwd())
+    doc_rel = (
+        "docs/codex/"
+        "production-identity-storage-pis-001-threat-model-and-dependency-decision.md"
+    )
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(
+        encoding="utf-8"
+    )
+
+    assert report["valid"] is True
+    assert report["decision_id"] == "PRD-PROD-IAM-STORAGE-PIS-001"
+    assert report["decision_outcome"] == (
+        "threat_model_frozen_dependency_recommendations_recorded"
+    )
+    assert report["baseline_hashes_match"] is True
+    assert report["tool_count"] == 24
+    assert report["pis_001_planning_artifact_recorded"] is True
+    assert report["pis_002_entry_decision_required"] is True
+    assert report["pis_002_implementation_allowed"] is False
+    assert report["dependency_changes_allowed"] is False
+    assert report["runtime_changes_allowed"] is False
+    assert report["production_identity_allowed"] is False
+    assert report["runtime_postgres_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    assert report["uat_required_now"] is False
+    assert "production-identity-storage-pis-001-decision-check:" in makefile
+    assert (
+        "release-check: production-identity-storage-pis-001-decision-check" in makefile
+    )
+    assert "make production-identity-storage-pis-001-decision-check" in readme
+    assert doc_rel in docs_site
+    assert doc_rel in review_docs.REVIEW_DOCS
+    assert (
+        "Production Identity And Storage PIS-001 Threat Model And Dependency Decision"
+        in review_index
+    )
+    assert (
+        "production-identity-storage-pis-001-decision-check"
+        in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+
+
+def test_production_identity_storage_pis_001_decision_rejects_authority() -> None:
+    failures = production_identity_storage_pis_001_decision_check.validate_decision_text(
+        "PIS-002 implementation is authorized."
+    )
+
+    assert any(
+        "forbidden authority phrase: pis-002 implementation is authorized" in item
+        for item in failures
+    )
 
 
 def test_production_identity_storage_architecture_is_wired() -> None:

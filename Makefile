@@ -1014,12 +1014,16 @@ public-security-product-positioning-response-kit-check:
 
 .PHONY: production-identity-storage-architecture-decision-record-check
 .PHONY: production-identity-storage-pis-001-planning-gate-check
+.PHONY: production-identity-storage-pis-001-decision-check
 
 production-identity-storage-architecture-decision-record-check:
 	uv run python scripts/production_identity_storage_architecture_decision_record_check.py
 
 production-identity-storage-pis-001-planning-gate-check:
 	uv run python scripts/production_identity_storage_pis_001_planning_gate_check.py
+
+production-identity-storage-pis-001-decision-check:
+	uv run python scripts/production_identity_storage_pis_001_decision_check.py
 
 production-identity-storage-architecture-check:
 	uv run python scripts/production_identity_storage_architecture_check.py
@@ -2110,6 +2114,7 @@ release-check: trusted-host-promotion-response-kit-check
 release-check: production-identity-storage-disposition-closure-check
 release-check: production-identity-storage-architecture-decision-record-check
 release-check: production-identity-storage-pis-001-planning-gate-check
+release-check: production-identity-storage-pis-001-decision-check
 release-check: production-identity-storage-response-dry-run
 release-check: production-identity-storage-external-review-bundle-check
 release-check: production-identity-storage-response-kit-check
