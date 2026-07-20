@@ -8442,6 +8442,17 @@ def test_production_identity_storage_pis_001_contract_is_closed() -> None:
     )
     assert any("exact fail-closed map" in item for item in failures)
 
+    contract = json.loads(
+        Path(production_identity_storage_pis_001_decision_check.CONTRACT_REL).read_text(
+            encoding="utf-8"
+        )
+    )
+    contract["authority"]["runtime_changes_allowed"] = 0
+    failures = production_identity_storage_pis_001_decision_check.validate_contract(
+        contract
+    )
+    assert any("exact fail-closed map" in item for item in failures)
+
 
 def test_production_identity_storage_pis_001_scope_allowlist_excludes_runtime() -> None:
     allowed = production_identity_storage_pis_001_decision_check.ALLOWED_CHANGED_PATHS

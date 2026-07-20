@@ -331,7 +331,13 @@ def validate_contract(contract: dict[str, Any]) -> list[str]:
     for key, expected in expected_scalars.items():
         if contract.get(key) != expected:
             failures.append(f"PIS-001 contract field {key} does not match {expected!r}")
-    if contract.get("authority") != EXPECTED_AUTHORITY:
+    authority = contract.get("authority")
+    if (
+        not isinstance(authority, dict)
+        or set(authority) != set(EXPECTED_AUTHORITY)
+        or any(type(authority.get(key)) is not bool for key in EXPECTED_AUTHORITY)
+        or authority != EXPECTED_AUTHORITY
+    ):
         failures.append("PIS-001 contract authority map is not the exact fail-closed map")
 
     dependencies = contract.get("dependency_decisions")
@@ -422,7 +428,9 @@ def build_report(repo_root: Path, *, require_clean: bool = False) -> dict[str, A
     baseline_is_ancestor = _baseline_is_ancestor(repo_root)
     if not baseline_is_ancestor:
         failures.append("PIS-001 planning baseline is not an ancestor of current HEAD")
-    changed_paths = _changed_paths(repo_root) if baseline_is_ancestor else []
+    committed_changed_paths = _changed_paths(repo_root) if baseline_is_ancestor else []
+    working_tree_changed_paths = _working_tree_changed_paths(repo_root)
+    changed_paths = sorted(set(committed_changed_paths) | set(working_tree_changed_paths))
     unexpected_changed_paths = sorted(set(changed_paths) - ALLOWED_CHANGED_PATHS)
     if unexpected_changed_paths:
         failures.append(
@@ -502,6 +510,7 @@ def build_report(repo_root: Path, *, require_clean: bool = False) -> dict[str, A
         "candidate_tree_clean": candidate_tree_clean,
         "candidate_scope_valid": not unexpected_changed_paths,
         "changed_paths": changed_paths,
+        "working_tree_changed_paths": working_tree_changed_paths,
         "contract_valid": not contract_failures and not contract_validation_failures,
         "tool_count": tool_count,
         "erg_006_status": "planning_only",
@@ -600,6 +609,18 @@ def _baseline_is_ancestor(repo_root: Path) -> bool:
 def _changed_paths(repo_root: Path) -> list[str]:
     output = _git(repo_root, "diff", "--name-only", f"{BASELINE_COMMIT}..HEAD")
     return sorted(line for line in output.splitlines() if line)
+
+
+def _working_tree_changed_paths(repo_root: Path) -> list[str]:
+    paths: set[str] = set()
+    for arguments in [
+        ("diff", "--name-only"),
+        ("diff", "--cached", "--name-only"),
+        ("ls-files", "--others", "--exclude-standard"),
+    ]:
+        output = _git(repo_root, *arguments)
+        paths.update(line for line in output.splitlines() if line)
+    return sorted(paths)
 
 
 def _git(repo_root: Path, *arguments: str) -> str:
