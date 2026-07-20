@@ -8365,6 +8365,9 @@ def test_production_identity_storage_pis_001_decision_is_wired() -> None:
         "threat_model_frozen_dependency_recommendations_recorded"
     )
     assert report["baseline_hashes_match"] is True
+    assert report["baseline_is_ancestor"] is True
+    assert report["candidate_scope_valid"] is True
+    assert report["contract_valid"] is True
     assert report["tool_count"] == 24
     assert report["pis_001_planning_artifact_recorded"] is True
     assert report["pis_002_entry_decision_required"] is True
@@ -8380,6 +8383,7 @@ def test_production_identity_storage_pis_001_decision_is_wired() -> None:
         "release-check: production-identity-storage-pis-001-decision-check" in makefile
     )
     assert "make production-identity-storage-pis-001-decision-check" in readme
+    assert production_identity_storage_pis_001_decision_check.CONTRACT_REL in readme
     assert doc_rel in docs_site
     assert doc_rel in review_docs.REVIEW_DOCS
     assert (
@@ -8401,6 +8405,56 @@ def test_production_identity_storage_pis_001_decision_rejects_authority() -> Non
         "forbidden authority phrase: pis-002 implementation is authorized" in item
         for item in failures
     )
+
+
+@pytest.mark.parametrize(
+    "claim",
+    [
+        "PIS-002 may now proceed.",
+        "Runtime implementation is approved.",
+        "Dependencies may be installed now.",
+    ],
+)
+def test_production_identity_storage_pis_001_decision_rejects_authority_paraphrases(
+    claim: str,
+) -> None:
+    failures = production_identity_storage_pis_001_decision_check.validate_decision_text(
+        claim
+    )
+
+    assert any("forbidden authority pattern" in item for item in failures)
+
+
+def test_production_identity_storage_pis_001_contract_is_closed() -> None:
+    contract = json.loads(
+        Path(production_identity_storage_pis_001_decision_check.CONTRACT_REL).read_text(
+            encoding="utf-8"
+        )
+    )
+
+    assert (
+        production_identity_storage_pis_001_decision_check.validate_contract(contract)
+        == []
+    )
+    contract["authority"]["runtime_changes_allowed"] = True
+    failures = production_identity_storage_pis_001_decision_check.validate_contract(
+        contract
+    )
+    assert any("exact fail-closed map" in item for item in failures)
+
+
+def test_production_identity_storage_pis_001_scope_allowlist_excludes_runtime() -> None:
+    allowed = production_identity_storage_pis_001_decision_check.ALLOWED_CHANGED_PATHS
+    protected = production_identity_storage_pis_001_decision_check.BASELINE_HASHES
+
+    assert not any(path.startswith("apps/api/") for path in allowed)
+    assert not any(path.startswith("apps/node/") for path in allowed)
+    assert not any(path.startswith("packages/") for path in allowed)
+    assert "apps/ui/package.json" in protected
+    assert "apps/ui/package-lock.json" in protected
+    assert "deploy/Dockerfile.api" in protected
+    assert "deploy/Dockerfile.node" in protected
+    assert "deploy/Dockerfile.ui" in protected
 
 
 def test_production_identity_storage_architecture_is_wired() -> None:

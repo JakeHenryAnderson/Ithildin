@@ -104,6 +104,11 @@ Node connectivity, runner-reported state, and model-provider state remain separa
     labels, not raw external subjects, customer labels, credentials, tokens, connection strings,
     prompts, response bodies, or private paths.
 
+The closed machine-readable companion contract is
+`docs/codex/production-identity-storage-pis-001-decision.json`. It is authoritative for threat-family IDs,
+dependency dispositions, accepted-risk state, and all allow/deny booleans. Prose may add rationale
+but may not contradict or grant authority absent from that closed contract.
+
 ## Assets And Data Classes
 
 | Asset | Data class | Authority or confidentiality requirement |
@@ -263,7 +268,8 @@ swap.
   parser tests; PIS-001 does not extend its role.
 - **FastAPI/Starlette request primitives** — accepted existing HTTP framework surface. Starlette's
   signed-cookie `SessionMiddleware` is explicitly rejected as the production authentication
-  session because Phase 1 requires an opaque handle with only a keyed server-side lookup digest.
+  session or pre-authentication transaction store because Phase 1 requires opaque handles with only
+  keyed server-side lookup digests.
 - **Python `secrets`, `hmac`, and `hashlib`** — accepted for random session/CSRF values, keyed
   session-handle lookup digests, and constant-time comparisons. Password hashing is unnecessary
   because Phase 1 does not add passwords and session handles have high entropy.
@@ -299,6 +305,22 @@ swap.
   rotation handling, emergency provider disable, and incident rotation of client credentials.
 - **Decision:** `recommended_deferred`; do not add before a separate PIS-004 entry/dependency
   decision and source review.
+
+Authlib integration may use protocol/client primitives only. A future sign-in start must create an
+Ithildin-owned, server-side pre-authentication transaction containing the state, nonce, PKCE
+verifier, provider-configuration reference, exact redirect URI, issuance/expiry, requested
+freshness, and one-use status. The browser receives only a random opaque `__Host-` transaction
+handle marked `Secure`, `HttpOnly`, and `SameSite`; it never receives the transaction contents in a
+signed client cookie. Callback consumption is atomic and replay-denying. Default Authlib/Starlette
+`SessionMiddleware`, persistent ID/access/refresh tokens, and retaining an ID token merely for RP
+logout are forbidden. Phase 1 logout is local Manager-session revocation unless a later reviewed
+design proves non-persistent RP-initiated logout.
+
+Recent authentication is a separate authority property, not the time a Manager session happened to
+be created. A recent-auth-required transition must start a newly bound OIDC ceremony with an exact
+`max_age` requirement and validate a trustworthy ID-token `auth_time` against injected time and the
+requested bound. A provider that omits, contradicts, or cannot honor that freshness proof cannot
+satisfy recent authentication; silent SSO success alone is insufficient.
 
 ### Hand-rolled OIDC using transitive PyJWT plus HTTPX — rejected
 
@@ -352,10 +374,11 @@ swap.
 - **Maintenance/license:** the official project identifies Psycopg 3 as the current generation,
   supports modern Python/PostgreSQL releases, and uses LGPL-3.0-only licensing. Legal/redistribution
   review is required before adoption.
-- **Footprint/interoperability:** the pure Python package uses system `libpq`; the binary extra
-  bundles native components and changes patch/SBOM ownership. The production candidate is the
-  pure package with an explicitly patched system `libpq`; the binary extra is deferred even for
-  tests until packaging review records the exact flavor.
+- **Footprint/interoperability:** the pure Python package uses system `libpq`; the local C build also
+  links system `libpq`/`libssl`; and the binary extra bundles native components. Each choice changes
+  performance, build, patch, redistribution, and SBOM ownership. Package flavor is deliberately
+  unselected until PIS-003 evaluates the actual deployment and performance requirements; the binary
+  extra remains disallowed until that packaging review.
 - **Unsafe configuration classes:** default TLS posture, DSNs containing credentials, shared pools
   across deployments, runtime use of migration credentials, driver-level transparent retries, and
   unbounded prepared-statement/pool behavior.
@@ -364,8 +387,8 @@ swap.
 - **Operational burden:** PostgreSQL and `libpq` support matrix, native package patching, connection
   pool sizing, credential rotation, server certificate roots, incident revocation, and license/SBOM
   tracking.
-- **Decision:** `recommended_deferred`; exact package extras and version remain unselected until
-  PIS-003.
+- **Decision:** `recommended_deferred`; version, package flavor, extras, native build, and system
+  library ownership remain unselected until PIS-003.
 
 ### Alembic — recommended, deferred to a PIS-003 dependency gate
 
@@ -421,7 +444,7 @@ decision must choose an exact supported major/minor line and patch policy; PIS-0
 
 ## Exact Identity And Storage Contract Freeze
 
-PIS-001 accepts the sixteen security invariants above without weakening the reviewed architecture.
+PIS-001 accepts the seventeen security invariants above without weakening the reviewed architecture.
 The only clarification is dependency placement:
 
 ```text

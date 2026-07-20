@@ -1,0 +1,253 @@
+{
+  "schema_version": "1",
+  "decision_id": "PRD-PROD-IAM-STORAGE-PIS-001",
+  "parent_decision": "PRD-PROD-IAM-STORAGE-ARCH-001",
+  "decision_outcome": "threat_model_frozen_dependency_recommendations_recorded",
+  "planning_baseline_commit": "aa4b296f7b096b6ad0129bdf442a91c45d3d876f",
+  "tool_count": 24,
+  "authority": {
+    "pis_001_planning_artifact_recorded": true,
+    "pis_002_entry_decision_required": true,
+    "pis_002_implementation_allowed": false,
+    "dependency_changes_allowed": false,
+    "runtime_changes_allowed": false,
+    "public_api_changes_allowed": false,
+    "schema_changes_allowed": false,
+    "database_migrations_allowed": false,
+    "production_identity_allowed": false,
+    "enterprise_rbac_allowed": false,
+    "remote_admin_allowed": false,
+    "runtime_postgres_allowed": false,
+    "backup_restore_runtime_allowed": false,
+    "retention_enforcement_allowed": false,
+    "new_power_classes_allowed": false,
+    "public_security_product_positioning_allowed": false,
+    "uat_required_now": false
+  },
+  "dependency_decisions": {
+    "authlib_client": {
+      "decision": "recommended_deferred",
+      "later_gate": "PIS-004"
+    },
+    "hand_rolled_oidc_pyjwt_httpx": {
+      "decision": "rejected",
+      "later_gate": "none"
+    },
+    "sqlalchemy_2_core": {
+      "decision": "recommended_deferred",
+      "later_gate": "PIS-002-entry-decision"
+    },
+    "psycopg_3": {
+      "decision": "recommended_deferred",
+      "later_gate": "PIS-003"
+    },
+    "alembic": {
+      "decision": "recommended_deferred",
+      "later_gate": "PIS-003"
+    },
+    "psycopg_pool": {
+      "decision": "deferred",
+      "later_gate": "post-PIS-003-load-evidence"
+    },
+    "asyncpg": {
+      "decision": "rejected_for_phase_1",
+      "later_gate": "new-architecture-decision"
+    },
+    "sqlalchemy_orm": {
+      "decision": "rejected_for_authority_state",
+      "later_gate": "new-architecture-decision"
+    },
+    "general_retry_framework": {
+      "decision": "rejected",
+      "later_gate": "new-architecture-decision"
+    },
+    "provider_sdks": {
+      "decision": "deferred_unselected",
+      "later_gate": "provider-specific-entry-decision"
+    }
+  },
+  "threat_families": [
+    {
+      "id": "oidc_identity_confusion",
+      "owner": "Ithildin identity maintainer",
+      "safe_evidence": [
+        "provider_configuration_reference",
+        "safe_denial_code",
+        "key_id_digest",
+        "authentication_generation"
+      ],
+      "recovery": [
+        "disable_provider_configuration",
+        "revoke_affected_sessions",
+        "rotate_exposed_client_credentials",
+        "reestablish_exact_metadata_and_key_trust"
+      ],
+      "tests": [
+        "issuer_response_mixup_matrix",
+        "redirect_and_proxy_host_confusion",
+        "jwk_algorithm_audience_and_rollover",
+        "preauth_atomic_consume_and_replay",
+        "recent_auth_auth_time_max_age"
+      ]
+    },
+    {
+      "id": "session_and_membership_abuse",
+      "owner": "Ithildin identity maintainer",
+      "safe_evidence": [
+        "session_audit_reference",
+        "safe_denial_code",
+        "identity_membership_and_digest_key_generations"
+      ],
+      "recovery": [
+        "revoke_session_family",
+        "rotate_implicated_digest_key",
+        "increment_identity_or_membership_generation",
+        "require_fresh_authentication"
+      ],
+      "tests": [
+        "fixation_theft_and_replay",
+        "csrf_origin_and_token",
+        "expiry_and_rotation",
+        "disabled_principal_and_membership_drift"
+      ]
+    },
+    {
+      "id": "tenant_and_authority_spoofing",
+      "owner": "Ithildin authorization maintainer",
+      "safe_evidence": [
+        "request_reference",
+        "organization_and_workspace_references",
+        "safe_denial_code",
+        "policy_generation"
+      ],
+      "recovery": [
+        "deny_and_quarantine_request",
+        "revoke_compromised_principal",
+        "repair_server_owned_mapping",
+        "inspect_adjacent_scope_predicates"
+      ],
+      "tests": [
+        "caller_authority_field_injection",
+        "cross_workspace_known_object_id",
+        "bulk_and_list_enumeration",
+        "service_role_cannot_approve_as_human"
+      ]
+    },
+    {
+      "id": "node_identity_and_configuration_replay",
+      "owner": "Ithildin Node maintainer",
+      "safe_evidence": [
+        "node_and_deployment_references",
+        "certificate_and_application_key_ids",
+        "configuration_generation",
+        "nonce_outcome"
+      ],
+      "recovery": [
+        "revoke_affected_generation",
+        "fence_node",
+        "replace_not_restore_enrollment",
+        "reissue_configuration"
+      ],
+      "tests": [
+        "certificate_application_key_cross_binding",
+        "cloned_and_retired_key_replay",
+        "configuration_downgrade_after_restart",
+        "partition_fail_closed"
+      ]
+    },
+    {
+      "id": "deployment_epoch_and_restore_rollback",
+      "owner": "Ithildin storage maintainer",
+      "safe_evidence": [
+        "deployment_epoch",
+        "external_watermark_generation_and_digest",
+        "safe_fence_reason",
+        "isolated_restore_reference"
+      ],
+      "recovery": [
+        "fence_ambiguous_writers_and_node_authority",
+        "reconcile_external_anchor",
+        "promote_exactly_one_epoch_through_attributed_recovery"
+      ],
+      "tests": [
+        "network_partition_and_old_primary_return",
+        "stale_restore_and_missing_watermark",
+        "competing_promotion",
+        "anchor_crash_before_and_after_commit"
+      ]
+    },
+    {
+      "id": "transaction_audit_and_outbox_ambiguity",
+      "owner": "Ithildin storage and audit maintainer",
+      "safe_evidence": [
+        "request_and_idempotency_reference",
+        "deployment_epoch",
+        "transaction_outcome_label",
+        "audit_and_outbox_sequence_references"
+      ],
+      "recovery": [
+        "retain_pending_or_recovery_required",
+        "reconcile_durable_records",
+        "never_replay_as_fresh_work",
+        "use_attributed_recovery_runbook"
+      ],
+      "tests": [
+        "connection_loss_before_and_after_commit",
+        "concurrent_audit_head_writers",
+        "audit_or_outbox_insert_failure",
+        "duplicate_delivery_and_response_loss"
+      ]
+    },
+    {
+      "id": "migration_backup_and_database_role_failure",
+      "owner": "Ithildin storage maintainer",
+      "safe_evidence": [
+        "migration_or_restore_reference",
+        "schema_version",
+        "inventory_or_digest_mismatch",
+        "database_role_class",
+        "safe_failure_code"
+      ],
+      "recovery": [
+        "discard_isolated_target_or_keep_restore_fenced",
+        "rotate_implicated_credentials",
+        "repeat_only_from_verified_source_after_root_cause_closure"
+      ],
+      "tests": [
+        "duplicate_partial_and_interrupted_import",
+        "runtime_and_migration_role_denial",
+        "backup_wal_integrity_and_gap",
+        "old_writer_denial_after_activation"
+      ]
+    },
+    {
+      "id": "dependency_and_evidence_compromise",
+      "owner": "Ithildin maintainer",
+      "safe_evidence": [
+        "dependency_version_and_hash_reference",
+        "canary_class",
+        "affected_feature",
+        "safe_incident_reference"
+      ],
+      "recovery": [
+        "disable_feature_or_revert_to_last_reviewed_lock",
+        "revoke_exposed_material",
+        "quarantine_exports",
+        "run_scoped_incident_review"
+      ],
+      "tests": [
+        "malformed_and_unbounded_dependency_input",
+        "timeout_cancellation_and_unavailable_component",
+        "compromised_version_denylist_and_rollback",
+        "secret_redaction_canaries"
+      ]
+    }
+  ],
+  "accepted_risks": {
+    "AR-001": "accepted_deferred",
+    "AR-002": "accepted_deferred",
+    "AR-003": "accepted_deferred",
+    "AR-009": "accepted_deferred",
+    "AR-010": "accepted_deferred"
+  }
+}

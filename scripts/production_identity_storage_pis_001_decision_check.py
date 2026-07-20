@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -27,14 +28,101 @@ DOC_REL = (
 )
 DOC_NAME = "production-identity-storage-pis-001-threat-model-and-dependency-decision.md"
 DOC_TITLE = "Production Identity And Storage PIS-001 Threat Model And Dependency Decision"
+CONTRACT_REL = "docs/codex/production-identity-storage-pis-001-decision.json"
 TARGET = "production-identity-storage-pis-001-decision-check"
 BASELINE_COMMIT = "aa4b296f7b096b6ad0129bdf442a91c45d3d876f"
 BASELINE_HASHES = {
+    "apps/ui/package-lock.json": (
+        "71d6ca3398895b16cfae18b46e53cbdb5d5183c3b001ec6b4d8af8fe555a7322"
+    ),
+    "apps/ui/package.json": (
+        "e5d7c04d104ed8f95eed199615b2078a665267801899fec2ee212c3118dcb06a"
+    ),
+    "deploy/Dockerfile.api": (
+        "f95fe4b7439173f90500deed6ee5e2c130fbb65a80a06bb6b88cc87389887e41"
+    ),
+    "deploy/Dockerfile.node": (
+        "3666412ebf94abd532f99fc4b991ac4bfd31dd8ab71444e42959a7b09ddab9ec"
+    ),
+    "deploy/Dockerfile.ui": (
+        "f5fa657b70ba4dc24a8414c7cb9f4b87b4419db392e8e239c5a5225eda54e950"
+    ),
+    "deploy/hermes-poc/Dockerfile": (
+        "c7be5fae79c638c588a9b64207cddc25fe36d0b8c04b5cb6bbd608b89e8f2f8a"
+    ),
     "pyproject.toml": "d7f72600511d9a3fbb1777b388dafc58d7ffc5886d0e5d40a95cbd4debc2063d",
     "uv.lock": "431403895950d714cf060923e5e98c77ffb6f927e696ba86e4ac99d005fca2c5",
     "tool-manifests.lock.json": (
         "3834a18a5b8169dd66b3d96d79d6e69d252ebae17a1a9453f93f8686db1edc77"
     ),
+}
+
+ALLOWED_CHANGED_PATHS = {
+    "Makefile",
+    "README.md",
+    "docs/codex/batch-validation-strategy.md",
+    "docs/codex/post-rc-decision-register.md",
+    "docs/codex/production-identity-storage-pis-001-decision.json",
+    "docs/codex/production-identity-storage-pis-001-planning-gate.md",
+    "docs/codex/production-identity-storage-pis-001-threat-model-and-dependency-decision.md",
+    "docs/codex/review-docs-index.md",
+    "scripts/build_docs_site.py",
+    "scripts/production_identity_storage_pis_001_decision_check.py",
+    "scripts/release_guardrails.py",
+    "scripts/review_docs.py",
+    "tests/test_release_readiness.py",
+}
+
+EXPECTED_AUTHORITY = {
+    "pis_001_planning_artifact_recorded": True,
+    "pis_002_entry_decision_required": True,
+    "pis_002_implementation_allowed": False,
+    "dependency_changes_allowed": False,
+    "runtime_changes_allowed": False,
+    "public_api_changes_allowed": False,
+    "schema_changes_allowed": False,
+    "database_migrations_allowed": False,
+    "production_identity_allowed": False,
+    "enterprise_rbac_allowed": False,
+    "remote_admin_allowed": False,
+    "runtime_postgres_allowed": False,
+    "backup_restore_runtime_allowed": False,
+    "retention_enforcement_allowed": False,
+    "new_power_classes_allowed": False,
+    "public_security_product_positioning_allowed": False,
+    "uat_required_now": False,
+}
+
+EXPECTED_DEPENDENCY_DECISIONS = {
+    "authlib_client": ("recommended_deferred", "PIS-004"),
+    "hand_rolled_oidc_pyjwt_httpx": ("rejected", "none"),
+    "sqlalchemy_2_core": ("recommended_deferred", "PIS-002-entry-decision"),
+    "psycopg_3": ("recommended_deferred", "PIS-003"),
+    "alembic": ("recommended_deferred", "PIS-003"),
+    "psycopg_pool": ("deferred", "post-PIS-003-load-evidence"),
+    "asyncpg": ("rejected_for_phase_1", "new-architecture-decision"),
+    "sqlalchemy_orm": ("rejected_for_authority_state", "new-architecture-decision"),
+    "general_retry_framework": ("rejected", "new-architecture-decision"),
+    "provider_sdks": ("deferred_unselected", "provider-specific-entry-decision"),
+}
+
+EXPECTED_THREAT_IDS = {
+    "oidc_identity_confusion",
+    "session_and_membership_abuse",
+    "tenant_and_authority_spoofing",
+    "node_identity_and_configuration_replay",
+    "deployment_epoch_and_restore_rollback",
+    "transaction_audit_and_outbox_ambiguity",
+    "migration_backup_and_database_role_failure",
+    "dependency_and_evidence_compromise",
+}
+
+EXPECTED_ACCEPTED_RISKS = {
+    "AR-001": "accepted_deferred",
+    "AR-002": "accepted_deferred",
+    "AR-003": "accepted_deferred",
+    "AR-009": "accepted_deferred",
+    "AR-010": "accepted_deferred",
 }
 
 REQUIRED_PHRASES = [
@@ -154,13 +242,33 @@ FORBIDDEN_PHRASES = [
     "uat is complete",
 ]
 
+FORBIDDEN_AUTHORITY_PATTERNS = [
+    re.compile(
+        r"\bpis-?002\b.{0,48}\b(?:may|can)\b.{0,24}"
+        r"\b(?:proceed|begin|start|implement)\b"
+    ),
+    re.compile(
+        r"\bruntime implementation\b.{0,32}"
+        r"\b(?:approved|authorized|allowed)\b"
+    ),
+    re.compile(
+        r"\bdependencies?\b.{0,32}\b(?:may|can)\b.{0,16}"
+        r"\b(?:be )?installed\b"
+    ),
+    re.compile(
+        r"\b(?:production identity|runtime postgresql|enterprise rbac)\b.{0,32}"
+        r"\b(?:approved|authorized|allowed|enabled)\b"
+    ),
+]
+
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--json", action="store_true")
+    parser.add_argument("--allow-dirty", action="store_true")
     args = parser.parse_args()
 
-    report = build_report(ROOT)
+    report = build_report(ROOT, require_clean=not args.allow_dirty)
     if args.json:
         print(json.dumps(report, indent=2, sort_keys=True))
     else:
@@ -187,16 +295,112 @@ def validate_decision_text(text: str) -> list[str]:
     for phrase in FORBIDDEN_PHRASES:
         if phrase in lowered:
             failures.append(f"PIS-001 decision contains forbidden authority phrase: {phrase}")
+    for pattern in FORBIDDEN_AUTHORITY_PATTERNS:
+        if pattern.search(lowered):
+            failures.append(
+                "PIS-001 decision contains forbidden authority pattern: "
+                f"{pattern.pattern}"
+            )
     return failures
 
 
-def build_report(repo_root: Path) -> dict[str, Any]:
+def validate_contract(contract: dict[str, Any]) -> list[str]:
+    failures: list[str] = []
+    expected_top_keys = {
+        "schema_version",
+        "decision_id",
+        "parent_decision",
+        "decision_outcome",
+        "planning_baseline_commit",
+        "tool_count",
+        "authority",
+        "dependency_decisions",
+        "threat_families",
+        "accepted_risks",
+    }
+    if set(contract) != expected_top_keys:
+        failures.append("PIS-001 contract top-level keys are not the closed schema")
+    expected_scalars = {
+        "schema_version": "1",
+        "decision_id": "PRD-PROD-IAM-STORAGE-PIS-001",
+        "parent_decision": "PRD-PROD-IAM-STORAGE-ARCH-001",
+        "decision_outcome": "threat_model_frozen_dependency_recommendations_recorded",
+        "planning_baseline_commit": BASELINE_COMMIT,
+        "tool_count": 24,
+    }
+    for key, expected in expected_scalars.items():
+        if contract.get(key) != expected:
+            failures.append(f"PIS-001 contract field {key} does not match {expected!r}")
+    if contract.get("authority") != EXPECTED_AUTHORITY:
+        failures.append("PIS-001 contract authority map is not the exact fail-closed map")
+
+    dependencies = contract.get("dependency_decisions")
+    if not isinstance(dependencies, dict) or set(dependencies) != set(
+        EXPECTED_DEPENDENCY_DECISIONS
+    ):
+        failures.append("PIS-001 contract dependency keys are not the closed set")
+    else:
+        for name, (decision, later_gate) in EXPECTED_DEPENDENCY_DECISIONS.items():
+            if dependencies.get(name) != {
+                "decision": decision,
+                "later_gate": later_gate,
+            }:
+                failures.append(f"PIS-001 dependency decision is invalid: {name}")
+
+    threat_families = contract.get("threat_families")
+    threat_ids: list[str] = []
+    if not isinstance(threat_families, list):
+        failures.append("PIS-001 contract threat_families must be a list")
+    else:
+        for item in threat_families:
+            if not isinstance(item, dict) or set(item) != {
+                "id",
+                "owner",
+                "safe_evidence",
+                "recovery",
+                "tests",
+            }:
+                failures.append("PIS-001 threat family does not use the closed row schema")
+                continue
+            threat_id = item.get("id")
+            if not isinstance(threat_id, str):
+                failures.append("PIS-001 threat family ID must be a string")
+                continue
+            threat_ids.append(threat_id)
+            if not isinstance(item.get("owner"), str) or not item["owner"].strip():
+                failures.append(f"PIS-001 threat family has no owner: {threat_id}")
+            for field in ("safe_evidence", "recovery", "tests"):
+                values = item.get(field)
+                if (
+                    not isinstance(values, list)
+                    or not values
+                    or any(not isinstance(value, str) or not value for value in values)
+                ):
+                    failures.append(
+                        f"PIS-001 threat family has invalid {field}: {threat_id}"
+                    )
+        if len(threat_ids) != len(set(threat_ids)):
+            failures.append("PIS-001 contract has duplicate threat family IDs")
+        if set(threat_ids) != EXPECTED_THREAT_IDS:
+            failures.append("PIS-001 contract threat family IDs are not the required set")
+
+    if contract.get("accepted_risks") != EXPECTED_ACCEPTED_RISKS:
+        failures.append("PIS-001 accepted-risk map is not the exact deferred set")
+    return failures
+
+
+def build_report(repo_root: Path, *, require_clean: bool = False) -> dict[str, Any]:
     failures: list[str] = []
     doc_path = repo_root / DOC_REL
     text = _read(doc_path)
     if not doc_path.exists():
         failures.append("PIS-001 threat-model and dependency decision is missing")
     failures.extend(validate_decision_text(text))
+
+    contract, contract_failures = _load_contract(repo_root / CONTRACT_REL)
+    contract_validation_failures = validate_contract(contract)
+    failures.extend(contract_failures)
+    failures.extend(contract_validation_failures)
 
     actual_hashes: dict[str, str] = {}
     for relative_path, expected_hash in BASELINE_HASHES.items():
@@ -214,6 +418,20 @@ def build_report(repo_root: Path) -> dict[str, Any]:
 
     if not _commit_exists(repo_root, BASELINE_COMMIT):
         failures.append("PIS-001 planning baseline commit is unavailable in repository history")
+
+    baseline_is_ancestor = _baseline_is_ancestor(repo_root)
+    if not baseline_is_ancestor:
+        failures.append("PIS-001 planning baseline is not an ancestor of current HEAD")
+    changed_paths = _changed_paths(repo_root) if baseline_is_ancestor else []
+    unexpected_changed_paths = sorted(set(changed_paths) - ALLOWED_CHANGED_PATHS)
+    if unexpected_changed_paths:
+        failures.append(
+            "PIS-001 candidate changed paths outside the planning allowlist: "
+            + ", ".join(unexpected_changed_paths)
+        )
+    candidate_tree_clean = not bool(_git(repo_root, "status", "--short"))
+    if require_clean and not candidate_tree_clean:
+        failures.append("PIS-001 exact-candidate check requires a clean working tree")
 
     tool_count = _tool_count(repo_root / "tool-manifests.lock.json")
     if tool_count != 24:
@@ -265,6 +483,8 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         failures.append("release guardrails do not require PIS-001 decision check")
     if f"make {TARGET}" not in readme:
         failures.append("README is missing PIS-001 decision command")
+    if CONTRACT_REL not in text or CONTRACT_REL not in readme:
+        failures.append("PIS-001 machine-readable contract pointer is incomplete")
 
     return {
         "schema_version": "1",
@@ -278,6 +498,11 @@ def build_report(repo_root: Path) -> dict[str, Any]:
             actual_hashes.get(path) == expected
             for path, expected in BASELINE_HASHES.items()
         ),
+        "baseline_is_ancestor": baseline_is_ancestor,
+        "candidate_tree_clean": candidate_tree_clean,
+        "candidate_scope_valid": not unexpected_changed_paths,
+        "changed_paths": changed_paths,
+        "contract_valid": not contract_failures and not contract_validation_failures,
         "tool_count": tool_count,
         "erg_006_status": "planning_only",
         "erg_007_status": "planning_only",
@@ -307,6 +532,10 @@ def render_report(report: dict[str, Any]) -> str:
         "decision_outcome",
         "planning_baseline_commit",
         "baseline_hashes_match",
+        "baseline_is_ancestor",
+        "candidate_tree_clean",
+        "candidate_scope_valid",
+        "contract_valid",
         "tool_count",
         "erg_006_status",
         "erg_007_status",
@@ -355,6 +584,56 @@ def _commit_exists(repo_root: Path, commit: str) -> bool:
         text=True,
     )
     return result.returncode == 0
+
+
+def _baseline_is_ancestor(repo_root: Path) -> bool:
+    result = subprocess.run(
+        ["git", "merge-base", "--is-ancestor", BASELINE_COMMIT, "HEAD"],
+        cwd=repo_root,
+        capture_output=True,
+        check=False,
+        text=True,
+    )
+    return result.returncode == 0
+
+
+def _changed_paths(repo_root: Path) -> list[str]:
+    output = _git(repo_root, "diff", "--name-only", f"{BASELINE_COMMIT}..HEAD")
+    return sorted(line for line in output.splitlines() if line)
+
+
+def _git(repo_root: Path, *arguments: str) -> str:
+    return subprocess.run(
+        ["git", *arguments],
+        cwd=repo_root,
+        capture_output=True,
+        check=True,
+        text=True,
+    ).stdout.strip()
+
+
+def _load_contract(path: Path) -> tuple[dict[str, Any], list[str]]:
+    failures: list[str] = []
+
+    def reject_duplicates(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+        document: dict[str, Any] = {}
+        for key, value in pairs:
+            if key in document:
+                raise ValueError(f"duplicate JSON member: {key}")
+            document[key] = value
+        return document
+
+    try:
+        document = json.loads(
+            path.read_text(encoding="utf-8"), object_pairs_hook=reject_duplicates
+        )
+    except (FileNotFoundError, json.JSONDecodeError, ValueError) as exc:
+        failures.append(f"PIS-001 machine-readable contract is invalid: {exc}")
+        return {}, failures
+    if not isinstance(document, dict):
+        failures.append("PIS-001 machine-readable contract must be an object")
+        return {}, failures
+    return document, failures
 
 
 def _read(path: Path) -> str:

@@ -36,6 +36,9 @@ The resulting artifact is
 [production-identity-storage-pis-001-threat-model-and-dependency-decision.md](production-identity-storage-pis-001-threat-model-and-dependency-decision.md)
 and is validated with `make production-identity-storage-pis-001-decision-check`. Its presence does
 not by itself satisfy the done criteria or authorize PIS-002.
+The validator also requires the closed machine-readable companion
+`production-identity-storage-pis-001-decision.json`; prose cannot override its false authority
+flags or dependency dispositions.
 
 ## Allowed Work
 
