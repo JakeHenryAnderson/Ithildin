@@ -366,6 +366,8 @@ def validate_contract(contract: dict[str, Any]) -> list[str]:
     for key, expected in expected_scalars.items():
         if contract.get(key) != expected:
             failures.append(f"PIS-001 contract field {key} does not match {expected!r}")
+    if type(contract.get("tool_count")) is not int:
+        failures.append("PIS-001 contract tool_count must be an exact integer")
     authority = contract.get("authority")
     if (
         not isinstance(authority, dict)
@@ -642,15 +644,21 @@ def _baseline_is_ancestor(repo_root: Path) -> bool:
 
 
 def _changed_paths(repo_root: Path) -> list[str]:
-    output = _git(repo_root, "diff", "--name-only", f"{BASELINE_COMMIT}..HEAD")
+    output = _git(
+        repo_root,
+        "diff",
+        "--no-renames",
+        "--name-only",
+        f"{BASELINE_COMMIT}..HEAD",
+    )
     return sorted(line for line in output.splitlines() if line)
 
 
 def _working_tree_changed_paths(repo_root: Path) -> list[str]:
     paths: set[str] = set()
     for arguments in [
-        ("diff", "--name-only"),
-        ("diff", "--cached", "--name-only"),
+        ("diff", "--no-renames", "--name-only"),
+        ("diff", "--cached", "--no-renames", "--name-only"),
         ("ls-files", "--others", "--exclude-standard"),
     ]:
         output = _git(repo_root, *arguments)

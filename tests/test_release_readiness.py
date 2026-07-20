@@ -8491,6 +8491,46 @@ def test_production_identity_storage_pis_001_contract_rejects_numeric_boolean() 
     assert any("exact fail-closed map" in item for item in failures)
 
 
+def test_production_identity_storage_pis_001_contract_rejects_float_tool_count() -> None:
+    contract = json.loads(
+        Path(production_identity_storage_pis_001_decision_check.CONTRACT_REL).read_text(
+            encoding="utf-8"
+        )
+    )
+    contract["tool_count"] = 24.0
+
+    failures = production_identity_storage_pis_001_decision_check.validate_contract(
+        contract
+    )
+
+    assert any("tool_count must be an exact integer" in item for item in failures)
+
+
+def test_production_identity_storage_pis_001_scope_check_disables_renames(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    observed: list[tuple[str, ...]] = []
+
+    def fake_git(_repo_root: Path, *arguments: str) -> str:
+        observed.append(arguments)
+        return ""
+
+    monkeypatch.setattr(
+        production_identity_storage_pis_001_decision_check, "_git", fake_git
+    )
+
+    production_identity_storage_pis_001_decision_check._changed_paths(Path.cwd())
+
+    assert observed == [
+        (
+            "diff",
+            "--no-renames",
+            "--name-only",
+            "aa4b296f7b096b6ad0129bdf442a91c45d3d876f..HEAD",
+        )
+    ]
+
+
 def test_production_identity_storage_pis_001_scope_allowlist_excludes_runtime() -> None:
     allowed = production_identity_storage_pis_001_decision_check.ALLOWED_CHANGED_PATHS
     protected = production_identity_storage_pis_001_decision_check.BASELINE_HASHES
