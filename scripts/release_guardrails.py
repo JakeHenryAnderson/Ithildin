@@ -140,6 +140,7 @@ REQUIRED_RELEASE_CHECK_FRAGMENTS = [
     "production-identity-storage-architecture-decision-record-check",
     "production-identity-storage-pis-001-planning-gate-check",
     "production-identity-storage-pis-001-decision-check",
+    "production-identity-storage-pis-001-internal-review-check",
     "production-identity-storage-architecture-check",
     "production-identity-storage-disposition-packet-check",
     "production-identity-storage-disposition-closure-check",

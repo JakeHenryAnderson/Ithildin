@@ -197,6 +197,7 @@ from scripts import (
     production_identity_storage_external_response_intake_check,
     production_identity_storage_external_review_bundle,
     production_identity_storage_pis_001_decision_check,
+    production_identity_storage_pis_001_internal_review_check,
     production_identity_storage_pis_001_planning_gate_check,
     production_identity_storage_response_dry_run,
     production_identity_storage_response_kit,
@@ -8543,6 +8544,55 @@ def test_production_identity_storage_pis_001_scope_allowlist_excludes_runtime() 
     assert "deploy/Dockerfile.api" in protected
     assert "deploy/Dockerfile.node" in protected
     assert "deploy/Dockerfile.ui" in protected
+
+
+def test_production_identity_storage_pis_001_internal_review_is_wired() -> None:
+    report = production_identity_storage_pis_001_internal_review_check.build_report(
+        Path.cwd()
+    )
+    doc_rel = (
+        "docs/codex/production-identity-storage-pis-001-internal-source-review.md"
+    )
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+
+    assert report["valid"] is True
+    assert report["reviewed_commit"] == (
+        "177c0c6e461176d85126c9817dba40b3a092ec95"
+    )
+    assert report["reviewed_hashes_match"] is True
+    assert report["current_reviewed_artifacts_match"] is True
+    assert report["open_findings"] == 0
+    assert report["tool_count"] == 24
+    assert report["pis_002_entry_decision_record_preparation_allowed"] is True
+    assert report["pis_002_implementation_allowed"] is False
+    assert report["dependency_changes_allowed"] is False
+    assert report["runtime_changes_allowed"] is False
+    assert report["uat_required_now"] is False
+    assert "production-identity-storage-pis-001-internal-review-check:" in makefile
+    assert (
+        "release-check: production-identity-storage-pis-001-internal-review-check"
+        in makefile
+    )
+    assert "make production-identity-storage-pis-001-internal-review-check" in readme
+    assert doc_rel in review_docs.REVIEW_DOCS
+    assert (
+        "production-identity-storage-pis-001-internal-review-check"
+        in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+
+
+def test_production_identity_storage_pis_001_internal_review_rejects_authority() -> None:
+    failures = (
+        production_identity_storage_pis_001_internal_review_check.validate_review_text(
+            "PIS-002 implementation is approved."
+        )
+    )
+
+    assert any(
+        "forbidden authority phrase: pis-002 implementation is approved" in item
+        for item in failures
+    )
 
 
 def test_production_identity_storage_architecture_is_wired() -> None:

@@ -814,6 +814,9 @@ checked with `make control-mapping-readiness`.
   model, closed machine-readable decision contract, dependency recommendations, accepted-risk
   mapping, candidate changed-path allowlist, protected baseline hashes, and separate PIS-002
   entry-decision stop line.
+- `make production-identity-storage-pis-001-internal-review-check` - validate the hash-bound
+  independent review of exact PIS-001 candidate `177c0c6`, its zero-open-finding disposition, and
+  the boundary that permits only preparation of a separate PIS-002 entry decision.
 - `make production-identity-storage-disposition-packet` - generate the focused architecture
   disposition packet asking whether ERG-006/ERG-007 may continue planning while production identity,
   runtime Postgres, migrations, retention enforcement, and custody claims remain blocked.
@@ -1800,6 +1803,11 @@ threat model and dependency recommendations while leaving PIS-002, dependency ch
 runtime identity/storage work blocked behind a separate decision. Its closed authority, dependency,
 threat-family, and accepted-risk companion contract is
 [docs/codex/production-identity-storage-pis-001-decision.json](docs/codex/production-identity-storage-pis-001-decision.json).
+The independent exact-candidate disposition is recorded in
+[docs/codex/production-identity-storage-pis-001-internal-source-review.md](docs/codex/production-identity-storage-pis-001-internal-source-review.md)
+and checked with `make production-identity-storage-pis-001-internal-review-check`; it records zero
+open findings for reviewed commit `177c0c6` and permits only a separate PIS-002 entry-decision
+record, not implementation or dependency changes.
 Generate the production identity and storage disposition packet with
 `make production-identity-storage-disposition-packet`; it asks whether the current ERG-006/ERG-007
 architecture evidence is coherent enough to continue planning while keeping production identity,
