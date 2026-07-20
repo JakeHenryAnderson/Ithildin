@@ -8442,6 +8442,43 @@ def test_production_identity_storage_pis_001_contract_is_closed() -> None:
     )
     assert any("exact fail-closed map" in item for item in failures)
 
+
+def test_production_identity_storage_pis_001_contract_rejects_duplicate_member(
+    tmp_path: Path,
+) -> None:
+    contract_path = tmp_path / "decision.json"
+    contract_path.write_text(
+        '{"schema_version":"1","schema_version":"2"}', encoding="utf-8"
+    )
+
+    _, failures = production_identity_storage_pis_001_decision_check._load_contract(
+        contract_path
+    )
+
+    assert any("duplicate JSON member: schema_version" in item for item in failures)
+
+
+def test_production_identity_storage_pis_001_contract_rejects_unexpected_members() -> None:
+    source = Path(
+        production_identity_storage_pis_001_decision_check.CONTRACT_REL
+    ).read_text(encoding="utf-8")
+
+    contract = json.loads(source)
+    contract["unexpected_authority"] = False
+    failures = production_identity_storage_pis_001_decision_check.validate_contract(
+        contract
+    )
+    assert any("top-level keys are not the closed schema" in item for item in failures)
+
+    contract = json.loads(source)
+    contract["threat_families"][0]["unexpected_evidence"] = "unsafe"
+    failures = production_identity_storage_pis_001_decision_check.validate_contract(
+        contract
+    )
+    assert any("closed row schema" in item for item in failures)
+
+
+def test_production_identity_storage_pis_001_contract_rejects_numeric_boolean() -> None:
     contract = json.loads(
         Path(production_identity_storage_pis_001_decision_check.CONTRACT_REL).read_text(
             encoding="utf-8"
