@@ -840,6 +840,9 @@ checked with `make control-mapping-readiness`.
 - `make production-identity-storage-pis-003-sd-pg-001-implementation-gate-check` - validate the
   exact bounded implementation-gate candidate, detached `uv.lock` preview, closed path/evidence/
   rollback contract, and the source-review stop line that keeps implementation authority false.
+- `make production-identity-storage-pis-003-sd-pg-001-implementation-gate-internal-review-check` -
+  validate the zero-finding Sol xhigh review of exact repaired gate commit `9f347fa`, the closed
+  17-path hash inventory, and offline-implementation-only authority; Sol Ultra was not used.
 - `make production-identity-storage-disposition-packet` - generate the focused architecture
   disposition packet asking whether ERG-006/ERG-007 may continue planning while production identity,
   runtime Postgres, migrations, retention enforcement, and custody claims remain blocked.
@@ -1893,6 +1896,15 @@ closed contract is
 [docs/codex/production-identity-storage-pis-003-sd-pg-001-implementation-gate.json](docs/codex/production-identity-storage-pis-003-sd-pg-001-implementation-gate.json).
 The candidate requires exact-candidate review; dependency, implementation, connection, migration,
 runtime, identity, release, promotion, and UAT authority all remain false.
+The zero-finding exact-candidate gate review is recorded in
+[docs/codex/production-identity-storage-pis-003-sd-pg-001-implementation-gate-internal-source-review.md](docs/codex/production-identity-storage-pis-003-sd-pg-001-implementation-gate-internal-source-review.md)
+and checked with
+`make production-identity-storage-pis-003-sd-pg-001-implementation-gate-internal-review-check`.
+It clears exact repaired commit `9f347fa` for the gate's offline implementation ceiling only. Its
+closed machine authority is
+[docs/codex/production-identity-storage-pis-003-sd-pg-001-implementation-gate-review-authority.json](docs/codex/production-identity-storage-pis-003-sd-pg-001-implementation-gate-review-authority.json).
+Psycopg driver load/use, external DSN consumption, connections, migration execution, PostgreSQL
+service lifecycle, runtime activation, identity, release, promotion, and UAT remain unauthorized.
 Generate the production identity and storage disposition packet with
 `make production-identity-storage-disposition-packet`; it asks whether the current ERG-006/ERG-007
 architecture evidence is coherent enough to continue planning while keeping production identity,

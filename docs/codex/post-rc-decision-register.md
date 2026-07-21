@@ -431,6 +431,15 @@ Current selected capability: `not selected`.
   requires exact-candidate source review; dependencies, implementation, database connections or
   services, migration execution, runtime PostgreSQL, production identity, new powers, release,
   promotion, and UAT remain unauthorized.
+- Current PIS-003 SD-PG-001 implementation-gate review:
+  `production-identity-storage-pis-003-sd-pg-001-implementation-gate-internal-source-review.md`
+  records a zero-finding independent Sol xhigh review of exact repaired commit `9f347fa`; Sol Ultra
+  was not used. Its closed
+  `production-identity-storage-pis-003-sd-pg-001-implementation-gate-review-authority.json`
+  contract permits only the exact offline dependency, SQLAlchemy Core, Alembic artifact,
+  schema/importer, and unexecuted test-harness implementation ceiling. Driver load/use, DSN use,
+  connections, migration execution, services, runtime PostgreSQL, production identity, new powers,
+  release, promotion, and UAT remain unauthorized pending later gates.
 - Current warning language: Ithildin may discuss production identity and durable storage
   architecture, but the current runtime remains local-preview with local principal labels and SQLite.
 - Current architecture evidence:
