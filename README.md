@@ -821,6 +821,9 @@ checked with `make control-mapping-readiness`.
   entry decision selecting `SandboxDescriptorStore` for one dependency-free repository-interface
   implementation slice while preserving SQLite behavior, audit ordering, schema, APIs, 24 tools,
   and all production identity/PostgreSQL stop lines.
+- `make production-identity-storage-pis-002-sandbox-descriptor-repository-check` - validate the
+  bounded `PIS-002-SD-001` internal repository protocol, SQLite/schema/dependency invariance, parity
+  evidence, and the exact-candidate source-review stop line.
 - `make production-identity-storage-disposition-packet` - generate the focused architecture
   disposition packet asking whether ERG-006/ERG-007 may continue planning while production identity,
   runtime Postgres, migrations, retention enforcement, and custody claims remain blocked.
@@ -1820,6 +1823,13 @@ harness. Its closed companion contract is
 [docs/codex/production-identity-storage-pis-002-entry-decision.json](docs/codex/production-identity-storage-pis-002-entry-decision.json).
 It does not authorize SQLAlchemy, a second aggregate, changed public behavior, schema/migrations,
 runtime PostgreSQL, production identity, new powers, release, promotion, or UAT acceptance.
+The bounded implementation candidate is recorded in
+[docs/codex/production-identity-storage-pis-002-sandbox-descriptor-repository-implementation.md](docs/codex/production-identity-storage-pis-002-sandbox-descriptor-repository-implementation.md)
+and checked with
+`make production-identity-storage-pis-002-sandbox-descriptor-repository-check`. It adds only the
+internal `SandboxDescriptorRepository` protocol over the current SQLite store and focused parity
+evidence. Independent exact-candidate source review remains the next gate; PostgreSQL, production
+identity, a second aggregate, dependency/schema changes, release, promotion, and UAT remain blocked.
 Generate the production identity and storage disposition packet with
 `make production-identity-storage-disposition-packet`; it asks whether the current ERG-006/ERG-007
 architecture evidence is coherent enough to continue planning while keeping production identity,

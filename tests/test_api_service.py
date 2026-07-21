@@ -63,6 +63,7 @@ from ithildin_api.promotion_authority import (
     RuntimeCandidateRecord,
 )
 from ithildin_api.registry import ToolRegistry
+from ithildin_api.sandbox_descriptors import SandboxDescriptorStore
 from ithildin_api.trusted_host_placement import TrustedHostPlacement
 from ithildin_api.trusted_host_promotions import (
     TrustedHostPromotionError,
@@ -685,6 +686,11 @@ def test_sandbox_descriptor_endpoints_require_auth_and_store_safe_evidence(
     app = create_app(make_settings(tmp_path, token="correct-token"))
 
     with TestClient(app) as client:
+        descriptor_store = app.state.sandbox_descriptor_store
+        promotion_service = cast(
+            TrustedHostPromotionService,
+            app.state.trusted_host_promotion_service,
+        )
         unauthenticated = client.post(
             "/sandbox-descriptors",
             json=sandbox_descriptor_payload(),
@@ -713,6 +719,8 @@ def test_sandbox_descriptor_endpoints_require_auth_and_store_safe_evidence(
         )
 
     assert unauthenticated.status_code == 401
+    assert type(descriptor_store) is SandboxDescriptorStore
+    assert promotion_service.descriptor_store is descriptor_store
     assert created.status_code == 200
     created_payload = created.json()
     assert descriptor_id.startswith("sdesc_")
@@ -761,7 +769,29 @@ def test_sandbox_descriptor_endpoints_require_auth_and_store_safe_evidence(
     assert audit_response.status_code == 200
     audit_events = audit_response.json()["audit_events"]
     assert len(audit_events) == 1
+    assert audit_events[0]["event_type"] == "sandbox.descriptor.submitted"
     audit_metadata = audit_events[0]["metadata"]
+    assert set(audit_metadata) == {
+        "descriptor_id",
+        "descriptor_status",
+        "descriptor_payload_hash",
+        "descriptor_source",
+        "vm_lifecycle_source",
+        "isolation_claim_source",
+        "network_posture_source",
+        "mount_posture_source",
+        "model_client_source",
+        "workspace_id",
+        "principal_id",
+        "run_id",
+        "sandbox_id",
+        "sandbox_profile_id",
+        "ithildin_live_inspection_performed",
+        "ithildin_lifecycle_control_performed",
+        "mission_control_runtime_authority_used",
+        "trusted_host_promotion_performed",
+        "output_policy",
+    }
     assert audit_metadata["descriptor_id"] == descriptor_id
     assert audit_metadata["descriptor_payload_hash"] == created_payload["payload_hash"]
     assert audit_metadata["descriptor_source"] == "operator_supplied"
@@ -769,6 +799,40 @@ def test_sandbox_descriptor_endpoints_require_auth_and_store_safe_evidence(
     assert audit_metadata["trusted_host_promotion_performed"] is False
     assert "mount_root_label" not in audit_metadata
     assert "raw_paths" in audit_metadata["output_policy"]["excluded_categories"]
+
+
+def test_sandbox_descriptor_remains_committed_after_audit_failure(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    app = create_app(make_settings(tmp_path, token="correct-token"))
+
+    with TestClient(app, raise_server_exceptions=False) as client:
+        audit_writer = cast(AuditWriter, app.state.audit_writer)
+        original_write_event = audit_writer.write_event
+
+        def fail_descriptor_event(**kwargs: Any) -> Any:
+            if kwargs.get("event_type") == AuditEventType.SANDBOX_DESCRIPTOR_SUBMITTED:
+                raise RuntimeError("simulated descriptor audit failure")
+            return original_write_event(**kwargs)
+
+        monkeypatch.setattr(audit_writer, "write_event", fail_descriptor_event)
+        failed = client.post(
+            "/sandbox-descriptors",
+            json=sandbox_descriptor_payload(sandbox_id="sandbox-audit-residual"),
+            headers={"Authorization": "Bearer correct-token"},
+        )
+        listed = client.get(
+            "/sandbox-descriptors",
+            headers={"Authorization": "Bearer correct-token"},
+        )
+
+    assert failed.status_code == 500
+    assert failed.text == "Internal Server Error"
+    assert listed.status_code == 200
+    descriptors = listed.json()["sandbox_descriptors"]
+    assert len(descriptors) == 1
+    assert descriptors[0]["sandbox_id"] == "sandbox-audit-residual"
 
 
 def test_sandbox_descriptor_denies_unsafe_inputs_safely(tmp_path: Path) -> None:

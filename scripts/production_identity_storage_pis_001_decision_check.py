@@ -31,6 +31,7 @@ DOC_TITLE = "Production Identity And Storage PIS-001 Threat Model And Dependency
 CONTRACT_REL = "docs/codex/production-identity-storage-pis-001-decision.json"
 TARGET = "production-identity-storage-pis-001-decision-check"
 BASELINE_COMMIT = "aa4b296f7b096b6ad0129bdf442a91c45d3d876f"
+REVIEWED_CANDIDATE_COMMIT = "177c0c6e461176d85126c9817dba40b3a092ec95"
 BASELINE_HASHES = {
     "apps/ui/package-lock.json": (
         "71d6ca3398895b16cfae18b46e53cbdb5d5183c3b001ec6b4d8af8fe555a7322"
@@ -108,6 +109,22 @@ ALLOWED_CHANGED_PATHS = {
     "scripts/technical_mvp_ticket_map.py",
     "scripts/v1_operator_trial_record.py",
     "scripts/v1_progress_assessment.py",
+    "tests/test_release_readiness.py",
+}
+
+EXPECTED_REVIEWED_CANDIDATE_PATHS = {
+    "Makefile",
+    "README.md",
+    "docs/codex/batch-validation-strategy.md",
+    "docs/codex/post-rc-decision-register.md",
+    "docs/codex/production-identity-storage-pis-001-decision.json",
+    "docs/codex/production-identity-storage-pis-001-planning-gate.md",
+    "docs/codex/production-identity-storage-pis-001-threat-model-and-dependency-decision.md",
+    "docs/codex/review-docs-index.md",
+    "scripts/build_docs_site.py",
+    "scripts/production_identity_storage_pis_001_decision_check.py",
+    "scripts/release_guardrails.py",
+    "scripts/review_docs.py",
     "tests/test_release_readiness.py",
 }
 
@@ -464,18 +481,26 @@ def build_report(repo_root: Path, *, require_clean: bool = False) -> dict[str, A
 
     if not _commit_exists(repo_root, BASELINE_COMMIT):
         failures.append("PIS-001 planning baseline commit is unavailable in repository history")
+    if not _commit_exists(repo_root, REVIEWED_CANDIDATE_COMMIT):
+        failures.append("PIS-001 reviewed candidate commit is unavailable in repository history")
 
-    baseline_is_ancestor = _baseline_is_ancestor(repo_root)
+    baseline_is_ancestor = _is_ancestor(
+        repo_root, BASELINE_COMMIT, REVIEWED_CANDIDATE_COMMIT
+    )
     if not baseline_is_ancestor:
-        failures.append("PIS-001 planning baseline is not an ancestor of current HEAD")
+        failures.append("PIS-001 reviewed candidate does not descend from its planning baseline")
+    reviewed_candidate_is_ancestor = _is_ancestor(
+        repo_root, REVIEWED_CANDIDATE_COMMIT, "HEAD"
+    )
+    if not reviewed_candidate_is_ancestor:
+        failures.append("PIS-001 reviewed candidate is not an ancestor of current HEAD")
     committed_changed_paths = _changed_paths(repo_root) if baseline_is_ancestor else []
     working_tree_changed_paths = _working_tree_changed_paths(repo_root)
-    changed_paths = sorted(set(committed_changed_paths) | set(working_tree_changed_paths))
-    unexpected_changed_paths = sorted(set(changed_paths) - ALLOWED_CHANGED_PATHS)
-    if unexpected_changed_paths:
+    changed_paths = committed_changed_paths
+    candidate_scope_valid = set(changed_paths) == EXPECTED_REVIEWED_CANDIDATE_PATHS
+    if not candidate_scope_valid:
         failures.append(
-            "PIS-001 candidate changed paths outside the planning allowlist: "
-            + ", ".join(unexpected_changed_paths)
+            "PIS-001 reviewed candidate changed-path inventory is not exact"
         )
     candidate_tree_clean = not bool(_git(repo_root, "status", "--short"))
     if require_clean and not candidate_tree_clean:
@@ -548,7 +573,9 @@ def build_report(repo_root: Path, *, require_clean: bool = False) -> dict[str, A
         ),
         "baseline_is_ancestor": baseline_is_ancestor,
         "candidate_tree_clean": candidate_tree_clean,
-        "candidate_scope_valid": not unexpected_changed_paths,
+        "candidate_scope_valid": candidate_scope_valid,
+        "reviewed_candidate_commit": REVIEWED_CANDIDATE_COMMIT,
+        "reviewed_candidate_is_ancestor": reviewed_candidate_is_ancestor,
         "changed_paths": changed_paths,
         "working_tree_changed_paths": working_tree_changed_paths,
         "contract_valid": not contract_failures and not contract_validation_failures,
@@ -635,9 +662,9 @@ def _commit_exists(repo_root: Path, commit: str) -> bool:
     return result.returncode == 0
 
 
-def _baseline_is_ancestor(repo_root: Path) -> bool:
+def _is_ancestor(repo_root: Path, ancestor: str, descendant: str) -> bool:
     result = subprocess.run(
-        ["git", "merge-base", "--is-ancestor", BASELINE_COMMIT, "HEAD"],
+        ["git", "merge-base", "--is-ancestor", ancestor, descendant],
         cwd=repo_root,
         capture_output=True,
         check=False,
@@ -652,7 +679,7 @@ def _changed_paths(repo_root: Path) -> list[str]:
         "diff",
         "--no-renames",
         "--name-only",
-        f"{BASELINE_COMMIT}..HEAD",
+        f"{BASELINE_COMMIT}..{REVIEWED_CANDIDATE_COMMIT}",
     )
     return sorted(line for line in output.splitlines() if line)
 

@@ -49,7 +49,10 @@ from ithildin_api.promotion_authority import (
 )
 from ithildin_api.read_tools import FilesystemReadTools, ReadToolError, ReadToolExecutor
 from ithildin_api.registry import ToolRegistry
-from ithildin_api.sandbox_descriptors import SandboxDescriptorError, SandboxDescriptorStore
+from ithildin_api.sandbox_descriptors import (
+    SandboxDescriptorError,
+    SandboxDescriptorRepository,
+)
 from ithildin_api.trusted_host_placement import (
     TrustedHostPlacement,
     TrustedHostPlacementError,
@@ -966,7 +969,7 @@ class TrustedHostPromotionService:
         *,
         store: TrustedHostPromotionStore,
         read_executor: ReadToolExecutor,
-        descriptor_store: SandboxDescriptorStore,
+        descriptor_store: SandboxDescriptorRepository,
         policy_engine: PolicyEngine,
         workspace_registry: WorkspaceRegistry,
         workspace_registry_verified: bool,

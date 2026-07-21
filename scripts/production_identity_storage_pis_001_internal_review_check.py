@@ -39,7 +39,7 @@ REVIEWED_HASHES = {
 }
 CURRENT_SCOPED_SUCCESSOR_HASHES = {
     "scripts/production_identity_storage_pis_001_decision_check.py": (
-        "7862619a68244fad0251429bbb32f8f22bc032609bd7dbfff1bc587ddae113b8"
+        "121857df58daced57e20543b07e891a91896d1a7eae65786a319b70510bbebe8"
     ),
 }
 EXPECTED_REVIEWED_PATHS = {

@@ -146,6 +146,7 @@ from ithildin_api.sandbox_artifacts import SandboxArtifactWriteService
 from ithildin_api.sandbox_descriptors import (
     SandboxDescriptorError,
     SandboxDescriptorPayload,
+    SandboxDescriptorRepository,
     SandboxDescriptorStore,
 )
 from ithildin_api.sandbox_descriptors import (
@@ -242,7 +243,9 @@ def create_app(
             app_instance.state.node_configuration_signer = _load_node_configuration_signer(
                 resolved_settings
             )
-            sandbox_descriptor_store = SandboxDescriptorStore(resolved_settings.db_path)
+            sandbox_descriptor_store: SandboxDescriptorRepository = SandboxDescriptorStore(
+                resolved_settings.db_path
+            )
             sandbox_descriptor_store.initialize()
             app_instance.state.sandbox_descriptor_store = sandbox_descriptor_store
             trusted_host_promotion_store = TrustedHostPromotionStore(resolved_settings.db_path)
@@ -511,7 +514,7 @@ def create_app(
                     "status": "read_only_observability",
                 },
                 "sandbox_descriptors": cast(
-                    SandboxDescriptorStore,
+                    SandboxDescriptorRepository,
                     api.state.sandbox_descriptor_store,
                 ).status(),
                 "trusted_host_promotions": cast(
@@ -1760,7 +1763,7 @@ def create_app(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="invalid sandbox descriptor",
             ) from exc
-        descriptor_store = cast(SandboxDescriptorStore, api.state.sandbox_descriptor_store)
+        descriptor_store = cast(SandboxDescriptorRepository, api.state.sandbox_descriptor_store)
         audit_writer = cast(AuditWriter, api.state.audit_writer)
         record = descriptor_store.create(descriptor_payload)
         audit_writer.write_event(
@@ -1784,7 +1787,7 @@ def create_app(
                 detail="unsupported query parameter",
             )
         limit = _bounded_query_limit(request.query_params.get("limit"), default=50, maximum=200)
-        descriptor_store = cast(SandboxDescriptorStore, api.state.sandbox_descriptor_store)
+        descriptor_store = cast(SandboxDescriptorRepository, api.state.sandbox_descriptor_store)
         return {
             "sandbox_descriptors": cast(JsonValue, descriptor_store.list(limit=limit)),
             "summary": descriptor_store.status(),
@@ -1797,7 +1800,7 @@ def create_app(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="invalid sandbox descriptor id",
             )
-        descriptor_store = cast(SandboxDescriptorStore, api.state.sandbox_descriptor_store)
+        descriptor_store = cast(SandboxDescriptorRepository, api.state.sandbox_descriptor_store)
         try:
             return descriptor_store.get(descriptor_id)
         except SandboxDescriptorError as exc:

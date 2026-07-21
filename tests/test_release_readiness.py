@@ -200,6 +200,7 @@ from scripts import (
     production_identity_storage_pis_001_internal_review_check,
     production_identity_storage_pis_001_planning_gate_check,
     production_identity_storage_pis_002_entry_decision_check,
+    production_identity_storage_pis_002_sandbox_descriptor_repository_check,
     production_identity_storage_response_dry_run,
     production_identity_storage_response_kit,
     progress_check,
@@ -8560,7 +8561,8 @@ def test_production_identity_storage_pis_001_scope_check_disables_renames(
             "diff",
             "--no-renames",
             "--name-only",
-            "aa4b296f7b096b6ad0129bdf442a91c45d3d876f..HEAD",
+            "aa4b296f7b096b6ad0129bdf442a91c45d3d876f.."
+            "177c0c6e461176d85126c9817dba40b3a092ec95",
         )
     ]
 
@@ -8774,6 +8776,180 @@ def test_production_identity_storage_pis_002_entry_rejects_authority_paraphrases
     )
 
     assert any("forbidden authority pattern" in item for item in failures)
+
+
+def test_production_identity_storage_pis_002_repository_implementation_is_wired() -> None:
+    report = (
+        production_identity_storage_pis_002_sandbox_descriptor_repository_check.build_report(
+            Path.cwd(), require_clean=False
+        )
+    )
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+
+    assert report["valid"] is True
+    assert report["implementation_slice"] == "PIS-002-SD-001"
+    assert report["implementation_baseline_commit"] == (
+        "934ebaa4ccd5d03032e269473198e7c94755c13c"
+    )
+    assert report["selected_aggregate"] == "sandbox_descriptors"
+    assert report["repository_protocol_present"] is True
+    assert report["consumer_protocol_typing_valid"] is True
+    assert report["sqlite_adapter_only"] is True
+    assert report["runtime_repository_implementations"] == ["SandboxDescriptorStore"]
+    assert report["repository_test_contract_valid"] is True
+    assert report["sqlite_schema_valid"] is True
+    assert report["protected_hashes_match"] is True
+    assert report["tool_count"] == 24
+    assert report["runtime_behavior_changes_allowed"] is False
+    assert report["dependency_changes_allowed"] is False
+    assert report["schema_changes_allowed"] is False
+    assert report["audit_ordering_changes_allowed"] is False
+    assert report["additional_aggregate_implementation_allowed"] is False
+    assert report["runtime_postgres_allowed"] is False
+    assert report["production_identity_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    assert report["source_review_complete"] is False
+    assert report["uat_required_now"] is False
+    assert report["next_required_action"] == "review_pis_002_sd_001_exact_candidate"
+    assert (
+        "production-identity-storage-pis-002-sandbox-descriptor-repository-check:"
+        in makefile
+    )
+    assert (
+        "release-check: "
+        "production-identity-storage-pis-002-sandbox-descriptor-repository-check"
+        in makefile
+    )
+    assert (
+        "make production-identity-storage-pis-002-sandbox-descriptor-repository-check"
+        in readme
+    )
+    assert (
+        production_identity_storage_pis_002_sandbox_descriptor_repository_check.DOC_REL
+        in review_docs.REVIEW_DOCS
+    )
+    assert (
+        "production-identity-storage-pis-002-sandbox-descriptor-repository-check"
+        in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+
+
+def test_production_identity_storage_pis_002_repository_scope_is_exact() -> None:
+    validator = production_identity_storage_pis_002_sandbox_descriptor_repository_check
+    expected = sorted(validator.EXPECTED_CHANGED_PATHS)
+
+    assert (
+        validator.validate_candidate_scope(
+            committed_paths=expected,
+            worktree_paths=[],
+            rename_records=[],
+            require_clean=True,
+        )
+        == []
+    )
+    failures = validator.validate_candidate_scope(
+        committed_paths=[*expected, "apps/api/src/ithildin_api/missions.py"],
+        worktree_paths=[],
+        rename_records=[],
+        require_clean=True,
+    )
+    assert any("inventory is not exact" in failure for failure in failures)
+    failures = validator.validate_candidate_scope(
+        committed_paths=expected,
+        worktree_paths=[],
+        rename_records=["R100\told.py\tnew.py"],
+        require_clean=True,
+    )
+    assert any("rename/copy records" in failure for failure in failures)
+    failures = validator.validate_candidate_scope(
+        committed_paths=expected,
+        worktree_paths=["README.md"],
+        rename_records=[],
+        require_clean=True,
+    )
+    assert any("requires a clean working tree" in failure for failure in failures)
+
+
+def test_production_identity_storage_pis_002_repository_rejects_comment_protocol_bypass(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    validator = production_identity_storage_pis_002_sandbox_descriptor_repository_check
+    source_path = Path("apps/api/src/ithildin_api/sandbox_descriptors.py")
+    source = source_path.read_text(encoding="utf-8")
+    before_protocol, separator, after_protocol = source.partition(
+        "class SandboxDescriptorRepository(Protocol):"
+    )
+    _, store_separator, after_store = after_protocol.partition(
+        "class SandboxDescriptorStore:"
+    )
+    assert separator and store_separator
+    mutated = (
+        before_protocol
+        + "# class SandboxDescriptorRepository(Protocol):\n"
+        + store_separator
+        + after_store
+    )
+    original_read = validator._read
+
+    def mutated_read(path: Path) -> str:
+        if path.resolve() == source_path.resolve():
+            return mutated
+        return original_read(path)
+
+    monkeypatch.setattr(validator, "_read", mutated_read)
+    report = validator.build_report(Path.cwd(), require_clean=False)
+
+    assert report["valid"] is False
+    assert report["repository_protocol_present"] is False
+    assert any("real Protocol" in failure for failure in report["failures"])
+
+
+def test_production_identity_storage_pis_002_repository_rejects_second_backend(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    validator = production_identity_storage_pis_002_sandbox_descriptor_repository_check
+    source_path = Path("apps/api/src/ithildin_api/sandbox_descriptors.py")
+    source = source_path.read_text(encoding="utf-8")
+    methods = "\n".join(
+        f"    def {method}(self): ..." for method in sorted(validator.REPOSITORY_METHODS)
+    )
+    mutated = source + f"\n\nclass AlternateDescriptorBackend:\n{methods}\n"
+    original_read = validator._read
+
+    def mutated_read(path: Path) -> str:
+        if path.resolve() == source_path.resolve():
+            return mutated
+        return original_read(path)
+
+    monkeypatch.setattr(validator, "_read", mutated_read)
+    report = validator.build_report(Path.cwd(), require_clean=False)
+
+    assert report["valid"] is False
+    assert report["sqlite_adapter_only"] is False
+    assert any("sole repository implementation" in failure for failure in report["failures"])
+
+
+def test_production_identity_storage_pis_002_repository_rejects_protected_drift(
+    tmp_path: Path,
+) -> None:
+    validator = production_identity_storage_pis_002_sandbox_descriptor_repository_check
+    protected = tmp_path / "protected.lock"
+    protected.write_text("baseline\n", encoding="utf-8")
+    expected_hash = hashlib.sha256(protected.read_bytes()).hexdigest()
+
+    valid, failures = validator._validate_protected_hashes(
+        tmp_path, {"protected.lock": expected_hash}
+    )
+    assert valid is True
+    assert failures == []
+
+    protected.write_text("drifted\n", encoding="utf-8")
+    valid, failures = validator._validate_protected_hashes(
+        tmp_path, {"protected.lock": expected_hash}
+    )
+    assert valid is False
+    assert failures == ["protected entry-baseline file changed: protected.lock"]
 
 
 def test_production_identity_storage_architecture_is_wired() -> None:

@@ -8,7 +8,7 @@ import sqlite3
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Literal, cast
+from typing import Literal, Protocol, cast
 from uuid import uuid4
 
 from ithildin_schemas import JsonObject, JsonValue, canonical_json, sha256_digest
@@ -146,6 +146,22 @@ class SandboxDescriptorRecord:
             **self.summary(),
             "safe_payload": self.payload,
         }
+
+
+class SandboxDescriptorRepository(Protocol):
+    """Internal persistence contract for operator-attested descriptors."""
+
+    def initialize(self) -> None: ...
+
+    def create(self, payload: SandboxDescriptorPayload) -> SandboxDescriptorRecord: ...
+
+    def list(self, *, limit: int = 50) -> list[JsonObject]: ...
+
+    def get(self, descriptor_id: str) -> JsonObject: ...
+
+    def authority_record(self, descriptor_id: str) -> SandboxAuthorityRecord: ...
+
+    def status(self) -> JsonObject: ...
 
 
 class SandboxDescriptorStore:

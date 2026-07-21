@@ -385,6 +385,11 @@ Current selected capability: `not selected`.
   `production-identity-storage-pis-002-entry-decision.json`. Additional aggregates, SQLAlchemy,
   dependency changes, public behavior changes, schemas, migrations, production identity,
   PostgreSQL, new powers, release, promotion, and UAT remain unauthorized.
+- Current PIS-002 implementation candidate:
+  `production-identity-storage-pis-002-sandbox-descriptor-repository-implementation.md` records the
+  dependency-free `SandboxDescriptorRepository` seam over the existing SQLite store and its parity
+  evidence. Exact-candidate source review remains pending; a second aggregate, dependency or schema
+  change, PostgreSQL, production identity, release, promotion, and UAT remain unauthorized.
 - Current warning language: Ithildin may discuss production identity and durable storage
   architecture, but the current runtime remains local-preview with local principal labels and SQLite.
 - Current architecture evidence:
