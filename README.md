@@ -847,6 +847,10 @@ checked with `make control-mapping-readiness`.
   non-default dependency transition, one-table Core schema, deterministic offline Alembic SQL,
   pure descriptor snapshot validation, caller-owned importer, refusing test harness, protected
   runtime invariance, and the exact-candidate-review stop line.
+- `make production-identity-storage-pis-003-sd-pg-001-implementation-internal-review-check` -
+  validate the zero-finding Sol xhigh review of exact repaired implementation commit `ba60478`,
+  the closed 20-path hash inventory, and connection-evidence-gate-preparation-only authority;
+  Sol Ultra was not used.
 - `make production-identity-storage-disposition-packet` - generate the focused architecture
   disposition packet asking whether ERG-006/ERG-007 may continue planning while production identity,
   runtime Postgres, migrations, retention enforcement, and custody claims remain blocked.
@@ -1914,9 +1918,18 @@ The bounded offline implementation candidate is recorded in
 and checked with `make production-identity-storage-pis-003-sd-pg-001-implementation-check`. Its
 closed machine authority is
 [docs/codex/production-identity-storage-pis-003-sd-pg-001-implementation-authority.json](docs/codex/production-identity-storage-pis-003-sd-pg-001-implementation-authority.json).
-The candidate implements offline artifacts only and remains pending exact-candidate review. Its
-test-only external-DSN/`NullPool` contract refuses execution; no driver, DSN, connection, online
-migration, service, runtime backend, production identity, release, promotion, or UAT is authorized.
+The implementation record preserves the offline candidate's pre-review authority: its test-only
+external-DSN/`NullPool` contract refuses execution, and it authorizes no driver, DSN, connection,
+online migration, service, runtime backend, production identity, release, promotion, or UAT.
+The zero-finding exact-candidate implementation review is recorded in
+[docs/codex/production-identity-storage-pis-003-sd-pg-001-implementation-internal-source-review.md](docs/codex/production-identity-storage-pis-003-sd-pg-001-implementation-internal-source-review.md)
+and checked with
+`make production-identity-storage-pis-003-sd-pg-001-implementation-internal-review-check`.
+It closes the original candidate's autocommit finding at exact repaired commit `ba60478` and permits
+only preparation of a separately reviewed connection-evidence gate. Its closed machine authority is
+[docs/codex/production-identity-storage-pis-003-sd-pg-001-implementation-review-authority.json](docs/codex/production-identity-storage-pis-003-sd-pg-001-implementation-review-authority.json).
+Psycopg load/use, DSN consumption, harness execution, connections, migrations, PostgreSQL service
+lifecycle, runtime activation, identity, RBAC, release, promotion, and UAT remain unauthorized.
 Generate the production identity and storage disposition packet with
 `make production-identity-storage-disposition-packet`; it asks whether the current ERG-006/ERG-007
 architecture evidence is coherent enough to continue planning while keeping production identity,

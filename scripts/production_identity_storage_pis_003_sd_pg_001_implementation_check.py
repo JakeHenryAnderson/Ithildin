@@ -32,6 +32,7 @@ CONTRACT_REL = (
 CONTRACT_SHA256 = "f4dc1e5d4ca8cf589ffb9ddfbd20aae4c4c0e94216fc41668179d0db10c6bb3d"
 TARGET = "production-identity-storage-pis-003-sd-pg-001-implementation-check"
 BASELINE_COMMIT = "21cc758e2dd438c10f852574528f3ea971825b55"
+CANDIDATE_COMMIT = "ba60478ede66abce519e134981fcabcb3f68482f"
 
 EXPECTED_PATHS = [
     "Makefile",
@@ -341,11 +342,14 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     failures.extend(contract_failures)
 
     baseline_exists = _commit_exists(repo_root, BASELINE_COMMIT)
-    baseline_is_ancestor = _is_ancestor(repo_root, BASELINE_COMMIT, "HEAD")
+    baseline_is_ancestor = _is_ancestor(repo_root, BASELINE_COMMIT, CANDIDATE_COMMIT)
+    candidate_is_ancestor = _is_ancestor(repo_root, CANDIDATE_COMMIT, "HEAD")
     if not baseline_exists:
         failures.append("PIS-003 offline implementation baseline is unavailable")
     if not baseline_is_ancestor:
-        failures.append("PIS-003 offline implementation baseline is not an ancestor of HEAD")
+        failures.append("PIS-003 offline implementation baseline is not an ancestor of candidate")
+    if not candidate_is_ancestor:
+        failures.append("PIS-003 offline implementation candidate is not an ancestor of HEAD")
 
     candidate_paths = _candidate_paths(repo_root)
     candidate_inventory_exact = candidate_paths == set(EXPECTED_PATHS)
@@ -438,8 +442,10 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "implementation_id": contract.get("implementation_id") if valid else "invalid",
         "implementation_outcome": contract.get("implementation_outcome") if valid else "invalid",
         "implementation_baseline_commit": BASELINE_COMMIT,
+        "candidate_commit": CANDIDATE_COMMIT,
         "baseline_exists": baseline_exists,
         "baseline_is_ancestor": baseline_is_ancestor,
+        "candidate_is_ancestor": candidate_is_ancestor,
         "candidate_inventory_exact": candidate_inventory_exact,
         "candidate_path_count": len(candidate_paths),
         "artifact_hashes_match": artifact_hashes_match,
@@ -469,8 +475,10 @@ def render_report(report: dict[str, Any]) -> str:
         "implementation_id",
         "implementation_outcome",
         "implementation_baseline_commit",
+        "candidate_commit",
         "baseline_exists",
         "baseline_is_ancestor",
+        "candidate_is_ancestor",
         "implementation_document_hash_matches",
         "authority_contract_hash_matches",
         "contract_valid",
@@ -664,15 +672,14 @@ def _function(tree: ast.Module, name: str) -> ast.FunctionDef | None:
 
 
 def _candidate_paths(repo_root: Path) -> set[str]:
-    committed = set(_git_lines(repo_root, "diff", "--name-only", f"{BASELINE_COMMIT}..HEAD"))
-    status = _git_lines(repo_root, "status", "--porcelain=v1", "--untracked-files=all")
-    working: set[str] = set()
-    for line in status:
-        path = line[3:]
-        if " -> " in path:
-            path = path.rsplit(" -> ", maxsplit=1)[1]
-        working.add(path)
-    return committed | working
+    return set(
+        _git_lines(
+            repo_root,
+            "diff",
+            "--name-only",
+            f"{BASELINE_COMMIT}..{CANDIDATE_COMMIT}",
+        )
+    )
 
 
 def _wiring_valid(repo_root: Path) -> bool:
