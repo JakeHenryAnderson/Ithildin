@@ -837,6 +837,9 @@ checked with `make control-mapping-readiness`.
 - `make production-identity-storage-pis-003-entry-internal-review-check` - validate the zero-finding
   Sol xhigh review of exact PIS-003 entry candidate `fe870f2`, its closed reviewed-path hashes, and
   implementation-gate-preparation-only authority; Sol Ultra was not used.
+- `make production-identity-storage-pis-003-sd-pg-001-implementation-gate-check` - validate the
+  exact bounded implementation-gate candidate, detached `uv.lock` preview, closed path/evidence/
+  rollback contract, and the source-review stop line that keeps implementation authority false.
 - `make production-identity-storage-disposition-packet` - generate the focused architecture
   disposition packet asking whether ERG-006/ERG-007 may continue planning while production identity,
   runtime Postgres, migrations, retention enforcement, and custody claims remain blocked.
@@ -1880,6 +1883,14 @@ Its closed machine authority is
 [docs/codex/production-identity-storage-pis-003-entry-review-authority.json](docs/codex/production-identity-storage-pis-003-entry-review-authority.json).
 No dependency, installation, implementation, connection, schema/migration, runtime PostgreSQL,
 identity, release, promotion, or UAT authority is granted by the review.
+The separately committed implementation-gate candidate is
+[docs/codex/production-identity-storage-pis-003-sd-pg-001-implementation-gate.md](docs/codex/production-identity-storage-pis-003-sd-pg-001-implementation-gate.md)
+and checked with `make production-identity-storage-pis-003-sd-pg-001-implementation-gate-check`.
+It binds the exact 20-path implementation boundary, seven-package non-default lock delta,
+connection ownership, required evidence, and pre-connection rollback. Its closed contract is
+[docs/codex/production-identity-storage-pis-003-sd-pg-001-implementation-gate.json](docs/codex/production-identity-storage-pis-003-sd-pg-001-implementation-gate.json).
+The candidate requires exact-candidate review; dependency, implementation, connection, migration,
+runtime, identity, release, promotion, and UAT authority all remain false.
 Generate the production identity and storage disposition packet with
 `make production-identity-storage-disposition-packet`; it asks whether the current ERG-006/ERG-007
 architecture evidence is coherent enough to continue planning while keeping production identity,

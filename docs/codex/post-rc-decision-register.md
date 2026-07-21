@@ -421,6 +421,14 @@ Current selected capability: `not selected`.
   of a separate `PIS-003-SD-PG-001` implementation gate. It does not authorize dependencies,
   implementation, database connections/services, schema/migration execution, runtime PostgreSQL,
   production identity, new powers, release, promotion, or UAT.
+- Current PIS-003 SD-PG-001 implementation gate:
+  `production-identity-storage-pis-003-sd-pg-001-implementation-gate.md` binds the exact bounded
+  implementation candidate, 20 allowed paths, seven-package non-default lock delta, caller-owned
+  transaction/connection boundary, environment prerequisites, evidence, and rollback. Its closed
+  contract is `production-identity-storage-pis-003-sd-pg-001-implementation-gate.json`. The gate
+  requires exact-candidate source review; dependencies, implementation, database connections or
+  services, migration execution, runtime PostgreSQL, production identity, new powers, release,
+  promotion, and UAT remain unauthorized.
 - Current warning language: Ithildin may discuss production identity and durable storage
   architecture, but the current runtime remains local-preview with local principal labels and SQLite.
 - Current architecture evidence:

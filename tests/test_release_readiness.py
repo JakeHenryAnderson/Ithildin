@@ -205,6 +205,7 @@ from scripts import (
     production_identity_storage_pis_002_sandbox_descriptor_repository_internal_review_check,
     production_identity_storage_pis_003_entry_decision_check,
     production_identity_storage_pis_003_entry_internal_review_check,
+    production_identity_storage_pis_003_sd_pg_001_implementation_gate_check,
     production_identity_storage_response_dry_run,
     production_identity_storage_response_kit,
     progress_check,
@@ -9975,6 +9976,179 @@ def test_production_identity_storage_pis_003_entry_review_rejects_gate_drift(
     report = validator.build_report(Path.cwd())
 
     _assert_pis_003_entry_review_fails_closed(report)
+
+
+def test_production_identity_storage_pis_003_sd_pg_001_implementation_gate_is_wired() -> None:
+    validator = production_identity_storage_pis_003_sd_pg_001_implementation_gate_check
+    report = validator.build_report(Path.cwd())
+    contract = json.loads(Path(validator.CONTRACT_REL).read_text(encoding="utf-8"))
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+
+    assert report["valid"] is True
+    assert report["gate_id"] == (
+        "PRD-PROD-IAM-STORAGE-PIS-003-SD-PG-001-IMPLEMENTATION-GATE"
+    )
+    assert report["gate_outcome"] == "select_exact_bounded_candidate_pending_gate_review"
+    assert report["gate_baseline_commit"] == (
+        "ebb656ac8e5b0f428641092135d7e99b5845fa85"
+    )
+    assert report["baseline_exists"] is True
+    assert report["baseline_is_ancestor"] is True
+    assert report["gate_document_hash_matches"] is True
+    assert report["gate_contract_hash_matches"] is True
+    assert report["contract_valid"] is True
+    assert report["protected_hashes_match"] is True
+    assert report["entry_review_valid"] is True
+    assert report["selected_dependencies_absent"] is True
+    assert report["tool_count"] == 24
+    assert report["wiring_valid"] is True
+    assert report["pis_003_sd_pg_001_implementation_gate_recorded"] is True
+    assert report["pis_003_sd_pg_001_candidate_selected"] is True
+    assert report["exact_candidate_source_review_required"] is True
+    for field in set(validator.EXPECTED_AUTHORITY) - {
+        "pis_003_sd_pg_001_implementation_gate_recorded",
+        "pis_003_sd_pg_001_candidate_selected",
+        "exact_candidate_source_review_required",
+    }:
+        assert report[field] is False
+    assert report["next_required_action"] == (
+        "review_pis_003_sd_pg_001_implementation_gate_exact_candidate"
+    )
+    assert contract["lock_preview"]["direct_requirements"] == (
+        validator.EXPECTED_DIRECT_REQUIREMENTS
+    )
+    assert contract["lock_preview"]["added_packages"] == validator.EXPECTED_ADDED_PACKAGES
+    assert contract["lock_preview"]["changed_existing_packages"] == []
+    assert contract["implementation_boundary"]["implementation_allowed_paths"] == (
+        validator.EXPECTED_IMPLEMENTATION_PATHS
+    )
+    assert contract["required_evidence"] == validator.EXPECTED_REQUIRED_EVIDENCE
+    assert validator.validate_contract(contract) == []
+    assert f"{validator.TARGET}:" in makefile
+    assert f"release-check: {validator.TARGET}" in makefile
+    assert f"make {validator.TARGET}" in readme
+    assert validator.DOC_REL in review_docs.REVIEW_DOCS
+    assert validator.TARGET in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+
+
+def test_production_identity_storage_pis_003_sd_pg_001_gate_contract_is_closed() -> None:
+    validator = production_identity_storage_pis_003_sd_pg_001_implementation_gate_check
+    source = Path(validator.CONTRACT_REL).read_text(encoding="utf-8")
+
+    contract = json.loads(source)
+    contract["authority"]["pis_003_sd_pg_001_implementation_allowed"] = True
+    failures = validator.validate_contract(contract)
+    assert any("authority is not the exact Boolean map" in item for item in failures)
+
+    contract = json.loads(source)
+    contract["lock_preview"]["added_packages"].append(
+        {"name": "psycopg-binary", "version": "3.3.4", "license": "LGPL", "marker": "all"}
+    )
+    failures = validator.validate_contract(contract)
+    assert any("dependency lock preview is not exact" in item for item in failures)
+
+    contract = json.loads(source)
+    contract["implementation_boundary"]["implementation_allowed_paths"].append(
+        "apps/api/src/ithildin_api/app.py"
+    )
+    failures = validator.validate_contract(contract)
+    assert any("implementation path boundary is not exact" in item for item in failures)
+
+    contract = json.loads(source)
+    contract["connection_contract"]["importer_accepts_dsn"] = True
+    failures = validator.validate_contract(contract)
+    assert any("connection contract false boundaries are not exact" in item for item in failures)
+
+    contract = json.loads(source)
+    contract["required_evidence"].remove("rollback_plan_bound_before_database_connection")
+    failures = validator.validate_contract(contract)
+    assert any("required evidence is not exact" in item for item in failures)
+
+
+def test_production_identity_storage_pis_003_sd_pg_001_gate_rejects_duplicate_keys(
+    tmp_path: Path,
+) -> None:
+    validator = production_identity_storage_pis_003_sd_pg_001_implementation_gate_check
+    contract_path = tmp_path / "implementation-gate.json"
+    contract_path.write_text(
+        '{"authority":{"dependency_changes_allowed":false,'
+        '"dependency_changes_allowed":true}}',
+        encoding="utf-8",
+    )
+
+    contract, failures = validator._load_contract(contract_path)
+
+    assert contract == {}
+    assert failures == [
+        "PIS-003 implementation gate contract has duplicate JSON member: "
+        "dependency_changes_allowed"
+    ]
+
+
+def _assert_pis_003_sd_pg_001_gate_fails_closed(report: dict[str, Any]) -> None:
+    assert report["valid"] is False
+    assert report["gate_id"] == "invalid"
+    assert report["gate_outcome"] == "invalid"
+    assert report["pis_003_sd_pg_001_implementation_gate_recorded"] is False
+    assert report["pis_003_sd_pg_001_candidate_selected"] is False
+    assert report["exact_candidate_source_review_required"] is False
+    assert report["pis_003_sd_pg_001_implementation_allowed"] is False
+    assert report["dependency_changes_allowed"] is False
+    assert report["database_connections_allowed"] is False
+    assert report["runtime_postgres_allowed"] is False
+    assert report["release_allowed"] is False
+    assert report["next_required_action"] == "invalid_gate"
+
+
+@pytest.mark.parametrize("artifact", ["gate", "contract"])
+def test_production_identity_storage_pis_003_sd_pg_001_gate_rejects_digest_drift(
+    monkeypatch: pytest.MonkeyPatch,
+    artifact: str,
+) -> None:
+    validator = production_identity_storage_pis_003_sd_pg_001_implementation_gate_check
+    original_read_bytes = validator._read_bytes
+    target = Path(
+        validator.DOC_REL if artifact == "gate" else validator.CONTRACT_REL
+    ).resolve()
+
+    def mutated_read_bytes(path: Path) -> bytes:
+        data = original_read_bytes(path)
+        return data + b" " if path.resolve() == target else data
+
+    monkeypatch.setattr(validator, "_read_bytes", mutated_read_bytes)
+    report = validator.build_report(Path.cwd())
+
+    _assert_pis_003_sd_pg_001_gate_fails_closed(report)
+    assert any("closed digest" in failure for failure in report["failures"])
+
+
+@pytest.mark.parametrize(
+    "failure_mode",
+    ["protected_hash", "dependency", "entry_review", "wiring", "tool_count"],
+)
+def test_production_identity_storage_pis_003_sd_pg_001_gate_rejects_drift(
+    monkeypatch: pytest.MonkeyPatch,
+    failure_mode: str,
+) -> None:
+    validator = production_identity_storage_pis_003_sd_pg_001_implementation_gate_check
+    if failure_mode == "protected_hash":
+        hashes = dict(validator.EXPECTED_PROTECTED_HASHES)
+        hashes["apps/api/src/ithildin_api/app.py"] = "0" * 64
+        monkeypatch.setattr(validator, "EXPECTED_PROTECTED_HASHES", hashes)
+    elif failure_mode == "dependency":
+        monkeypatch.setattr(validator, "_selected_dependencies_absent", lambda _root: False)
+    elif failure_mode == "entry_review":
+        entry_review = production_identity_storage_pis_003_entry_internal_review_check
+        monkeypatch.setattr(entry_review, "build_report", lambda _root: {"valid": False})
+    elif failure_mode == "wiring":
+        monkeypatch.setattr(validator, "_wiring_valid", lambda _root: False)
+    else:
+        monkeypatch.setattr(validator, "_tool_count", lambda _path: 23)
+
+    report = validator.build_report(Path.cwd())
+
+    _assert_pis_003_sd_pg_001_gate_fails_closed(report)
 
 
 def test_production_identity_storage_architecture_is_wired() -> None:
