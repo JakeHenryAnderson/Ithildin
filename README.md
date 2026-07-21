@@ -861,6 +861,11 @@ checked with `make control-mapping-readiness`.
   11-path hashes, and test-only connection-evidence implementation authority while all driver,
   DSN, connection, migration, service, runtime, release, promotion, and UAT authority remains false;
   Sol Ultra was not used.
+- `make production-identity-storage-pis-003-sd-pg-001-connection-evidence-implementation-check`
+  - validate the bounded test-only harness, immutable synthetic snapshot reader, external receipt
+  and target-binding preflight, caller-owned Alembic connection path, rollback/discard sequencing,
+  secret-safe failure evidence, protected hashes, and exact 14-path scope while execution remains
+  blocked before Psycopg import, DSN access, engine construction, or connection.
 - `make production-identity-storage-disposition-packet` - generate the focused architecture
   disposition packet asking whether ERG-006/ERG-007 may continue planning while production identity,
   runtime Postgres, migrations, retention enforcement, and custody claims remain blocked.
@@ -1958,6 +1963,17 @@ machinery. Its closed machine authority is
 Driver load/use, DSN or binding-key consumption, harness execution, database connections,
 migrations, PostgreSQL/container lifecycle, runtime activation, production identity, release,
 promotion, and UAT remain unauthorized.
+The resulting bounded implementation is recorded in
+[docs/codex/production-identity-storage-pis-003-sd-pg-001-connection-evidence-implementation-record.md](docs/codex/production-identity-storage-pis-003-sd-pg-001-connection-evidence-implementation-record.md)
+and checked with
+`make production-identity-storage-pis-003-sd-pg-001-connection-evidence-implementation-check`.
+It implements the reviewable test-only harness, strict external receipt and canonical DSN/HMAC
+preflight, immutable synthetic SQLite reader, caller-owned online Alembic path, native identity
+probe, rollback/discard finalizer, and output secret scan. Its execution switch remains false and
+the CLI is check-only; the next action is exact-candidate implementation review. It does not load
+Psycopg, read an external DSN, construct an engine, open a connection, execute an online migration,
+start a service/container, change runtime PostgreSQL or identity behavior, release, promote, or
+complete UAT.
 Generate the production identity and storage disposition packet with
 `make production-identity-storage-disposition-packet`; it asks whether the current ERG-006/ERG-007
 architecture evidence is coherent enough to continue planning while keeping production identity,

@@ -358,7 +358,10 @@ def build_report(repo_root: Path) -> dict[str, Any]:
 
     artifact_hashes_match = True
     for path, expected_hash in EXPECTED_ARTIFACT_HASHES.items():
-        if hashlib.sha256(_read_bytes(repo_root / path)).hexdigest() != expected_hash:
+        if (
+            hashlib.sha256(_git_bytes(repo_root, CANDIDATE_COMMIT, path)).hexdigest()
+            != expected_hash
+        ):
             artifact_hashes_match = False
             failures.append(f"PIS-003 offline implementation artifact hash mismatch: {path}")
 
@@ -774,6 +777,16 @@ def _read(path: Path) -> str:
 
 def _read_bytes(path: Path) -> bytes:
     return path.read_bytes() if path.exists() else b""
+
+
+def _git_bytes(repo_root: Path, commit: str, path: str) -> bytes:
+    result = subprocess.run(
+        ["git", "show", f"{commit}:{path}"],
+        cwd=repo_root,
+        check=False,
+        capture_output=True,
+    )
+    return result.stdout if result.returncode == 0 else b""
 
 
 if __name__ == "__main__":

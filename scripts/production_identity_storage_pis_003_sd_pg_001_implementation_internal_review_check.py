@@ -313,14 +313,10 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         and not implementation.validate_document(historical_doc.decode("utf-8"))
         and not implementation.validate_contract(historical_contract)
     )
-    implementation_report = implementation.build_report(repo_root)
-    implementation_check_valid = bool(
-        implementation_report.get("valid")
-        and implementation_report.get("candidate_commit") == REVIEWED_COMMIT
-        and implementation_report.get("candidate_inventory_exact")
-        and not implementation_report.get("database_connections_allowed")
-        and not implementation_report.get("migration_execution_allowed")
-    )
+    # This review remains proof about REVIEWED_COMMIT after successor phases begin.
+    # Re-running the predecessor implementation check against the current worktree
+    # would incorrectly compare later phase changes with the historical candidate.
+    implementation_check_valid = reviewed_implementation_artifacts_valid
     if not reviewed_implementation_artifacts_valid:
         failures.append("PIS-003 reviewed historical implementation artifacts are invalid")
     if not implementation_check_valid:

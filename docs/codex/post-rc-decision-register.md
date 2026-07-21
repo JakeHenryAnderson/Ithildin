@@ -467,6 +467,15 @@ Current selected capability: `not selected`.
   or binding-key consumption, harness execution, database connections, migration execution,
   PostgreSQL/container lifecycle, runtime PostgreSQL, production identity, new powers, release,
   promotion, and UAT remain unauthorized pending later exact-candidate and execution gates.
+- Current PIS-003 SD-PG-001 connection-evidence implementation:
+  `production-identity-storage-pis-003-sd-pg-001-connection-evidence-implementation-record.md`
+  records the bounded test-only harness, strict external receipt and canonical DSN/HMAC preflight,
+  immutable source reader, caller-owned Alembic connection path, native dependency probe,
+  transaction rollback, discard finalizer, safe failure evidence, and secret scan. The implementation
+  is pending exact-candidate source review. Its authority switch remains false before manifest or
+  environment access; Psycopg use, DSN consumption, engine/connection/migration execution,
+  PostgreSQL/container lifecycle, runtime PostgreSQL, production identity, new powers, release,
+  promotion, and UAT remain unauthorized.
 - Current warning language: Ithildin may discuss production identity and durable storage
   architecture, but the current runtime remains local-preview with local principal labels and SQLite.
 - Current architecture evidence:

@@ -207,6 +207,7 @@ from scripts import (
     production_identity_storage_pis_003_entry_internal_review_check,
     production_identity_storage_pis_003_sd_pg_001_connection_evidence_gate_check,
     production_identity_storage_pis_003_sd_pg_001_connection_evidence_gate_internal_review_check,
+    production_identity_storage_pis_003_sd_pg_001_connection_evidence_implementation_check,
     production_identity_storage_pis_003_sd_pg_001_implementation_check,
     production_identity_storage_pis_003_sd_pg_001_implementation_gate_check,
     production_identity_storage_pis_003_sd_pg_001_implementation_gate_internal_review_check,
@@ -10601,7 +10602,7 @@ def test_production_identity_storage_pis_003_implementation_review_rejects_diges
     )
 
 
-@pytest.mark.parametrize("failure_mode", ["hash", "implementation", "wiring", "tools"])
+@pytest.mark.parametrize("failure_mode", ["hash", "historical", "wiring", "tools"])
 def test_production_identity_storage_pis_003_implementation_review_rejects_drift(
     monkeypatch: pytest.MonkeyPatch,
     failure_mode: str,
@@ -10613,9 +10614,13 @@ def test_production_identity_storage_pis_003_implementation_review_rejects_drift
         hashes = dict(validator.REVIEWED_PATH_HASHES)
         hashes["Makefile"] = "0" * 64
         monkeypatch.setattr(validator, "REVIEWED_PATH_HASHES", hashes)
-    elif failure_mode == "implementation":
+    elif failure_mode == "historical":
         implementation = production_identity_storage_pis_003_sd_pg_001_implementation_check
-        monkeypatch.setattr(implementation, "build_report", lambda _root: {"valid": False})
+        monkeypatch.setattr(
+            implementation,
+            "validate_document",
+            lambda _text: ["historical implementation drift"],
+        )
     elif failure_mode == "wiring":
         monkeypatch.setattr(validator, "_wiring_valid", lambda _root: False)
     else:
@@ -11258,6 +11263,212 @@ def test_production_identity_storage_pis_003_connection_evidence_gate_review_rej
         monkeypatch.setattr(validator, "_wiring_valid", lambda _root: False)
 
     _assert_pis_003_connection_evidence_gate_review_fails_closed(
+        validator.build_report(Path.cwd())
+    )
+
+
+def test_pis_003_connection_evidence_implementation_is_wired() -> None:
+    validator = (
+        production_identity_storage_pis_003_sd_pg_001_connection_evidence_implementation_check
+    )
+    report = validator.build_report(Path.cwd())
+    contract = json.loads(Path(validator.CONTRACT_REL).read_text(encoding="utf-8"))
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+
+    assert report["valid"] is True
+    assert report["implementation_id"] == (
+        "PRD-PROD-IAM-STORAGE-PIS-003-SD-PG-001-CONNECTION-EVIDENCE-IMPLEMENTATION"
+    )
+    assert report["implementation_outcome"] == (
+        "test_only_connection_evidence_candidate_complete_"
+        "exact_review_pending_execution_blocked"
+    )
+    assert report["implementation_baseline_commit"] == (
+        "c84c9f9f97ee9716e1466944e26e206e85b4b729"
+    )
+    for field in (
+        "baseline_exists",
+        "baseline_is_ancestor",
+        "candidate_inventory_exact",
+        "implementation_document_hash_matches",
+        "authority_contract_hash_matches",
+        "contract_valid",
+        "protected_hashes_match",
+        "gate_review_valid",
+        "harness_semantics_valid",
+        "alembic_caller_connection_valid",
+        "runtime_imports_absent",
+        "harness_refuses_execution",
+        "wiring_valid",
+    ):
+        assert report[field] is True
+    assert report["candidate_path_count"] == 17
+    assert report["psycopg_driver_loaded"] is False
+    assert report["database_connection_attempted"] is False
+    assert report["online_migration_executed"] is False
+    assert report["tool_count"] == 24
+    for field, expected in validator.EXPECTED_AUTHORITY.items():
+        assert report[field] is expected
+    assert report["next_required_action"] == (
+        "review_pis_003_sd_pg_001_connection_evidence_candidate_exact_commit"
+    )
+    assert validator.validate_contract(contract) == []
+    assert f"{validator.TARGET}:" in makefile
+    assert f"release-check: {validator.TARGET}" in makefile
+    assert f"make {validator.TARGET}" in readme
+    assert validator.DOC_REL in review_docs.REVIEW_DOCS
+    assert validator.TARGET in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+
+
+def test_pis_003_connection_evidence_implementation_contract_is_closed() -> None:
+    validator = (
+        production_identity_storage_pis_003_sd_pg_001_connection_evidence_implementation_check
+    )
+    source = Path(validator.CONTRACT_REL).read_text(encoding="utf-8")
+
+    contract = json.loads(source)
+    contract["authority"]["database_connections_allowed"] = True
+    assert any(
+        "implementation authority is not exact" in item
+        for item in validator.validate_contract(contract)
+    )
+
+    contract = json.loads(source)
+    contract["implementation_contract"]["execution_authority_active"] = True
+    assert any(
+        "implementation facts are not exact" in item
+        for item in validator.validate_contract(contract)
+    )
+
+    contract = json.loads(source)
+    contract["implementation_path_inventory"].append("apps/api/src/unsafe.py")
+    assert any(
+        "path inventory is not exact" in item
+        for item in validator.validate_contract(contract)
+    )
+
+    contract = json.loads(source)
+    contract["protected_hashes"]["apps/api/src/ithildin_api/storage_import.py"] = "0" * 64
+    assert any(
+        "protected hashes are not exact" in item
+        for item in validator.validate_contract(contract)
+    )
+
+
+def test_pis_003_offline_review_uses_its_historical_candidate(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    implementation = production_identity_storage_pis_003_sd_pg_001_implementation_check
+    review = production_identity_storage_pis_003_sd_pg_001_implementation_internal_review_check
+    monkeypatch.setattr(
+        implementation,
+        "build_report",
+        lambda _root: {"valid": False, "failure": "successor worktree drift"},
+    )
+
+    report = review.build_report(Path.cwd())
+
+    assert report["valid"] is True
+    assert report["reviewed_commit"] == review.REVIEWED_COMMIT
+    assert report["reviewed_implementation_artifacts_valid"] is True
+    assert report["implementation_check_valid"] is True
+
+
+def test_pis_003_connection_gate_uses_historical_protected_inputs(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    gate = production_identity_storage_pis_003_sd_pg_001_connection_evidence_gate_check
+    original = gate._read_bytes
+    target = Path(
+        "scripts/production_identity_storage_pis_003_sd_pg_001_"
+        "implementation_internal_review_check.py"
+    ).resolve()
+
+    def drift_current_file(path: Path) -> bytes:
+        return b"successor worktree drift\n" if path.resolve() == target else original(path)
+
+    monkeypatch.setattr(gate, "_read_bytes", drift_current_file)
+    report = gate.build_report(Path.cwd())
+
+    assert report["valid"] is True
+    assert report["candidate_commit"] == gate.CANDIDATE_COMMIT
+    assert report["protected_hashes_match"] is True
+
+
+def _assert_pis_003_connection_evidence_implementation_fails_closed(
+    report: dict[str, Any],
+) -> None:
+    validator = (
+        production_identity_storage_pis_003_sd_pg_001_connection_evidence_implementation_check
+    )
+    assert report["valid"] is False
+    assert report["implementation_id"] == "invalid"
+    assert report["implementation_outcome"] == "invalid"
+    for field, expected in validator.EXPECTED_AUTHORITY.items():
+        if expected:
+            assert report[field] is False
+    assert report["database_connections_allowed"] is False
+    assert report["migration_execution_allowed"] is False
+    assert report["runtime_postgres_allowed"] is False
+    assert report["release_allowed"] is False
+    assert report["next_required_action"] == "invalid_implementation"
+
+
+@pytest.mark.parametrize("artifact", ["document", "contract"])
+def test_pis_003_connection_implementation_rejects_digest_drift(
+    monkeypatch: pytest.MonkeyPatch,
+    artifact: str,
+) -> None:
+    validator = (
+        production_identity_storage_pis_003_sd_pg_001_connection_evidence_implementation_check
+    )
+    original = validator._read_bytes
+    target = Path(
+        validator.DOC_REL if artifact == "document" else validator.CONTRACT_REL
+    ).resolve()
+
+    def mutated(path: Path) -> bytes:
+        data = original(path)
+        return data + b" " if path.resolve() == target else data
+
+    monkeypatch.setattr(validator, "_read_bytes", mutated)
+    _assert_pis_003_connection_evidence_implementation_fails_closed(
+        validator.build_report(Path.cwd())
+    )
+
+
+@pytest.mark.parametrize(
+    "failure_mode",
+    ["paths", "protected", "gate", "harness", "alembic", "runtime", "wiring", "tools"],
+)
+def test_pis_003_connection_evidence_implementation_rejects_drift(
+    monkeypatch: pytest.MonkeyPatch,
+    failure_mode: str,
+) -> None:
+    validator = (
+        production_identity_storage_pis_003_sd_pg_001_connection_evidence_implementation_check
+    )
+    if failure_mode == "paths":
+        monkeypatch.setattr(validator, "_candidate_paths", lambda _root: set())
+    elif failure_mode == "protected":
+        hashes = dict(validator.EXPECTED_PROTECTED_HASHES)
+        hashes["apps/api/src/ithildin_api/storage_import.py"] = "0" * 64
+        monkeypatch.setattr(validator, "EXPECTED_PROTECTED_HASHES", hashes)
+    elif failure_mode == "gate":
+        monkeypatch.setattr(validator.gate_review, "build_report", lambda _root: {})
+    elif failure_mode == "harness":
+        monkeypatch.setattr(validator, "_harness_semantics_valid", lambda _root: False)
+    elif failure_mode == "alembic":
+        monkeypatch.setattr(validator, "_alembic_caller_connection_valid", lambda _root: False)
+    elif failure_mode == "runtime":
+        monkeypatch.setattr(validator, "_runtime_imports_absent", lambda _root: False)
+    elif failure_mode == "wiring":
+        monkeypatch.setattr(validator, "_wiring_valid", lambda _root: False)
+    else:
+        monkeypatch.setattr(validator, "_tool_count", lambda _path: 23)
+
+    _assert_pis_003_connection_evidence_implementation_fails_closed(
         validator.build_report(Path.cwd())
     )
 

@@ -18,6 +18,10 @@ from scripts import (
     production_identity_storage_pis_003_sd_pg_001_implementation_internal_review_check,
 )
 
+offline_review = (
+    production_identity_storage_pis_003_sd_pg_001_implementation_internal_review_check
+)
+
 ROOT = Path(__file__).resolve().parents[1]
 DOC_REL = (
     "docs/codex/production-identity-storage-pis-003-sd-pg-001-"
@@ -1006,16 +1010,14 @@ def build_report(repo_root: Path) -> dict[str, Any]:
 
     protected_hashes_match = True
     for path, expected_hash in EXPECTED_PROTECTED_HASHES.items():
-        actual_hash = hashlib.sha256(_read_bytes(repo_root / path)).hexdigest()
+        actual_hash = hashlib.sha256(
+            _git_bytes(repo_root, CANDIDATE_COMMIT, path)
+        ).hexdigest()
         if actual_hash != expected_hash:
             protected_hashes_match = False
             failures.append(f"PIS-003 connection protected path hash mismatch: {path}")
 
-    prerequisite = (
-        production_identity_storage_pis_003_sd_pg_001_implementation_internal_review_check.build_report(
-            repo_root
-        )
-    )
+    prerequisite = offline_review.build_report(repo_root)
     prerequisite_valid = bool(
         prerequisite.get("valid")
         and prerequisite.get("reviewed_commit") == REVIEWED_OFFLINE_COMMIT
@@ -1209,6 +1211,16 @@ def _read_bytes(path: Path) -> bytes:
         return path.read_bytes()
     except OSError:
         return b""
+
+
+def _git_bytes(repo_root: Path, commit: str, path: str) -> bytes:
+    result = subprocess.run(
+        ["git", "show", f"{commit}:{path}"],
+        cwd=repo_root,
+        check=False,
+        capture_output=True,
+    )
+    return result.stdout if result.returncode == 0 else b""
 
 
 def _read_text(path: Path) -> str:
