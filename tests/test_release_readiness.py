@@ -204,6 +204,7 @@ from scripts import (
     production_identity_storage_pis_002_sandbox_descriptor_repository_check,
     production_identity_storage_pis_002_sandbox_descriptor_repository_internal_review_check,
     production_identity_storage_pis_003_entry_decision_check,
+    production_identity_storage_pis_003_entry_internal_review_check,
     production_identity_storage_response_dry_run,
     production_identity_storage_response_kit,
     progress_check,
@@ -9827,6 +9828,153 @@ def test_production_identity_storage_pis_003_entry_rejects_gate_drift(
 
     _assert_pis_003_entry_report_fails_closed(report)
     assert report["valid"] is False
+
+
+def test_production_identity_storage_pis_003_entry_internal_review_is_wired() -> None:
+    validator = production_identity_storage_pis_003_entry_internal_review_check
+    report = validator.build_report(Path.cwd())
+    contract = json.loads(Path(validator.CONTRACT_REL).read_text(encoding="utf-8"))
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+
+    assert report["valid"] is True
+    assert report["reviewed_commit"] == "fe870f2b96aafeed8419e611a57c64756cfda79f"
+    assert report["reviewed_commit_exists"] is True
+    assert report["baseline_is_ancestor"] is True
+    assert report["reviewed_commit_is_ancestor"] is True
+    assert report["review_document_hash_matches"] is True
+    assert report["authority_contract_hash_matches"] is True
+    assert report["contract_valid"] is True
+    assert report["reviewed_inventory_exact"] is True
+    assert report["reviewed_path_count"] == 11
+    assert report["reviewed_hashes_match"] is True
+    assert report["entry_decision_valid"] is True
+    assert report["critical_findings"] == 0
+    assert report["high_findings"] == 0
+    assert report["medium_findings"] == 0
+    assert report["low_findings"] == 0
+    assert report["open_findings"] == 0
+    assert report["tool_count"] == 24
+    assert report["wiring_valid"] is True
+    assert report["pis_003_entry_source_review_complete"] is True
+    assert report["pis_003_entry_decision_cleared"] is True
+    assert report["pis_003_sd_pg_001_implementation_gate_preparation_allowed"] is True
+    for field in set(validator.EXPECTED_AUTHORITY) - {
+        "pis_003_entry_source_review_complete",
+        "pis_003_entry_decision_cleared",
+        "pis_003_sd_pg_001_implementation_gate_preparation_allowed",
+    }:
+        assert report[field] is False
+    assert report["next_required_action"] == (
+        "prepare_pis_003_sd_pg_001_implementation_gate"
+    )
+    assert validator.validate_contract(contract) == []
+    assert f"{validator.TARGET}:" in makefile
+    assert f"release-check: {validator.TARGET}" in makefile
+    assert f"make {validator.TARGET}" in readme
+    assert validator.REVIEW_DOC_REL in review_docs.REVIEW_DOCS
+    assert validator.TARGET in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+
+
+def test_production_identity_storage_pis_003_entry_review_contract_is_closed() -> None:
+    validator = production_identity_storage_pis_003_entry_internal_review_check
+    source = Path(validator.CONTRACT_REL).read_text(encoding="utf-8")
+
+    contract = json.loads(source)
+    contract["authority"]["pis_003_sd_pg_001_implementation_allowed"] = True
+    failures = validator.validate_contract(contract)
+    assert any("authority is not the exact closed Boolean map" in item for item in failures)
+
+    contract = json.loads(source)
+    contract["findings"]["medium"] = 1
+    failures = validator.validate_contract(contract)
+    assert any("finding counts are not exact integers" in item for item in failures)
+
+    contract = json.loads(source)
+    contract["reviewed_path_hashes"]["pyproject.toml"] = "0" * 64
+    failures = validator.validate_contract(contract)
+    assert any("path/hash inventory is not exact" in item for item in failures)
+
+    contract = json.loads(source)
+    contract["closed_superseded_reviews"][0]["finding_count"] = 0
+    failures = validator.validate_contract(contract)
+    assert any("superseded review history is not exact" in item for item in failures)
+
+
+def test_production_identity_storage_pis_003_entry_review_rejects_duplicate_keys(
+    tmp_path: Path,
+) -> None:
+    validator = production_identity_storage_pis_003_entry_internal_review_check
+    contract_path = tmp_path / "review.json"
+    contract_path.write_text(
+        '{"authority":{"dependency_changes_allowed":false,'
+        '"dependency_changes_allowed":true}}',
+        encoding="utf-8",
+    )
+
+    contract, failures = validator._load_contract(contract_path)
+
+    assert contract == {}
+    assert failures == [
+        "PIS-003 entry review authority has duplicate JSON member: dependency_changes_allowed"
+    ]
+
+
+def _assert_pis_003_entry_review_fails_closed(report: dict[str, Any]) -> None:
+    assert report["valid"] is False
+    assert report["pis_003_entry_source_review_complete"] is False
+    assert report["pis_003_entry_decision_cleared"] is False
+    assert report["pis_003_sd_pg_001_implementation_gate_preparation_allowed"] is False
+    assert report["pis_003_sd_pg_001_implementation_allowed"] is False
+    assert report["dependency_changes_allowed"] is False
+    assert report["database_connections_allowed"] is False
+    assert report["runtime_postgres_allowed"] is False
+    assert report["next_required_action"] == "invalid_gate"
+
+
+@pytest.mark.parametrize("artifact", ["review", "contract"])
+def test_production_identity_storage_pis_003_entry_review_rejects_digest_drift(
+    monkeypatch: pytest.MonkeyPatch,
+    artifact: str,
+) -> None:
+    validator = production_identity_storage_pis_003_entry_internal_review_check
+    original_read_bytes = validator._read_bytes
+    target = Path(
+        validator.REVIEW_DOC_REL if artifact == "review" else validator.CONTRACT_REL
+    ).resolve()
+
+    def mutated_read_bytes(path: Path) -> bytes:
+        data = original_read_bytes(path)
+        return data + b" " if path.resolve() == target else data
+
+    monkeypatch.setattr(validator, "_read_bytes", mutated_read_bytes)
+    report = validator.build_report(Path.cwd())
+
+    _assert_pis_003_entry_review_fails_closed(report)
+    assert any("closed digest" in failure for failure in report["failures"])
+
+
+@pytest.mark.parametrize("failure_mode", ["hash", "entry", "wiring", "tool_count"])
+def test_production_identity_storage_pis_003_entry_review_rejects_gate_drift(
+    monkeypatch: pytest.MonkeyPatch,
+    failure_mode: str,
+) -> None:
+    validator = production_identity_storage_pis_003_entry_internal_review_check
+    if failure_mode == "hash":
+        hashes = dict(validator.REVIEWED_PATH_HASHES)
+        hashes["Makefile"] = "0" * 64
+        monkeypatch.setattr(validator, "REVIEWED_PATH_HASHES", hashes)
+    elif failure_mode == "entry":
+        entry = production_identity_storage_pis_003_entry_decision_check
+        monkeypatch.setattr(entry, "build_report", lambda _root: {"valid": False})
+    elif failure_mode == "wiring":
+        monkeypatch.setattr(validator, "_wiring_valid", lambda _root: False)
+    else:
+        monkeypatch.setattr(validator, "_tool_count", lambda _path: 23)
+
+    report = validator.build_report(Path.cwd())
+
+    _assert_pis_003_entry_review_fails_closed(report)
 
 
 def test_production_identity_storage_architecture_is_wired() -> None:

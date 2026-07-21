@@ -414,6 +414,13 @@ Current selected capability: `not selected`.
   exact-candidate source review followed by a separate committed implementation gate. Dependency
   changes, implementation, database connections/services, migration execution, runtime PostgreSQL,
   production identity, new powers, release, promotion, and UAT remain unauthorized.
+- Current PIS-003 entry-decision review:
+  `production-identity-storage-pis-003-entry-internal-source-review.md` records a zero-finding
+  independent Sol xhigh review of exact commit `fe870f2`; Sol Ultra was not used. Its closed
+  `production-identity-storage-pis-003-entry-review-authority.json` contract permits only preparation
+  of a separate `PIS-003-SD-PG-001` implementation gate. It does not authorize dependencies,
+  implementation, database connections/services, schema/migration execution, runtime PostgreSQL,
+  production identity, new powers, release, promotion, or UAT.
 - Current warning language: Ithildin may discuss production identity and durable storage
   architecture, but the current runtime remains local-preview with local principal labels and SQLite.
 - Current architecture evidence:

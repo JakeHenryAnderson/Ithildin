@@ -367,6 +367,7 @@ DEFAULT_DOCS = [
     "docs/codex/production-identity-storage-pis-002-sandbox-descriptor-repository-internal-source-review.md",
     "docs/codex/production-identity-storage-pis-002-continuation-decision-record.md",
     "docs/codex/production-identity-storage-pis-003-entry-decision-record.md",
+    "docs/codex/production-identity-storage-pis-003-entry-internal-source-review.md",
     "docs/codex/production-identity-storage-architecture.md",
     "docs/codex/production-identity-storage-disposition-packet.md",
     "docs/codex/production-identity-storage-external-review-bundle.md",

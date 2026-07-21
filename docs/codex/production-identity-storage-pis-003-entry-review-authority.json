@@ -1,0 +1,75 @@
+{
+  "schema_version": "1",
+  "review_id": "PRD-PROD-IAM-STORAGE-PIS-003-ENTRY-REVIEW",
+  "parent_decision": "PRD-PROD-IAM-STORAGE-PIS-003-ENTRY",
+  "implementation_slice": "PIS-003-SD-PG-001",
+  "entry_baseline_commit": "159bf93b4b1e3975d7cab615ef51d2e951f9a80a",
+  "reviewed_commit": "fe870f2b96aafeed8419e611a57c64756cfda79f",
+  "review_document_sha256": "939082ddd7c247227889dc974cdab5957687a52e60920d12f969fb0a5145db6c",
+  "review_disposition": "cleared_for_separate_pis_003_sd_pg_001_implementation_gate_preparation_only",
+  "review_method": "independent_read_only_gpt_5_6_sol_xhigh_no_ultra",
+  "reviewed_path_hashes": {
+    "Makefile": "6f5e283db1afa9bd9a72f98cee168cd0a2e2181c8ab8deecf678a3baca0c7b5e",
+    "README.md": "6405c57cfa127b40fc2240a917dfa0fa9a16918b71082aa2052c89561c508388",
+    "docs/codex/post-rc-decision-register.md": "2a12a37fe36e32c0d28744fd59e9012b911a0402da5934da6d8ec660dc4e4576",
+    "docs/codex/production-identity-storage-pis-003-entry-decision-record.md": "1af9d450dac5214995adf34a3dabfd877b0e98bd1f5085263eafe496edf299f8",
+    "docs/codex/production-identity-storage-pis-003-entry-decision.json": "41f413e1d9532019d91aa39daaec13bdcf679a761bc4d73f8d9575a229fd9269",
+    "docs/codex/review-docs-index.md": "fbde051f793b2fce8092e640b74b7ea32b99763b80fbb789faf9f1d7c60f7aea",
+    "scripts/build_docs_site.py": "a57e16fa4667567ff519e24e2a79f7cc509612daf83124ce2617d38d4249524c",
+    "scripts/production_identity_storage_pis_003_entry_decision_check.py": "d3e8d30d8279b862688345e21f7ea31d8106345d107bb218dc5544cb8c77405c",
+    "scripts/release_guardrails.py": "ee1f4538f98465da9a7fecd59b404475062c9208cd675ca8984a356818e8e70c",
+    "scripts/review_docs.py": "6065a48c32f6d46cd27678e5310d234c68cde58d19ada3c4a5529c30a76becc7",
+    "tests/test_release_readiness.py": "9995c8eec0d0ec4d0fc8ae0996c9fb613841cebc59ad236c208efe6214f90dd1"
+  },
+  "findings": {
+    "critical": 0,
+    "high": 0,
+    "medium": 0,
+    "low": 0,
+    "open": 0
+  },
+  "closed_superseded_reviews": [
+    {
+      "candidate_commit": "1f1670a7e7d729ddfc986b4e8f72a96847a0c543",
+      "finding_count": 2,
+      "maximum_severity": "medium"
+    },
+    {
+      "candidate_commit": "bdb6b2cb46927cf7fbf0bbbdb7290b6739676a38",
+      "finding_count": 1,
+      "maximum_severity": "medium"
+    }
+  ],
+  "authority": {
+    "pis_003_entry_source_review_complete": true,
+    "pis_003_entry_decision_cleared": true,
+    "pis_003_sd_pg_001_implementation_gate_preparation_allowed": true,
+    "pis_003_sd_pg_001_implementation_allowed": false,
+    "dependency_changes_allowed": false,
+    "sqlalchemy_use_allowed": false,
+    "alembic_use_allowed": false,
+    "psycopg_use_allowed": false,
+    "offline_schema_artifact_implementation_allowed": false,
+    "offline_migration_artifact_implementation_allowed": false,
+    "migration_execution_allowed": false,
+    "database_connections_allowed": false,
+    "postgres_service_allowed": false,
+    "runtime_behavior_changes_allowed": false,
+    "public_api_changes_allowed": false,
+    "current_sqlite_schema_changes_allowed": false,
+    "audit_ordering_changes_allowed": false,
+    "runtime_postgres_allowed": false,
+    "production_identity_allowed": false,
+    "enterprise_rbac_allowed": false,
+    "remote_admin_allowed": false,
+    "backup_restore_runtime_allowed": false,
+    "retention_enforcement_allowed": false,
+    "new_power_classes_allowed": false,
+    "public_security_product_positioning_allowed": false,
+    "release_allowed": false,
+    "production_promotion_allowed": false,
+    "uat_complete": false,
+    "uat_required_now": false
+  },
+  "next_required_action": "prepare_pis_003_sd_pg_001_implementation_gate"
+}

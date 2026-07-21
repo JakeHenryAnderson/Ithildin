@@ -834,6 +834,9 @@ checked with `make control-mapping-readiness`.
   PIS-003 entry-decision candidate selecting exact non-default tooling dependencies, transaction
   semantics, and one isolated sandbox-descriptor PostgreSQL schema/import proof while keeping all
   implementation, connection, runtime, identity, release, promotion, and UAT authority false.
+- `make production-identity-storage-pis-003-entry-internal-review-check` - validate the zero-finding
+  Sol xhigh review of exact PIS-003 entry candidate `fe870f2`, its closed reviewed-path hashes, and
+  implementation-gate-preparation-only authority; Sol Ultra was not used.
 - `make production-identity-storage-disposition-packet` - generate the focused architecture
   disposition packet asking whether ERG-006/ERG-007 may continue planning while production identity,
   runtime Postgres, migrations, retention enforcement, and custody claims remain blocked.
@@ -1869,6 +1872,14 @@ source review and a separate committed implementation gate before any dependency
 schema, migration, connection, or service change. The closed authority contract is
 [docs/codex/production-identity-storage-pis-003-entry-decision.json](docs/codex/production-identity-storage-pis-003-entry-decision.json);
 all implementation/runtime/identity/release/promotion/UAT authority remains false.
+The zero-finding exact-candidate review is recorded in
+[docs/codex/production-identity-storage-pis-003-entry-internal-source-review.md](docs/codex/production-identity-storage-pis-003-entry-internal-source-review.md)
+and checked with `make production-identity-storage-pis-003-entry-internal-review-check`. It clears
+exact commit `fe870f2` only for preparation of the separate `PIS-003-SD-PG-001` implementation gate.
+Its closed machine authority is
+[docs/codex/production-identity-storage-pis-003-entry-review-authority.json](docs/codex/production-identity-storage-pis-003-entry-review-authority.json).
+No dependency, installation, implementation, connection, schema/migration, runtime PostgreSQL,
+identity, release, promotion, or UAT authority is granted by the review.
 Generate the production identity and storage disposition packet with
 `make production-identity-storage-disposition-packet`; it asks whether the current ERG-006/ERG-007
 architecture evidence is coherent enough to continue planning while keeping production identity,
