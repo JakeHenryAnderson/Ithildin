@@ -41,6 +41,7 @@ HARNESS_REL = "scripts/production_identity_storage_pis_003_sd_pg_001_connection_
 TARGET = "production-identity-storage-pis-003-sd-pg-001-connection-evidence-implementation-check"
 BASELINE_COMMIT = "c84c9f9f97ee9716e1466944e26e206e85b4b729"
 REVIEWED_COMMIT = "5d929d8e24e4f529cea08796e614fbf544d066bc"
+REVIEW_RECORD_COMMIT = "8da9ac630b191a36a2782e5febb45d739030cd48"
 
 EXPECTED_REVIEWED_PATH_HASHES = {
     "Makefile": "96e1846bfe6449c1e6d9c7baaf89b9852d4f6f6444e9f80010d0d308a0db62d7",
@@ -425,10 +426,16 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         failures.append("PIS-003 connection implementation baseline is not an ancestor")
     reviewed_commit_exists = _commit_exists(repo_root, REVIEWED_COMMIT)
     reviewed_commit_is_ancestor = _is_ancestor(repo_root, REVIEWED_COMMIT, "HEAD")
+    review_record_commit_exists = _commit_exists(repo_root, REVIEW_RECORD_COMMIT)
+    review_record_commit_is_ancestor = _is_ancestor(repo_root, REVIEW_RECORD_COMMIT, "HEAD")
     if not reviewed_commit_exists:
         failures.append("PIS-003 reviewed connection implementation commit is unavailable")
     if not reviewed_commit_is_ancestor:
         failures.append("PIS-003 reviewed connection implementation commit is not an ancestor")
+    if not review_record_commit_exists:
+        failures.append("PIS-003 connection implementation review record is unavailable")
+    if not review_record_commit_is_ancestor:
+        failures.append("PIS-003 connection implementation review record is not an ancestor")
     reviewed_path_hashes_match = all(
         _sha256_at_commit(repo_root, REVIEWED_COMMIT, path) == digest
         for path, digest in EXPECTED_REVIEWED_PATH_HASHES.items()
@@ -501,6 +508,9 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "reviewed_candidate_commit_exists": reviewed_commit_exists,
         "reviewed_candidate_commit_is_ancestor": reviewed_commit_is_ancestor,
         "reviewed_candidate_path_hashes_match": reviewed_path_hashes_match,
+        "review_record_commit": REVIEW_RECORD_COMMIT,
+        "review_record_commit_exists": review_record_commit_exists,
+        "review_record_commit_is_ancestor": review_record_commit_is_ancestor,
         "candidate_commit": _git_one(repo_root, "rev-parse", "HEAD"),
         "candidate_path_count": len(candidate_paths),
         "candidate_inventory_exact": candidate_inventory_exact,
@@ -538,6 +548,9 @@ def render_report(report: dict[str, Any]) -> str:
         "reviewed_candidate_commit_exists",
         "reviewed_candidate_commit_is_ancestor",
         "reviewed_candidate_path_hashes_match",
+        "review_record_commit",
+        "review_record_commit_exists",
+        "review_record_commit_is_ancestor",
         "candidate_commit",
         "candidate_path_count",
         "candidate_inventory_exact",
@@ -709,26 +722,15 @@ def _wiring_valid(repo_root: Path) -> bool:
 
 def _candidate_paths(repo_root: Path) -> set[str]:
     tracked = subprocess.run(
-        ["git", "diff", "--name-only", BASELINE_COMMIT],
+        ["git", "diff", "--name-only", f"{BASELINE_COMMIT}..{REVIEW_RECORD_COMMIT}"],
         cwd=repo_root,
         check=False,
         capture_output=True,
         text=True,
     )
-    untracked = subprocess.run(
-        ["git", "ls-files", "--others", "--exclude-standard"],
-        cwd=repo_root,
-        check=False,
-        capture_output=True,
-        text=True,
-    )
-    if tracked.returncode != 0 or untracked.returncode != 0:
+    if tracked.returncode != 0:
         return set()
-    return {
-        line.strip()
-        for line in (tracked.stdout + "\n" + untracked.stdout).splitlines()
-        if line.strip()
-    }
+    return {line.strip() for line in tracked.stdout.splitlines() if line.strip()}
 
 
 def _load_contract(path: Path) -> tuple[dict[str, Any], list[str]]:

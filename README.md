@@ -864,8 +864,13 @@ checked with `make control-mapping-readiness`.
 - `make production-identity-storage-pis-003-sd-pg-001-connection-evidence-implementation-check`
   - validate the bounded test-only harness, immutable synthetic snapshot reader, external receipt
   and target-binding preflight, caller-owned Alembic connection path, rollback/discard sequencing,
-  secret-safe failure evidence, protected hashes, and exact 14-path scope while execution remains
+  secret-safe failure evidence, protected hashes, and exact 17-path reviewed scope while execution remains
   blocked before Psycopg import, DSN access, engine construction, or connection.
+- `make production-identity-storage-pis-003-sd-pg-001-environment-execution-gate-check` - validate
+  the separately committed environment-execution phase boundary, exact external target and signed
+  receipt requirements, protected implementation hashes, and the source-review stop line while
+  target selection, receipt collection, activation preparation, driver/DSN use, connections,
+  migrations, services, runtime PostgreSQL, release, promotion, and UAT remain false.
 - `make production-identity-storage-disposition-packet` - generate the focused architecture
   disposition packet asking whether ERG-006/ERG-007 may continue planning while production identity,
   runtime Postgres, migrations, retention enforcement, and custody claims remain blocked.
@@ -1969,11 +1974,22 @@ and checked with
 `make production-identity-storage-pis-003-sd-pg-001-connection-evidence-implementation-check`.
 It implements the reviewable test-only harness, strict external receipt and canonical DSN/HMAC
 preflight, immutable synthetic SQLite reader, caller-owned online Alembic path, native identity
-probe, rollback/discard finalizer, and output secret scan. Its execution switch remains false and
-the CLI is check-only; the next action is exact-candidate implementation review. It does not load
+probe, rollback/discard finalizer, and output secret scan. Exact reviewed commit `5d929d8` has zero
+open findings and its full release gate passed. The execution switch remains false and the CLI is
+check-only. It does not load
 Psycopg, read an external DSN, construct an engine, open a connection, execute an online migration,
 start a service/container, change runtime PostgreSQL or identity behavior, release, promote, or
 complete UAT.
+The next separately committed phase boundary is
+[docs/codex/production-identity-storage-pis-003-sd-pg-001-environment-execution-gate.md](docs/codex/production-identity-storage-pis-003-sd-pg-001-environment-execution-gate.md),
+with its closed contract at
+[docs/codex/production-identity-storage-pis-003-sd-pg-001-environment-execution-gate.json](docs/codex/production-identity-storage-pis-003-sd-pg-001-environment-execution-gate.json).
+Validate it with
+`make production-identity-storage-pis-003-sd-pg-001-environment-execution-gate-check`. The gate
+selects only the future external-environment evidence and one-run activation-candidate ceiling. It
+does not select a target, collect receipts, change the harness, or authorize driver/DSN use,
+connections, migrations, service/container lifecycle, runtime PostgreSQL, production identity,
+release, promotion, or UAT before exact-candidate review and a later activation gate.
 Generate the production identity and storage disposition packet with
 `make production-identity-storage-disposition-packet`; it asks whether the current ERG-006/ERG-007
 architecture evidence is coherent enough to continue planning while keeping production identity,

@@ -472,10 +472,19 @@ Current selected capability: `not selected`.
   records the bounded test-only harness, strict external receipt and canonical DSN/HMAC preflight,
   immutable source reader, caller-owned Alembic connection path, native dependency probe,
   transaction rollback, discard finalizer, safe failure evidence, and secret scan. The implementation
-  is pending exact-candidate source review. Its authority switch remains false before manifest or
-  environment access; Psycopg use, DSN consumption, engine/connection/migration execution,
+  received a zero-finding exact-candidate review at `5d929d8`; its review record is `8da9ac6`.
+  Its authority switch remains false before manifest or environment access; Psycopg use, DSN
+  consumption, engine/connection/migration execution,
   PostgreSQL/container lifecycle, runtime PostgreSQL, production identity, new powers, release,
   promotion, and UAT remain unauthorized.
+- Current PIS-003 environment execution gate:
+  `production-identity-storage-pis-003-sd-pg-001-environment-execution-gate.md` records the separate
+  twelve-path phase boundary for selecting one externally managed quarantined target and collecting
+  its signed trust, rollback, ownership, native dependency, TLS, SBOM/license, source, manifest,
+  and discard-owner evidence. The candidate is pending exact-candidate review. No target or receipt
+  is selected, supplied to, or recorded by the gate, and all activation, driver, DSN, connection,
+  migration, service/container, runtime PostgreSQL, production identity, release, promotion, and
+  UAT authority remains false.
 - Current warning language: Ithildin may discuss production identity and durable storage
   architecture, but the current runtime remains local-preview with local principal labels and SQLite.
 - Current architecture evidence:

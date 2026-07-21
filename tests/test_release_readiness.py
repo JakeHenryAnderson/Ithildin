@@ -208,6 +208,7 @@ from scripts import (
     production_identity_storage_pis_003_sd_pg_001_connection_evidence_gate_check,
     production_identity_storage_pis_003_sd_pg_001_connection_evidence_gate_internal_review_check,
     production_identity_storage_pis_003_sd_pg_001_connection_evidence_implementation_check,
+    production_identity_storage_pis_003_sd_pg_001_environment_execution_gate_check,
     production_identity_storage_pis_003_sd_pg_001_implementation_check,
     production_identity_storage_pis_003_sd_pg_001_implementation_gate_check,
     production_identity_storage_pis_003_sd_pg_001_implementation_gate_internal_review_check,
@@ -11293,6 +11294,8 @@ def test_pis_003_connection_evidence_implementation_is_wired() -> None:
         "reviewed_candidate_commit_exists",
         "reviewed_candidate_commit_is_ancestor",
         "reviewed_candidate_path_hashes_match",
+        "review_record_commit_exists",
+        "review_record_commit_is_ancestor",
         "candidate_inventory_exact",
         "implementation_document_hash_matches",
         "authority_contract_hash_matches",
@@ -11308,6 +11311,9 @@ def test_pis_003_connection_evidence_implementation_is_wired() -> None:
         assert report[field] is True
     assert report["reviewed_candidate_commit"] == (
         "5d929d8e24e4f529cea08796e614fbf544d066bc"
+    )
+    assert report["review_record_commit"] == (
+        "8da9ac630b191a36a2782e5febb45d739030cd48"
     )
     assert report["candidate_path_count"] == 17
     assert report["psycopg_driver_loaded"] is False
@@ -11366,6 +11372,165 @@ def test_pis_003_connection_evidence_implementation_contract_is_closed() -> None
     assert any(
         "reviewed candidate path hashes are not exact" in item
         for item in validator.validate_contract(contract)
+    )
+
+
+def test_pis_003_environment_execution_gate_is_wired() -> None:
+    validator = production_identity_storage_pis_003_sd_pg_001_environment_execution_gate_check
+    report = validator.build_report(Path.cwd())
+    contract = json.loads(Path(validator.CONTRACT_REL).read_text(encoding="utf-8"))
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+
+    assert report["valid"] is True
+    assert report["gate_id"] == (
+        "PRD-PROD-IAM-STORAGE-PIS-003-SD-PG-001-ENVIRONMENT-EXECUTION-GATE"
+    )
+    assert report["gate_outcome"] == (
+        "environment_execution_gate_prepared_external_environment_evidence_"
+        "pending_exact_review"
+    )
+    for field in (
+        "baseline_exists",
+        "baseline_is_ancestor",
+        "reviewed_implementation_exists",
+        "reviewed_implementation_is_ancestor",
+        "candidate_inventory_exact",
+        "gate_document_hash_matches",
+        "gate_contract_hash_matches",
+        "contract_valid",
+        "protected_hashes_match",
+        "parent_implementation_valid",
+        "harness_remains_dormant",
+        "wiring_valid",
+    ):
+        assert report[field] is True
+    assert report["candidate_path_count"] == 12
+    assert report["environment_execution_ready"] is False
+    assert report["psycopg_driver_loaded"] is False
+    assert report["database_connection_attempted"] is False
+    assert report["online_migration_executed"] is False
+    assert report["tool_count"] == 24
+    for field, expected in validator.EXPECTED_AUTHORITY.items():
+        assert report[field] is expected
+    assert report["next_required_action"] == (
+        "review_pis_003_sd_pg_001_environment_execution_gate_exact_candidate"
+    )
+    assert validator.validate_contract(contract) == []
+    assert f"{validator.TARGET}:" in makefile
+    assert f"release-check: {validator.TARGET}" in makefile
+    assert f"make {validator.TARGET}" in readme
+    assert validator.DOC_REL in review_docs.REVIEW_DOCS
+    assert validator.TARGET in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+
+
+def test_pis_003_environment_execution_gate_contract_is_closed() -> None:
+    validator = production_identity_storage_pis_003_sd_pg_001_environment_execution_gate_check
+    source = Path(validator.CONTRACT_REL).read_text(encoding="utf-8")
+
+    contract = json.loads(source)
+    contract["authority"]["database_connections_allowed"] = True
+    assert any(
+        "authority is not exact" in item for item in validator.validate_contract(contract)
+    )
+
+    contract = json.loads(source)
+    contract["gate_environment_evidence_state"]["environment_execution_ready"] = True
+    assert any(
+        "gate_environment_evidence_state is not exact" in item
+        for item in validator.validate_contract(contract)
+    )
+
+    contract = json.loads(source)
+    contract["execution_candidate_contract"]["execution_authority_active_now"] = True
+    assert any(
+        "execution_candidate_contract is not exact" in item
+        for item in validator.validate_contract(contract)
+    )
+
+    contract = json.loads(source)
+    contract["gate_candidate_path_inventory"].append("apps/api/src/unsafe.py")
+    assert any(
+        "gate_candidate_path_inventory is not exact" in item
+        for item in validator.validate_contract(contract)
+    )
+
+    contract = json.loads(source)
+    contract["protected_hashes"]["tool-manifests.lock.json"] = "0" * 64
+    assert any(
+        "protected_hashes is not exact" in item
+        for item in validator.validate_contract(contract)
+    )
+
+
+def _assert_pis_003_environment_execution_gate_fails_closed(
+    report: dict[str, Any],
+) -> None:
+    validator = production_identity_storage_pis_003_sd_pg_001_environment_execution_gate_check
+    assert report["valid"] is False
+    assert report["gate_id"] == "invalid"
+    assert report["gate_outcome"] == "invalid"
+    for field, expected in validator.EXPECTED_AUTHORITY.items():
+        if expected:
+            assert report[field] is False
+    assert report["database_connections_allowed"] is False
+    assert report["migration_execution_allowed"] is False
+    assert report["runtime_postgres_allowed"] is False
+    assert report["release_allowed"] is False
+    assert report["next_required_action"] == "invalid_gate"
+
+
+@pytest.mark.parametrize("artifact", ["document", "contract"])
+def test_pis_003_environment_execution_gate_rejects_digest_drift(
+    monkeypatch: pytest.MonkeyPatch,
+    artifact: str,
+) -> None:
+    validator = production_identity_storage_pis_003_sd_pg_001_environment_execution_gate_check
+    original = validator._read_bytes
+    target = Path(
+        validator.DOC_REL if artifact == "document" else validator.CONTRACT_REL
+    ).resolve()
+
+    def mutated(path: Path) -> bytes:
+        data = original(path)
+        return data + b" " if path.resolve() == target else data
+
+    monkeypatch.setattr(validator, "_read_bytes", mutated)
+    _assert_pis_003_environment_execution_gate_fails_closed(
+        validator.build_report(Path.cwd())
+    )
+
+
+@pytest.mark.parametrize(
+    "failure_mode",
+    ["paths", "protected", "parent", "harness", "wiring", "tools"],
+)
+def test_pis_003_environment_execution_gate_rejects_prerequisite_drift(
+    monkeypatch: pytest.MonkeyPatch,
+    failure_mode: str,
+) -> None:
+    validator = production_identity_storage_pis_003_sd_pg_001_environment_execution_gate_check
+    if failure_mode == "paths":
+        monkeypatch.setattr(validator, "_candidate_paths", lambda _root: set())
+    elif failure_mode == "protected":
+        hashes = dict(validator.EXPECTED_PROTECTED_HASHES)
+        hashes["tool-manifests.lock.json"] = "0" * 64
+        monkeypatch.setattr(validator, "EXPECTED_PROTECTED_HASHES", hashes)
+    elif failure_mode == "parent":
+        monkeypatch.setattr(
+            validator.implementation,
+            "build_report",
+            lambda _root: {"valid": False},
+        )
+    elif failure_mode == "harness":
+        monkeypatch.setattr(validator.harness, "_render_check", lambda: {"valid": False})
+    elif failure_mode == "wiring":
+        monkeypatch.setattr(validator, "_wiring_valid", lambda _root: False)
+    else:
+        monkeypatch.setattr(validator, "_tool_count", lambda _path: 23)
+
+    _assert_pis_003_environment_execution_gate_fails_closed(
+        validator.build_report(Path.cwd())
     )
 
 
