@@ -10950,6 +10950,31 @@ def test_production_identity_storage_pis_003_connection_evidence_contract_is_clo
         for item in validator.validate_contract(contract)
     )
 
+    discard_owner_binding = (
+        "target_discard_receipt_issuer_id_equals_target_owner_quarantine_"
+        "receipt_assertion_discard_owner_id"
+    )
+    contract = json.loads(source)
+    contract["receipt_authenticity_contract"]["receipt_binding_relationships"].remove(
+        discard_owner_binding
+    )
+    assert any(
+        "receipt authenticity contract is not exact" in item
+        for item in validator.validate_contract(contract)
+    )
+
+    contract = json.loads(source)
+    relationships = contract["receipt_authenticity_contract"][
+        "receipt_binding_relationships"
+    ]
+    relationships[relationships.index(discard_owner_binding)] = (
+        "target_discard_receipt_issuer_id_may_differ_from_named_discard_owner"
+    )
+    assert any(
+        "receipt authenticity contract is not exact" in item
+        for item in validator.validate_contract(contract)
+    )
+
     contract = json.loads(source)
     del contract["receipt_authenticity_contract"]["receipt_provenance_by_type"][
         "target_discard_receipt"

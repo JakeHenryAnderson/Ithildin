@@ -353,7 +353,8 @@
     "receipt_binding_relationships": [
       "run_id_target_label_reviewed_candidate_commit_and_source_digest_equal_execution_manifest",
       "receipt_type_matches_exact_assertion_schema",
-      "receipt_type_is_allowed_by_verified_issuer_trust_record"
+      "receipt_type_is_allowed_by_verified_issuer_trust_record",
+      "target_discard_receipt_issuer_id_equals_target_owner_quarantine_receipt_assertion_discard_owner_id"
     ],
     "receipt_specific_required_assertions": {
       "preconnection_rollback_receipt": {

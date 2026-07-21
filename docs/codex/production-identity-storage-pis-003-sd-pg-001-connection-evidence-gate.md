@@ -204,6 +204,9 @@ Payload and assertion objects reject extra or duplicate keys and enforce exact J
 parsing is strict UTF-8 without a BOM, rejects non-finite constants, distinguishes integers from
 booleans, caps the canonical assertion at 4,096 bytes, and requires canonical round-trip equality.
 Receipt provenance is a closed value for the matching external target owner or discard owner.
+The signed `issuer_id` of the final `target_discard_receipt` must exactly equal the
+`discard_owner_id` named by the earlier `target_owner_quarantine_receipt`; an otherwise trusted
+issuer authorized for the receipt type cannot substitute for that named discard owner.
 Receipt and discard times use second-precision `+00:00` text, are strictly ordered, stay within the
 15-minute freshness and trust windows, and bind the exact run, target, candidate, and source digest.
 Security

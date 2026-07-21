@@ -27,12 +27,12 @@ DOC_NAME = "production-identity-storage-pis-003-sd-pg-001-connection-evidence-ga
 DOC_TITLE = (
     "Production Identity And Storage PIS-003 SD-PG-001 Connection Evidence Gate"
 )
-DOC_SHA256 = "d089042c549c6682f49c03cbc6481357011ae6b74c7cce6422341b073597a613"
+DOC_SHA256 = "43a40e958eb5c12768adbf825eed38e3952b8b73a6959c7ea983e2546c8540b5"
 CONTRACT_REL = (
     "docs/codex/production-identity-storage-pis-003-sd-pg-001-"
     "connection-evidence-gate.json"
 )
-CONTRACT_SHA256 = "6bebce764b1919f67780c4415a5e69875304c805185d547798d00d01c686f60d"
+CONTRACT_SHA256 = "502367304bb9fd7272a9201219ae03d5eb5b28c021f79f69ecc63ef6dcfd0f17"
 TARGET = (
     "production-identity-storage-pis-003-sd-pg-001-"
     "connection-evidence-gate-check"
@@ -505,6 +505,10 @@ EXPECTED_RECEIPT_AUTHENTICITY_CONTRACT = {
         ),
         "receipt_type_matches_exact_assertion_schema",
         "receipt_type_is_allowed_by_verified_issuer_trust_record",
+        (
+            "target_discard_receipt_issuer_id_equals_target_owner_quarantine_"
+            "receipt_assertion_discard_owner_id"
+        ),
     ],
     "receipt_specific_required_assertions": {
         "preconnection_rollback_receipt": {
