@@ -80,13 +80,22 @@ class _FakeConnection:
         in_transaction: bool = True,
         nested: bool = False,
         dialect: str = "postgresql",
+        autocommit: object = False,
+        lose_transaction_after_readback: bool = False,
     ) -> None:
         self.target_rows = target_rows
         self.existing = existing
         self.outer_transaction = in_transaction
         self.nested_transaction = nested
         self.dialect = SimpleNamespace(name=dialect)
+        self.autocommit = autocommit
+        self.lose_transaction_after_readback = lose_transaction_after_readback
         self.executions: list[tuple[object, object]] = []
+
+    def _is_autocommit_isolation(self) -> bool:
+        if type(self.autocommit) is not bool:
+            raise AttributeError("autocommit state is unavailable")
+        return self.autocommit
 
     def in_transaction(self) -> bool:
         return self.outer_transaction
@@ -100,6 +109,8 @@ class _FakeConnection:
             return _FakeResult(scalar=self.existing)
         if len(self.executions) == 2 and parameters is not None:
             return _FakeResult()
+        if self.lose_transaction_after_readback:
+            self.outer_transaction = False
         return _FakeResult(rows=self.target_rows)
 
 
@@ -349,12 +360,22 @@ def test_source_validation_rejects_noncanonical_unknown_and_duplicate_rows() -> 
 
 
 @pytest.mark.parametrize(
-    ("existing", "outer", "nested", "dialect", "failure", "expected_calls"),
+    (
+        "existing",
+        "outer",
+        "nested",
+        "dialect",
+        "autocommit",
+        "failure",
+        "expected_calls",
+    ),
     [
-        (1, True, False, "postgresql", "target must be empty", 1),
-        (0, False, False, "postgresql", "outer transaction is required", 0),
-        (0, True, True, "postgresql", "outer transaction is required", 0),
-        (0, True, False, "sqlite", "PostgreSQL dialect", 0),
+        (1, True, False, "postgresql", False, "target must be empty", 1),
+        (0, False, False, "postgresql", False, "outer transaction is required", 0),
+        (0, True, True, "postgresql", False, "outer transaction is required", 0),
+        (0, True, False, "sqlite", False, "PostgreSQL dialect", 0),
+        (0, True, False, "postgresql", True, "autocommit isolation", 0),
+        (0, True, False, "postgresql", None, "state is unavailable", 0),
     ],
 )
 def test_importer_requires_empty_postgres_target_and_outer_transaction(
@@ -362,6 +383,7 @@ def test_importer_requires_empty_postgres_target_and_outer_transaction(
     outer: bool,
     nested: bool,
     dialect: str,
+    autocommit: object,
     failure: str,
     expected_calls: int,
 ) -> None:
@@ -373,6 +395,7 @@ def test_importer_requires_empty_postgres_target_and_outer_transaction(
         in_transaction=outer,
         nested=nested,
         dialect=dialect,
+        autocommit=autocommit,
     )
     context, rollback = _context()
     with pytest.raises(StorageImportError, match=failure):
@@ -384,6 +407,25 @@ def test_importer_requires_empty_postgres_target_and_outer_transaction(
             verified_at=datetime(2026, 7, 20, tzinfo=UTC),
         )
     assert len(fake.executions) == expected_calls
+
+
+def test_importer_rechecks_outer_transaction_before_issuing_receipt() -> None:
+    row = _source_row()
+    fake = _FakeConnection(
+        [_target_row(row)],
+        lose_transaction_after_readback=True,
+    )
+    context, rollback = _context()
+
+    with pytest.raises(StorageImportError, match="outer transaction is required"):
+        import_validated_descriptor_snapshot(
+            _connection(fake),
+            validate_descriptor_snapshot([row]),
+            context,
+            rollback,
+            verified_at=datetime(2026, 7, 20, tzinfo=UTC),
+        )
+    assert len(fake.executions) == 3
 
 
 def test_importer_rejects_target_mismatch_without_repair_or_transaction_control() -> None:

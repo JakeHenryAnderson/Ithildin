@@ -25,11 +25,11 @@ from scripts import (
 ROOT = Path(__file__).resolve().parents[1]
 DOC_REL = "docs/codex/production-identity-storage-pis-003-sd-pg-001-implementation-record.md"
 DOC_TITLE = "Production Identity And Storage PIS-003 SD-PG-001 Offline Implementation Record"
-DOC_SHA256 = "d798e0f8c8ac39623534194f0a6c9a8737f4867e333535817d4d66bb9f269ff8"
+DOC_SHA256 = "38b2f3425feb8b080caced5121e17f0f648d6d68893915c70366815c06faa945"
 CONTRACT_REL = (
     "docs/codex/production-identity-storage-pis-003-sd-pg-001-implementation-authority.json"
 )
-CONTRACT_SHA256 = "0cee5b95a31e6b215b8481e03aacc85b9d9a797fc362d218e4070b49bd2fd888"
+CONTRACT_SHA256 = "f4dc1e5d4ca8cf589ffb9ddfbd20aae4c4c0e94216fc41668179d0db10c6bb3d"
 TARGET = "production-identity-storage-pis-003-sd-pg-001-implementation-check"
 BASELINE_COMMIT = "21cc758e2dd438c10f852574528f3ea971825b55"
 
@@ -58,7 +58,7 @@ EXPECTED_PATHS = [
 
 EXPECTED_ARTIFACT_HASHES = {
     "apps/api/src/ithildin_api/storage_import.py": (
-        "e1a29c0f994e7bfe1a7b7b0677bba881fd703c5f360ae12877de40b6e1c30ab9"
+        "854ac31a7c23c4f3c680daa0bc3f16507cacb5003fc61d7632e16b7c36cfb65d"
     ),
     "apps/api/src/ithildin_api/storage_schema.py": (
         "5e1e087f532e40b725a00ed87475a3d52093dbea33e2b5eacb8540ebadad62c4"
@@ -77,7 +77,7 @@ EXPECTED_ARTIFACT_HASHES = {
     ),
     "pyproject.toml": "8f260ab9cc8508cbe856258e86bc7960a7ee073156fe4c2981e0f6854e381627",
     "tests/test_storage_schema_import.py": (
-        "15ac644d9d578e0e06eae33736445574a3c1d909dd3e328cc574590d98f947fb"
+        "a1e6eaec5b119411e9f42cc07915e5c3733fb5278b109e413a8737fedebf5277"
     ),
     "uv.lock": "a0ea98764d069193226a9debe837f37655ee707cb17dcdf6731b922883a4dafb",
 }
@@ -171,7 +171,10 @@ EXPECTED_IMPORT_CONTRACT = {
     "duplicate_descriptor_ids_rejected": True,
     "caller_owned_connection_only": True,
     "postgresql_dialect_required": True,
+    "autocommit_rejected_before_statement": True,
+    "unprovable_autocommit_state_rejected": True,
     "outer_transaction_required": True,
+    "transaction_rechecked_before_receipt": True,
     "nested_transaction_allowed": False,
     "empty_target_required": True,
     "stable_order_key": "descriptor_id",
@@ -216,6 +219,8 @@ REQUIRED_PHRASES = [
     "`pis_003_sd_pg_001_offline_implementation_recorded: true`",
     "`pis_003_sd_pg_001_offline_candidate_complete: true`",
     "`exact_candidate_source_review_complete: false`",
+    "provably non-autocommit already-open non-nested outer transaction",
+    "rechecks the same transaction posture before issuing an uncommitted receipt",
     "`psycopg_plain_sync_use_allowed: false`",
     "`test_harness_execution_allowed: false`",
     "`database_connections_allowed: false`",

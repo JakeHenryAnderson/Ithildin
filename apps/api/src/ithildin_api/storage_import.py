@@ -230,8 +230,7 @@ def import_validated_descriptor_snapshot(
     verified_at_text = _utc_text(_require_utc_datetime(verified_at, "verified_at"))
     if connection.dialect.name != "postgresql":
         raise StorageImportError("caller-owned connection must use the PostgreSQL dialect")
-    if not connection.in_transaction() or connection.in_nested_transaction():
-        raise StorageImportError("caller-owned non-nested outer transaction is required")
+    _require_caller_owned_transaction(connection)
 
     existing = connection.execute(
         select(func.count()).select_from(sandbox_descriptors)
@@ -267,6 +266,7 @@ def import_validated_descriptor_snapshot(
         or target_digest != snapshot.records_digest
     ):
         raise StorageImportError("target semantic verification failed; discard target")
+    _require_caller_owned_transaction(connection)
 
     return DescriptorImportReceipt(
         candidate_commit=context.candidate_commit,
@@ -280,6 +280,21 @@ def import_validated_descriptor_snapshot(
         target_records_digest=target_digest,
         verified_at=verified_at_text,
     )
+
+
+def _require_caller_owned_transaction(connection: Connection) -> None:
+    try:
+        autocommit = connection._is_autocommit_isolation()
+    except Exception:
+        raise StorageImportError(
+            "caller-owned connection autocommit state is unavailable"
+        ) from None
+    if type(autocommit) is not bool:
+        raise StorageImportError("caller-owned connection autocommit state is unavailable")
+    if autocommit:
+        raise StorageImportError("caller-owned connection must not use autocommit isolation")
+    if not connection.in_transaction() or connection.in_nested_transaction():
+        raise StorageImportError("caller-owned non-nested outer transaction is required")
 
 
 def _validate_snapshot_integrity(snapshot: ValidatedDescriptorSnapshot) -> None:

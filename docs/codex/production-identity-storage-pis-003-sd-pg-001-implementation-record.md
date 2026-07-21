@@ -54,10 +54,19 @@ checks before any connection method can be reached.
 
 The importer accepts only a validated snapshot, a caller-owned SQLAlchemy `Connection`, an exact
 candidate/target/rollback context, and a caller-supplied UTC verification time. It requires the
-PostgreSQL dialect, an already-open non-nested outer transaction, and an empty target. It performs
-one Core bulk insert, reads back in explicit descriptor-ID order, and compares source/target
-semantic digests. It cannot accept a DSN, construct an engine or pool, begin/commit/roll back,
+PostgreSQL dialect, a provably non-autocommit already-open non-nested outer transaction, and an
+empty target. It performs one Core bulk insert, reads back in explicit descriptor-ID order,
+compares source/target semantic digests, and rechecks the same transaction posture before issuing
+an uncommitted receipt. It fails closed before the first statement when autocommit is enabled or
+cannot be determined. It cannot accept a DSN, construct an engine or pool, begin/commit/roll back,
 retry, repair, activate, or expose a driver object through an aggregate protocol.
+
+The first independent review of exact candidate `26ead3f95f7f72fb8c3047c68a0ecce9586743d6`
+returned NO-GO with one medium finding: SQLAlchemy can retain a root transaction object while DBAPI
+autocommit suppresses the real database transaction. This repaired successor closes that finding
+with the fail-closed pre-statement autocommit check, the pre-receipt transaction recheck, and
+regression cases for enabled, unavailable, and lost transaction state. A fresh exact-candidate
+review remains required; this repair does not self-clear the source-review gate.
 
 The immutable receipt includes the candidate commit, safe target label, rollback-receipt digest,
 explicit descriptor IDs and UTC timestamps, source/target record digests, caller-supplied verified
@@ -81,9 +90,10 @@ implementation, secret-safe failure evidence, semantic import verification, and 
 
 The focused suite proves the exact schema metadata, five checks, one index, direct and Alembic SQL
 determinism, one Alembic head, pure order-independent snapshot digest, strict negative fixtures,
-recording-fake statement order, empty-target and explicit-transaction requirements, semantic
-round-trip receipt, no importer transaction control, fail-closed harness contract, driver absence,
-runtime import isolation, and 24-tool invariance.
+recording-fake statement order, empty-target and explicit non-autocommit transaction requirements,
+transaction continuity through receipt issuance, semantic round-trip receipt, no importer
+transaction control, fail-closed harness contract, driver absence, runtime import isolation, and
+24-tool invariance.
 
 The current SQLite schema, stored representation, descriptor repository, public API, startup,
 configuration, audit ordering residual, policy, manifests, Node, Mission Control, and governed tool

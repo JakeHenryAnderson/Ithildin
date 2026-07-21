@@ -5,7 +5,7 @@
   "implementation_baseline_commit": "21cc758e2dd438c10f852574528f3ea971825b55",
   "implementation_outcome": "offline_implementation_complete_connection_evidence_gate_pending_exact_source_review",
   "tool_count": 24,
-  "implementation_document_sha256": "d798e0f8c8ac39623534194f0a6c9a8737f4867e333535817d4d66bb9f269ff8",
+  "implementation_document_sha256": "38b2f3425feb8b080caced5121e17f0f648d6d68893915c70366815c06faa945",
   "implementation_path_inventory": [
     "Makefile",
     "README.md",
@@ -29,14 +29,14 @@
     "uv.lock"
   ],
   "implementation_artifact_hashes": {
-    "apps/api/src/ithildin_api/storage_import.py": "e1a29c0f994e7bfe1a7b7b0677bba881fd703c5f360ae12877de40b6e1c30ab9",
+    "apps/api/src/ithildin_api/storage_import.py": "854ac31a7c23c4f3c680daa0bc3f16507cacb5003fc61d7632e16b7c36cfb65d",
     "apps/api/src/ithildin_api/storage_schema.py": "5e1e087f532e40b725a00ed87475a3d52093dbea33e2b5eacb8540ebadad62c4",
     "db/alembic/alembic.ini": "ff49463eb16e95c6e8a67c57f305cc6787a5bd09f888d35ffac7b7a13a519a5f",
     "db/alembic/env.py": "38ba3adbc686bceefbe50904761f073c50c204de7bd2b6ffa780f5ac93fe3c23",
     "db/alembic/script.py.mako": "39f642cd27bc28f704e0a219da647ed744e1b9f70647914232c7c6e9b3196533",
     "db/alembic/versions/0001_sandbox_descriptors.py": "40daefdf8882de79bd6ac68f19b0733c32877f19540c8bab1cb784534c93178e",
     "pyproject.toml": "8f260ab9cc8508cbe856258e86bc7960a7ee073156fe4c2981e0f6854e381627",
-    "tests/test_storage_schema_import.py": "15ac644d9d578e0e06eae33736445574a3c1d909dd3e328cc574590d98f947fb",
+    "tests/test_storage_schema_import.py": "a1e6eaec5b119411e9f42cc07915e5c3733fb5278b109e413a8737fedebf5277",
     "uv.lock": "a0ea98764d069193226a9debe837f37655ee707cb17dcdf6731b922883a4dafb"
   },
   "dependency_contract": {
@@ -75,7 +75,10 @@
     "duplicate_descriptor_ids_rejected": true,
     "caller_owned_connection_only": true,
     "postgresql_dialect_required": true,
+    "autocommit_rejected_before_statement": true,
+    "unprovable_autocommit_state_rejected": true,
     "outer_transaction_required": true,
+    "transaction_rechecked_before_receipt": true,
     "nested_transaction_allowed": false,
     "empty_target_required": true,
     "stable_order_key": "descriptor_id",
