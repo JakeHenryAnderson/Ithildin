@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import importlib
 import json
 import re
 import subprocess
@@ -24,9 +25,9 @@ ROOT = Path(__file__).resolve().parents[1]
 DOC_REL = "docs/codex/production-identity-storage-pis-003-sd-pg-001-implementation-gate.md"
 DOC_NAME = "production-identity-storage-pis-003-sd-pg-001-implementation-gate.md"
 DOC_TITLE = "Production Identity And Storage PIS-003 SD-PG-001 Implementation Gate"
-DOC_SHA256 = "0527965966f2ea4a1d90cc85ec69637623b197a81518144ba11635a70f9952d2"
+DOC_SHA256 = "42bb379ab0afee8507555e971febecd55904f41695bec16d7ceb2e91112a51f7"
 CONTRACT_REL = "docs/codex/production-identity-storage-pis-003-sd-pg-001-implementation-gate.json"
-CONTRACT_SHA256 = "66c24b3f115b680562536099ba30bdcfb953ba161485b0185c9438b40d864ec2"
+CONTRACT_SHA256 = "b670118ca53b6701a30bbb0b4692f15caf704267ebd468a7db3843d769e2e1fd"
 TARGET = "production-identity-storage-pis-003-sd-pg-001-implementation-gate-check"
 BASELINE_COMMIT = "ebb656ac8e5b0f428641092135d7e99b5845fa85"
 
@@ -98,16 +99,25 @@ EXPECTED_REQUIRED_EVIDENCE = [
     "canonical_payload_digest_and_strict_utc_timestamp_round_trip",
     "malformed_duplicate_unknown_status_digest_mismatch_naive_time_and_non_object_rejection",
     "caller_owned_connection_and_explicit_outer_transaction_contract",
-    "plain_sync_psycopg_system_libpq_tls_and_sbom_receipt_before_connection",
-    "externally_supplied_isolated_test_dsn_without_repo_controlled_service_lifecycle",
     "no_embedded_persisted_or_logged_url_or_credentials",
     "no_startup_migration_runtime_pool_runtime_import_or_second_aggregate",
     "current_sqlite_schema_runtime_api_audit_and_authority_invariance",
     "policy_manifest_and_24_tool_invariance",
     "rollback_plan_bound_before_database_connection",
-    "isolated_target_discard_proved_before_activation_or_runtime_use",
+    "test_harness_is_not_executed_and_driver_is_not_loaded",
+    "phase_aware_predecessor_and_exact_dependency_transition_evidence",
     "focused_lint_mypy_docs_agent_workflow_release_and_review_candidate_gates",
     "exact_candidate_source_review_with_zero_open_findings",
+]
+
+EXPECTED_DEFERRED_CONNECTION_EVIDENCE = [
+    "separate_connection_evidence_gate_with_exact_authority",
+    "plain_sync_psycopg_system_libpq_tls_and_sbom_receipt_before_connection",
+    "externally_supplied_isolated_test_dsn_without_repo_controlled_service_lifecycle",
+    "rollback_plan_and_target_identity_bound_before_database_connection",
+    "secret_safe_tls_and_driver_failure_evidence",
+    "real_empty_quarantined_target_import_and_semantic_verification",
+    "isolated_target_discard_proved_before_activation_or_runtime_use",
 ]
 
 EXPECTED_PROTECTED_HASHES = {
@@ -151,6 +161,7 @@ EXPECTED_AUTHORITY = {
     "offline_schema_artifact_implementation_allowed": False,
     "offline_migration_artifact_implementation_allowed": False,
     "isolated_importer_implementation_allowed": False,
+    "test_harness_implementation_allowed": False,
     "isolated_test_connection_allowed": False,
     "migration_execution_allowed": False,
     "database_connections_allowed": False,
@@ -171,6 +182,76 @@ EXPECTED_AUTHORITY = {
     "production_promotion_allowed": False,
     "uat_complete": False,
     "uat_required_now": False,
+    "connection_evidence_gate_required": True,
+}
+
+EXPECTED_POST_REVIEW_AUTHORITY_CEILING = {
+    "pis_003_sd_pg_001_implementation_allowed": True,
+    "dependency_changes_allowed": True,
+    "sqlalchemy_core_use_allowed": True,
+    "alembic_offline_use_allowed": True,
+    "psycopg_plain_sync_dependency_allowed": True,
+    "psycopg_plain_sync_use_allowed": False,
+    "offline_schema_artifact_implementation_allowed": True,
+    "offline_migration_artifact_implementation_allowed": True,
+    "isolated_importer_implementation_allowed": True,
+    "test_harness_implementation_allowed": True,
+    "isolated_test_connection_allowed": False,
+    "migration_execution_allowed": False,
+    "database_connections_allowed": False,
+    "postgres_service_allowed": False,
+    "runtime_behavior_changes_allowed": False,
+    "public_api_changes_allowed": False,
+    "current_sqlite_schema_changes_allowed": False,
+    "audit_ordering_changes_allowed": False,
+    "runtime_postgres_allowed": False,
+    "production_identity_allowed": False,
+    "enterprise_rbac_allowed": False,
+    "remote_admin_allowed": False,
+    "backup_restore_runtime_allowed": False,
+    "retention_enforcement_allowed": False,
+    "new_power_classes_allowed": False,
+    "public_security_product_positioning_allowed": False,
+    "release_allowed": False,
+    "production_promotion_allowed": False,
+    "uat_complete": False,
+    "uat_required_now": False,
+    "connection_evidence_gate_required": True,
+}
+
+EXPECTED_IMPLEMENTATION_TRANSITION = {
+    "preimplementation_state": (
+        "baseline_pyproject_and_uv_lock_hashes_with_selected_dependencies_absent"
+    ),
+    "post_review_state": "exact_preview_hashes_with_valid_durable_gate_review_authority",
+    "predecessor_validation_mode": (
+        "historical_git_object_identity_not_mutable_head_dependency_absence"
+    ),
+    "unapproved_dependency_or_lock_drift_allowed": False,
+    "gate_review_validator_module": (
+        "scripts.production_identity_storage_pis_003_sd_pg_001_"
+        "implementation_gate_internal_review_check"
+    ),
+    "required_gate_review_artifacts": [
+        (
+            "docs/codex/production-identity-storage-pis-003-sd-pg-001-"
+            "implementation-gate-internal-source-review.md"
+        ),
+        (
+            "docs/codex/production-identity-storage-pis-003-sd-pg-001-"
+            "implementation-gate-review-authority.json"
+        ),
+        (
+            "scripts/production_identity_storage_pis_003_sd_pg_001_"
+            "implementation_gate_internal_review_check.py"
+        ),
+    ],
+    "post_review_preview_pyproject_sha256": (
+        "8f260ab9cc8508cbe856258e86bc7960a7ee073156fe4c2981e0f6854e381627"
+    ),
+    "post_review_preview_uv_lock_sha256": (
+        "a0ea98764d069193226a9debe837f37655ee707cb17dcdf6731b922883a4dafb"
+    ),
 }
 
 REQUIRED_PHRASES = [
@@ -189,7 +270,7 @@ REQUIRED_PHRASES = [
     "The preview does not upgrade typing-extensions",
     "No supported system `libpq` is present",
     "The importer accepts a caller-owned SQLAlchemy `Connection` only.",
-    "`offline_complete_external_connection_evidence_pending`",
+    "`offline_implementation_complete_connection_evidence_gate_pending`",
     "`revert_exact_candidate_and_discard_isolated_target_before_activation`",
     "`pis_003_sd_pg_001_implementation_allowed: false`",
     "`dependency_changes_allowed: false`",
@@ -199,6 +280,9 @@ REQUIRED_PHRASES = [
     "`release_allowed: false`",
     "`uat_complete: false`",
     "`uat_required_now: false`",
+    "`test_harness_implementation_allowed: true`",
+    "`isolated_test_connection_allowed: false`",
+    "`connection_evidence_gate_required: true`",
     "`review_pis_003_sd_pg_001_implementation_gate_exact_candidate`",
     f"make {TARGET}",
 ]
@@ -247,11 +331,14 @@ def validate_contract(contract: dict[str, Any]) -> list[str]:
         "gate_outcome",
         "tool_count",
         "lock_preview",
+        "implementation_transition",
         "implementation_boundary",
         "connection_contract",
-        "required_evidence",
+        "offline_required_evidence",
+        "deferred_connection_evidence_requirements",
         "rollback",
         "protected_hashes",
+        "post_review_authority_ceiling",
         "authority",
         "next_required_action",
     }
@@ -304,6 +391,9 @@ def validate_contract(contract: dict[str, Any]) -> list[str]:
         if preview != expected_preview:
             failures.append("PIS-003 dependency lock preview is not exact")
 
+    if contract.get("implementation_transition") != EXPECTED_IMPLEMENTATION_TRANSITION:
+        failures.append("PIS-003 implementation transition is not exact")
+
     boundary = contract.get("implementation_boundary")
     if not isinstance(boundary, dict):
         failures.append("PIS-003 implementation boundary must be an object")
@@ -346,13 +436,20 @@ def validate_contract(contract: dict[str, Any]) -> list[str]:
             failures.append("PIS-003 importer input is not caller-owned Connection only")
         if connection.get("test_harness_pool") != "sqlalchemy_nullpool":
             failures.append("PIS-003 test harness pool is not NullPool")
-        if connection.get("test_harness_accepts_external_dsn") is not True:
-            failures.append("PIS-003 test harness external DSN boundary is not exact")
+        if connection.get("test_harness_code_accepts_external_dsn_parameter") is not True:
+            failures.append("PIS-003 test harness DSN parameter boundary is not exact")
+        if connection.get("test_harness_execution_with_external_dsn_allowed") is not False:
+            failures.append("PIS-003 test harness execution boundary is not fail-closed")
         if connection.get("test_harness_owns_connection_and_outer_transaction") is not True:
             failures.append("PIS-003 outer transaction ownership is not exact")
 
-    if contract.get("required_evidence") != EXPECTED_REQUIRED_EVIDENCE:
-        failures.append("PIS-003 required evidence is not exact")
+    if contract.get("offline_required_evidence") != EXPECTED_REQUIRED_EVIDENCE:
+        failures.append("PIS-003 offline required evidence is not exact")
+    if (
+        contract.get("deferred_connection_evidence_requirements")
+        != EXPECTED_DEFERRED_CONNECTION_EVIDENCE
+    ):
+        failures.append("PIS-003 deferred connection evidence is not exact")
     rollback = contract.get("rollback")
     expected_rollback = {
         "disposition": "revert_exact_candidate_and_discard_isolated_target_before_activation",
@@ -367,6 +464,13 @@ def validate_contract(contract: dict[str, Any]) -> list[str]:
         failures.append("PIS-003 rollback contract is not exact")
     if contract.get("protected_hashes") != EXPECTED_PROTECTED_HASHES:
         failures.append("PIS-003 protected hash inventory is not exact")
+    post_review_ceiling = contract.get("post_review_authority_ceiling")
+    if (
+        post_review_ceiling != EXPECTED_POST_REVIEW_AUTHORITY_CEILING
+        or not isinstance(post_review_ceiling, dict)
+        or any(type(value) is not bool for value in post_review_ceiling.values())
+    ):
+        failures.append("PIS-003 post-review authority ceiling is not exact")
     authority = contract.get("authority")
     if (
         authority != EXPECTED_AUTHORITY
@@ -408,10 +512,10 @@ def build_report(repo_root: Path) -> dict[str, Any]:
 
     protected_hashes_match = True
     for path, expected_hash in EXPECTED_PROTECTED_HASHES.items():
-        actual_hash = hashlib.sha256(_read_bytes(repo_root / path)).hexdigest()
+        actual_hash = hashlib.sha256(_git_bytes(repo_root, BASELINE_COMMIT, path)).hexdigest()
         if actual_hash != expected_hash:
             protected_hashes_match = False
-            failures.append(f"PIS-003 protected path hash mismatch: {path}")
+            failures.append(f"PIS-003 protected baseline path hash mismatch: {path}")
 
     entry_review = production_identity_storage_pis_003_entry_internal_review_check.build_report(
         repo_root
@@ -428,9 +532,9 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     if not entry_review_valid:
         failures.append("PIS-003 entry review does not authorize implementation-gate preparation")
 
-    selected_dependencies_absent = _selected_dependencies_absent(repo_root)
-    if not selected_dependencies_absent:
-        failures.append("PIS-003 selected dependencies already exist before gate review")
+    dependency_transition_state = _dependency_transition_state(repo_root)
+    if dependency_transition_state == "invalid":
+        failures.append("PIS-003 dependency transition is not an exact authorized state")
     tool_count = _tool_count(repo_root / "tool-manifests.lock.json")
     if tool_count != 24:
         failures.append(f"PIS-003 implementation gate tool count is {tool_count}, expected 24")
@@ -463,7 +567,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "baseline_is_ancestor": baseline_is_ancestor,
         "protected_hashes_match": protected_hashes_match,
         "entry_review_valid": entry_review_valid,
-        "selected_dependencies_absent": selected_dependencies_absent,
+        "dependency_transition_state": dependency_transition_state,
         "tool_count": tool_count,
         "wiring_valid": wiring_valid,
         **{name: allowed(name) for name in EXPECTED_AUTHORITY},
@@ -487,7 +591,7 @@ def render_report(report: dict[str, Any]) -> str:
         "contract_valid",
         "protected_hashes_match",
         "entry_review_valid",
-        "selected_dependencies_absent",
+        "dependency_transition_state",
         "tool_count",
         "wiring_valid",
         *EXPECTED_AUTHORITY,
@@ -518,6 +622,96 @@ def _selected_dependencies_absent(repo_root: Path) -> bool:
         return False
     names = {package.get("name", "").lower() for package in packages if isinstance(package, dict)}
     return not {"sqlalchemy", "alembic", "psycopg"}.intersection(names)
+
+
+def _selected_dependencies_exact(repo_root: Path) -> bool:
+    try:
+        project = tomllib.loads((repo_root / "pyproject.toml").read_text(encoding="utf-8"))
+        lock = tomllib.loads((repo_root / "uv.lock").read_text(encoding="utf-8"))
+    except (FileNotFoundError, tomllib.TOMLDecodeError):
+        return False
+    groups = project.get("dependency-groups")
+    if not isinstance(groups, dict) or groups.get("pis3") != EXPECTED_DIRECT_REQUIREMENTS:
+        return False
+    packages = lock.get("package")
+    if not isinstance(packages, list):
+        return False
+    versions = {
+        str(package.get("name", "")).lower(): str(package.get("version", ""))
+        for package in packages
+        if isinstance(package, dict)
+    }
+    expected = {item["name"]: item["version"] for item in EXPECTED_ADDED_PACKAGES}
+    if any(versions.get(name) != version for name, version in expected.items()):
+        return False
+    forbidden = {"psycopg-c", "psycopg-binary", "psycopg-pool", "asyncpg"}
+    return not forbidden.intersection(versions)
+
+
+def _dependency_transition_state(repo_root: Path) -> str:
+    pyproject_hash = hashlib.sha256(_read_bytes(repo_root / "pyproject.toml")).hexdigest()
+    lock_hash = hashlib.sha256(_read_bytes(repo_root / "uv.lock")).hexdigest()
+    return classify_dependency_transition(
+        pyproject_hash=pyproject_hash,
+        lock_hash=lock_hash,
+        dependencies_absent=_selected_dependencies_absent(repo_root),
+        dependencies_exact=_selected_dependencies_exact(repo_root),
+        post_review_authority_valid=_post_review_authority_valid(repo_root),
+    )
+
+
+def classify_dependency_transition(
+    *,
+    pyproject_hash: str,
+    lock_hash: str,
+    dependencies_absent: bool,
+    dependencies_exact: bool,
+    post_review_authority_valid: bool,
+) -> str:
+    baseline = (
+        pyproject_hash == EXPECTED_PROTECTED_HASHES["pyproject.toml"]
+        and lock_hash == EXPECTED_PROTECTED_HASHES["uv.lock"]
+        and dependencies_absent
+        and not dependencies_exact
+    )
+    if baseline:
+        return "preimplementation"
+    reviewed_preview = (
+        pyproject_hash == EXPECTED_IMPLEMENTATION_TRANSITION["post_review_preview_pyproject_sha256"]
+        and lock_hash == EXPECTED_IMPLEMENTATION_TRANSITION["post_review_preview_uv_lock_sha256"]
+        and not dependencies_absent
+        and dependencies_exact
+        and post_review_authority_valid
+    )
+    return "post_review_implementation" if reviewed_preview else "invalid"
+
+
+def _post_review_authority_valid(repo_root: Path) -> bool:
+    module_name = str(EXPECTED_IMPLEMENTATION_TRANSITION["gate_review_validator_module"])
+    try:
+        module = importlib.import_module(module_name)
+        report = module.build_report(repo_root)
+    except (AttributeError, ImportError, ModuleNotFoundError):
+        return False
+    if not isinstance(report, dict) or report.get("valid") is not True:
+        return False
+    if report.get("review_disposition") != "cleared_for_offline_implementation_only":
+        return False
+    finding_fields = (
+        "critical_findings",
+        "high_findings",
+        "medium_findings",
+        "low_findings",
+        "open_findings",
+    )
+    if any(report.get(field) != 0 for field in finding_fields):
+        return False
+    if any(
+        report.get(field) is not expected
+        for field, expected in EXPECTED_POST_REVIEW_AUTHORITY_CEILING.items()
+    ):
+        return False
+    return report.get("next_required_action") == "implement_pis_003_sd_pg_001_offline_candidate"
 
 
 def _wiring_valid(repo_root: Path) -> bool:
@@ -588,6 +782,16 @@ def _is_ancestor(repo_root: Path, ancestor: str, descendant: str) -> bool:
         ).returncode
         == 0
     )
+
+
+def _git_bytes(repo_root: Path, commit: str, relative_path: str) -> bytes:
+    result = subprocess.run(
+        ["git", "show", f"{commit}:{relative_path}"],
+        cwd=repo_root,
+        check=False,
+        capture_output=True,
+    )
+    return result.stdout if result.returncode == 0 else b""
 
 
 def _tool_count(path: Path) -> int:

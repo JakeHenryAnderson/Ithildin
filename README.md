@@ -1887,7 +1887,9 @@ The separately committed implementation-gate candidate is
 [docs/codex/production-identity-storage-pis-003-sd-pg-001-implementation-gate.md](docs/codex/production-identity-storage-pis-003-sd-pg-001-implementation-gate.md)
 and checked with `make production-identity-storage-pis-003-sd-pg-001-implementation-gate-check`.
 It binds the exact 20-path implementation boundary, seven-package non-default lock delta,
-connection ownership, required evidence, and pre-connection rollback. Its closed contract is
+offline connection-ownership code contract, phase-aware validator transition, required evidence,
+and pre-connection rollback. External DSN use and migration execution require a later gate. Its
+closed contract is
 [docs/codex/production-identity-storage-pis-003-sd-pg-001-implementation-gate.json](docs/codex/production-identity-storage-pis-003-sd-pg-001-implementation-gate.json).
 The candidate requires exact-candidate review; dependency, implementation, connection, migration,
 runtime, identity, release, promotion, and UAT authority all remain false.

@@ -58,11 +58,29 @@ license requires a new gate decision. The dependency group remains non-default a
 an application runtime dependency.
 
 Psycopg remains the plain synchronous pure-Python package. `PSYCOPG_IMPL=python` is required for
-driver evidence. No supported system `libpq` is present in the current gate-preparation
-environment, so this gate does not pretend that a connection can be proved here. Before the first
-isolated connection, the test environment must record an operator-supplied nonproduction target,
-exact `libpq` version/source, patch provenance, TLS-root source, and SBOM/license receipt. Missing or
-different environment evidence blocks connection evidence without invalidating offline artifacts.
+future driver evidence. No supported system `libpq` is present in the current gate-preparation
+environment, so this gate does not pretend that a connection can be proved here. This gate cannot
+authorize a connection even if environment evidence later appears. A separate connection-evidence
+gate must bind the operator-supplied nonproduction target, exact `libpq` version/source, patch
+provenance, TLS-root source, SBOM/license receipt, target-discard owner, and rollback receipt before
+the first isolated connection.
+
+## Phase-Aware Validator Transition
+
+Predecessor PIS validators preserve their own historical truth through exact Git-object identity;
+they do not require mutable HEAD dependency files to remain frozen after a separately reviewed
+successor gate. This gate validator accepts exactly two dependency states:
+
+1. `preimplementation`: baseline `pyproject.toml` and `uv.lock` hashes with the selected packages
+   absent; or
+2. `post_review_implementation`: the exact preview hashes, but only when the durable gate-review
+   validator is present, valid, bound to the reviewed gate commit, reports zero findings, and grants
+   no authority beyond the closed post-review ceiling.
+
+Any other dependency or lock state fails closed. The successor implementation validator must also
+enforce the exact lock delta and implementation path inventory. Mutation evidence must prove that
+the exact reviewed transition keeps every required predecessor and `release-check` gate valid while
+unapproved dependency drift remains invalid.
 
 ## Exact Implementation Boundary
 
@@ -74,8 +92,9 @@ After a clean exact gate review, implementation may change only the closed contr
 - add one linear Alembic revision and deterministic offline PostgreSQL DDL rendering;
 - add a synchronous importer that accepts only a caller-owned SQLAlchemy `Connection`, requires an
   empty quarantined target, and never creates an engine/pool or commits/rolls back;
-- keep any DSN handling exclusively in a test-only harness that creates and disposes a synchronous
-  `NullPool` engine and owns the connection and explicit outer transaction;
+- add a test-only harness whose code accepts an external-DSN parameter and defines synchronous
+  `NullPool` ownership, without invoking that harness, loading the driver, opening a connection, or
+  executing a migration under this implementation gate;
 - emit a secret-free verification receipt over explicit IDs, counts, UTC timestamps, canonical
   JSON bytes, and Ithildin-owned SHA-256 digests; and
 - add bounded tests, implementation evidence, validators, and documentation wiring.
@@ -96,27 +115,36 @@ file may be imported by API startup.
   savepoints, and transparent retries are forbidden.
 - The importer accepts a caller-owned SQLAlchemy `Connection` only. It cannot accept a DSN, create
   an engine or pool, open a connection, or control a service lifecycle.
-- The test harness alone may accept an externally supplied isolated-test DSN after environment
-  evidence is valid. It uses `NullPool`, never persists or logs the DSN or credentials, and leaves
-  the target quarantined and non-activatable.
+- The test harness implementation alone may define an externally supplied isolated-test DSN
+  parameter. It uses `NullPool` by construction and never persists or logs the DSN or credentials,
+  but executing that path remains forbidden until a separate connection-evidence gate.
 - Alembic offline rendering must not require a URL or connection. Online migration evidence, if
-  later possible inside this gate, receives only the caller-owned connection from the test harness.
+  later authorized by a separate connection-evidence gate, may receive only the caller-owned
+  connection from the test harness.
 - Connection loss during or after commit is `ambiguous_commit`; it requires reconciliation and is
   never replayed as fresh work.
 
 ## Evidence And Done-When
 
-Implementation is not complete until the closed evidence list passes. In particular it must prove
+Offline implementation is not complete until the closed offline evidence list passes. In
+particular it must prove
 the exact dependency delta; one Alembic head; deterministic offline SQL; exact schema objects,
 constraints, JSONB and index contract; Core-only imports; canonical JSON and strict UTC round trips;
 negative fixture rejection; no runtime/startup import; unchanged SQLite behavior; unchanged audit
-residual; unchanged policy, manifests, public API, and 24-tool count; rollback bound before any
-connection; and isolated-target discard before activation or runtime use.
+residual; unchanged policy, manifests, public API, and 24-tool count; phase-aware predecessor
+validity; rollback bound before any connection; and proof that the test harness and driver were not
+executed.
 
-Real isolated PostgreSQL import evidence is conditional on a separately supplied nonproduction
-target and complete environment receipt. If unavailable, implementation may reach
-`offline_complete_external_connection_evidence_pending` but cannot claim the slice complete,
-review-ready for final disposition, runtime-ready, or production-ready.
+This implementation gate ends at
+`offline_implementation_complete_connection_evidence_gate_pending`. Real isolated PostgreSQL import
+evidence is a later separately reviewed gate. Offline implementation may be exact-candidate
+reviewed and closed on its own evidence, but cannot claim database verification, full PIS-003
+completion, runtime readiness, or production readiness.
+
+The deferred connection-evidence list requires the separate gate, exact system-libpq/TLS/SBOM
+receipt, externally supplied isolated target, secret-safe failure evidence, real empty-target import
+verification, and target discard before activation or runtime use. None is an offline implementation
+completion condition and none is authorized here.
 
 Focused checks run before broader repository gates. Before an implementation candidate is
 committed for review, it must pass its focused tests, Ruff, mypy, docs checks,
@@ -151,6 +179,7 @@ This gate candidate records:
 - `offline_schema_artifact_implementation_allowed: false`;
 - `offline_migration_artifact_implementation_allowed: false`;
 - `isolated_importer_implementation_allowed: false`;
+- `test_harness_implementation_allowed: false`;
 - `isolated_test_connection_allowed: false`;
 - `migration_execution_allowed: false`;
 - `database_connections_allowed: false`;
@@ -161,13 +190,41 @@ This gate candidate records:
 - `release_allowed: false`;
 - `production_promotion_allowed: false`;
 - `uat_complete: false`; and
-- `uat_required_now: false`.
+- `uat_required_now: false`; and
+- `connection_evidence_gate_required: true`.
 
 The next required action is
 `review_pis_003_sd_pg_001_implementation_gate_exact_candidate`. A clean validator does not flip any
 false authority. Only a zero-finding exact-candidate gate review may grant the bounded
-implementation authorities, and it cannot grant runtime, production, release, promotion, or UAT
-authority.
+post-review authority ceiling: the exact non-default dependency delta, SQLAlchemy Core/offline
+Alembic artifact work, importer implementation, and test-harness implementation. That ceiling keeps
+Psycopg driver use, external DSN consumption, connections, migration execution, PostgreSQL
+services, runtime, production, release, promotion, and UAT authority false. A separate
+connection-evidence gate remains required.
+
+The closed post-review ceiling is:
+
+- `pis_003_sd_pg_001_implementation_allowed: true`;
+- `dependency_changes_allowed: true`;
+- `sqlalchemy_core_use_allowed: true`;
+- `alembic_offline_use_allowed: true`;
+- `psycopg_plain_sync_dependency_allowed: true`;
+- `psycopg_plain_sync_use_allowed: false`;
+- `offline_schema_artifact_implementation_allowed: true`;
+- `offline_migration_artifact_implementation_allowed: true`;
+- `isolated_importer_implementation_allowed: true`;
+- `test_harness_implementation_allowed: true`;
+- `isolated_test_connection_allowed: false`;
+- `migration_execution_allowed: false`;
+- `database_connections_allowed: false`;
+- `postgres_service_allowed: false`;
+- `runtime_postgres_allowed: false`;
+- `production_identity_allowed: false`;
+- `release_allowed: false`;
+- `production_promotion_allowed: false`;
+- `uat_complete: false`;
+- `uat_required_now: false`; and
+- `connection_evidence_gate_required: true`.
 
 ## Stop Lines
 

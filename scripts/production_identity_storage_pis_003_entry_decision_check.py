@@ -29,6 +29,7 @@ CONTRACT_REL = "docs/codex/production-identity-storage-pis-003-entry-decision.js
 CONTRACT_SHA256 = "41f413e1d9532019d91aa39daaec13bdcf679a761bc4d73f8d9575a229fd9269"
 TARGET = "production-identity-storage-pis-003-entry-decision-check"
 BASELINE_COMMIT = "159bf93b4b1e3975d7cab615ef51d2e951f9a80a"
+ENTRY_DECISION_COMMIT = "fe870f2b96aafeed8419e611a57c64756cfda79f"
 
 EXPECTED_DIRECT_REQUIREMENTS = [
     "SQLAlchemy==2.0.51",
@@ -350,17 +351,16 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     baseline_is_ancestor = _is_ancestor(repo_root, BASELINE_COMMIT, "HEAD")
     if not baseline_is_ancestor:
         failures.append("PIS-003 entry baseline is not an ancestor of HEAD")
+    entry_decision_is_ancestor = _is_ancestor(repo_root, ENTRY_DECISION_COMMIT, "HEAD")
+    if not entry_decision_is_ancestor:
+        failures.append("PIS-003 reviewed entry decision is not an ancestor of HEAD")
 
     protected_hashes_match = True
     for relative_path, expected_hash in EXPECTED_PROTECTED_HASHES.items():
         baseline_bytes = _git_bytes(repo_root, BASELINE_COMMIT, relative_path)
-        current_bytes = _read_bytes(repo_root / relative_path)
-        if (
-            hashlib.sha256(baseline_bytes).hexdigest() != expected_hash
-            or hashlib.sha256(current_bytes).hexdigest() != expected_hash
-        ):
+        if hashlib.sha256(baseline_bytes).hexdigest() != expected_hash:
             protected_hashes_match = False
-            failures.append(f"PIS-003 protected artifact changed: {relative_path}")
+            failures.append(f"PIS-003 protected baseline artifact is invalid: {relative_path}")
 
     parent_report = (
         production_identity_storage_pis_002_continuation_decision_check.build_report(repo_root)
@@ -376,7 +376,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
 
     dependencies_absent = _selected_dependencies_absent(repo_root)
     if not dependencies_absent:
-        failures.append("PIS-003 selected dependencies changed before implementation authority")
+        failures.append("PIS-003 reviewed entry decision contains selected dependencies")
 
     tool_count = _tool_count(repo_root / "tool-manifests.lock.json")
     if tool_count != 24:
@@ -454,9 +454,13 @@ def render_report(report: dict[str, Any]) -> str:
 
 def _selected_dependencies_absent(repo_root: Path) -> bool:
     try:
-        project = tomllib.loads((repo_root / "pyproject.toml").read_text(encoding="utf-8"))
-        lock = tomllib.loads((repo_root / "uv.lock").read_text(encoding="utf-8"))
-    except (FileNotFoundError, tomllib.TOMLDecodeError):
+        project = tomllib.loads(
+            _git_bytes(repo_root, ENTRY_DECISION_COMMIT, "pyproject.toml").decode("utf-8")
+        )
+        lock = tomllib.loads(
+            _git_bytes(repo_root, ENTRY_DECISION_COMMIT, "uv.lock").decode("utf-8")
+        )
+    except (UnicodeDecodeError, tomllib.TOMLDecodeError):
         return False
     project_blob = json.dumps(project).lower()
     lock_names = {

@@ -36,6 +36,20 @@
     "psycopg_flavor": "plain_sync_pure_python_psycopg_impl_python",
     "current_environment_libpq": "absent_connection_evidence_blocked_until_exact_environment_receipt"
   },
+  "implementation_transition": {
+    "preimplementation_state": "baseline_pyproject_and_uv_lock_hashes_with_selected_dependencies_absent",
+    "post_review_state": "exact_preview_hashes_with_valid_durable_gate_review_authority",
+    "predecessor_validation_mode": "historical_git_object_identity_not_mutable_head_dependency_absence",
+    "unapproved_dependency_or_lock_drift_allowed": false,
+    "gate_review_validator_module": "scripts.production_identity_storage_pis_003_sd_pg_001_implementation_gate_internal_review_check",
+    "required_gate_review_artifacts": [
+      "docs/codex/production-identity-storage-pis-003-sd-pg-001-implementation-gate-internal-source-review.md",
+      "docs/codex/production-identity-storage-pis-003-sd-pg-001-implementation-gate-review-authority.json",
+      "scripts/production_identity_storage_pis_003_sd_pg_001_implementation_gate_internal_review_check.py"
+    ],
+    "post_review_preview_pyproject_sha256": "8f260ab9cc8508cbe856258e86bc7960a7ee073156fe4c2981e0f6854e381627",
+    "post_review_preview_uv_lock_sha256": "a0ea98764d069193226a9debe837f37655ee707cb17dcdf6731b922883a4dafb"
+  },
   "implementation_boundary": {
     "selected_aggregate": "sandbox_descriptors",
     "implementation_allowed_paths": [
@@ -77,7 +91,8 @@
     "importer_accepts_dsn": false,
     "importer_creates_engine_or_pool": false,
     "importer_commits_or_rolls_back": false,
-    "test_harness_accepts_external_dsn": true,
+    "test_harness_code_accepts_external_dsn_parameter": true,
+    "test_harness_execution_with_external_dsn_allowed": false,
     "test_harness_pool": "sqlalchemy_nullpool",
     "test_harness_owns_connection_and_outer_transaction": true,
     "dsn_or_credentials_persisted_or_logged": false,
@@ -85,7 +100,7 @@
     "online_alembic_input": "caller_owned_sqlalchemy_connection_only",
     "transparent_retries_allowed": false,
     "ambiguous_commit_disposition": "reconciliation_required_never_replay_as_fresh_work",
-    "first_connection_prerequisites": [
+    "separate_connection_evidence_gate_prerequisites": [
       "externally_supplied_nonproduction_target",
       "rollback_receipt_bound_before_connection",
       "exact_libpq_version_source_and_patch_receipt",
@@ -95,7 +110,7 @@
       "secret_safe_harness_preflight"
     ]
   },
-  "required_evidence": [
+  "offline_required_evidence": [
     "exact_dependency_lock_url_hash_marker_license_and_graph_inventory",
     "lock_preview_hash_reproduced_without_existing_version_change",
     "sqlalchemy_core_only_no_orm_session_async_pool_or_runtime_import",
@@ -104,16 +119,24 @@
     "canonical_payload_digest_and_strict_utc_timestamp_round_trip",
     "malformed_duplicate_unknown_status_digest_mismatch_naive_time_and_non_object_rejection",
     "caller_owned_connection_and_explicit_outer_transaction_contract",
-    "plain_sync_psycopg_system_libpq_tls_and_sbom_receipt_before_connection",
-    "externally_supplied_isolated_test_dsn_without_repo_controlled_service_lifecycle",
     "no_embedded_persisted_or_logged_url_or_credentials",
     "no_startup_migration_runtime_pool_runtime_import_or_second_aggregate",
     "current_sqlite_schema_runtime_api_audit_and_authority_invariance",
     "policy_manifest_and_24_tool_invariance",
     "rollback_plan_bound_before_database_connection",
-    "isolated_target_discard_proved_before_activation_or_runtime_use",
+    "test_harness_is_not_executed_and_driver_is_not_loaded",
+    "phase_aware_predecessor_and_exact_dependency_transition_evidence",
     "focused_lint_mypy_docs_agent_workflow_release_and_review_candidate_gates",
     "exact_candidate_source_review_with_zero_open_findings"
+  ],
+  "deferred_connection_evidence_requirements": [
+    "separate_connection_evidence_gate_with_exact_authority",
+    "plain_sync_psycopg_system_libpq_tls_and_sbom_receipt_before_connection",
+    "externally_supplied_isolated_test_dsn_without_repo_controlled_service_lifecycle",
+    "rollback_plan_and_target_identity_bound_before_database_connection",
+    "secret_safe_tls_and_driver_failure_evidence",
+    "real_empty_quarantined_target_import_and_semantic_verification",
+    "isolated_target_discard_proved_before_activation_or_runtime_use"
   ],
   "rollback": {
     "disposition": "revert_exact_candidate_and_discard_isolated_target_before_activation",
@@ -136,18 +159,17 @@
     "tool-manifests.lock.json": "3834a18a5b8169dd66b3d96d79d6e69d252ebae17a1a9453f93f8686db1edc77",
     "uv.lock": "431403895950d714cf060923e5e98c77ffb6f927e696ba86e4ac99d005fca2c5"
   },
-  "authority": {
-    "pis_003_sd_pg_001_implementation_gate_recorded": true,
-    "pis_003_sd_pg_001_candidate_selected": true,
-    "exact_candidate_source_review_required": true,
-    "pis_003_sd_pg_001_implementation_allowed": false,
-    "dependency_changes_allowed": false,
-    "sqlalchemy_core_use_allowed": false,
-    "alembic_offline_use_allowed": false,
+  "post_review_authority_ceiling": {
+    "pis_003_sd_pg_001_implementation_allowed": true,
+    "dependency_changes_allowed": true,
+    "sqlalchemy_core_use_allowed": true,
+    "alembic_offline_use_allowed": true,
+    "psycopg_plain_sync_dependency_allowed": true,
     "psycopg_plain_sync_use_allowed": false,
-    "offline_schema_artifact_implementation_allowed": false,
-    "offline_migration_artifact_implementation_allowed": false,
-    "isolated_importer_implementation_allowed": false,
+    "offline_schema_artifact_implementation_allowed": true,
+    "offline_migration_artifact_implementation_allowed": true,
+    "isolated_importer_implementation_allowed": true,
+    "test_harness_implementation_allowed": true,
     "isolated_test_connection_allowed": false,
     "migration_execution_allowed": false,
     "database_connections_allowed": false,
@@ -167,7 +189,43 @@
     "release_allowed": false,
     "production_promotion_allowed": false,
     "uat_complete": false,
-    "uat_required_now": false
+    "uat_required_now": false,
+    "connection_evidence_gate_required": true
+  },
+  "authority": {
+    "pis_003_sd_pg_001_implementation_gate_recorded": true,
+    "pis_003_sd_pg_001_candidate_selected": true,
+    "exact_candidate_source_review_required": true,
+    "pis_003_sd_pg_001_implementation_allowed": false,
+    "dependency_changes_allowed": false,
+    "sqlalchemy_core_use_allowed": false,
+    "alembic_offline_use_allowed": false,
+    "psycopg_plain_sync_use_allowed": false,
+    "offline_schema_artifact_implementation_allowed": false,
+    "offline_migration_artifact_implementation_allowed": false,
+    "isolated_importer_implementation_allowed": false,
+    "test_harness_implementation_allowed": false,
+    "isolated_test_connection_allowed": false,
+    "migration_execution_allowed": false,
+    "database_connections_allowed": false,
+    "postgres_service_allowed": false,
+    "runtime_behavior_changes_allowed": false,
+    "public_api_changes_allowed": false,
+    "current_sqlite_schema_changes_allowed": false,
+    "audit_ordering_changes_allowed": false,
+    "runtime_postgres_allowed": false,
+    "production_identity_allowed": false,
+    "enterprise_rbac_allowed": false,
+    "remote_admin_allowed": false,
+    "backup_restore_runtime_allowed": false,
+    "retention_enforcement_allowed": false,
+    "new_power_classes_allowed": false,
+    "public_security_product_positioning_allowed": false,
+    "release_allowed": false,
+    "production_promotion_allowed": false,
+    "uat_complete": false,
+    "uat_required_now": false,
+    "connection_evidence_gate_required": true
   },
   "next_required_action": "review_pis_003_sd_pg_001_implementation_gate_exact_candidate"
 }

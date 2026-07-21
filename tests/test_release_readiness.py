@@ -9506,7 +9506,10 @@ def test_production_identity_storage_pis_002_continuation_rejects_protected_drif
 
     _assert_pis_002_continuation_report_fails_closed(report)
     assert report["protected_hashes_match"] is False
-    assert any("protected artifact changed" in failure for failure in report["failures"])
+    assert any(
+        "protected baseline artifact is invalid" in failure
+        for failure in report["failures"]
+    )
 
 
 def test_production_identity_storage_pis_002_continuation_rejects_inventory_drift(
@@ -10000,17 +10003,14 @@ def test_production_identity_storage_pis_003_sd_pg_001_implementation_gate_is_wi
     assert report["contract_valid"] is True
     assert report["protected_hashes_match"] is True
     assert report["entry_review_valid"] is True
-    assert report["selected_dependencies_absent"] is True
+    assert report["dependency_transition_state"] == "preimplementation"
     assert report["tool_count"] == 24
     assert report["wiring_valid"] is True
     assert report["pis_003_sd_pg_001_implementation_gate_recorded"] is True
     assert report["pis_003_sd_pg_001_candidate_selected"] is True
     assert report["exact_candidate_source_review_required"] is True
-    for field in set(validator.EXPECTED_AUTHORITY) - {
-        "pis_003_sd_pg_001_implementation_gate_recorded",
-        "pis_003_sd_pg_001_candidate_selected",
-        "exact_candidate_source_review_required",
-    }:
+    expected_true = {field for field, value in validator.EXPECTED_AUTHORITY.items() if value}
+    for field in set(validator.EXPECTED_AUTHORITY) - expected_true:
         assert report[field] is False
     assert report["next_required_action"] == (
         "review_pis_003_sd_pg_001_implementation_gate_exact_candidate"
@@ -10023,7 +10023,16 @@ def test_production_identity_storage_pis_003_sd_pg_001_implementation_gate_is_wi
     assert contract["implementation_boundary"]["implementation_allowed_paths"] == (
         validator.EXPECTED_IMPLEMENTATION_PATHS
     )
-    assert contract["required_evidence"] == validator.EXPECTED_REQUIRED_EVIDENCE
+    assert contract["implementation_transition"] == (
+        validator.EXPECTED_IMPLEMENTATION_TRANSITION
+    )
+    assert contract["post_review_authority_ceiling"] == (
+        validator.EXPECTED_POST_REVIEW_AUTHORITY_CEILING
+    )
+    assert contract["offline_required_evidence"] == validator.EXPECTED_REQUIRED_EVIDENCE
+    assert contract["deferred_connection_evidence_requirements"] == (
+        validator.EXPECTED_DEFERRED_CONNECTION_EVIDENCE
+    )
     assert validator.validate_contract(contract) == []
     assert f"{validator.TARGET}:" in makefile
     assert f"release-check: {validator.TARGET}" in makefile
@@ -10061,9 +10070,16 @@ def test_production_identity_storage_pis_003_sd_pg_001_gate_contract_is_closed()
     assert any("connection contract false boundaries are not exact" in item for item in failures)
 
     contract = json.loads(source)
-    contract["required_evidence"].remove("rollback_plan_bound_before_database_connection")
+    contract["post_review_authority_ceiling"]["database_connections_allowed"] = True
     failures = validator.validate_contract(contract)
-    assert any("required evidence is not exact" in item for item in failures)
+    assert any("post-review authority ceiling is not exact" in item for item in failures)
+
+    contract = json.loads(source)
+    contract["offline_required_evidence"].remove(
+        "rollback_plan_bound_before_database_connection"
+    )
+    failures = validator.validate_contract(contract)
+    assert any("offline required evidence is not exact" in item for item in failures)
 
 
 def test_production_identity_storage_pis_003_sd_pg_001_gate_rejects_duplicate_keys(
@@ -10125,7 +10141,7 @@ def test_production_identity_storage_pis_003_sd_pg_001_gate_rejects_digest_drift
 
 @pytest.mark.parametrize(
     "failure_mode",
-    ["protected_hash", "dependency", "entry_review", "wiring", "tool_count"],
+    ["protected_hash", "transition", "entry_review", "wiring", "tool_count"],
 )
 def test_production_identity_storage_pis_003_sd_pg_001_gate_rejects_drift(
     monkeypatch: pytest.MonkeyPatch,
@@ -10136,8 +10152,8 @@ def test_production_identity_storage_pis_003_sd_pg_001_gate_rejects_drift(
         hashes = dict(validator.EXPECTED_PROTECTED_HASHES)
         hashes["apps/api/src/ithildin_api/app.py"] = "0" * 64
         monkeypatch.setattr(validator, "EXPECTED_PROTECTED_HASHES", hashes)
-    elif failure_mode == "dependency":
-        monkeypatch.setattr(validator, "_selected_dependencies_absent", lambda _root: False)
+    elif failure_mode == "transition":
+        monkeypatch.setattr(validator, "_dependency_transition_state", lambda _root: "invalid")
     elif failure_mode == "entry_review":
         entry_review = production_identity_storage_pis_003_entry_internal_review_check
         monkeypatch.setattr(entry_review, "build_report", lambda _root: {"valid": False})
@@ -10149,6 +10165,103 @@ def test_production_identity_storage_pis_003_sd_pg_001_gate_rejects_drift(
     report = validator.build_report(Path.cwd())
 
     _assert_pis_003_sd_pg_001_gate_fails_closed(report)
+
+
+@pytest.mark.parametrize(
+    ("pyproject_hash", "lock_hash", "absent", "exact", "review_valid", "expected"),
+    [
+        (
+            "baseline_pyproject",
+            "baseline_lock",
+            True,
+            False,
+            False,
+            "preimplementation",
+        ),
+        (
+            "preview_pyproject",
+            "preview_lock",
+            False,
+            True,
+            True,
+            "post_review_implementation",
+        ),
+        (
+            "preview_pyproject",
+            "preview_lock",
+            False,
+            True,
+            False,
+            "invalid",
+        ),
+        ("drift", "preview_lock", False, True, True, "invalid"),
+        ("baseline_pyproject", "baseline_lock", False, True, True, "invalid"),
+    ],
+)
+def test_production_identity_storage_pis_003_dependency_transition_is_closed(
+    monkeypatch: pytest.MonkeyPatch,
+    pyproject_hash: str,
+    lock_hash: str,
+    absent: bool,
+    exact: bool,
+    review_valid: bool,
+    expected: str,
+) -> None:
+    validator = production_identity_storage_pis_003_sd_pg_001_implementation_gate_check
+    hashes = dict(validator.EXPECTED_PROTECTED_HASHES)
+    hashes["pyproject.toml"] = "baseline_pyproject"
+    hashes["uv.lock"] = "baseline_lock"
+    transition = dict(validator.EXPECTED_IMPLEMENTATION_TRANSITION)
+    transition["post_review_preview_pyproject_sha256"] = "preview_pyproject"
+    transition["post_review_preview_uv_lock_sha256"] = "preview_lock"
+    monkeypatch.setattr(validator, "EXPECTED_PROTECTED_HASHES", hashes)
+    monkeypatch.setattr(validator, "EXPECTED_IMPLEMENTATION_TRANSITION", transition)
+
+    result = validator.classify_dependency_transition(
+        pyproject_hash=pyproject_hash,
+        lock_hash=lock_hash,
+        dependencies_absent=absent,
+        dependencies_exact=exact,
+        post_review_authority_valid=review_valid,
+    )
+
+    assert result == expected
+
+
+def test_pis_predecessor_truth_is_bound_to_historical_dependency_objects(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    protected_names = {"pyproject.toml", "uv.lock"}
+    original_read_bytes = Path.read_bytes
+
+    def drift_current_dependency_files(path: Path) -> bytes:
+        if path.name in protected_names and path.parent.resolve() == Path.cwd().resolve():
+            return b"current-head dependency drift is not historical decision truth\n"
+        return original_read_bytes(path)
+
+    monkeypatch.setattr(Path, "read_bytes", drift_current_dependency_files)
+
+    pis_001 = production_identity_storage_pis_001_decision_check.build_report(
+        Path.cwd(), require_clean=False
+    )
+    pis_002_repository = (
+        production_identity_storage_pis_002_sandbox_descriptor_repository_check.build_report(
+            Path.cwd(), require_clean=False
+        )
+    )
+    pis_002_continuation = (
+        production_identity_storage_pis_002_continuation_decision_check.build_report(
+            Path.cwd()
+        )
+    )
+    pis_003_entry = production_identity_storage_pis_003_entry_decision_check.build_report(
+        Path.cwd()
+    )
+
+    assert pis_001["valid"] is True
+    assert pis_002_repository["valid"] is True
+    assert pis_002_continuation["valid"] is True
+    assert pis_003_entry["valid"] is True
 
 
 def test_production_identity_storage_architecture_is_wired() -> None:

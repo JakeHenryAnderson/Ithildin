@@ -424,7 +424,9 @@ Current selected capability: `not selected`.
 - Current PIS-003 SD-PG-001 implementation gate:
   `production-identity-storage-pis-003-sd-pg-001-implementation-gate.md` binds the exact bounded
   implementation candidate, 20 allowed paths, seven-package non-default lock delta, caller-owned
-  transaction/connection boundary, environment prerequisites, evidence, and rollback. Its closed
+  transaction/connection code boundary, phase-aware predecessor validation, offline evidence, and
+  rollback. Test-harness implementation is separable from execution; any external DSN use,
+  database connection, or migration execution requires a later connection-evidence gate. Its closed
   contract is `production-identity-storage-pis-003-sd-pg-001-implementation-gate.json`. The gate
   requires exact-candidate source review; dependencies, implementation, database connections or
   services, migration execution, runtime PostgreSQL, production identity, new powers, release,

@@ -198,8 +198,8 @@ def build_report(repo_root: Path, *, require_clean: bool = True) -> dict[str, An
     )
     failures.extend(test_failures)
 
-    protected_hashes_match, protected_failures = _validate_protected_hashes(
-        repo_root, PROTECTED_HASHES
+    protected_hashes_match, protected_failures = _validate_protected_hashes_at_commit(
+        repo_root, CANDIDATE_COMMIT, PROTECTED_HASHES
     )
     failures.extend(protected_failures)
 
@@ -496,6 +496,25 @@ def _validate_protected_hashes(
         actual_hash = hashlib.sha256(path.read_bytes()).hexdigest() if path.exists() else None
         if actual_hash != expected_hash:
             failures.append(f"protected entry-baseline file changed: {relative_path}")
+    return not failures, failures
+
+
+def _validate_protected_hashes_at_commit(
+    repo_root: Path, commit: str, expected_hashes: dict[str, str]
+) -> tuple[bool, list[str]]:
+    failures: list[str] = []
+    for relative_path, expected_hash in expected_hashes.items():
+        result = subprocess.run(
+            ["git", "show", f"{commit}:{relative_path}"],
+            cwd=repo_root,
+            capture_output=True,
+            check=False,
+        )
+        actual_hash = hashlib.sha256(result.stdout).hexdigest() if result.returncode == 0 else None
+        if actual_hash != expected_hash:
+            failures.append(
+                f"protected implementation-candidate artifact is invalid: {relative_path}"
+            )
     return not failures, failures
 
 

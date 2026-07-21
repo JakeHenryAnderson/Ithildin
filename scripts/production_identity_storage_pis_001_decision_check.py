@@ -467,15 +467,17 @@ def build_report(repo_root: Path, *, require_clean: bool = False) -> dict[str, A
 
     actual_hashes: dict[str, str] = {}
     for relative_path, expected_hash in BASELINE_HASHES.items():
-        path = repo_root / relative_path
-        if not path.exists():
-            failures.append(f"PIS-001 protected baseline file is missing: {relative_path}")
+        historical_bytes = _git_bytes(repo_root, REVIEWED_CANDIDATE_COMMIT, relative_path)
+        if historical_bytes is None:
+            failures.append(
+                f"PIS-001 protected reviewed-candidate file is missing: {relative_path}"
+            )
             continue
-        actual_hash = hashlib.sha256(path.read_bytes()).hexdigest()
+        actual_hash = hashlib.sha256(historical_bytes).hexdigest()
         actual_hashes[relative_path] = actual_hash
         if actual_hash != expected_hash:
             failures.append(
-                f"PIS-001 protected baseline changed without a separate entry decision: "
+                f"PIS-001 protected reviewed-candidate artifact is invalid: "
                 f"{relative_path}"
             )
 
@@ -704,6 +706,16 @@ def _git(repo_root: Path, *arguments: str) -> str:
         check=True,
         text=True,
     ).stdout.strip()
+
+
+def _git_bytes(repo_root: Path, commit: str, relative_path: str) -> bytes | None:
+    result = subprocess.run(
+        ["git", "show", f"{commit}:{relative_path}"],
+        cwd=repo_root,
+        capture_output=True,
+        check=False,
+    )
+    return result.stdout if result.returncode == 0 else None
 
 
 def _load_contract(path: Path) -> tuple[dict[str, Any], list[str]]:
