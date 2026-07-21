@@ -827,6 +827,9 @@ checked with `make control-mapping-readiness`.
 - `make production-identity-storage-pis-002-sandbox-descriptor-repository-internal-review-check` -
   validate the hash-bound zero-finding review of exact candidate `887de154`, its repaired
   governance validators, green release checkpoint, and continuation-decision-only authority.
+- `make production-identity-storage-pis-002-continuation-decision-check` - validate the hash-bound
+  decision to end the dependency-free PIS-002 interface phase after one proven repository seam and
+  permit only preparation of a separately gated PIS-003 entry decision.
 - `make production-identity-storage-disposition-packet` - generate the focused architecture
   disposition packet asking whether ERG-006/ERG-007 may continue planning while production identity,
   runtime Postgres, migrations, retention enforcement, and custody claims remain blocked.
@@ -1831,8 +1834,9 @@ The bounded implementation candidate is recorded in
 and checked with
 `make production-identity-storage-pis-002-sandbox-descriptor-repository-check`. It adds only the
 internal `SandboxDescriptorRepository` protocol over the current SQLite store and focused parity
-evidence. Independent exact-candidate source review remains the next gate; PostgreSQL, production
-identity, a second aggregate, dependency/schema changes, release, promotion, and UAT remain blocked.
+evidence. Independent exact-candidate source review is cleared by the following disposition;
+PostgreSQL, production identity, a second aggregate, dependency/schema changes, release, promotion,
+and UAT remain blocked.
 The exact-candidate source-review disposition is recorded in
 [docs/codex/production-identity-storage-pis-002-sandbox-descriptor-repository-internal-source-review.md](docs/codex/production-identity-storage-pis-002-sandbox-descriptor-repository-internal-source-review.md)
 and checked with
@@ -1843,6 +1847,15 @@ dependencies, schemas/migrations, PostgreSQL, production identity, release, prom
 remain blocked. The exact machine authority is closed in
 [docs/codex/production-identity-storage-pis-002-sandbox-descriptor-repository-review-authority.json](docs/codex/production-identity-storage-pis-002-sandbox-descriptor-repository-review-authority.json);
 prose cannot broaden its reviewed identity, findings, next action, or Boolean allow/deny values.
+The bounded continuation decision is recorded in
+[docs/codex/production-identity-storage-pis-002-continuation-decision-record.md](docs/codex/production-identity-storage-pis-002-continuation-decision-record.md)
+and checked with `make production-identity-storage-pis-002-continuation-decision-check`. It ends the
+dependency-free PIS-002 interface phase after the one reviewed seam because the remaining
+SQLite-bound stores cross transaction, recovery, audit-ordering, migration, or dialect boundaries.
+It permits only preparation and dependency evaluation for a separately gated PIS-003 entry
+decision; it does not authorize PIS-003 implementation, dependency or schema changes, PostgreSQL,
+production identity, release, promotion, or UAT. Its exact machine authority is closed in
+[docs/codex/production-identity-storage-pis-002-continuation-decision.json](docs/codex/production-identity-storage-pis-002-continuation-decision.json).
 Generate the production identity and storage disposition packet with
 `make production-identity-storage-disposition-packet`; it asks whether the current ERG-006/ERG-007
 architecture evidence is coherent enough to continue planning while keeping production identity,

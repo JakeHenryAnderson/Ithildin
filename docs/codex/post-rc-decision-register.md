@@ -388,14 +388,23 @@ Current selected capability: `not selected`.
 - Current PIS-002 implementation candidate:
   `production-identity-storage-pis-002-sandbox-descriptor-repository-implementation.md` records the
   dependency-free `SandboxDescriptorRepository` seam over the existing SQLite store and its parity
-  evidence. Exact-candidate source review remains pending; a second aggregate, dependency or schema
-  change, PostgreSQL, production identity, release, promotion, and UAT remain unauthorized.
+  evidence. Exact-candidate source review is now cleared by the disposition below; a second
+  aggregate, dependency or schema change, PostgreSQL, production identity, release, promotion, and
+  UAT remain unauthorized.
 - Current PIS-002 implementation disposition:
   `production-identity-storage-pis-002-sandbox-descriptor-repository-internal-source-review.md`
   clears exact candidate `887de154` for the bounded repository interface only, with zero open
   findings and a green exact-candidate release gate. Only preparation of a separate PIS-002
   continuation decision is allowed; another aggregate, PIS-003 implementation, dependencies,
   schema/migration changes, PostgreSQL, production identity, release, promotion, and UAT remain
+  unauthorized.
+- Current PIS-002 continuation decision:
+  `production-identity-storage-pis-002-continuation-decision-record.md` closes the dependency-free
+  PIS-002 interface phase after the one reviewed repository seam. The remaining direct-SQLite stores
+  cross transaction, recovery, audit-ordering, migration, or dialect boundaries, so another
+  dependency-free aggregate interface is not selected. Only preparation and dependency evaluation
+  for a separately gated PIS-003 entry decision are allowed; PIS-003 implementation, dependencies,
+  schemas/migrations, PostgreSQL, production identity, new powers, release, promotion, and UAT remain
   unauthorized.
 - Current warning language: Ithildin may discuss production identity and durable storage
   architecture, but the current runtime remains local-preview with local principal labels and SQLite.

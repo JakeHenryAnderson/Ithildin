@@ -199,6 +199,7 @@ from scripts import (
     production_identity_storage_pis_001_decision_check,
     production_identity_storage_pis_001_internal_review_check,
     production_identity_storage_pis_001_planning_gate_check,
+    production_identity_storage_pis_002_continuation_decision_check,
     production_identity_storage_pis_002_entry_decision_check,
     production_identity_storage_pis_002_sandbox_descriptor_repository_check,
     production_identity_storage_pis_002_sandbox_descriptor_repository_internal_review_check,
@@ -9249,6 +9250,302 @@ def test_production_identity_storage_pis_002_repository_review_digest_rejects_an
     assert report["review_document_hash_matches"] is False
     assert report["review_document_sha256"] != validator.REVIEW_DOCUMENT_SHA256
     assert any("reviewed digest" in failure for failure in report["failures"])
+
+
+def test_production_identity_storage_pis_002_continuation_decision_is_wired() -> None:
+    validator = production_identity_storage_pis_002_continuation_decision_check
+    report = validator.build_report(Path.cwd())
+    contract = json.loads(Path(validator.CONTRACT_REL).read_text(encoding="utf-8"))
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+
+    assert report["valid"] is True
+    assert report["decision_document_sha256"] == validator.DOCUMENT_SHA256
+    assert report["decision_document_hash_matches"] is True
+    assert report["contract_valid"] is True
+    assert validator.validate_contract(contract) == []
+    assert report["decision_outcome"] == (
+        "close_dependency_free_pis_002_after_one_proven_seam_"
+        "prepare_pis_003_entry_decision_only"
+    )
+    assert report["baseline_commit"] == "308735a670a6bfbe3032de7658366539fe9a3686"
+    assert report["baseline_exists"] is True
+    assert report["baseline_is_ancestor"] is True
+    assert report["candidate_parent_exact"] is True
+    assert report["candidate_scope_exact"] is True
+    assert report["candidate_path_count"] == len(validator.EXPECTED_CHANGED_PATHS)
+    assert report["protected_hashes_match"] is True
+    assert report["source_review_valid"] is True
+    assert report["direct_sqlite_module_count"] == 13
+    assert report["direct_sqlite_inventory_exact"] is True
+    assert report["wiring_valid"] is True
+    assert report["tool_count"] == 24
+    assert report["pis_002_sd_001_source_review_complete"] is True
+    assert report["pis_002_dependency_free_interface_phase_complete"] is True
+    assert report["pis_003_entry_decision_preparation_allowed"] is True
+    assert report["dependency_evaluation_allowed"] is True
+    for field in set(validator.EXPECTED_AUTHORITY) - {
+        "pis_002_sd_001_source_review_complete",
+        "pis_002_dependency_free_interface_phase_complete",
+        "pis_003_entry_decision_preparation_allowed",
+        "dependency_evaluation_allowed",
+    }:
+        assert report[field] is False
+    assert report["next_required_action"] == "prepare_pis_003_entry_decision_record"
+    assert f"{validator.TARGET}:" in makefile
+    assert f"release-check: {validator.TARGET}" in makefile
+    assert f"make {validator.TARGET}" in readme
+    assert validator.DOC_REL in readme
+    assert validator.DOC_REL in review_docs.REVIEW_DOCS
+    assert validator.TARGET in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+
+
+def test_production_identity_storage_pis_002_continuation_contract_is_closed() -> None:
+    validator = production_identity_storage_pis_002_continuation_decision_check
+    contract = json.loads(json.dumps(validator.EXPECTED_CONTRACT))
+    contract["authority"]["pis_003_implementation_allowed"] = True
+    assert validator.validate_contract(contract) == [
+        "PIS-002 continuation contract is not the exact closed contract"
+    ]
+
+    contract = json.loads(json.dumps(validator.EXPECTED_CONTRACT))
+    contract["authority"]["release_allowed"] = 0
+    failures = validator.validate_contract(contract)
+    assert any("exact Booleans" in failure for failure in failures)
+    assert any("exact closed contract" in failure for failure in failures)
+
+    contract = json.loads(json.dumps(validator.EXPECTED_CONTRACT))
+    contract["authority"]["unexpected_grant"] = False
+    assert validator.validate_contract(contract) == [
+        "PIS-002 continuation contract is not the exact closed contract"
+    ]
+
+    contract = json.loads(json.dumps(validator.EXPECTED_CONTRACT))
+    contract["decision_document_sha256"] = "0" * 64
+    assert validator.validate_contract(contract) == [
+        "PIS-002 continuation contract is not the exact closed contract"
+    ]
+
+
+def test_production_identity_storage_pis_002_continuation_contract_rejects_duplicate_keys(
+    tmp_path: Path,
+) -> None:
+    validator = production_identity_storage_pis_002_continuation_decision_check
+    contract_path = tmp_path / "authority.json"
+    contract_path.write_text(
+        '{"authority":{"release_allowed":false,"release_allowed":true}}',
+        encoding="utf-8",
+    )
+
+    contract, failures = validator._load_contract(contract_path)
+
+    assert contract == {}
+    assert failures == [
+        "PIS-002 continuation contract has duplicate JSON member: release_allowed"
+    ]
+
+
+def test_production_identity_storage_pis_002_continuation_derives_authority_from_contract(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    validator = production_identity_storage_pis_002_continuation_decision_check
+    contract = json.loads(json.dumps(validator.EXPECTED_CONTRACT))
+    contract["authority"]["pis_003_implementation_allowed"] = True
+    monkeypatch.setattr(validator, "_load_contract", lambda _path: (contract, []))
+
+    report = validator.build_report(Path.cwd())
+
+    _assert_pis_002_continuation_report_fails_closed(report)
+    assert report["contract_valid"] is False
+    assert report["pis_003_entry_decision_preparation_allowed"] is False
+    assert report["pis_003_implementation_allowed"] is False
+    assert report["release_allowed"] is False
+
+
+def _assert_pis_002_continuation_report_fails_closed(report: dict[str, Any]) -> None:
+    validator = production_identity_storage_pis_002_continuation_decision_check
+    assert report["valid"] is False
+    assert report["decision_outcome"] == "invalid"
+    for field, expected in validator.EXPECTED_AUTHORITY.items():
+        if expected:
+            assert report[field] is False
+    assert report["next_required_action"] == "invalid_gate"
+
+
+@pytest.mark.parametrize(
+    "mutation",
+    [
+        "replace_first_byte",
+        "truncate_last_byte",
+        "append_whitespace",
+        "convert_to_crlf",
+        "append_invalid_utf8",
+    ],
+)
+def test_production_identity_storage_pis_002_continuation_digest_rejects_any_byte_drift(
+    monkeypatch: pytest.MonkeyPatch,
+    mutation: str,
+) -> None:
+    validator = production_identity_storage_pis_002_continuation_decision_check
+    original_read_bytes = validator._read_bytes
+    decision_path = Path(validator.DOC_REL).resolve()
+    canonical = decision_path.read_bytes()
+    mutations = {
+        "replace_first_byte": b"X" + canonical[1:],
+        "truncate_last_byte": canonical[:-1],
+        "append_whitespace": canonical + b" ",
+        "convert_to_crlf": canonical.replace(b"\n", b"\r\n"),
+        "append_invalid_utf8": canonical + b"\xff",
+    }
+    mutated = mutations[mutation]
+    assert mutated != canonical
+
+    def mutated_read_bytes(path: Path) -> bytes:
+        if path.resolve() == decision_path:
+            return mutated
+        return original_read_bytes(path)
+
+    monkeypatch.setattr(validator, "_read_bytes", mutated_read_bytes)
+    report = validator.build_report(Path.cwd())
+
+    _assert_pis_002_continuation_report_fails_closed(report)
+    assert report["decision_document_hash_matches"] is False
+    assert report["decision_document_sha256"] != validator.DOCUMENT_SHA256
+    assert any("reviewed digest" in failure for failure in report["failures"])
+    assert report["pis_003_implementation_allowed"] is False
+    assert report["release_allowed"] is False
+
+
+def test_production_identity_storage_pis_002_continuation_rejects_protected_drift(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    validator = production_identity_storage_pis_002_continuation_decision_check
+    hashes = dict(validator.PROTECTED_HASHES)
+    hashes["apps/api/src/ithildin_api/app.py"] = "0" * 64
+    monkeypatch.setattr(validator, "PROTECTED_HASHES", hashes)
+
+    report = validator.build_report(Path.cwd())
+
+    _assert_pis_002_continuation_report_fails_closed(report)
+    assert report["protected_hashes_match"] is False
+    assert any("protected artifact changed" in failure for failure in report["failures"])
+
+
+def test_production_identity_storage_pis_002_continuation_rejects_inventory_drift(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    validator = production_identity_storage_pis_002_continuation_decision_check
+    monkeypatch.setattr(
+        validator,
+        "_direct_sqlite_modules",
+        lambda _root: [*validator.DIRECT_SQLITE_MODULES, "unexpected.py"],
+    )
+
+    report = validator.build_report(Path.cwd())
+
+    _assert_pis_002_continuation_report_fails_closed(report)
+    assert report["direct_sqlite_inventory_exact"] is False
+    assert any("module inventory is not exact" in failure for failure in report["failures"])
+
+
+def test_production_identity_storage_pis_002_continuation_rejects_scope_drift(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    validator = production_identity_storage_pis_002_continuation_decision_check
+    expected_paths = set(validator.EXPECTED_CHANGED_PATHS)
+    expected_paths.remove("README.md")
+    monkeypatch.setattr(validator, "EXPECTED_CHANGED_PATHS", expected_paths)
+
+    report = validator.build_report(Path.cwd())
+
+    _assert_pis_002_continuation_report_fails_closed(report)
+    assert report["candidate_scope_exact"] is False
+    assert any("path inventory is not exact" in failure for failure in report["failures"])
+
+
+def test_production_identity_storage_pis_002_continuation_rejects_prerequisite_review_drift(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    validator = production_identity_storage_pis_002_continuation_decision_check
+    prerequisite = (
+        validator.production_identity_storage_pis_002_sandbox_descriptor_repository_internal_review_check
+    )
+    monkeypatch.setattr(
+        prerequisite,
+        "build_report",
+        lambda _root: {
+            "valid": False,
+            "pis_002_sd_001_source_review_complete": False,
+            "pis_002_sd_001_cleared": False,
+            "critical_findings": 0,
+            "high_findings": 0,
+            "open_findings": 0,
+        },
+    )
+
+    report = validator.build_report(Path.cwd())
+
+    _assert_pis_002_continuation_report_fails_closed(report)
+    assert report["source_review_valid"] is False
+    assert any("prerequisite source review" in failure for failure in report["failures"])
+
+
+@pytest.mark.parametrize("failure_mode", ["missing_baseline", "ancestry", "parent"])
+def test_production_identity_storage_pis_002_continuation_rejects_identity_drift(
+    monkeypatch: pytest.MonkeyPatch,
+    failure_mode: str,
+) -> None:
+    validator = production_identity_storage_pis_002_continuation_decision_check
+    if failure_mode == "missing_baseline":
+        monkeypatch.setattr(validator, "_commit_exists", lambda _root, _commit: False)
+    elif failure_mode == "ancestry":
+        monkeypatch.setattr(
+            validator,
+            "_is_ancestor",
+            lambda _root, _ancestor, _descendant: False,
+        )
+    else:
+        original_git = validator._git
+
+        def wrong_parent(repo_root: Path, *arguments: str) -> str:
+            if arguments[:1] == ("rev-parse",) and arguments[1].endswith("^"):
+                return "0" * 40
+            return original_git(repo_root, *arguments)
+
+        monkeypatch.setattr(validator, "_git", wrong_parent)
+
+    report = validator.build_report(Path.cwd())
+
+    _assert_pis_002_continuation_report_fails_closed(report)
+    assert any(
+        fragment in " ".join(report["failures"])
+        for fragment in ("baseline commit", "not an ancestor", "parent")
+    )
+
+
+@pytest.mark.parametrize("failure_mode", ["wiring", "tool_count"])
+def test_production_identity_storage_pis_002_continuation_rejects_surface_drift(
+    monkeypatch: pytest.MonkeyPatch,
+    failure_mode: str,
+) -> None:
+    validator = production_identity_storage_pis_002_continuation_decision_check
+    if failure_mode == "wiring":
+        original_read = validator._read
+
+        def missing_make_target(path: Path) -> str:
+            return "" if path.name == "Makefile" else original_read(path)
+
+        monkeypatch.setattr(validator, "_read", missing_make_target)
+    else:
+        monkeypatch.setattr(validator, "_tool_count", lambda _path: 23)
+
+    report = validator.build_report(Path.cwd())
+
+    _assert_pis_002_continuation_report_fails_closed(report)
+    assert any(
+        fragment in " ".join(report["failures"])
+        for fragment in ("wiring is incomplete", "tool count is 23")
+    )
 
 
 def test_production_identity_storage_architecture_is_wired() -> None:
