@@ -1,0 +1,87 @@
+{
+  "schema_version": "1",
+  "decision_id": "PRD-PROD-IAM-STORAGE-PIS-002-ENTRY",
+  "parent_decision": "PRD-PROD-IAM-STORAGE-PIS-001",
+  "decision_outcome": "approved_for_bounded_dependency_free_repository_interface_implementation",
+  "entry_baseline_commit": "1f3945b116be9c68c282d0b8f191f39fb9787006",
+  "tool_count": 24,
+  "selected_aggregate": {
+    "aggregate_id": "sandbox_descriptors",
+    "store_symbol": "ithildin_api.sandbox_descriptors.SandboxDescriptorStore",
+    "table_names": [
+      "sandbox_descriptors"
+    ],
+    "public_routes": [
+      "POST /sandbox-descriptors",
+      "GET /sandbox-descriptors",
+      "GET /sandbox-descriptors/{descriptor_id}"
+    ],
+    "authority_consumers": [
+      "TrustedHostPromotionService.create_proposal",
+      "TrustedHostPromotionService._authority_snapshot"
+    ],
+    "current_audit_ordering": "descriptor_commit_then_audit_write",
+    "schema_changes_allowed": false
+  },
+  "implementation_slice": {
+    "slice_id": "PIS-002-SD-001",
+    "repository_protocol_allowed": true,
+    "sqlite_adapter_required": true,
+    "general_transaction_manager_allowed": false,
+    "sqlalchemy_decision": "deferred_until_first_aggregate_exact_candidate_review",
+    "allowed_code_paths": [
+      "apps/api/src/ithildin_api/sandbox_descriptors.py",
+      "apps/api/src/ithildin_api/app.py",
+      "apps/api/src/ithildin_api/trusted_host_promotions.py",
+      "tests/test_sandbox_descriptor_repository.py",
+      "tests/test_api_service.py"
+    ],
+    "required_evidence": [
+      "repository_contract_parity",
+      "persisted_record_parity",
+      "public_route_parity",
+      "audit_failure_ordering_parity",
+      "audit_event_metadata_parity",
+      "trusted_host_authority_parity",
+      "restart_and_existing_database_parity",
+      "dependency_and_schema_invariance",
+      "rollback_without_data_migration"
+    ],
+    "rollback": "revert_interface_and_adapter_commit_without_schema_or_data_conversion"
+  },
+  "baseline_hashes": {
+    "apps/api/src/ithildin_api/sandbox_descriptors.py": "9f9fd1b121f6672c86beb3605e3230e26f95f00f742b02c931763de7f26527fc",
+    "apps/api/src/ithildin_api/app.py": "9c1c52d071c8e2dc62150a08ed6de65d364d914a432bbbf5cd34d93157858cb4",
+    "apps/api/src/ithildin_api/trusted_host_promotions.py": "33b14e27df14dc5a22d53d01aa97177b90d7f9642dac383d5f744541bdbad190",
+    "tests/test_api_service.py": "2fcc0c53ab3bbf8ec449a0ee49743f517bb3208c5639c2f0c7362d1bc54c5f07",
+    "pyproject.toml": "d7f72600511d9a3fbb1777b388dafc58d7ffc5886d0e5d40a95cbd4debc2063d",
+    "uv.lock": "431403895950d714cf060923e5e98c77ffb6f927e696ba86e4ac99d005fca2c5",
+    "tool-manifests.lock.json": "3834a18a5b8169dd66b3d96d79d6e69d252ebae17a1a9453f93f8686db1edc77"
+  },
+  "authority": {
+    "pis_002_entry_decision_recorded": true,
+    "pis_002_bounded_implementation_allowed": true,
+    "additional_aggregate_implementation_allowed": false,
+    "runtime_behavior_changes_allowed": false,
+    "dependency_changes_allowed": false,
+    "sqlalchemy_allowed": false,
+    "public_api_changes_allowed": false,
+    "schema_changes_allowed": false,
+    "database_migrations_allowed": false,
+    "audit_ordering_changes_allowed": false,
+    "production_identity_allowed": false,
+    "enterprise_rbac_allowed": false,
+    "remote_admin_allowed": false,
+    "runtime_postgres_allowed": false,
+    "backup_restore_runtime_allowed": false,
+    "retention_enforcement_allowed": false,
+    "new_power_classes_allowed": false,
+    "public_security_product_positioning_allowed": false,
+    "uat_required_now": false
+  },
+  "preserved_residuals": {
+    "descriptor_can_remain_committed_after_audit_failure": "accepted_preserved_current_behavior",
+    "created_at_desc_has_no_secondary_tiebreaker": "accepted_preserved_current_behavior",
+    "sqlite_is_only_supported_runtime_backend": "required"
+  }
+}

@@ -817,6 +817,10 @@ checked with `make control-mapping-readiness`.
 - `make production-identity-storage-pis-001-internal-review-check` - validate the hash-bound
   independent review of exact PIS-001 candidate `177c0c6`, its zero-open-finding disposition, and
   the boundary that permits only preparation of a separate PIS-002 entry decision.
+- `make production-identity-storage-pis-002-entry-decision-check` - validate the closed PIS-002
+  entry decision selecting `SandboxDescriptorStore` for one dependency-free repository-interface
+  implementation slice while preserving SQLite behavior, audit ordering, schema, APIs, 24 tools,
+  and all production identity/PostgreSQL stop lines.
 - `make production-identity-storage-disposition-packet` - generate the focused architecture
   disposition packet asking whether ERG-006/ERG-007 may continue planning while production identity,
   runtime Postgres, migrations, retention enforcement, and custody claims remain blocked.
@@ -1808,6 +1812,14 @@ The independent exact-candidate disposition is recorded in
 and checked with `make production-identity-storage-pis-001-internal-review-check`; it records zero
 open findings for reviewed commit `177c0c6` and permits only a separate PIS-002 entry-decision
 record, not implementation or dependency changes.
+The separately gated PIS-002 entry decision is
+[docs/codex/production-identity-storage-pis-002-entry-decision-record.md](docs/codex/production-identity-storage-pis-002-entry-decision-record.md)
+and is checked with `make production-identity-storage-pis-002-entry-decision-check`; it selects only
+the current `SandboxDescriptorStore` for a dependency-free internal repository seam and parity
+harness. Its closed companion contract is
+[docs/codex/production-identity-storage-pis-002-entry-decision.json](docs/codex/production-identity-storage-pis-002-entry-decision.json).
+It does not authorize SQLAlchemy, a second aggregate, changed public behavior, schema/migrations,
+runtime PostgreSQL, production identity, new powers, release, promotion, or UAT acceptance.
 Generate the production identity and storage disposition packet with
 `make production-identity-storage-disposition-packet`; it asks whether the current ERG-006/ERG-007
 architecture evidence is coherent enough to continue planning while keeping production identity,

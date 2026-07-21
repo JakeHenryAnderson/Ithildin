@@ -199,6 +199,7 @@ from scripts import (
     production_identity_storage_pis_001_decision_check,
     production_identity_storage_pis_001_internal_review_check,
     production_identity_storage_pis_001_planning_gate_check,
+    production_identity_storage_pis_002_entry_decision_check,
     production_identity_storage_response_dry_run,
     production_identity_storage_response_kit,
     progress_check,
@@ -8576,6 +8577,15 @@ def test_production_identity_storage_pis_001_scope_allowlist_excludes_runtime() 
     assert "deploy/Dockerfile.api" in protected
     assert "deploy/Dockerfile.node" in protected
     assert "deploy/Dockerfile.ui" in protected
+    assert (
+        "docs/codex/production-identity-storage-pis-002-entry-decision-record.md"
+        in allowed
+    )
+    assert (
+        "docs/codex/production-identity-storage-pis-002-entry-decision.json"
+        in allowed
+    )
+    assert "scripts/production_identity_storage_pis_002_entry_decision_check.py" in allowed
 
 
 def test_production_identity_storage_pis_001_internal_review_is_wired() -> None:
@@ -8594,6 +8604,7 @@ def test_production_identity_storage_pis_001_internal_review_is_wired() -> None:
     )
     assert report["reviewed_hashes_match"] is True
     assert report["current_reviewed_artifacts_match"] is True
+    assert report["scoped_successor_validator_active"] is True
     assert report["open_findings"] == 0
     assert report["tool_count"] == 24
     assert report["pis_002_entry_decision_record_preparation_allowed"] is True
@@ -8625,6 +8636,144 @@ def test_production_identity_storage_pis_001_internal_review_rejects_authority()
         "forbidden authority phrase: pis-002 implementation is approved" in item
         for item in failures
     )
+
+
+def test_production_identity_storage_pis_002_entry_decision_is_wired() -> None:
+    report = production_identity_storage_pis_002_entry_decision_check.build_report(
+        Path.cwd()
+    )
+    contract = json.loads(
+        Path(production_identity_storage_pis_002_entry_decision_check.CONTRACT_REL).read_text(
+            encoding="utf-8"
+        )
+    )
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+
+    assert report["valid"] is True
+    assert report["decision_id"] == "PRD-PROD-IAM-STORAGE-PIS-002-ENTRY"
+    assert report["baseline_is_ancestor"] is True
+    assert report["baseline_hashes_match"] is True
+    assert report["contract_valid"] is True
+    assert report["tool_count"] == 24
+    assert report["selected_aggregate"] == "sandbox_descriptors"
+    assert report["implementation_slice"] == "PIS-002-SD-001"
+    assert report["pis_002_bounded_implementation_allowed"] is True
+    assert report["additional_aggregate_implementation_allowed"] is False
+    assert report["runtime_behavior_changes_allowed"] is False
+    assert report["dependency_changes_allowed"] is False
+    assert report["sqlalchemy_allowed"] is False
+    assert report["schema_changes_allowed"] is False
+    assert report["audit_ordering_changes_allowed"] is False
+    assert report["runtime_postgres_allowed"] is False
+    assert report["production_identity_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    assert report["uat_required_now"] is False
+    assert "audit_event_metadata_parity" in contract["implementation_slice"][
+        "required_evidence"
+    ]
+    assert (
+        production_identity_storage_pis_002_entry_decision_check.validate_contract(
+            contract
+        )
+        == []
+    )
+    assert "production-identity-storage-pis-002-entry-decision-check:" in makefile
+    assert (
+        "release-check: production-identity-storage-pis-002-entry-decision-check"
+        in makefile
+    )
+    assert "make production-identity-storage-pis-002-entry-decision-check" in readme
+    assert (
+        production_identity_storage_pis_002_entry_decision_check.CONTRACT_REL in readme
+    )
+    assert (
+        production_identity_storage_pis_002_entry_decision_check.DOC_REL
+        in review_docs.REVIEW_DOCS
+    )
+    assert (
+        "production-identity-storage-pis-002-entry-decision-check"
+        in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+
+
+def test_production_identity_storage_pis_002_entry_contract_is_closed() -> None:
+    source = Path(
+        production_identity_storage_pis_002_entry_decision_check.CONTRACT_REL
+    ).read_text(encoding="utf-8")
+
+    contract = json.loads(source)
+    contract["authority"]["dependency_changes_allowed"] = True
+    failures = production_identity_storage_pis_002_entry_decision_check.validate_contract(
+        contract
+    )
+    assert any("authority map is not the exact closed map" in item for item in failures)
+
+    contract = json.loads(source)
+    contract["implementation_slice"]["allowed_code_paths"].append(
+        "apps/api/src/ithildin_api/missions.py"
+    )
+    failures = production_identity_storage_pis_002_entry_decision_check.validate_contract(
+        contract
+    )
+    assert any("implementation slice is not the closed bounded slice" in item for item in failures)
+
+    contract = json.loads(source)
+    contract["implementation_slice"]["repository_protocol_allowed"] = 1
+    failures = production_identity_storage_pis_002_entry_decision_check.validate_contract(
+        contract
+    )
+    assert any("implementation slice is not the closed bounded slice" in item for item in failures)
+
+
+def test_production_identity_storage_pis_002_entry_rejects_duplicate_member(
+    tmp_path: Path,
+) -> None:
+    contract_path = tmp_path / "entry-decision.json"
+    contract_path.write_text(
+        '{"schema_version":"1","authority":{"sqlalchemy_allowed":false,'
+        '"sqlalchemy_allowed":true}}',
+        encoding="utf-8",
+    )
+
+    _, failures = production_identity_storage_pis_002_entry_decision_check._load_contract(
+        contract_path
+    )
+
+    assert any("duplicate JSON member: sqlalchemy_allowed" in item for item in failures)
+
+
+def test_production_identity_storage_pis_002_entry_rejects_broader_authority() -> None:
+    failures = production_identity_storage_pis_002_entry_decision_check.validate_decision_text(
+        "SQLAlchemy is approved. Runtime PostgreSQL is approved."
+    )
+
+    assert any("forbidden phrase: sqlalchemy is approved" in item for item in failures)
+    assert any("forbidden phrase: runtime postgresql is approved" in item for item in failures)
+
+
+@pytest.mark.parametrize(
+    "claim",
+    [
+        "Dependencies may be installed.",
+        "The implementation may use SQLAlchemy.",
+        "PIS-002-SD-001 may alter the database schema.",
+        "The implementation may reorder descriptor and audit commits.",
+        "The implementation may extract the approvals aggregate too.",
+        "Runtime PostgreSQL may be enabled during this slice.",
+        "Production identity may be enabled during this slice.",
+        "A second aggregate may be implemented.",
+        "New governed tool powers may be added.",
+    ],
+)
+def test_production_identity_storage_pis_002_entry_rejects_authority_paraphrases(
+    claim: str,
+) -> None:
+    failures = production_identity_storage_pis_002_entry_decision_check.validate_decision_text(
+        claim
+    )
+
+    assert any("forbidden authority pattern" in item for item in failures)
 
 
 def test_production_identity_storage_architecture_is_wired() -> None:

@@ -377,9 +377,14 @@ Current selected capability: `not selected`.
 - Current PIS-001 disposition:
   `production-identity-storage-pis-001-internal-source-review.md` binds the zero-open-finding
   independent review of exact commit `177c0c6e461176d85126c9817dba40b3a092ec95`. PIS-001 planning
-  evidence is cleared. The next allowed action is preparation of
-  `production-identity-storage-pis-002-entry-decision-record.md`; PIS-002 implementation,
-  dependencies, production identity, PostgreSQL, schemas, migrations, and UAT remain unauthorized.
+  evidence is cleared.
+- Current PIS-002 entry decision:
+  `production-identity-storage-pis-002-entry-decision-record.md` selects only
+  `SandboxDescriptorStore` for bounded dependency-free repository-interface implementation slice
+  `PIS-002-SD-001`. Its closed contract is
+  `production-identity-storage-pis-002-entry-decision.json`. Additional aggregates, SQLAlchemy,
+  dependency changes, public behavior changes, schemas, migrations, production identity,
+  PostgreSQL, new powers, release, promotion, and UAT remain unauthorized.
 - Current warning language: Ithildin may discuss production identity and durable storage
   architecture, but the current runtime remains local-preview with local principal labels and SQLite.
 - Current architecture evidence:

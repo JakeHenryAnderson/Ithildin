@@ -37,6 +37,11 @@ REVIEWED_HASHES = {
         "dc27302f9c622a1ae3b4b56b386a59735c40072dd90e179f9d8de1e1a8c03c55"
     ),
 }
+CURRENT_SCOPED_SUCCESSOR_HASHES = {
+    "scripts/production_identity_storage_pis_001_decision_check.py": (
+        "7862619a68244fad0251429bbb32f8f22bc032609bd7dbfff1bc587ddae113b8"
+    ),
+}
 EXPECTED_REVIEWED_PATHS = {
     "Makefile",
     "README.md",
@@ -144,9 +149,13 @@ def build_report(repo_root: Path) -> dict[str, Any]:
             failures.append(f"PIS-001 reviewed hash does not match record: {path}")
         if path != "tests/test_release_readiness.py":
             current_path = repo_root / path
+            current_expected_hash = CURRENT_SCOPED_SUCCESSOR_HASHES.get(
+                path, expected_hash
+            )
             if (
                 not current_path.is_file()
-                or hashlib.sha256(current_path.read_bytes()).hexdigest() != expected_hash
+                or hashlib.sha256(current_path.read_bytes()).hexdigest()
+                != current_expected_hash
             ):
                 current_reviewed_artifacts_match = False
                 failures.append(f"PIS-001 reviewed artifact changed after review: {path}")
@@ -187,6 +196,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "review_disposition": "cleared_pis_001_planning_evidence_only",
         "reviewed_hashes_match": reviewed_hashes_match,
         "current_reviewed_artifacts_match": current_reviewed_artifacts_match,
+        "scoped_successor_validator_active": True,
         "critical_findings": 0,
         "high_findings": 0,
         "medium_findings": 0,
@@ -215,6 +225,7 @@ def render_report(report: dict[str, Any]) -> str:
         "review_disposition",
         "reviewed_hashes_match",
         "current_reviewed_artifacts_match",
+        "scoped_successor_validator_active",
         "critical_findings",
         "high_findings",
         "medium_findings",
