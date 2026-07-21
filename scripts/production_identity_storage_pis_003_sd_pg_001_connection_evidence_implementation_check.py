@@ -31,15 +31,85 @@ DOC_REL = (
     "docs/codex/production-identity-storage-pis-003-sd-pg-001-"
     "connection-evidence-implementation-record.md"
 )
-DOC_SHA256 = "2c7da134e8a01f18b64f5fdc3892ef049d1530b2a1e8babde8735830f990f020"
+DOC_SHA256 = "f6a9f9f680c2e8f2c9189d1a7f72f7456c8b07501d7e4d6965cc24965c37c22f"
 CONTRACT_REL = (
     "docs/codex/production-identity-storage-pis-003-sd-pg-001-"
     "connection-evidence-implementation-authority.json"
 )
-CONTRACT_SHA256 = "3c65225f537bc50fa5208a89dfb10b9178625f8fbe690f6361682fde881e14e6"
+CONTRACT_SHA256 = "5397b004a40c7f0dd46a5812a0f826b68a0d4960a338f5ea086d297a7361e5f8"
 HARNESS_REL = "scripts/production_identity_storage_pis_003_sd_pg_001_connection_evidence.py"
 TARGET = "production-identity-storage-pis-003-sd-pg-001-connection-evidence-implementation-check"
 BASELINE_COMMIT = "c84c9f9f97ee9716e1466944e26e206e85b4b729"
+REVIEWED_COMMIT = "5d929d8e24e4f529cea08796e614fbf544d066bc"
+
+EXPECTED_REVIEWED_PATH_HASHES = {
+    "Makefile": "96e1846bfe6449c1e6d9c7baaf89b9852d4f6f6444e9f80010d0d308a0db62d7",
+    "README.md": "d20e66aa27d4e1852a7c7642c46184c8b333d1c0f67083d398a30c81a01ce6b7",
+    "db/alembic/env.py": "2508993adff958ef93efe5cd93b8b3c0f5f6fa57fb0fa6ea9b90861fc274a7e2",
+    "docs/codex/post-rc-decision-register.md": (
+        "7a3b7211e544eb14dad8b7edab7c4b975aa2a334fbe6220cf29e8b668fd3e0e0"
+    ),
+    (
+        "docs/codex/production-identity-storage-pis-003-sd-pg-001-"
+        "connection-evidence-implementation-authority.json"
+    ): "3c65225f537bc50fa5208a89dfb10b9178625f8fbe690f6361682fde881e14e6",
+    (
+        "docs/codex/production-identity-storage-pis-003-sd-pg-001-"
+        "connection-evidence-implementation-record.md"
+    ): "2c7da134e8a01f18b64f5fdc3892ef049d1530b2a1e8babde8735830f990f020",
+    "docs/codex/review-docs-index.md": (
+        "376821c36797ce546a933e55776f2a4f377d2c90097ef09ef310bdf34a8d0f8e"
+    ),
+    "scripts/build_docs_site.py": (
+        "fd91443a7ce4bcf46a3eeff71cc4de7f36b6bc6b3cc449d9bad4ea2752b91050"
+    ),
+    "scripts/production_identity_storage_pis_003_sd_pg_001_connection_evidence.py": (
+        "7137d469e7cf2713249de7f1a7b69e0311c8ec7873de1a6ec866b3e801ffda07"
+    ),
+    (
+        "scripts/production_identity_storage_pis_003_sd_pg_001_connection_evidence_gate_check.py"
+    ): "82602e7ea528a91d0c6945e7eefcfbbf87b842d531480decb0e56834cfa7af93",
+    (
+        "scripts/production_identity_storage_pis_003_sd_pg_001_"
+        "connection_evidence_implementation_check.py"
+    ): "203530dec99792b863f77b844b08f7fa9fb23150a6e37f43773a217fe7b5ad08",
+    "scripts/production_identity_storage_pis_003_sd_pg_001_implementation_check.py": (
+        "2f7731b6f30a09eb4cbe4b71da854146979e8b4df1b7fbd8a19a9052aa890747"
+    ),
+    (
+        "scripts/production_identity_storage_pis_003_sd_pg_001_"
+        "implementation_internal_review_check.py"
+    ): "002fea4ba713eb2aecc7c619a2d9a671d572a6bee4fccb990dc28a053af893a4",
+    "scripts/release_guardrails.py": (
+        "444b6acc955aff80e25e445e0617c4a00e108d7bfea0a2fedf38b33572a07830"
+    ),
+    "scripts/review_docs.py": ("8d835085638e126e3e2f8ba6312fa8008a5b699f37f1b75b237f4408e2c00ea6"),
+    "tests/test_release_readiness.py": (
+        "22a0a2fef98aabf11dfa01151b16823cfa5a1659b552974d90d22428221e9c5e"
+    ),
+    "tests/test_storage_schema_import.py": (
+        "9b40e440782e6cb4d30a42e0212f0a465b5d50f69f3acd50141b79bb86760977"
+    ),
+}
+EXPECTED_REVIEW_FINDINGS = {
+    "critical": 0,
+    "high": 0,
+    "medium": 0,
+    "low": 0,
+    "open": 0,
+}
+EXPECTED_SUPERSEDED_REVIEWS = [
+    {
+        "candidate_commit": "7c6b5de5ab8055bfbe1d0384c6b1df0d372f4e03",
+        "finding_count": 8,
+        "maximum_severity": "medium",
+    },
+    {
+        "candidate_commit": "86fa34214f569d7380157f136a3963cb04204575",
+        "finding_count": 2,
+        "maximum_severity": "medium",
+    },
+]
 
 EXPECTED_PATHS = {
     "Makefile",
@@ -150,12 +220,18 @@ EXPECTED_VALIDATION_EVIDENCE = {
     "synthetic_receipts_only": True,
     "real_dsn_used": False,
     "tool_count_unchanged": True,
+    "full_release_python_tests": 1730,
+    "full_release_ui_tests": 59,
+    "full_release_check_passed": True,
+    "exact_review_findings_zero": True,
+    "sol_ultra_used": False,
 }
 EXPECTED_AUTHORITY = {
     "connection_evidence_implementation_recorded": True,
     "connection_evidence_candidate_complete": True,
     "exact_candidate_source_review_required": True,
-    "exact_candidate_source_review_complete": False,
+    "exact_candidate_source_review_complete": True,
+    "environment_specific_execution_gate_preparation_allowed": True,
     "environment_receipt_implementation_complete": True,
     "test_harness_implementation_complete": True,
     "synthetic_snapshot_reader_implementation_complete": True,
@@ -204,16 +280,24 @@ REQUIRED_PHRASES = [
     "Psycopg was not imported.",
     "The first exact-candidate review of `7c6b5de5ab8055bfbe1d0384c6b1df0d372f4e03`",
     "The repeat exact-candidate review of `86fa34214f569d7380157f136a3963cb04204575`",
+    (
+        "The final independent read-only GPT-5.6 Sol xhigh review of exact candidate\n"
+        f"`{REVIEWED_COMMIT}`"
+    ),
+    "returned `GO` with `0` Critical, `0` High, `0`\nMedium, and `0` Low findings.",
+    "The authoritative `make release-check` also passed against the clean exact candidate",
+    "`1730` Python tests and `59` UI tests passed",
     "The focused storage/schema/import suite contains `78` passing tests.",
     "`connection_evidence_candidate_complete: true`",
-    "`exact_candidate_source_review_complete: false`",
+    "`exact_candidate_source_review_complete: true`",
+    "`environment_specific_execution_gate_preparation_allowed: true`",
     "`database_connections_allowed: false`",
     "`migration_execution_allowed: false`",
     "`runtime_postgres_allowed: false`",
     "`production_identity_allowed: false`",
     "`uat_complete: false`",
     "The next required action is",
-    "`review_pis_003_sd_pg_001_connection_evidence_candidate_exact_commit`",
+    "`prepare_separately_committed_pis_003_sd_pg_001_environment_execution_gate`",
 ]
 
 
@@ -236,7 +320,13 @@ def validate_contract(contract: dict[str, Any]) -> list[str]:
         "implementation_id",
         "parent_review",
         "implementation_baseline_commit",
+        "reviewed_candidate_commit",
         "implementation_outcome",
+        "review_disposition",
+        "review_method",
+        "reviewed_candidate_path_hashes",
+        "review_findings",
+        "closed_superseded_reviews",
         "evidence_slice",
         "tool_count",
         "implementation_path_inventory",
@@ -255,14 +345,16 @@ def validate_contract(contract: dict[str, Any]) -> list[str]:
         ),
         "parent_review": ("PRD-PROD-IAM-STORAGE-PIS-003-SD-PG-001-CONNECTION-EVIDENCE-GATE-REVIEW"),
         "implementation_baseline_commit": BASELINE_COMMIT,
+        "reviewed_candidate_commit": REVIEWED_COMMIT,
         "implementation_outcome": (
-            "test_only_connection_evidence_candidate_complete_exact_review_"
-            "pending_execution_blocked"
+            "test_only_connection_evidence_candidate_exact_review_complete_execution_blocked"
         ),
+        "review_disposition": ("cleared_for_separate_environment_execution_gate_preparation_only"),
+        "review_method": "independent_read_only_gpt_5_6_sol_xhigh_no_ultra",
         "evidence_slice": "PIS-003-SD-PG-001-CONNECTION-EVIDENCE",
         "tool_count": 24,
         "next_required_action": (
-            "review_pis_003_sd_pg_001_connection_evidence_candidate_exact_commit"
+            "prepare_separately_committed_pis_003_sd_pg_001_environment_execution_gate"
         ),
     }
     for key, expected in expected_scalars.items():
@@ -272,6 +364,12 @@ def validate_contract(contract: dict[str, Any]) -> list[str]:
         failures.append("PIS-003 connection implementation path inventory is not exact")
     if contract.get("protected_hashes") != EXPECTED_PROTECTED_HASHES:
         failures.append("PIS-003 connection implementation protected hashes are not exact")
+    if contract.get("reviewed_candidate_path_hashes") != EXPECTED_REVIEWED_PATH_HASHES:
+        failures.append("PIS-003 connection reviewed candidate path hashes are not exact")
+    if contract.get("review_findings") != EXPECTED_REVIEW_FINDINGS:
+        failures.append("PIS-003 connection exact review findings are not exact")
+    if contract.get("closed_superseded_reviews") != EXPECTED_SUPERSEDED_REVIEWS:
+        failures.append("PIS-003 connection superseded review history is not exact")
     implementation = contract.get("implementation_contract")
     if (
         implementation != EXPECTED_IMPLEMENTATION_CONTRACT
@@ -325,6 +423,18 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         failures.append("PIS-003 connection implementation baseline is unavailable")
     if not baseline_is_ancestor:
         failures.append("PIS-003 connection implementation baseline is not an ancestor")
+    reviewed_commit_exists = _commit_exists(repo_root, REVIEWED_COMMIT)
+    reviewed_commit_is_ancestor = _is_ancestor(repo_root, REVIEWED_COMMIT, "HEAD")
+    if not reviewed_commit_exists:
+        failures.append("PIS-003 reviewed connection implementation commit is unavailable")
+    if not reviewed_commit_is_ancestor:
+        failures.append("PIS-003 reviewed connection implementation commit is not an ancestor")
+    reviewed_path_hashes_match = all(
+        _sha256_at_commit(repo_root, REVIEWED_COMMIT, path) == digest
+        for path, digest in EXPECTED_REVIEWED_PATH_HASHES.items()
+    )
+    if not reviewed_path_hashes_match:
+        failures.append("PIS-003 reviewed connection implementation path hashes changed")
     candidate_paths = _candidate_paths(repo_root)
     candidate_inventory_exact = candidate_paths == EXPECTED_PATHS
     if not candidate_inventory_exact:
@@ -387,6 +497,10 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "implementation_baseline_commit": BASELINE_COMMIT,
         "baseline_exists": baseline_exists,
         "baseline_is_ancestor": baseline_is_ancestor,
+        "reviewed_candidate_commit": REVIEWED_COMMIT,
+        "reviewed_candidate_commit_exists": reviewed_commit_exists,
+        "reviewed_candidate_commit_is_ancestor": reviewed_commit_is_ancestor,
+        "reviewed_candidate_path_hashes_match": reviewed_path_hashes_match,
         "candidate_commit": _git_one(repo_root, "rev-parse", "HEAD"),
         "candidate_path_count": len(candidate_paths),
         "candidate_inventory_exact": candidate_inventory_exact,
@@ -420,6 +534,10 @@ def render_report(report: dict[str, Any]) -> str:
         "implementation_baseline_commit",
         "baseline_exists",
         "baseline_is_ancestor",
+        "reviewed_candidate_commit",
+        "reviewed_candidate_commit_exists",
+        "reviewed_candidate_commit_is_ancestor",
+        "reviewed_candidate_path_hashes_match",
         "candidate_commit",
         "candidate_path_count",
         "candidate_inventory_exact",
@@ -646,6 +764,16 @@ def _sha256(path: Path) -> str:
         return hashlib.sha256(path.read_bytes()).hexdigest()
     except OSError:
         return ""
+
+
+def _sha256_at_commit(repo_root: Path, commit: str, file_path: str) -> str:
+    result = subprocess.run(
+        ["git", "show", f"{commit}:{file_path}"],
+        cwd=repo_root,
+        check=False,
+        capture_output=True,
+    )
+    return hashlib.sha256(result.stdout).hexdigest() if result.returncode == 0 else ""
 
 
 def _read_bytes(path: Path) -> bytes:

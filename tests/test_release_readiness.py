@@ -11281,8 +11281,8 @@ def test_pis_003_connection_evidence_implementation_is_wired() -> None:
         "PRD-PROD-IAM-STORAGE-PIS-003-SD-PG-001-CONNECTION-EVIDENCE-IMPLEMENTATION"
     )
     assert report["implementation_outcome"] == (
-        "test_only_connection_evidence_candidate_complete_"
-        "exact_review_pending_execution_blocked"
+        "test_only_connection_evidence_candidate_exact_review_complete_"
+        "execution_blocked"
     )
     assert report["implementation_baseline_commit"] == (
         "c84c9f9f97ee9716e1466944e26e206e85b4b729"
@@ -11290,6 +11290,9 @@ def test_pis_003_connection_evidence_implementation_is_wired() -> None:
     for field in (
         "baseline_exists",
         "baseline_is_ancestor",
+        "reviewed_candidate_commit_exists",
+        "reviewed_candidate_commit_is_ancestor",
+        "reviewed_candidate_path_hashes_match",
         "candidate_inventory_exact",
         "implementation_document_hash_matches",
         "authority_contract_hash_matches",
@@ -11303,6 +11306,9 @@ def test_pis_003_connection_evidence_implementation_is_wired() -> None:
         "wiring_valid",
     ):
         assert report[field] is True
+    assert report["reviewed_candidate_commit"] == (
+        "5d929d8e24e4f529cea08796e614fbf544d066bc"
+    )
     assert report["candidate_path_count"] == 17
     assert report["psycopg_driver_loaded"] is False
     assert report["database_connection_attempted"] is False
@@ -11311,7 +11317,7 @@ def test_pis_003_connection_evidence_implementation_is_wired() -> None:
     for field, expected in validator.EXPECTED_AUTHORITY.items():
         assert report[field] is expected
     assert report["next_required_action"] == (
-        "review_pis_003_sd_pg_001_connection_evidence_candidate_exact_commit"
+        "prepare_separately_committed_pis_003_sd_pg_001_environment_execution_gate"
     )
     assert validator.validate_contract(contract) == []
     assert f"{validator.TARGET}:" in makefile
@@ -11352,6 +11358,13 @@ def test_pis_003_connection_evidence_implementation_contract_is_closed() -> None
     contract["protected_hashes"]["apps/api/src/ithildin_api/storage_import.py"] = "0" * 64
     assert any(
         "protected hashes are not exact" in item
+        for item in validator.validate_contract(contract)
+    )
+
+    contract = json.loads(source)
+    contract["reviewed_candidate_path_hashes"]["Makefile"] = "0" * 64
+    assert any(
+        "reviewed candidate path hashes are not exact" in item
         for item in validator.validate_contract(contract)
     )
 
