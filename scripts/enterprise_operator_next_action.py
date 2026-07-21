@@ -11,7 +11,7 @@ from typing import Any
 if __package__ in {None, ""}:
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from scripts import review_docs
+from scripts import production_identity_storage_pis_001_internal_review_check, review_docs
 
 ROOT = Path(__file__).resolve().parents[1]
 DOC_REL = "docs/codex/enterprise-operator-next-action.md"
@@ -126,6 +126,14 @@ PIS_001_PLANNING_COMMANDS = [
     "make production-identity-storage-pis-001-planning-gate-check",
     "make production-identity-storage-architecture-decision-record-check",
     "make production-identity-storage-architecture-check",
+    "make no-new-powers-guardrail",
+    "make tool-surface-invariant-gate",
+]
+
+PIS_002_ENTRY_DECISION_COMMANDS = [
+    "make production-identity-storage-pis-001-internal-review-check",
+    "make production-identity-storage-pis-001-decision-check",
+    "make production-identity-storage-pis-001-planning-gate-check",
     "make no-new-powers-guardrail",
     "make tool-surface-invariant-gate",
 ]
@@ -571,6 +579,30 @@ PIS_001_PLANNING_ARTIFACTS = [
     },
 ]
 
+PIS_002_ENTRY_DECISION_ARTIFACTS = [
+    {
+        "label": "production_identity_storage_pis_001_decision",
+        "path": (
+            "docs/codex/"
+            "production-identity-storage-pis-001-threat-model-and-dependency-decision.md"
+        ),
+        "description": "reviewed threat, dependency, and PIS-002 stop-line contract",
+    },
+    {
+        "label": "production_identity_storage_pis_001_contract",
+        "path": "docs/codex/production-identity-storage-pis-001-decision.json",
+        "description": "closed fail-closed authority and threat-family contract",
+    },
+    {
+        "label": "production_identity_storage_pis_001_internal_review",
+        "path": (
+            "docs/codex/"
+            "production-identity-storage-pis-001-internal-source-review.md"
+        ),
+        "description": "zero-open-finding exact-candidate PIS-001 review",
+    },
+]
+
 PIS_ARCHITECTURE_REVIEW_ARTIFACTS = [
     {
         "label": "production_identity_storage_architecture",
@@ -600,9 +632,9 @@ REQUIRED_DOC_PHRASES = [
     "descriptor_only_local_preview_disposition_ready",
     "accepted staging-only",
     "`ERG-005` source-finding disposition",
-    "make production-identity-storage-architecture-check",
-    "make production-identity-storage-architecture-decision-record-check",
-    "make production-identity-storage-pis-001-planning-gate-check",
+    "make production-identity-storage-pis-001-internal-review-check",
+    "make production-identity-storage-pis-001-decision-check",
+    "prepare_pis_002_entry_decision_record",
     "make no-new-powers-guardrail",
     "make tool-surface-invariant-gate",
     "make enterprise-review-send-refresh",
@@ -610,8 +642,8 @@ REQUIRED_DOC_PHRASES = [
     "make enterprise-send-now",
     "handoff_artifacts",
     "The architecture review and exact-candidate finding",
-    "For the current active route, the primary lane is `PIS-001`",
-    "PIS-002 remains blocked behind a separate entry decision",
+    "For the current active route, the primary lane is preparation of the `PIS-002` entry decision",
+    "PIS-002 implementation remains blocked behind that separate committed entry decision",
     "Historical fallback lanes remain available only when the operator next-action command reports",
     "`ERG-003`: static sandbox/VM preflight disposition",
     "`ERG-002`: Mission Control display/import planning review",
@@ -677,6 +709,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         _erg005_runtime_source_findings_disposition_recorded(repo_root)
     )
     pis_architecture_decision_recorded = _pis_architecture_decision_recorded(repo_root)
+    pis_001_exact_review_recorded = _pis_001_exact_review_recorded(repo_root)
     next_action = _next_action(
         response_present_count,
         closure_ready_count,
@@ -688,6 +721,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
             erg005_runtime_source_findings_disposition_recorded
         ),
         pis_architecture_decision_recorded=pis_architecture_decision_recorded,
+        pis_001_exact_review_recorded=pis_001_exact_review_recorded,
     )
     if next_action == "send_erg_003_and_erg_002":
         action_commands = SEND_COMMANDS
@@ -714,9 +748,12 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         handoff_artifacts = ERG005_TRUSTED_HOST_ARTIFACTS
         recommended_send_set = ["ERG-005"]
         recommended_next_enterprise_review = "ERG-005"
-    elif next_action == (
-        "execute_pis_001_threat_model_dependency_decision"
-    ):
+    elif next_action == "prepare_pis_002_entry_decision_record":
+        action_commands = PIS_002_ENTRY_DECISION_COMMANDS
+        handoff_artifacts = PIS_002_ENTRY_DECISION_ARTIFACTS
+        recommended_send_set = ["ERG-006", "ERG-007"]
+        recommended_next_enterprise_review = "ERG-006/ERG-007"
+    elif next_action == "execute_pis_001_threat_model_dependency_decision":
         action_commands = PIS_001_PLANNING_COMMANDS
         handoff_artifacts = PIS_001_PLANNING_ARTIFACTS
         recommended_send_set = ["ERG-006", "ERG-007"]
@@ -832,12 +869,14 @@ def build_report(repo_root: Path) -> dict[str, Any]:
             erg005_runtime_source_findings_disposition_recorded
         ),
         "pis_architecture_decision_recorded": pis_architecture_decision_recorded,
+        "pis_001_exact_review_recorded": pis_001_exact_review_recorded,
         "next_action": next_action,
         "action_commands": action_commands,
         "next_after_send_commands": (
-            PIS_001_PLANNING_COMMANDS
-            if next_action
-            == "execute_pis_001_threat_model_dependency_decision"
+            PIS_002_ENTRY_DECISION_COMMANDS
+            if next_action == "prepare_pis_002_entry_decision_record"
+            else PIS_001_PLANNING_COMMANDS
+            if next_action == "execute_pis_001_threat_model_dependency_decision"
             else ERG005_NEXT_AFTER_SEND_COMMANDS
             if next_action == "prepare_erg005_trusted_host_promotion_review"
             else NEXT_AFTER_SEND_COMMANDS
@@ -902,11 +941,14 @@ def _next_action(
     descriptor_only_disposition_recorded: bool,
     erg005_runtime_source_findings_disposition_recorded: bool,
     pis_architecture_decision_recorded: bool,
+    pis_001_exact_review_recorded: bool,
 ) -> str:
     if closure_ready_count > 0:
         return "run_lane_specific_closure_playbook"
     if response_present_count > 0:
         return "run_response_intake_preflight"
+    if pis_001_exact_review_recorded:
+        return "prepare_pis_002_entry_decision_record"
     if pis_architecture_decision_recorded:
         return "execute_pis_001_threat_model_dependency_decision"
     if erg005_runtime_source_findings_disposition_recorded:
@@ -947,6 +989,22 @@ def _pis_architecture_decision_recorded(repo_root: Path) -> bool:
         and "Recorded `ERG-006` status: `planning_only`." in text
         and "Recorded `ERG-007` status: `planning_only`." in text
         and "Current selected runtime capability: `not selected`." in text
+    )
+
+
+def _pis_001_exact_review_recorded(repo_root: Path) -> bool:
+    report = production_identity_storage_pis_001_internal_review_check.build_report(
+        repo_root
+    )
+    return (
+        report.get("valid") is True
+        and report.get("reviewed_commit")
+        == "177c0c6e461176d85126c9817dba40b3a092ec95"
+        and report.get("open_findings") == 0
+        and report.get("pis_002_entry_decision_record_preparation_allowed") is True
+        and report.get("pis_002_implementation_allowed") is False
+        and report.get("dependency_changes_allowed") is False
+        and report.get("runtime_changes_allowed") is False
     )
 
 

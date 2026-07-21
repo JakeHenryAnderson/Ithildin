@@ -26,23 +26,24 @@ the heavier validation artifacts.
 If the dual-response disposition record, runtime-ticket internal review, runtime gate-readiness
 decision record, descriptor-only local-development disposition, and accepted staging-only
 `ERG-005` source-finding disposition are present, and the production identity/storage architecture
-decision is recorded, the next allowed operator action is bounded `PIS-001` threat-model and
-dependency-decision planning:
+decision and exact-candidate PIS-001 internal review are recorded, the next allowed operator action
+is preparation of the separate PIS-002 entry decision record:
+
+Computed next action: `prepare_pis_002_entry_decision_record`.
 
 ```sh
+make production-identity-storage-pis-001-internal-review-check
+make production-identity-storage-pis-001-decision-check
 make production-identity-storage-pis-001-planning-gate-check
-make production-identity-storage-architecture-decision-record-check
-make production-identity-storage-architecture-check
 make no-new-powers-guardrail
 make tool-surface-invariant-gate
 ```
 
 Primary production identity/storage handoff artifacts:
 
-- `docs/codex/production-identity-storage-architecture.md`
-- `docs/codex/production-identity-storage-architecture-decision-record.md`
-- `docs/codex/production-identity-storage-pis-001-planning-gate.md`
-- `docs/codex/production-identity-storage-source-review.md`
+- `docs/codex/production-identity-storage-pis-001-threat-model-and-dependency-decision.md`
+- `docs/codex/production-identity-storage-pis-001-decision.json`
+- `docs/codex/production-identity-storage-pis-001-internal-source-review.md`
 
 The descriptor-only ERG-004 implementation is now a bounded operator-attested descriptor-record
 slice with `descriptor_only_local_preview_disposition_ready` recorded for continued local
@@ -50,11 +51,16 @@ development. That does not close ERG-004 for broader claims. ERG-005 now has an 
 staging-only, single-artifact runtime slice with negative transcripts, internal source review, a
 local proxy disposition, and an independently accepted source-finding disposition. Broad
 trusted-host promotion remains blocked. The architecture review and exact-candidate finding
-disposition are recorded. For the current active route, the primary lane is `PIS-001`: produce the
-threat model, explicit non-goals, dependency evaluation, exact contract freeze, and negative-test
-plan defined by the planning gate. It does not authorize dependency changes, PIS-002, OIDC,
-enterprise RBAC, remote administration, Postgres, migrations, production Node transport, or new
-governed tool powers. PIS-002 remains blocked behind a separate entry decision.
+disposition are recorded. For the current active route, the primary lane is preparation of the `PIS-002` entry decision.
+Select one first SQLite aggregate, freeze parity/rollback evidence, and
+decide whether a repository-interface slice can proceed without adding a dependency. It does not
+authorize dependency changes, PIS-002 implementation, OIDC, enterprise RBAC, remote administration,
+Postgres, migrations, production Node transport, or new governed tool powers.
+PIS-002 implementation remains blocked behind that separate committed entry decision.
+
+`make enterprise-review-send-preflight` remains a historical review-send contract and a generic
+state check in this route; it is not the instruction source for PIS-002 entry-decision preparation.
+The commands and reviewed artifacts above are authoritative for the current planning step.
 
 The implemented staging-only `ERG-005` trusted-host promotion runtime remains historical bounded
 evidence; it is neither the active review route nor authorization for production host promotion.
@@ -136,7 +142,7 @@ the current route after the recorded dispositions. In that fallback state, the o
 
 ## If Responses Arrive
 
-The current `PIS-001` planning route does not require a new reviewer response. If a contradictory or
+The current PIS-002 entry-decision preparation route does not require a new reviewer response. If a contradictory or
 new response later arrives for the historical `ERG-006`/`ERG-007` architecture-review route,
 preserve the production identity/storage response kit, paste the response only into that lane's
 raw-response file, and run the lane-specific dry-run before any committed triage:
@@ -157,8 +163,8 @@ make enterprise-response-intake-refresh
 ```
 
 Then follow the lane-specific response kit, dry-run, closure gate, response-application record, and
-playbook. This is contradiction handling for historical review evidence, not the active PIS-001
-planning route.
+playbook. This is contradiction handling for historical review evidence, not the active PIS-002
+entry-decision preparation route.
 
 Historical fallback lanes remain available only when the operator next-action command reports an
 earlier route:

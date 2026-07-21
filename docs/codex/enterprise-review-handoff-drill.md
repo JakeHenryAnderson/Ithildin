@@ -22,7 +22,7 @@ var/review-packets/v3/enterprise-review-handoff-drill/
 
 ## Purpose
 
-Active enterprise route: `PIS-001` threat-model and dependency-decision planning under the recorded `ERG-006`/`ERG-007` architecture decision.
+Active enterprise route: preparation of the `PIS-002` entry decision record after the cleared `PIS-001` exact-candidate review; `ERG-006`/`ERG-007` remain planning-only scope.
 
 This drill gives the operator one checked view of the historical dual-send enterprise review
 handoff loop. This drill

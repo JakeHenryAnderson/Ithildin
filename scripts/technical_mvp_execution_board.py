@@ -22,7 +22,7 @@ SEND_MANIFEST_JSON = Path(
     "enterprise-review-send-manifest.json"
 )
 POST_DISPOSITION_ACTION = (
-    "execute_pis_001_threat_model_dependency_decision"
+    "prepare_pis_002_entry_decision_record"
 )
 
 REQUIRED_DOCS = [TECHNICAL_DOC, ENTERPRISE_DOC, BATCH_DOC]
@@ -47,10 +47,10 @@ REQUIRED_PHRASES = {
         "Latest implemented tool: `sandbox.artifact.write_text`",
         "Technical MVP state: `operator_trial_observed`",
         "Current enterprise next action: "
-        "`execute_pis_001_threat_model_dependency_decision`",
+        "`prepare_pis_002_entry_decision_record`",
         "Active resume checkpoint: `ENT-001`",
-        "The paused umbrella goal resumes through the bounded `PIS-001` threat-model and "
-        "dependency-decision planning slice only",
+        "The paused umbrella goal resumes through preparation of the separate `PIS-002` "
+        "entry decision",
         "Development Validation Ladder",
         "Stop Conditions",
         "no sandbox orchestration",
@@ -64,8 +64,8 @@ REQUIRED_PHRASES = {
         "Current response count: `0`",
         "Current closure-ready count: `0`",
         "Active resume checkpoint: `ENT-001`",
-        "The current resumed goal is limited to post-`ENT-001` bounded `PIS-001` threat-model and "
-        "dependency-decision planning",
+        "The current resumed goal is limited to post-`ENT-001` PIS-002 entry-decision record "
+        "preparation",
         "Enterprise Target Definition",
         "Non-Negotiable Gates",
         "No new governed power class",

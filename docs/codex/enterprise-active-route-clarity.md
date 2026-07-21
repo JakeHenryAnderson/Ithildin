@@ -16,15 +16,17 @@ make enterprise-active-route-clarity
 
 The completed source-finding disposition route is `ERG-005`.
 
-Current expected action: `execute_pis_001_threat_model_dependency_decision`.
+Current expected action: `prepare_pis_002_entry_decision_record`.
 
 Current architecture decision:
 `docs/codex/production-identity-storage-architecture-decision-record.md`.
 
 Current active gap scope: `ERG-006`, `ERG-007`; no new review send is required.
 
-Current PIS-001 planning gate:
-`docs/codex/production-identity-storage-pis-001-planning-gate.md`.
+Current cleared PIS-001 review:
+`docs/codex/production-identity-storage-pis-001-internal-source-review.md`.
+
+Current PIS-002 posture: entry-decision record preparation only; implementation remains blocked.
 
 Current production identity/storage finding namespace: `EXT-PROD-IAM-STORAGE-###`.
 
@@ -37,11 +39,13 @@ only under the `EXT-LIVE-DESC-###` finding namespace.
 The active route is reported by:
 
 - `make enterprise-operator-next-action` as the canonical state reader;
-- `make enterprise-review-send-preflight`;
 - `make enterprise-current-checkpoint`;
 - `make technical-mvp-execution-board`;
 - `make v1-progress-assessment`;
 - `make enterprise-readiness-gap-matrix-check`.
+
+The historical review-send preflight remains a generic state check, not the instruction source for
+the current PIS-002 entry-decision preparation route.
 
 ## Historical Dual-Send Lineage
 
@@ -57,9 +61,9 @@ The distinction is intentional:
 - completed local-development disposition artifacts preserve the `ERG-004` descriptor-only lane;
 - the accepted source-finding disposition preserves the bounded `ERG-005` review result without
   closing ERG-005;
-- active operator checkpoint artifacts now point to bounded `PIS-001` planning under
-  `ERG-006`/`ERG-007`;
-- dependency changes and PIS-002 implementation planning remain separately gated before runtime.
+- active operator checkpoint artifacts now point to PIS-002 entry-decision record preparation under
+  the cleared PIS-001 contract while `ERG-006`/`ERG-007` remain planning-only scope;
+- dependency changes and PIS-002 implementation remain separately gated before runtime.
 
 ## What This Does Not Approve
 

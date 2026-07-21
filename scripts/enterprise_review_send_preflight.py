@@ -32,12 +32,14 @@ ERG005_SEND_SET = ["ERG-005"]
 ERG005_ACTION = "prepare_erg005_trusted_host_promotion_review"
 PIS_SEND_SET = ["ERG-006", "ERG-007"]
 PIS_ACTION = "execute_pis_001_threat_model_dependency_decision"
+PIS_002_ENTRY_DECISION_ACTION = "prepare_pis_002_entry_decision_record"
 ALLOWED_ACTIONS = {
     EXPECTED_ACTION,
     POST_DISPOSITION_ACTION,
     DESCRIPTOR_ONLY_PLANNING_ACTION,
     ERG005_ACTION,
     PIS_ACTION,
+    PIS_002_ENTRY_DECISION_ACTION,
 }
 BOUNDARY_FLAGS = {
     "records_external_review": False,
@@ -123,6 +125,15 @@ PIS_DOC_PHRASES = [
     "make production-identity-storage-architecture-decision-record-check",
     "make production-identity-storage-pis-001-planning-gate-check",
     "The accepted ERG-005 source-finding disposition remains recorded",
+    "does not record external review",
+    "does not normalize responses",
+    "does not close `ERG-006` or `ERG-007`",
+]
+
+PIS_002_ENTRY_DECISION_DOC_PHRASES = [
+    "Status: checked final operator preflight for the current enterprise review send.",
+    "make enterprise-review-send-preflight",
+    "It checks the operator next-action and response state",
     "does not record external review",
     "does not normalize responses",
     "does not close `ERG-006` or `ERG-007`",
@@ -257,16 +268,19 @@ def build_report(repo_root: Path) -> dict[str, Any]:
 
     operator_next = enterprise_operator_next_action.build_report(repo_root)
     response_status = enterprise_response_status_board.build_report(repo_root)
-    dual_response = enterprise_dual_response_readiness.build_report(repo_root)
-    handoff_consistency = enterprise_handoff_consistency_check.build_report(repo_root)
-
     next_action = operator_next.get("next_action")
     post_disposition_mode = next_action in {
         POST_DISPOSITION_ACTION,
         DESCRIPTOR_ONLY_PLANNING_ACTION,
         ERG005_ACTION,
         PIS_ACTION,
+        PIS_002_ENTRY_DECISION_ACTION,
     }
+    dual_response: dict[str, Any] = {}
+    handoff_consistency: dict[str, Any] = {}
+    if not post_disposition_mode:
+        dual_response = enterprise_dual_response_readiness.build_report(repo_root)
+        handoff_consistency = enterprise_handoff_consistency_check.build_report(repo_root)
 
     state_reports = {
         "operator_next_action": operator_next,
@@ -280,7 +294,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
             failures.append(f"{name} is not valid")
             failures.extend(f"{name}: {failure}" for failure in report.get("failures", []))
 
-    if next_action == PIS_ACTION:
+    if next_action in {PIS_ACTION, PIS_002_ENTRY_DECISION_ACTION}:
         active_send_set = PIS_SEND_SET
     elif next_action == ERG005_ACTION:
         active_send_set = ERG005_SEND_SET
@@ -339,7 +353,9 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "\n\n"
     )[0]
 
-    if next_action == PIS_ACTION:
+    if next_action == PIS_002_ENTRY_DECISION_ACTION:
+        required_doc_phrases = PIS_002_ENTRY_DECISION_DOC_PHRASES
+    elif next_action == PIS_ACTION:
         required_doc_phrases = PIS_DOC_PHRASES
     elif next_action == ERG005_ACTION:
         required_doc_phrases = ERG005_DOC_PHRASES
@@ -376,7 +392,9 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "current_send_set": active_send_set,
         "expected_action": next_action,
         "preflight_mode": (
-            "post_disposition_next_review"
+            "pis_002_entry_decision_preparation"
+            if next_action == PIS_002_ENTRY_DECISION_ACTION
+            else "post_disposition_next_review"
             if post_disposition_mode
             else "send_preflight"
         ),

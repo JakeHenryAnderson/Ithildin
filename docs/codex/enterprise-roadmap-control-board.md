@@ -25,9 +25,9 @@ properties today.
 
 ## Current Resume Scope
 
-The current resumed goal is limited to post-`ENT-001` bounded `PIS-001` threat-model and
-dependency-decision planning: use the recorded `ERG-006`/`ERG-007` architecture decision and
-planning gate to produce the required artifact. Dependency changes, PIS-002, production identity,
+The current resumed goal is limited to post-`ENT-001` PIS-002 entry-decision record preparation:
+use the cleared PIS-001 exact-candidate review to select one first SQLite aggregate and freeze
+parity, rollback, dependency, and stop-line evidence. Dependency changes, PIS-002 implementation, production identity,
 enterprise RBAC, remote administration,
 runtime Postgres, migrations, live sandbox/VM execution, trusted-host promotion authority, Mission
 Control execution, and runtime capability selection remain blocked.

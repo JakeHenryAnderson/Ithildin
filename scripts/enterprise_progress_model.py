@@ -29,6 +29,7 @@ ALLOWED_NEXT_ACTIONS = {
     "prepare_erg004_descriptor_only_runtime_planning",
     "prepare_erg005_trusted_host_promotion_review",
     "execute_pis_001_threat_model_dependency_decision",
+    "prepare_pis_002_entry_decision_record",
 }
 
 REQUIRED_PHRASES = [
@@ -55,14 +56,11 @@ REQUIRED_PHRASES = [
     "Checkpoint D: Live Sandbox/VM Proof Of Concept",
     "Checkpoint E: Trusted-Host Promotion",
     "Checkpoint F: Enterprise Architecture Lanes",
-    "ERG-005 staging-only runtime source findings are dispositioned",
-    "make production-identity-storage-architecture-check",
-    "make production-identity-storage-disposition-packet-check",
-    "make production-identity-storage-external-review-bundle-check",
-    "make production-identity-storage-response-kit-check",
-    "make production-identity-storage-response-dry-run",
-    "make production-identity-storage-external-response-intake-check",
-    "make production-identity-storage-disposition-closure-check",
+    "preparation of the separate PIS-002 entry decision record",
+    "cleared PIS-001 exact-candidate review",
+    "make production-identity-storage-pis-001-internal-review-check",
+    "make production-identity-storage-pis-001-decision-check",
+    "make production-identity-storage-pis-001-planning-gate-check",
     "make no-new-powers-guardrail",
     "make tool-surface-invariant-gate",
     "Do not manually promote a lane",

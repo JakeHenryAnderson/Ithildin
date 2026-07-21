@@ -51,10 +51,10 @@ remains the product-comprehension gate for the combined candidate.
 
 ## Lane B: Gateway Capability and Enterprise Readiness
 
-Current route: `PIS-001` threat-model and dependency-decision planning under the recorded `ERG-006`/`ERG-007` architecture decision
-Computed next action: `execute_pis_001_threat_model_dependency_decision`
+Current route: prepare the separate `PIS-002` entry decision record under the cleared `PIS-001` exact-candidate review; `ERG-006`/`ERG-007` remain planning-only scope
+Computed next action: `prepare_pis_002_entry_decision_record`
 Current response count: `0`
-Current source-review status: `ready_for_external_source_review`
+Current source-review status: `pis_001_internal_review_cleared_external_architecture_lineage_retained`
 Runtime promotion allowed: `false`
 
 Verified review package:
@@ -154,16 +154,14 @@ make trusted-host-promotion-negative-transcripts
 make trusted-host-promotion-runtime-source-review-bundle-check
 ```
 
-The current `ERG-006`/`ERG-007` architecture-review route additionally passes:
+The current PIS-002 entry-decision preparation route passes:
 
 ```text
-make production-identity-storage-architecture-check
-make production-identity-storage-disposition-packet-check
-make production-identity-storage-external-review-bundle-check
-make production-identity-storage-response-kit-check
-make production-identity-storage-response-dry-run
-make production-identity-storage-external-response-intake-check
-make production-identity-storage-disposition-closure-check
+make production-identity-storage-pis-001-internal-review-check
+make production-identity-storage-pis-001-decision-check
+make production-identity-storage-pis-001-planning-gate-check
+make no-new-powers-guardrail
+make tool-surface-invariant-gate
 ```
 
 The review-run contract now preserves historical manifests without rebinding them and requires an
@@ -175,8 +173,8 @@ actually executed against the exact candidate.
 
 1. A real fresh-operator `CC-PILOT-107` UAT record permits only human pilot disposition or bounded
    remediation of recorded UAT findings in Lane A.
-2. Explicit external-review routing permits delivery of the existing `ERG-006`/`ERG-007`
-   architecture-review package in Lane B.
+2. The cleared PIS-001 exact-candidate review permits preparation of a separate PIS-002 entry
+   decision in Lane B; it does not permit PIS-002 implementation.
 3. A real external response permits response intake and disposition checks; it does not automatically
    permit runtime implementation.
 4. A new capability sprint requires its own selected candidate, proposal, plan, implementation

@@ -33,6 +33,10 @@ enterprise send set, current next action, safe action commands, post-send receip
 breadcrumbs under `next_after_send_commands`, display-only handoff artifact pointers,
 response/closure counts, progress bands, review-lane status, generated packet paths including the
 enterprise review send quickstart, send package, send-session record, and blocked authority flags.
+For PIS-002 entry-decision preparation, the display export exposes only the compatibility-safe
+planning-gate, no-new-powers, and tool-invariant commands. The authoritative reviewed prerequisite
+commands remain in `make enterprise-operator-next-action`; Mission Control does not execute either
+set.
 
 ## Output Artifacts
 

@@ -36,6 +36,11 @@ ARCHIVED_ERG004_DESCRIPTOR_ONLY_COMMANDS = [
     "make sandbox-vm-live-poc-runtime-descriptor-only-response-application-preflight-check",
     "make sandbox-vm-live-poc-runtime-descriptor-only-response-application-record-check",
 ]
+PIS_002_DISPLAY_ACTION_COMMANDS = [
+    "make production-identity-storage-pis-001-planning-gate-check",
+    "make no-new-powers-guardrail",
+    "make tool-surface-invariant-gate",
+]
 
 REQUIRED_DOC_PHRASES = [
     "Status: display-only enterprise status export contract.",
@@ -101,7 +106,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     )
     failures.extend(f"enterprise-progress-model: {failure}" for failure in progress["failures"])
     if next_action.get("next_action") != (
-        "execute_pis_001_threat_model_dependency_decision"
+        "prepare_pis_002_entry_decision_record"
     ):
         failures.extend(
             f"enterprise-review-send-readiness: {failure}"
@@ -179,7 +184,17 @@ def build_report(repo_root: Path) -> dict[str, Any]:
 
     active_send_set = set(current.get("recommended_send_set") or [])
     pis_planning_mode = next_action.get("next_action") == (
-        "execute_pis_001_threat_model_dependency_decision"
+        "prepare_pis_002_entry_decision_record"
+    )
+    display_action_commands = (
+        PIS_002_DISPLAY_ACTION_COMMANDS
+        if pis_planning_mode
+        else next_action.get("action_commands")
+    )
+    display_next_after_send_commands = (
+        PIS_002_DISPLAY_ACTION_COMMANDS
+        if pis_planning_mode
+        else next_action.get("next_after_send_commands")
     )
     rows = [
         {
@@ -214,8 +229,8 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "recommended_send_set": current.get("recommended_send_set"),
         "recommended_next_enterprise_review": current.get("recommended_next_enterprise_review"),
         "next_action": next_action.get("next_action"),
-        "action_commands": next_action.get("action_commands"),
-        "next_after_send_commands": next_action.get("next_after_send_commands"),
+        "action_commands": display_action_commands,
+        "next_after_send_commands": display_next_after_send_commands,
         "archived_erg004_descriptor_only_commands": ARCHIVED_ERG004_DESCRIPTOR_ONLY_COMMANDS,
         "handoff_artifacts": next_action.get("handoff_artifacts"),
         "operator_next_action_doc": next_action.get("next_action_doc"),
@@ -433,17 +448,14 @@ def _validate_generated_artifacts(artifacts: dict[str, str]) -> list[str]:
     for phrase in [
         "display-only enterprise status export",
         "recommended_send_set: `ERG-006, ERG-007`",
-        "next_action: `execute_pis_001_threat_model_dependency_decision`",
+        "next_action: `prepare_pis_002_entry_decision_record`",
         "`make production-identity-storage-pis-001-planning-gate-check`",
-        "`make production-identity-storage-architecture-decision-record-check`",
-        "`make production-identity-storage-architecture-check`",
         "`make no-new-powers-guardrail`",
         "`make tool-surface-invariant-gate`",
         "handoff_artifacts:",
-        "production-identity-storage-architecture-decision-record.md",
-        "production-identity-storage-pis-001-planning-gate.md",
-        "production-identity-storage-architecture.md",
-        "production-identity-storage-source-review.md",
+        "production-identity-storage-pis-001-threat-model-and-dependency-decision.md",
+        "production-identity-storage-pis-001-decision.json",
+        "production-identity-storage-pis-001-internal-source-review.md",
         "runtime_changes_allowed: `false`",
         "does not approve Mission Control runtime behavior",
         "does not approve new governed tool powers",
@@ -454,15 +466,12 @@ def _validate_generated_artifacts(artifacts: dict[str, str]) -> list[str]:
         '"artifact_type": "ithildin.enterprise_status_export"',
         '"status": "display_only"',
         '"tool_count": 24',
-        '"next_action": "execute_pis_001_threat_model_dependency_decision"',
+        '"next_action": "prepare_pis_002_entry_decision_record"',
         '"handoff_artifacts": [',
-        "production-identity-storage-architecture-decision-record.md",
-        "production-identity-storage-pis-001-planning-gate.md",
-        "production-identity-storage-architecture.md",
-        "production-identity-storage-source-review.md",
+        "production-identity-storage-pis-001-threat-model-and-dependency-decision.md",
+        "production-identity-storage-pis-001-decision.json",
+        "production-identity-storage-pis-001-internal-source-review.md",
         '"make production-identity-storage-pis-001-planning-gate-check"',
-        '"make production-identity-storage-architecture-decision-record-check"',
-        '"make production-identity-storage-architecture-check"',
         '"make no-new-powers-guardrail"',
         '"make tool-surface-invariant-gate"',
         '"runtime_changes_allowed": false',

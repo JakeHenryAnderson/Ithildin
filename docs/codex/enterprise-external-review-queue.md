@@ -53,25 +53,25 @@ make enterprise-response-intake-drill
 
 ## Active Route Versus Historical Queue
 
-The post-disposition active route is now bounded `PIS-001` threat-model and dependency-decision
-planning under the recorded `ERG-006`/`ERG-007` architecture decision. The bounded `ERG-005`
+The post-disposition active route is now preparation of the separate PIS-002 entry decision record
+under the cleared PIS-001 exact-candidate review. The bounded `ERG-005`
 runtime source findings are
 dispositioned, but ERG-005 and broader trusted-host promotion remain blocked. The historical
 `ERG-004` descriptor-only and `ERG-003`/`ERG-002` routes remain below for provenance,
 response-intake fallback, and dependency traceability. They are not the current operator next
 action while `make enterprise-operator-next-action` reports
-`execute_pis_001_threat_model_dependency_decision`.
+`prepare_pis_002_entry_decision_record`.
 
-Current active route: `PIS-001` threat-model and dependency-decision planning under the recorded `ERG-006`/`ERG-007` architecture decision.
+Current active route: preparation of the `PIS-002` entry decision record after the cleared `PIS-001` exact-candidate review; `ERG-006`/`ERG-007` remain planning-only scope.
 
 Current active route validation:
 
 ```sh
 make enterprise-active-route-clarity
-make production-identity-storage-pis-001-planning-gate-check
-make production-identity-storage-architecture-decision-record-check
-make production-identity-storage-architecture-check
-make production-identity-storage-response-kit-check
+make production-identity-storage-pis-001-internal-review-check
+make production-identity-storage-pis-001-decision-check
+make no-new-powers-guardrail
+make tool-surface-invariant-gate
 ```
 
 This active route still does not approve runtime implementation, production identity, enterprise

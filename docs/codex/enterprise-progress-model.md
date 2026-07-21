@@ -89,20 +89,17 @@ behavior can be added.
 
 ## Current Best Next Action
 
-The best next action is the combined ERG-006/ERG-007 production identity and durable storage
-architecture review. The ERG-005 staging-only runtime source findings are dispositioned, but that
-evidence does not approve production identity, runtime Postgres, schema migrations, hosted control
-plane behavior, live VM runtime, local model invocation, sandbox orchestration, or broader
-enterprise claims.
+The best next action is preparation of the separate PIS-002 entry decision record under the
+cleared PIS-001 exact-candidate review. Select one first SQLite aggregate and freeze parity,
+rollback, dependency, and stop-line evidence. This does not approve PIS-002 implementation,
+dependencies, production identity, runtime Postgres, schema migrations, hosted control-plane
+behavior, live VM runtime, local model invocation, sandbox orchestration, or broader enterprise
+claims.
 
 ```sh
-make production-identity-storage-architecture-check
-make production-identity-storage-disposition-packet-check
-make production-identity-storage-external-review-bundle-check
-make production-identity-storage-response-kit-check
-make production-identity-storage-response-dry-run
-make production-identity-storage-external-response-intake-check
-make production-identity-storage-disposition-closure-check
+make production-identity-storage-pis-001-internal-review-check
+make production-identity-storage-pis-001-decision-check
+make production-identity-storage-pis-001-planning-gate-check
 make no-new-powers-guardrail
 make tool-surface-invariant-gate
 ```

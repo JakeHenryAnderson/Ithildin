@@ -224,16 +224,12 @@ def _recommended_next_commands(
             "make tool-surface-invariant-gate",
         ]
     if enterprise_next.get("next_action") == (
-        "execute_pis_001_threat_model_dependency_decision"
+        "prepare_pis_002_entry_decision_record"
     ):
         return [
-            "make production-identity-storage-architecture-check",
-            "make production-identity-storage-disposition-packet-check",
-            "make production-identity-storage-external-review-bundle-check",
-            "make production-identity-storage-response-kit-check",
-            "make production-identity-storage-response-dry-run",
-            "make production-identity-storage-external-response-intake-check",
-            "make production-identity-storage-disposition-closure-check",
+            "make production-identity-storage-pis-001-internal-review-check",
+            "make production-identity-storage-pis-001-decision-check",
+            "make production-identity-storage-pis-001-planning-gate-check",
             "make no-new-powers-guardrail",
             "make tool-surface-invariant-gate",
         ]

@@ -374,6 +374,12 @@ Current selected capability: `not selected`.
   `production-identity-storage-pis-001-planning-gate.md`. The resulting planning artifact is
   `production-identity-storage-pis-001-threat-model-and-dependency-decision.md`; its validator keeps
   PIS-002 behind a separate entry decision and all runtime/dependency authority false.
+- Current PIS-001 disposition:
+  `production-identity-storage-pis-001-internal-source-review.md` binds the zero-open-finding
+  independent review of exact commit `177c0c6e461176d85126c9817dba40b3a092ec95`. PIS-001 planning
+  evidence is cleared. The next allowed action is preparation of
+  `production-identity-storage-pis-002-entry-decision-record.md`; PIS-002 implementation,
+  dependencies, production identity, PostgreSQL, schemas, migrations, and UAT remain unauthorized.
 - Current warning language: Ithildin may discuss production identity and durable storage
   architecture, but the current runtime remains local-preview with local principal labels and SQLite.
 - Current architecture evidence:

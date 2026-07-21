@@ -28,8 +28,8 @@ REQUIRED_PHRASES = [
     "make enterprise-response-application-protocol",
     "Current governed tool count: `24`",
     "Current selected capability: `not selected`",
-    "Active enterprise route: `PIS-001` threat-model and dependency-decision planning "
-    "under the recorded `ERG-006`/`ERG-007` architecture decision.",
+    "Active enterprise route: preparation of the `PIS-002` entry decision record after the "
+    "cleared `PIS-001` exact-candidate review; `ERG-006`/`ERG-007` remain planning-only scope.",
     "Historical dual-response route: `ERG-003` then `ERG-002`.",
     "Enterprise response evidence is not present yet.",
     "Enterprise closure-ready count is `0`.",
