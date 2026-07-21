@@ -89,12 +89,15 @@ behavior can be added.
 
 ## Current Best Next Action
 
-The best next action is preparation of the separate PIS-002 entry decision record under the
-cleared PIS-001 exact-candidate review. Select one first SQLite aggregate and freeze parity,
-rollback, dependency, and stop-line evidence. This does not approve PIS-002 implementation,
+The best next action is preparation of the separate PIS-003 entry decision record under the
+valid PIS-002 continuation decision. Evaluate the exact dependency, transaction, dialect,
+schema/migration, import, rollback, and failure-evidence contract. This does not approve PIS-003 implementation,
 dependencies, production identity, runtime Postgres, schema migrations, hosted control-plane
 behavior, live VM runtime, local model invocation, sandbox orchestration, or broader enterprise
 claims.
+
+Validate the current prerequisite with `make production-identity-storage-pis-002-continuation-decision-check`
+and `make production-identity-storage-pis-002-sandbox-descriptor-repository-internal-review-check`.
 
 ```sh
 make production-identity-storage-pis-001-internal-review-check

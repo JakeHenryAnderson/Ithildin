@@ -11,14 +11,14 @@ Current governed tool count: `24`
 Current selected capability: `not selected`
 Latest implemented tool: `sandbox.artifact.write_text`
 Technical MVP state: `operator_trial_observed`
-Current enterprise next action: `prepare_pis_002_entry_decision_record`
+Current enterprise next action: `prepare_pis_003_entry_decision_record`
 Active resume checkpoint: `ENT-001`
 
 ## Active Resume Scope
 
-The paused umbrella goal resumes through preparation of the separate `PIS-002` entry decision
-record only: use the cleared PIS-001 exact-candidate review to select one first SQLite aggregate and
-freeze parity, rollback, dependency, and stop-line evidence. This resume slice does not add dependencies or runtime
+The paused umbrella goal resumes through preparation of the separate `PIS-003` entry decision
+record only: use the valid PIS-002 continuation decision to evaluate the exact dependency,
+transaction, dialect, schema/migration, import, rollback, and failure-evidence contract. This resume slice does not add dependencies or runtime
 behavior, implement production identity, enable Postgres or migrations, implement Mission Control
 execution, start sandbox/VM control, promote artifacts into trusted host zones, or select a new
 runtime capability.
@@ -50,7 +50,7 @@ promotion engine, public/security-product release, or broad write platform.
 
 | Batch | Status | Subtasks | Fast gate | Escalation gate |
 | --- | --- | --- | --- | --- |
-| Prepare separate `PIS-002` entry decision | active | Select one first SQLite aggregate and freeze parity, rollback, dependency, and stop-line evidence while keeping PIS-002 implementation, production identity, enterprise RBAC, remote administration, runtime Postgres, migrations, retention enforcement, and new powers blocked. | `make production-identity-storage-pis-001-internal-review-check`; `make production-identity-storage-pis-001-decision-check`; `make no-new-powers-guardrail`; `make tool-surface-invariant-gate` | committed and validated PIS-002 entry decision record; implementation remains separately gated |
+| Prepare separate `PIS-003` entry decision | active | Evaluate the exact dependency, transaction, dialect, schema/migration, isolated test-service, import, rollback, and failure-evidence contract while keeping PIS-003 implementation, production identity, enterprise RBAC, remote administration, runtime Postgres, migrations, retention enforcement, and new powers blocked. | `make production-identity-storage-pis-002-continuation-decision-check`; `make production-identity-storage-pis-002-sandbox-descriptor-repository-internal-review-check`; `make no-new-powers-guardrail`; `make tool-surface-invariant-gate` | committed and validated PIS-003 entry decision record; implementation remains separately gated |
 | Handle contradictory future `ERG-006`/`ERG-007` response | blocked on new response | Use the historical production identity/storage response dry run and closure gate before any committed triage update. | `make production-identity-storage-response-dry-run` | lane-specific contradiction handling |
 | Track `EXT-MC-DISPLAY-001` | later advisory | Improve Mission Control launch-bundle artifact coverage before implementation, without blocking design-only continuation. | `make reviewer-findings-check` | `make review-findings-summary` |
 

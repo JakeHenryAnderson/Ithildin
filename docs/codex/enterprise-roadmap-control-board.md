@@ -25,9 +25,9 @@ properties today.
 
 ## Current Resume Scope
 
-The current resumed goal is limited to post-`ENT-001` PIS-002 entry-decision record preparation:
-use the cleared PIS-001 exact-candidate review to select one first SQLite aggregate and freeze
-parity, rollback, dependency, and stop-line evidence. Dependency changes, PIS-002 implementation, production identity,
+The current resumed goal is limited to post-`ENT-001` PIS-003 entry-decision record preparation:
+use the valid PIS-002 continuation decision to evaluate the exact dependency, transaction, dialect,
+schema/migration, import, rollback, and failure-evidence contract. Dependency changes, PIS-003 implementation, production identity,
 enterprise RBAC, remote administration,
 runtime Postgres, migrations, live sandbox/VM execution, trusted-host promotion authority, Mission
 Control execution, and runtime capability selection remain blocked.

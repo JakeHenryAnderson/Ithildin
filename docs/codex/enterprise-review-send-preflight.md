@@ -17,9 +17,9 @@ make enterprise-review-send-refresh
 
 This preflight now serves two modes. For a historical send route, it gives the operator one final
 checked answer before sending a review packet. In the current post-disposition route, it validates
-the `ERG-006`/`ERG-007` gap scope and the bounded PIS-001 planning transition; no new review send is
+the `ERG-006`/`ERG-007` gap scope and the valid PIS-002 continuation decision; no new review send is
 required. It checks the operator next-action and response state without treating stale historical
-send artifacts as active authority.
+send artifacts as active authority. Current action: `prepare_pis_003_entry_decision_record`.
 
 ## Covered Components
 
@@ -52,25 +52,24 @@ payloads were produced for the current commit and were not generated from a
 dirty tree. When the worktree is dirty during development, that freshness check
 is deferred until the next clean run.
 
-In the current PIS-001 mode it expects:
+In the current PIS-003 entry-decision preparation mode it expects:
 
 - current gap scope: `ERG-006`/`ERG-007`;
 - current response-present count: `0`;
 - current closure-ready count: `0`;
-- active architecture decision:
-  `docs/codex/production-identity-storage-architecture-decision-record.md`;
-- active planning gate:
-  `docs/codex/production-identity-storage-pis-001-planning-gate.md`;
+- active continuation decision:
+  `docs/codex/production-identity-storage-pis-002-continuation-decision-record.md`;
+- closed continuation contract:
+  `docs/codex/production-identity-storage-pis-002-continuation-decision.json`;
 - active finding namespace: `EXT-PROD-IAM-STORAGE-###`.
 
 ## Operator Use
 
-The current PIS-001 sequence is:
+The current PIS-003 entry-decision preparation sequence is:
 
 ```sh
-make production-identity-storage-pis-001-planning-gate-check
-make production-identity-storage-architecture-decision-record-check
-make production-identity-storage-architecture-check
+make production-identity-storage-pis-002-continuation-decision-check
+make production-identity-storage-pis-002-sandbox-descriptor-repository-internal-review-check
 make enterprise-review-send-preflight
 ```
 

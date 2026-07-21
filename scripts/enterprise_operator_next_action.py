@@ -11,7 +11,11 @@ from typing import Any
 if __package__ in {None, ""}:
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from scripts import production_identity_storage_pis_001_internal_review_check, review_docs
+from scripts import (
+    production_identity_storage_pis_001_internal_review_check,
+    production_identity_storage_pis_002_continuation_decision_check,
+    review_docs,
+)
 
 ROOT = Path(__file__).resolve().parents[1]
 DOC_REL = "docs/codex/enterprise-operator-next-action.md"
@@ -134,6 +138,13 @@ PIS_002_ENTRY_DECISION_COMMANDS = [
     "make production-identity-storage-pis-001-internal-review-check",
     "make production-identity-storage-pis-001-decision-check",
     "make production-identity-storage-pis-001-planning-gate-check",
+    "make no-new-powers-guardrail",
+    "make tool-surface-invariant-gate",
+]
+
+PIS_003_ENTRY_DECISION_COMMANDS = [
+    "make production-identity-storage-pis-002-continuation-decision-check",
+    "make production-identity-storage-pis-002-sandbox-descriptor-repository-internal-review-check",
     "make no-new-powers-guardrail",
     "make tool-surface-invariant-gate",
 ]
@@ -603,6 +614,33 @@ PIS_002_ENTRY_DECISION_ARTIFACTS = [
     },
 ]
 
+PIS_003_ENTRY_DECISION_ARTIFACTS = [
+    {
+        "label": "production_identity_storage_pis_002_continuation_decision",
+        "path": (
+            "docs/codex/"
+            "production-identity-storage-pis-002-continuation-decision-record.md"
+        ),
+        "description": "decision allowing only PIS-003 entry-decision preparation",
+    },
+    {
+        "label": "production_identity_storage_pis_002_continuation_contract",
+        "path": (
+            "docs/codex/"
+            "production-identity-storage-pis-002-continuation-decision.json"
+        ),
+        "description": "closed continuation authority and unresolved-boundary contract",
+    },
+    {
+        "label": "production_identity_storage_pis_002_internal_review",
+        "path": (
+            "docs/codex/production-identity-storage-pis-002-"
+            "sandbox-descriptor-repository-internal-source-review.md"
+        ),
+        "description": "zero-open-finding exact-candidate PIS-002 implementation review",
+    },
+]
+
 PIS_ARCHITECTURE_REVIEW_ARTIFACTS = [
     {
         "label": "production_identity_storage_architecture",
@@ -632,9 +670,9 @@ REQUIRED_DOC_PHRASES = [
     "descriptor_only_local_preview_disposition_ready",
     "accepted staging-only",
     "`ERG-005` source-finding disposition",
-    "make production-identity-storage-pis-001-internal-review-check",
-    "make production-identity-storage-pis-001-decision-check",
-    "prepare_pis_002_entry_decision_record",
+    "make production-identity-storage-pis-002-continuation-decision-check",
+    "make production-identity-storage-pis-002-sandbox-descriptor-repository-internal-review-check",
+    "prepare_pis_003_entry_decision_record",
     "make no-new-powers-guardrail",
     "make tool-surface-invariant-gate",
     "make enterprise-review-send-refresh",
@@ -642,8 +680,10 @@ REQUIRED_DOC_PHRASES = [
     "make enterprise-send-now",
     "handoff_artifacts",
     "The architecture review and exact-candidate finding",
-    "For the current active route, the primary lane is preparation of the `PIS-002` entry decision",
-    "PIS-002 implementation remains blocked behind that separate committed entry decision",
+    "For the current active route, the primary lane is preparation of the",
+    "`PIS-003` entry decision. Evaluate the exact dependency",
+    "PIS-003 implementation remains blocked behind that",
+    "separate committed entry decision",
     "Historical fallback lanes remain available only when the operator next-action command reports",
     "`ERG-003`: static sandbox/VM preflight disposition",
     "`ERG-002`: Mission Control display/import planning review",
@@ -710,6 +750,21 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     )
     pis_architecture_decision_recorded = _pis_architecture_decision_recorded(repo_root)
     pis_001_exact_review_recorded = _pis_001_exact_review_recorded(repo_root)
+    pis_002_continuation_artifact_present = any(
+        (repo_root / relative_path).exists()
+        for relative_path in (
+            production_identity_storage_pis_002_continuation_decision_check.DOC_REL,
+            production_identity_storage_pis_002_continuation_decision_check.CONTRACT_REL,
+        )
+    )
+    pis_002_continuation_decision_recorded = _pis_002_continuation_decision_recorded(
+        repo_root
+    )
+    if (
+        pis_002_continuation_artifact_present
+        and not pis_002_continuation_decision_recorded
+    ):
+        failures.append("PIS-002 continuation decision artifacts are present but invalid")
     next_action = _next_action(
         response_present_count,
         closure_ready_count,
@@ -722,8 +777,15 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         ),
         pis_architecture_decision_recorded=pis_architecture_decision_recorded,
         pis_001_exact_review_recorded=pis_001_exact_review_recorded,
+        pis_002_continuation_artifact_present=pis_002_continuation_artifact_present,
+        pis_002_continuation_decision_recorded=pis_002_continuation_decision_recorded,
     )
-    if next_action == "send_erg_003_and_erg_002":
+    if next_action == "invalid_pis_002_continuation_decision":
+        action_commands = []
+        handoff_artifacts = []
+        recommended_send_set = []
+        recommended_next_enterprise_review = "blocked"
+    elif next_action == "send_erg_003_and_erg_002":
         action_commands = SEND_COMMANDS
         handoff_artifacts = SEND_ARTIFACTS
         recommended_send_set = ["ERG-003", "ERG-002"]
@@ -751,6 +813,11 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     elif next_action == "prepare_pis_002_entry_decision_record":
         action_commands = PIS_002_ENTRY_DECISION_COMMANDS
         handoff_artifacts = PIS_002_ENTRY_DECISION_ARTIFACTS
+        recommended_send_set = ["ERG-006", "ERG-007"]
+        recommended_next_enterprise_review = "ERG-006/ERG-007"
+    elif next_action == "prepare_pis_003_entry_decision_record":
+        action_commands = PIS_003_ENTRY_DECISION_COMMANDS
+        handoff_artifacts = PIS_003_ENTRY_DECISION_ARTIFACTS
         recommended_send_set = ["ERG-006", "ERG-007"]
         recommended_next_enterprise_review = "ERG-006/ERG-007"
     elif next_action == "execute_pis_001_threat_model_dependency_decision":
@@ -870,10 +937,18 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         ),
         "pis_architecture_decision_recorded": pis_architecture_decision_recorded,
         "pis_001_exact_review_recorded": pis_001_exact_review_recorded,
+        "pis_002_continuation_artifact_present": (
+            pis_002_continuation_artifact_present
+        ),
+        "pis_002_continuation_decision_recorded": pis_002_continuation_decision_recorded,
         "next_action": next_action,
         "action_commands": action_commands,
         "next_after_send_commands": (
-            PIS_002_ENTRY_DECISION_COMMANDS
+            []
+            if next_action == "invalid_pis_002_continuation_decision"
+            else PIS_003_ENTRY_DECISION_COMMANDS
+            if next_action == "prepare_pis_003_entry_decision_record"
+            else PIS_002_ENTRY_DECISION_COMMANDS
             if next_action == "prepare_pis_002_entry_decision_record"
             else PIS_001_PLANNING_COMMANDS
             if next_action == "execute_pis_001_threat_model_dependency_decision"
@@ -942,11 +1017,17 @@ def _next_action(
     erg005_runtime_source_findings_disposition_recorded: bool,
     pis_architecture_decision_recorded: bool,
     pis_001_exact_review_recorded: bool,
+    pis_002_continuation_artifact_present: bool = False,
+    pis_002_continuation_decision_recorded: bool = False,
 ) -> str:
     if closure_ready_count > 0:
         return "run_lane_specific_closure_playbook"
     if response_present_count > 0:
         return "run_response_intake_preflight"
+    if pis_002_continuation_artifact_present:
+        if not pis_002_continuation_decision_recorded:
+            return "invalid_pis_002_continuation_decision"
+        return "prepare_pis_003_entry_decision_record"
     if pis_001_exact_review_recorded:
         return "prepare_pis_002_entry_decision_record"
     if pis_architecture_decision_recorded:
@@ -1005,6 +1086,26 @@ def _pis_001_exact_review_recorded(repo_root: Path) -> bool:
         and report.get("pis_002_implementation_allowed") is False
         and report.get("dependency_changes_allowed") is False
         and report.get("runtime_changes_allowed") is False
+    )
+
+
+def _pis_002_continuation_decision_recorded(repo_root: Path) -> bool:
+    report = production_identity_storage_pis_002_continuation_decision_check.build_report(
+        repo_root
+    )
+    return (
+        report.get("valid") is True
+        and report.get("pis_002_dependency_free_interface_phase_complete") is True
+        and report.get("pis_003_entry_decision_preparation_allowed") is True
+        and report.get("pis_003_implementation_allowed") is False
+        and report.get("dependency_changes_allowed") is False
+        and report.get("schema_changes_allowed") is False
+        and report.get("database_migrations_allowed") is False
+        and report.get("runtime_postgres_allowed") is False
+        and report.get("production_identity_allowed") is False
+        and report.get("release_allowed") is False
+        and report.get("tool_count") == 24
+        and report.get("next_required_action") == "prepare_pis_003_entry_decision_record"
     )
 
 

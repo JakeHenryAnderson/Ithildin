@@ -29,18 +29,18 @@ close enterprise lanes, approve runtime behavior, or approve public/security-pro
 - `ERG-005`: staging-only trusted-host promotion runtime source findings are dispositioned for the
   bounded local-preview slice; ERG-005, placement authority, broader promotion, release, and UAT
   remain blocked.
-- Planning marker: the `ERG-006`/`ERG-007` architecture review and disposition are recorded, the
-  cleared PIS-001 exact-candidate review is recorded, and the separate PIS-002 entry decision record is next.
+- Planning marker: the `ERG-006`/`ERG-007` architecture review and disposition, the cleared PIS-001
+  planning review, the bounded PIS-002 repository seam, its cleared PIS-002 exact-candidate review,
+  and the continuation decision are recorded; the separate PIS-003 entry decision record is next.
 - The descriptor-only runtime slice has both an internal source review and a high-effort internal
   proxy disposition with no findings. That is not external review and does not approve live
   VM/container runtime behavior.
 
-Validate the reviewed PIS-001 prerequisite surface with:
+Validate the reviewed PIS-002 continuation prerequisite surface with:
 
 ```sh
-make production-identity-storage-pis-001-internal-review-check
-make production-identity-storage-pis-001-decision-check
-make production-identity-storage-pis-001-planning-gate-check
+make production-identity-storage-pis-002-continuation-decision-check
+make production-identity-storage-pis-002-sandbox-descriptor-repository-internal-review-check
 make no-new-powers-guardrail
 make tool-surface-invariant-gate
 ```
@@ -48,8 +48,9 @@ make tool-surface-invariant-gate
 The accepted ERG-005 response closes only its two tracked runtime source findings. The exact
 ERG-006/ERG-007 architecture review fixed five medium findings and recorded a decision permitting
 only PIS-001 threat-model, non-goal, dependency-evaluation, exact-contract, and negative-test
-planning; that planning now has a zero-open-finding exact-candidate review. It does not approve
-dependency changes, PIS-002 implementation, production identity, enterprise RBAC,
+  planning; PIS-002 then proved one dependency-free repository seam and ended at its reviewed
+  continuation decision. It does not approve dependency changes, PIS-003 implementation,
+  production identity, enterprise RBAC,
 remote administration, runtime Postgres, migrations, production Node transport, or new governed
 tool powers.
 
@@ -58,26 +59,27 @@ tool powers.
 The historical ERG-005 and dual-send artifacts remain below for lineage and response-intake
 fallback. They are not the active post-disposition route while
 `make enterprise-operator-next-action` reports
-`prepare_pis_002_entry_decision_record`.
+`prepare_pis_003_entry_decision_record`.
 
 The current enterprise planning scope is:
 
-1. `PIS-002 entry decision`: select one first SQLite aggregate and freeze parity, rollback,
-   dependency, and stop-line evidence under the reviewed PIS-001 contract.
+1. `PIS-003 entry decision`: evaluate the exact dependency, transaction, dialect,
+   schema/migration, isolated test-service, import-verification, rollback, and failure-evidence
+   contract without changing dependencies or runtime behavior.
 
 Execute and validate this planning scope with:
 
 ```sh
-make production-identity-storage-pis-001-internal-review-check
-make production-identity-storage-pis-001-decision-check
+make production-identity-storage-pis-002-continuation-decision-check
+make production-identity-storage-pis-002-sandbox-descriptor-repository-internal-review-check
 ```
 
 The active reviewed prerequisites are:
 
 ```sh
-docs/codex/production-identity-storage-pis-001-threat-model-and-dependency-decision.md
-docs/codex/production-identity-storage-pis-001-decision.json
-docs/codex/production-identity-storage-pis-001-internal-source-review.md
+docs/codex/production-identity-storage-pis-002-continuation-decision-record.md
+docs/codex/production-identity-storage-pis-002-continuation-decision.json
+docs/codex/production-identity-storage-pis-002-sandbox-descriptor-repository-internal-source-review.md
 ```
 
 The bounded implementation-planning checkpoint for the next ERG-005 slice is:

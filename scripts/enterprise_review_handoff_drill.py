@@ -181,8 +181,8 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
     for phrase in [
         "Enterprise Review Handoff Drill",
         "Historical Dual-Send Set",
-        "Active enterprise route: preparation of the `PIS-002` entry decision record after the "
-        "cleared `PIS-001` exact-candidate review; `ERG-006`/`ERG-007` remain planning-only scope.",
+        "Active enterprise route: preparation of the `PIS-003` entry decision record after the "
+        "valid `PIS-002` continuation decision; `ERG-006`/`ERG-007` remain planning-only scope.",
         "ERG-003",
         "ERG-002",
         "Operator sequence",
@@ -409,8 +409,8 @@ Current selected capability: `not selected`.
 
 Route scope: historical `ERG-003`/`ERG-002` dual-send handoff drill.
 
-Active enterprise route: preparation of the `PIS-002` entry decision record after the cleared
-`PIS-001` exact-candidate review; `ERG-006`/`ERG-007` remain planning-only scope.
+Active enterprise route: preparation of the `PIS-003` entry decision record after the valid
+`PIS-002` continuation decision; `ERG-006`/`ERG-007` remain planning-only scope.
 
 This drill ties together the historical send-ready outbox, send manifest, submission prompt, send
 receipt template, response inbox, response status board, and fixture-only intake drill. It does not

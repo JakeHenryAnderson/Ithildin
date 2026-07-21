@@ -52,15 +52,15 @@ A batch is complete only when:
 | --- | --- | --- | --- |
 | Technical MVP execution-board cleanup | done | no | `make technical-mvp-execution-board`, `make roadmap-status` |
 | `PIS-001` threat-model and dependency-decision planning | exact-candidate review cleared | no | `make production-identity-storage-pis-001-internal-review-check`, `make production-identity-storage-pis-001-decision-check`, `make production-identity-storage-external-review-bundle-check`; reviewed artifact: `production-identity-storage-pis-001-threat-model-and-dependency-decision.md` |
-| `PIS-002` entry-decision record preparation | active resume checkpoint | yes | `make production-identity-storage-pis-001-internal-review-check`, `make production-identity-storage-pis-001-decision-check`, `make no-new-powers-guardrail`, `make tool-surface-invariant-gate` |
+| `PIS-003` entry-decision record preparation | active resume checkpoint | yes | `make production-identity-storage-pis-002-continuation-decision-check`, `make production-identity-storage-pis-002-sandbox-descriptor-repository-internal-review-check`, `make no-new-powers-guardrail`, `make tool-surface-invariant-gate` |
 | `ERG-004` descriptor-only runtime source review | locally dispositioned for continued local-development progress | no | `make sandbox-vm-live-poc-runtime-descriptor-only-response-application-record-check`, `make sandbox-vm-live-poc-runtime-descriptor-only-response-application-playbook-check`, `make sandbox-vm-live-poc-runtime-descriptor-only-response-application-preflight-check` |
 | `ERG-003` response intake | blocked on response | not until response arrives | `make sandbox-vm-static-preflight-response-dry-run` |
 | `ERG-002` response intake | blocked on response | not until response arrives | `make mission-control-display-response-dry-run` |
 | live sandbox/VM POC | blocked on `ERG-003` | no | `make sandbox-vm-live-poc-preconditions-ready-check` |
 
 The active batch will produce
-`docs/codex/production-identity-storage-pis-002-entry-decision-record.md`. Until that artifact is
-committed and validated, PIS-002 implementation, dependencies, identity, PostgreSQL, schemas,
+`docs/codex/production-identity-storage-pis-003-entry-decision-record.md`. Until that artifact is
+committed and validated, PIS-003 implementation, dependencies, identity, PostgreSQL, schemas,
 migrations, and runtime changes remain unauthorized.
 
 ## Practical Rule

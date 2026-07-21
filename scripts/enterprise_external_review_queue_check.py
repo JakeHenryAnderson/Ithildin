@@ -47,13 +47,13 @@ REQUIRED_PHRASES = [
     "Current selected capability: `not selected`.",
     "make enterprise-external-review-queue-check",
     "Active Route Versus Historical Queue",
-    "Current active route: preparation of the `PIS-002` entry decision record after the cleared "
-    "`PIS-001` exact-candidate review; `ERG-006`/`ERG-007` remain planning-only scope.",
+    "Current active route: preparation of the `PIS-003` entry decision record after the valid "
+    "`PIS-002` continuation decision; `ERG-006`/`ERG-007` remain planning-only scope.",
     "make enterprise-active-route-clarity",
     "Historical Review Queue",
     "Dependency Order",
     "Historical recommended review: `ERG-003` static sandbox/VM preflight disposition.",
-    "`prepare_pis_002_entry_decision_record`",
+    "`prepare_pis_003_entry_decision_record`",
     "Runtime allowed",
     "public/security-product positioning remains a no-go lane",
 ]
@@ -206,9 +206,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "active_route": "ERG-006/ERG-007",
         "recommended_next_review": "ERG-006/ERG-007",
         "historical_recommended_review": "ERG-003",
-        "expected_action": (
-            "prepare_pis_002_entry_decision_record"
-        ),
+        "expected_action": "prepare_pis_003_entry_decision_record",
         "runtime_changes_allowed": False,
         "mission_control_runtime_allowed": False,
         "sandbox_orchestration_allowed": False,

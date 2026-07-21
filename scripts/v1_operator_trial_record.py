@@ -68,6 +68,7 @@ ALLOWED_ENTERPRISE_NEXT_ACTIONS = {
     "prepare_erg005_trusted_host_promotion_review",
     "execute_pis_001_threat_model_dependency_decision",
     "prepare_pis_002_entry_decision_record",
+    "prepare_pis_003_entry_decision_record",
 }
 BLOCKED_PHRASES = [
     "production deployment readiness",

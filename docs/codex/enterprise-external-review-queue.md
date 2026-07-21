@@ -53,16 +53,16 @@ make enterprise-response-intake-drill
 
 ## Active Route Versus Historical Queue
 
-The post-disposition active route is now preparation of the separate PIS-002 entry decision record
-under the cleared PIS-001 exact-candidate review. The bounded `ERG-005`
+The post-disposition active route is now preparation of the separate PIS-003 entry decision record
+under the valid PIS-002 continuation decision. The bounded `ERG-005`
 runtime source findings are
 dispositioned, but ERG-005 and broader trusted-host promotion remain blocked. The historical
 `ERG-004` descriptor-only and `ERG-003`/`ERG-002` routes remain below for provenance,
 response-intake fallback, and dependency traceability. They are not the current operator next
 action while `make enterprise-operator-next-action` reports
-`prepare_pis_002_entry_decision_record`.
+`prepare_pis_003_entry_decision_record`.
 
-Current active route: preparation of the `PIS-002` entry decision record after the cleared `PIS-001` exact-candidate review; `ERG-006`/`ERG-007` remain planning-only scope.
+Current active route: preparation of the `PIS-003` entry decision record after the valid `PIS-002` continuation decision; `ERG-006`/`ERG-007` remain planning-only scope.
 
 Current active route validation:
 

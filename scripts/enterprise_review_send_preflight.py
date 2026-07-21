@@ -33,6 +33,7 @@ ERG005_ACTION = "prepare_erg005_trusted_host_promotion_review"
 PIS_SEND_SET = ["ERG-006", "ERG-007"]
 PIS_ACTION = "execute_pis_001_threat_model_dependency_decision"
 PIS_002_ENTRY_DECISION_ACTION = "prepare_pis_002_entry_decision_record"
+PIS_003_ENTRY_DECISION_ACTION = "prepare_pis_003_entry_decision_record"
 ALLOWED_ACTIONS = {
     EXPECTED_ACTION,
     POST_DISPOSITION_ACTION,
@@ -40,6 +41,7 @@ ALLOWED_ACTIONS = {
     ERG005_ACTION,
     PIS_ACTION,
     PIS_002_ENTRY_DECISION_ACTION,
+    PIS_003_ENTRY_DECISION_ACTION,
 }
 BOUNDARY_FLAGS = {
     "records_external_review": False,
@@ -134,6 +136,16 @@ PIS_002_ENTRY_DECISION_DOC_PHRASES = [
     "Status: checked final operator preflight for the current enterprise review send.",
     "make enterprise-review-send-preflight",
     "It checks the operator next-action and response state",
+    "does not record external review",
+    "does not normalize responses",
+    "does not close `ERG-006` or `ERG-007`",
+]
+
+PIS_003_ENTRY_DECISION_DOC_PHRASES = [
+    "Status: checked final operator preflight for the current enterprise review send.",
+    "make enterprise-review-send-preflight",
+    "valid PIS-002 continuation decision",
+    "prepare_pis_003_entry_decision_record",
     "does not record external review",
     "does not normalize responses",
     "does not close `ERG-006` or `ERG-007`",
@@ -275,6 +287,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         ERG005_ACTION,
         PIS_ACTION,
         PIS_002_ENTRY_DECISION_ACTION,
+        PIS_003_ENTRY_DECISION_ACTION,
     }
     dual_response: dict[str, Any] = {}
     handoff_consistency: dict[str, Any] = {}
@@ -294,7 +307,11 @@ def build_report(repo_root: Path) -> dict[str, Any]:
             failures.append(f"{name} is not valid")
             failures.extend(f"{name}: {failure}" for failure in report.get("failures", []))
 
-    if next_action in {PIS_ACTION, PIS_002_ENTRY_DECISION_ACTION}:
+    if next_action in {
+        PIS_ACTION,
+        PIS_002_ENTRY_DECISION_ACTION,
+        PIS_003_ENTRY_DECISION_ACTION,
+    }:
         active_send_set = PIS_SEND_SET
     elif next_action == ERG005_ACTION:
         active_send_set = ERG005_SEND_SET
@@ -353,7 +370,9 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "\n\n"
     )[0]
 
-    if next_action == PIS_002_ENTRY_DECISION_ACTION:
+    if next_action == PIS_003_ENTRY_DECISION_ACTION:
+        required_doc_phrases = PIS_003_ENTRY_DECISION_DOC_PHRASES
+    elif next_action == PIS_002_ENTRY_DECISION_ACTION:
         required_doc_phrases = PIS_002_ENTRY_DECISION_DOC_PHRASES
     elif next_action == PIS_ACTION:
         required_doc_phrases = PIS_DOC_PHRASES
@@ -392,7 +411,9 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "current_send_set": active_send_set,
         "expected_action": next_action,
         "preflight_mode": (
-            "pis_002_entry_decision_preparation"
+            "pis_003_entry_decision_preparation"
+            if next_action == PIS_003_ENTRY_DECISION_ACTION
+            else "pis_002_entry_decision_preparation"
             if next_action == PIS_002_ENTRY_DECISION_ACTION
             else "post_disposition_next_review"
             if post_disposition_mode

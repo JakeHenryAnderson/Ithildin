@@ -38,7 +38,7 @@ implemented surface is the local governed MCP/tool gateway, local review console
 evidence surfaces, demo/handoff packets, and bounded local-preview tools. The latest local-preview
 RC packet is generated through `make review-candidate`.
 
-Active enterprise route: preparation of the `PIS-002` entry decision record after the cleared `PIS-001` exact-candidate review; `ERG-006`/`ERG-007` remain planning-only scope.
+Active enterprise route: preparation of the `PIS-003` entry decision record after the valid `PIS-002` continuation decision; `ERG-006`/`ERG-007` remain planning-only scope.
 
 Historical dual-send route: `ERG-003` then `ERG-002`.
 
@@ -78,13 +78,12 @@ The historical enterprise handoff set is:
    make enterprise-active-route-clarity
    ```
 
-3. Prepare the separate PIS-002 entry decision named by `make enterprise-operator-next-action`
-   using the cleared PIS-001 exact-candidate evidence:
+3. Prepare the separate PIS-003 entry decision named by `make enterprise-operator-next-action`
+   using the valid PIS-002 continuation decision:
 
    ```sh
-   make production-identity-storage-pis-001-internal-review-check
-   make production-identity-storage-pis-001-decision-check
-   make production-identity-storage-pis-001-planning-gate-check
+   make production-identity-storage-pis-002-continuation-decision-check
+   make production-identity-storage-pis-002-sandbox-descriptor-repository-internal-review-check
    make no-new-powers-guardrail
    make tool-surface-invariant-gate
    ```

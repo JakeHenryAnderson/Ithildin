@@ -16,17 +16,17 @@ make enterprise-active-route-clarity
 
 The completed source-finding disposition route is `ERG-005`.
 
-Current expected action: `prepare_pis_002_entry_decision_record`.
+Current expected action: `prepare_pis_003_entry_decision_record`.
 
 Current architecture decision:
 `docs/codex/production-identity-storage-architecture-decision-record.md`.
 
 Current active gap scope: `ERG-006`, `ERG-007`; no new review send is required.
 
-Current cleared PIS-001 review:
-`docs/codex/production-identity-storage-pis-001-internal-source-review.md`.
+Current valid PIS-002 continuation decision:
+`docs/codex/production-identity-storage-pis-002-continuation-decision-record.md`.
 
-Current PIS-002 posture: entry-decision record preparation only; implementation remains blocked.
+Current PIS-003 posture: entry-decision record preparation only; implementation remains blocked.
 
 Current production identity/storage finding namespace: `EXT-PROD-IAM-STORAGE-###`.
 
@@ -45,7 +45,7 @@ The active route is reported by:
 - `make enterprise-readiness-gap-matrix-check`.
 
 The historical review-send preflight remains a generic state check, not the instruction source for
-the current PIS-002 entry-decision preparation route.
+the current PIS-003 entry-decision preparation route.
 
 ## Historical Dual-Send Lineage
 
@@ -61,9 +61,9 @@ The distinction is intentional:
 - completed local-development disposition artifacts preserve the `ERG-004` descriptor-only lane;
 - the accepted source-finding disposition preserves the bounded `ERG-005` review result without
   closing ERG-005;
-- active operator checkpoint artifacts now point to PIS-002 entry-decision record preparation under
-  the cleared PIS-001 contract while `ERG-006`/`ERG-007` remain planning-only scope;
-- dependency changes and PIS-002 implementation remain separately gated before runtime.
+- active operator checkpoint artifacts now point to PIS-003 entry-decision record preparation under
+  the valid PIS-002 continuation contract while `ERG-006`/`ERG-007` remain planning-only scope;
+- dependency changes and PIS-003 implementation remain separately gated before runtime.
 
 ## What This Does Not Approve
 

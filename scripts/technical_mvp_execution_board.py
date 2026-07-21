@@ -21,9 +21,7 @@ SEND_MANIFEST_JSON = Path(
     "var/review-packets/v3/enterprise-review-send-manifest/"
     "enterprise-review-send-manifest.json"
 )
-POST_DISPOSITION_ACTION = (
-    "prepare_pis_002_entry_decision_record"
-)
+POST_DISPOSITION_ACTION = "prepare_pis_003_entry_decision_record"
 
 REQUIRED_DOCS = [TECHNICAL_DOC, ENTERPRISE_DOC, BATCH_DOC]
 TECHNICAL_IDS = [f"MVP-{index:03d}" for index in range(1, 11)]
@@ -47,9 +45,9 @@ REQUIRED_PHRASES = {
         "Latest implemented tool: `sandbox.artifact.write_text`",
         "Technical MVP state: `operator_trial_observed`",
         "Current enterprise next action: "
-        "`prepare_pis_002_entry_decision_record`",
+        "`prepare_pis_003_entry_decision_record`",
         "Active resume checkpoint: `ENT-001`",
-        "The paused umbrella goal resumes through preparation of the separate `PIS-002` "
+        "The paused umbrella goal resumes through preparation of the separate `PIS-003` "
         "entry decision",
         "Development Validation Ladder",
         "Stop Conditions",
@@ -64,7 +62,7 @@ REQUIRED_PHRASES = {
         "Current response count: `0`",
         "Current closure-ready count: `0`",
         "Active resume checkpoint: `ENT-001`",
-        "The current resumed goal is limited to post-`ENT-001` PIS-002 entry-decision record "
+        "The current resumed goal is limited to post-`ENT-001` PIS-003 entry-decision record "
         "preparation",
         "Enterprise Target Definition",
         "Non-Negotiable Gates",

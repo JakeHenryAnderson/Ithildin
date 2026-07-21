@@ -29,7 +29,7 @@ TARGET = "enterprise-active-route-clarity"
 ACTIVE_SEND_SET = ["ERG-005"]
 NEXT_SEND_SET = ["ERG-006", "ERG-007"]
 HISTORICAL_SEND_SET = ["ERG-003", "ERG-002"]
-EXPECTED_ACTION = "prepare_pis_002_entry_decision_record"
+EXPECTED_ACTION = "prepare_pis_003_entry_decision_record"
 
 REQUIRED_DOC_PHRASES = [
     "Status: checked active-route clarification for the current enterprise planning path.",
@@ -38,18 +38,18 @@ REQUIRED_DOC_PHRASES = [
     "make enterprise-active-route-clarity",
     "The completed source-finding disposition route is `ERG-005`.",
     "Current expected action: "
-    "`prepare_pis_002_entry_decision_record`.",
+    "`prepare_pis_003_entry_decision_record`.",
     "docs/codex/production-identity-storage-architecture-decision-record.md",
     "Current active gap scope: `ERG-006`, `ERG-007`; no new review send is required.",
-    "docs/codex/production-identity-storage-pis-001-internal-source-review.md",
-    "Current PIS-002 posture: entry-decision record preparation only; implementation remains "
+    "docs/codex/production-identity-storage-pis-002-continuation-decision-record.md",
+    "Current PIS-003 posture: entry-decision record preparation only; implementation remains "
     "blocked.",
     "EXT-LIVE-DESC-###",
     "EXT-PROD-IAM-STORAGE-###",
     "Older ERG-003/ERG-002 generated packet surfaces remain in the repository for provenance",
     "Historical dual-send route: `ERG-003`, then `ERG-002`.",
     "completed local-development disposition artifacts preserve the `ERG-004` descriptor-only lane",
-    "active operator checkpoint artifacts now point to PIS-002 entry-decision record preparation",
+    "active operator checkpoint artifacts now point to PIS-003 entry-decision record preparation",
     "What This Does Not Approve",
 ]
 
@@ -100,24 +100,24 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     if preflight.get("current_send_set") != NEXT_SEND_SET:
         failures.append("preflight current send set is not ERG-006/ERG-007")
     if preflight.get("expected_action") != EXPECTED_ACTION:
-        failures.append("preflight expected action is not PIS-002 entry-decision preparation")
+        failures.append("preflight expected action is not PIS-003 entry-decision preparation")
     if checkpoint.get("recommended_send_set") != NEXT_SEND_SET:
         failures.append("current checkpoint recommended send set is not ERG-006/ERG-007")
     if checkpoint.get("recommended_next_enterprise_review") != "ERG-006/ERG-007":
         failures.append("current checkpoint next enterprise review is not ERG-006/ERG-007")
     if checkpoint.get("next_action") != EXPECTED_ACTION:
-        failures.append("current checkpoint next action is not PIS-002 entry-decision preparation")
+        failures.append("current checkpoint next action is not PIS-003 entry-decision preparation")
     if operator_next.get("recommended_send_set") != NEXT_SEND_SET:
         failures.append("operator next-action send set is not ERG-006/ERG-007")
     if operator_next.get("recommended_next_enterprise_review") != "ERG-006/ERG-007":
         failures.append("operator next-action enterprise review is not ERG-006/ERG-007")
     if operator_next.get("next_action") != EXPECTED_ACTION:
-        failures.append("operator next-action is not PIS-002 entry-decision preparation")
+        failures.append("operator next-action is not PIS-003 entry-decision preparation")
     if technical_board.get("current_send_set") != NEXT_SEND_SET:
         failures.append("technical MVP execution board current send set is not ERG-006/ERG-007")
     if technical_board.get("enterprise_next_action") != EXPECTED_ACTION:
         failures.append(
-            "technical MVP execution board next action is not PIS-002 entry-decision preparation"
+            "technical MVP execution board next action is not PIS-003 entry-decision preparation"
         )
     if historical_readiness.get("recommended_now") != HISTORICAL_SEND_SET:
         failures.append("historical dual-send readiness no longer records ERG-003/ERG-002 lineage")

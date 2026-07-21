@@ -71,7 +71,10 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     next_commands = _recommended_next_commands(validation, freshness, enterprise_next)
     return {
         "schema_version": "1",
-        "valid": validation.get("valid") is True,
+        "valid": (
+            validation.get("valid") is True
+            and enterprise_next.get("valid") is True
+        ),
         "commit": freshness.get("commit"),
         "dirty": freshness.get("dirty"),
         "tool_count": freshness.get("tool_count"),
@@ -143,6 +146,12 @@ def _recommended_next_commands(
     freshness: dict[str, Any],
     enterprise_next: dict[str, Any],
 ) -> list[str]:
+    if (
+        enterprise_next.get("valid") is False
+        or enterprise_next.get("next_action")
+        == "invalid_pis_002_continuation_decision"
+    ):
+        return []
     if validation.get("git_dirty"):
         return list(validation.get("next_development_commands", []))
     if not freshness.get("valid"):
@@ -223,9 +232,15 @@ def _recommended_next_commands(
             "make no-new-powers-guardrail",
             "make tool-surface-invariant-gate",
         ]
-    if enterprise_next.get("next_action") == (
-        "prepare_pis_002_entry_decision_record"
-    ):
+    if enterprise_next.get("next_action") == "prepare_pis_003_entry_decision_record":
+        return [
+            "make production-identity-storage-pis-002-continuation-decision-check",
+            "make production-identity-storage-pis-002-sandbox-descriptor-repository-"
+            "internal-review-check",
+            "make no-new-powers-guardrail",
+            "make tool-surface-invariant-gate",
+        ]
+    if enterprise_next.get("next_action") == "prepare_pis_002_entry_decision_record":
         return [
             "make production-identity-storage-pis-001-internal-review-check",
             "make production-identity-storage-pis-001-decision-check",
@@ -268,6 +283,8 @@ def _send_manifest_count(repo_root: Path, key: str) -> int:
 
 
 def _handoff_paths(repo_root: Path, enterprise_next: dict[str, Any]) -> dict[str, str]:
+    if enterprise_next.get("valid") is False:
+        return {}
     if enterprise_next.get("recommended_send_set") == ["ERG-004"]:
         return {
             "active_send_now": ENTERPRISE_SEND_NOW_DIR,

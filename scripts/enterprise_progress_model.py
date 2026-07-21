@@ -30,6 +30,7 @@ ALLOWED_NEXT_ACTIONS = {
     "prepare_erg005_trusted_host_promotion_review",
     "execute_pis_001_threat_model_dependency_decision",
     "prepare_pis_002_entry_decision_record",
+    "prepare_pis_003_entry_decision_record",
 }
 
 REQUIRED_PHRASES = [
@@ -56,11 +57,10 @@ REQUIRED_PHRASES = [
     "Checkpoint D: Live Sandbox/VM Proof Of Concept",
     "Checkpoint E: Trusted-Host Promotion",
     "Checkpoint F: Enterprise Architecture Lanes",
-    "preparation of the separate PIS-002 entry decision record",
-    "cleared PIS-001 exact-candidate review",
-    "make production-identity-storage-pis-001-internal-review-check",
-    "make production-identity-storage-pis-001-decision-check",
-    "make production-identity-storage-pis-001-planning-gate-check",
+    "preparation of the separate PIS-003 entry decision record",
+    "valid PIS-002 continuation decision",
+    "make production-identity-storage-pis-002-continuation-decision-check",
+    "make production-identity-storage-pis-002-sandbox-descriptor-repository-internal-review-check",
     "make no-new-powers-guardrail",
     "make tool-surface-invariant-gate",
     "Do not manually promote a lane",

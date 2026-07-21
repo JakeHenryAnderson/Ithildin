@@ -101,8 +101,8 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     required_doc_phrases = [
         "Status: operator quickstart for applying `ERG-003` and `ERG-002` reviewer responses.",
         "Route scope: historical `ERG-003`/`ERG-002` dual-response intake.",
-        "Active enterprise route: preparation of the `PIS-002` entry decision record after the "
-        "cleared `PIS-001` exact-candidate review; `ERG-006`/`ERG-007` remain planning-only scope.",
+        "Active enterprise route: preparation of the `PIS-003` entry decision record after the "
+        "valid `PIS-002` continuation decision; `ERG-006`/`ERG-007` remain planning-only scope.",
         "Current governed tool count: `24`.",
         "make enterprise-response-intake-quickstart",
         "make enterprise-dual-response-inbox",

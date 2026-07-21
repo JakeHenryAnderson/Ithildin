@@ -114,6 +114,9 @@ ALLOWED_ACTION_COMMANDS = {
     "make trusted-host-promotion-runtime-implementation-decision-check",
     "make trusted-host-promotion-negative-transcripts",
     "make trusted-host-promotion-runtime-source-review-bundle-check",
+    "make production-identity-storage-pis-002-continuation-decision-check",
+    "make production-identity-storage-pis-002-sandbox-descriptor-repository-"
+    "internal-review-check",
     "make production-identity-storage-pis-001-planning-gate-check",
     "make production-identity-storage-architecture-decision-record-check",
     "make production-identity-storage-architecture-check",

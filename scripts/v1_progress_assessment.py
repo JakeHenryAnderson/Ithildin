@@ -25,6 +25,7 @@ ROOT = Path(__file__).resolve().parents[1]
 DOC_PATH = ROOT / "docs/codex/v1.0-progress-assessment.md"
 POST_DISPOSITION_MODE = "post_disposition_next_review"
 PIS_002_ENTRY_DECISION_MODE = "pis_002_entry_decision_preparation"
+PIS_003_ENTRY_DECISION_MODE = "pis_003_entry_decision_preparation"
 
 REQUIRED_PHRASES = [
     "Status: conservative progress-assessment snapshot",
@@ -35,7 +36,7 @@ REQUIRED_PHRASES = [
     "Runtime changes: blocked",
     "Public/security-product positioning: blocked",
     "Enterprise readiness gap count: `10`",
-    "Recommended next enterprise work: prepare the separate `PIS-002` entry decision record",
+    "Recommended next enterprise work: prepare the separate `PIS-003` entry decision record",
     "Historical/fallback review route: `ERG-003` and `ERG-002`",
     "Core governed local tool gateway | `92-96%`",
     "v1.0 local-preview RC foundation | `84-90%`",
@@ -47,7 +48,7 @@ REQUIRED_PHRASES = [
     "Technical MVP state: `operator_trial_observed`",
     "Enterprise send package ready: `true`",
     "same-commit `make release-check` and `make review-candidate`",
-    "cleared `PIS-001` exact-candidate review",
+    "valid `PIS-002` continuation decision",
     "Mission Control remains a display/import layer",
     "Blocked Claims",
 ]
@@ -153,6 +154,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     post_disposition_mode = enterprise_send.get("preflight_mode") in {
         POST_DISPOSITION_MODE,
         PIS_002_ENTRY_DECISION_MODE,
+        PIS_003_ENTRY_DECISION_MODE,
     }
     if enterprise_send.get("valid") is not True:
         failures.append("enterprise send preflight is not valid")
@@ -164,10 +166,8 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         failures.append(
             "operator next action does not identify ERG-006/ERG-007 as the next review"
         )
-    if operator_next.get("next_action") != (
-        "prepare_pis_002_entry_decision_record"
-    ):
-        failures.append("operator next action is not PIS-002 entry-decision preparation")
+    if operator_next.get("next_action") != "prepare_pis_003_entry_decision_record":
+        failures.append("operator next action is not PIS-003 entry-decision preparation")
     if (
         not post_disposition_mode
         and enterprise_send.get("artifact_commits_match_current") is not True

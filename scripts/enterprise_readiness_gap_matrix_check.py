@@ -57,10 +57,10 @@ REQUIRED_PHRASES = [
     "Blocked current claims",
     "post-RC decision record",
     "Mission Control outside execution, policy, approval, audit authority",
-    "Current active route: preparation of the `PIS-002` entry decision record after the cleared "
-    "`PIS-001` exact-candidate review; `ERG-006`/`ERG-007` remain planning-only scope.",
+    "Current active route: preparation of the `PIS-003` entry decision record after the valid "
+    "`PIS-002` continuation decision; `ERG-006`/`ERG-007` remain planning-only scope.",
     "Historical/fallback route: `ERG-003` static sandbox/VM preflight",
-    "prepare_pis_002_entry_decision_record",
+    "prepare_pis_003_entry_decision_record",
 ]
 
 REQUIRED_BLOCKED_PHRASES = [
@@ -225,11 +225,9 @@ def _active_route_failures(operator_next: dict[str, Any]) -> list[str]:
         failures.append("active enterprise send set is not ERG-006/ERG-007")
     if operator_next.get("recommended_next_enterprise_review") != "ERG-006/ERG-007":
         failures.append("active enterprise review is not ERG-006/ERG-007")
-    if operator_next.get("next_action") != (
-        "prepare_pis_002_entry_decision_record"
-    ):
+    if operator_next.get("next_action") != "prepare_pis_003_entry_decision_record":
         failures.append(
-            "active enterprise action is not ERG-006/ERG-007 architecture review"
+            "active enterprise action is not PIS-003 entry-decision preparation"
         )
     return failures
 

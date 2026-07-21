@@ -51,10 +51,10 @@ remains the product-comprehension gate for the combined candidate.
 
 ## Lane B: Gateway Capability and Enterprise Readiness
 
-Current route: prepare the separate `PIS-002` entry decision record under the cleared `PIS-001` exact-candidate review; `ERG-006`/`ERG-007` remain planning-only scope
-Computed next action: `prepare_pis_002_entry_decision_record`
+Current route: prepare the separate `PIS-003` entry decision record under the valid `PIS-002` continuation decision; `ERG-006`/`ERG-007` remain planning-only scope
+Computed next action: `prepare_pis_003_entry_decision_record`
 Current response count: `0`
-Current source-review status: `pis_001_internal_review_cleared_external_architecture_lineage_retained`
+Current source-review status: `pis_002_continuation_valid_pis_003_entry_preparation_only`
 Runtime promotion allowed: `false`
 
 Verified review package:

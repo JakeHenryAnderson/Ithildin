@@ -1356,6 +1356,7 @@ def test_artifact_freshness_and_status_now_report_current_posture() -> None:
         "prepare_erg004_descriptor_only_runtime_planning",
         "prepare_erg005_trusted_host_promotion_review",
         "prepare_pis_002_entry_decision_record",
+        "prepare_pis_003_entry_decision_record",
     }
     assert set(freshness["checks"]) >= {
         "enterprise_send_artifact_commits_match_current",
@@ -1383,20 +1384,18 @@ def test_artifact_freshness_and_status_now_report_current_posture() -> None:
     assert status["sandbox_orchestration_allowed"] is False
     assert status["mission_control_execution_allowed"] is False
     assert status["public_security_product_positioning_allowed"] is False
-    assert status["enterprise_next_action"] == (
-        "prepare_pis_002_entry_decision_record"
-    )
+    assert status["enterprise_next_action"] == "prepare_pis_003_entry_decision_record"
     if freshness["valid"]:
         assert freshness["enterprise_next_action"] == status["enterprise_next_action"]
     assert status["recommended_next_commands"]
     assert status_now._recommended_next_commands(
         {"git_dirty": False},
         {"valid": True},
-        {"next_action": "prepare_pis_002_entry_decision_record"},
+        {"next_action": "prepare_pis_003_entry_decision_record"},
     ) == [
-        "make production-identity-storage-pis-001-internal-review-check",
-        "make production-identity-storage-pis-001-decision-check",
-        "make production-identity-storage-pis-001-planning-gate-check",
+        "make production-identity-storage-pis-002-continuation-decision-check",
+        "make production-identity-storage-pis-002-sandbox-descriptor-repository-"
+        "internal-review-check",
         "make no-new-powers-guardrail",
         "make tool-surface-invariant-gate",
     ]
@@ -1673,7 +1672,7 @@ def test_v1_rc_roadmap_is_wired(tmp_path: Path) -> None:
     assert "compose_demo_ready" in rendered_trial_record
     assert "docker_daemon_status" in rendered_trial_record
     assert operator_trial_record_report["enterprise_review_state"]["next_action"] == (
-        "prepare_pis_002_entry_decision_record"
+        "prepare_pis_003_entry_decision_record"
     )
     assert operator_trial_record_report["enterprise_review_state"][
         "recommended_send_set"
@@ -2099,16 +2098,16 @@ def test_v1_rc_packet_includes_current_artifact_map(tmp_path: Path) -> None:
     assert "validation decision summary" in trial_record
     assert "Enterprise Review State" in trial_record
     assert (
-        "- next_action: `prepare_pis_002_entry_decision_record`"
+        "- next_action: `prepare_pis_003_entry_decision_record`"
         in trial_record
     )
     assert "- recommended_send_set: `ERG-006`, `ERG-007`" in trial_record
     assert "- candidate_response_count: `0`" in trial_record
     assert "- placeholder_count: `1`" in trial_record
     assert "- waiting_room_next_action: `wait_for_external_response`" in trial_record
-    assert "`production_identity_storage_pis_001_decision`" in trial_record
-    assert "`production_identity_storage_pis_001_contract`" in trial_record
-    assert "`production_identity_storage_pis_001_internal_review`" in trial_record
+    assert "`production_identity_storage_pis_002_continuation_decision`" in trial_record
+    assert "`production_identity_storage_pis_002_continuation_contract`" in trial_record
+    assert "`production_identity_storage_pis_002_internal_review`" in trial_record
     assert "Ithildin v1.0 Observed Operator Trial Evidence" in observed_trial
     assert "patch_apply_status" in observed_trial
     assert "audit_verification_valid" in observed_trial
@@ -2315,9 +2314,7 @@ def test_enterprise_readiness_gap_matrix_is_wired() -> None:
     assert report["active_route_source"] == "enterprise-operator-next-action"
     assert report["active_send_set"] == ["ERG-006", "ERG-007"]
     assert report["recommended_next_enterprise_review"] == "ERG-006/ERG-007"
-    assert report["next_action"] == (
-        "prepare_pis_002_entry_decision_record"
-    )
+    assert report["next_action"] == "prepare_pis_003_entry_decision_record"
     assert report["historical_fallback_route"] == ["ERG-003", "ERG-002"]
     assert report["runtime_changes_allowed"] is False
     assert report["mission_control_runtime_allowed"] is False
@@ -2355,10 +2352,10 @@ def test_enterprise_readiness_gap_matrix_is_wired() -> None:
         "Allowed current claims",
         "Blocked current claims",
         "Mission Control outside execution, policy, approval, audit authority",
-        "Current active route: preparation of the `PIS-002` entry decision record after the "
-        "cleared `PIS-001` exact-candidate review; `ERG-006`/`ERG-007` remain planning-only scope.",
+        "Current active route: preparation of the `PIS-003` entry decision record after the "
+        "valid `PIS-002` continuation decision; `ERG-006`/`ERG-007` remain planning-only scope.",
         "Historical/fallback route: `ERG-003` static sandbox/VM preflight",
-        "prepare_pis_002_entry_decision_record",
+        "prepare_pis_003_entry_decision_record",
     ]:
         assert phrase in doc
     for phrase in [
@@ -2417,9 +2414,7 @@ def test_enterprise_external_review_queue_is_wired() -> None:
     assert report["active_route"] == "ERG-006/ERG-007"
     assert report["recommended_next_review"] == "ERG-006/ERG-007"
     assert report["historical_recommended_review"] == "ERG-003"
-    assert report["expected_action"] == (
-        "prepare_pis_002_entry_decision_record"
-    )
+    assert report["expected_action"] == "prepare_pis_003_entry_decision_record"
     assert report["runtime_changes_allowed"] is False
     assert report["mission_control_runtime_allowed"] is False
     assert report["sandbox_orchestration_allowed"] is False
@@ -2433,11 +2428,11 @@ def test_enterprise_external_review_queue_is_wired() -> None:
         "Current governed tool count: `24`.",
         "Current selected capability: `not selected`.",
         "Active Route Versus Historical Queue",
-        "Current active route: preparation of the `PIS-002` entry decision record after the "
-        "cleared "
-        "`PIS-001` exact-candidate review; `ERG-006`/`ERG-007` remain planning-only scope.",
+        "Current active route: preparation of the `PIS-003` entry decision record after the "
+        "valid "
+        "`PIS-002` continuation decision; `ERG-006`/`ERG-007` remain planning-only scope.",
         "Historical recommended review: `ERG-003` static sandbox/VM preflight disposition.",
-        "`prepare_pis_002_entry_decision_record`",
+        "`prepare_pis_003_entry_decision_record`",
         "sandbox-vm-static-preflight-disposition-packet.md",
         "mission-control-integration-readiness-packet.md",
         "trusted-host-promotion-disposition-packet.md",
@@ -2701,26 +2696,24 @@ def test_enterprise_current_checkpoint_is_wired() -> None:
     assert report["selected_capability"] == "not selected"
     assert report["recommended_send_set"] == ["ERG-006", "ERG-007"]
     assert report["recommended_next_enterprise_review"] == "ERG-006/ERG-007"
-    assert report["next_action"] == (
-        "prepare_pis_002_entry_decision_record"
-    )
+    assert report["next_action"] == "prepare_pis_003_entry_decision_record"
     assert report["action_commands"] == [
-        "make production-identity-storage-pis-001-internal-review-check",
-        "make production-identity-storage-pis-001-decision-check",
-        "make production-identity-storage-pis-001-planning-gate-check",
+        "make production-identity-storage-pis-002-continuation-decision-check",
+        "make production-identity-storage-pis-002-sandbox-descriptor-repository-"
+        "internal-review-check",
         "make no-new-powers-guardrail",
         "make tool-surface-invariant-gate",
     ]
     assert report["next_after_send_commands"] == report["action_commands"]
     assert [artifact["label"] for artifact in report["handoff_artifacts"]] == [
-        "production_identity_storage_pis_001_decision",
-        "production_identity_storage_pis_001_contract",
-        "production_identity_storage_pis_001_internal_review",
+        "production_identity_storage_pis_002_continuation_decision",
+        "production_identity_storage_pis_002_continuation_contract",
+        "production_identity_storage_pis_002_internal_review",
     ]
     assert {artifact["path"] for artifact in report["handoff_artifacts"]} == {
-        "docs/codex/production-identity-storage-pis-001-threat-model-and-dependency-decision.md",
-        "docs/codex/production-identity-storage-pis-001-decision.json",
-        "docs/codex/production-identity-storage-pis-001-internal-source-review.md",
+        "docs/codex/production-identity-storage-pis-002-continuation-decision-record.md",
+        "docs/codex/production-identity-storage-pis-002-continuation-decision.json",
+        "docs/codex/production-identity-storage-pis-002-sandbox-descriptor-repository-internal-source-review.md",
     }
     assert report["operator_next_action_doc"] == (
         "docs/codex/enterprise-operator-next-action.md"
@@ -2745,12 +2738,12 @@ def test_enterprise_current_checkpoint_is_wired() -> None:
         "`ERG-004`: descriptor-only sandbox/VM live POC runtime source review "
         "is locally dispositioned",
         "`ERG-005`: staging-only trusted-host promotion runtime source findings are dispositioned",
-        "the `ERG-006`/`ERG-007` architecture review and disposition are recorded",
-        "cleared PIS-001 exact-candidate review is recorded",
-        "the separate PIS-002 entry decision record is next",
-        "make production-identity-storage-pis-001-internal-review-check",
-        "make production-identity-storage-pis-001-decision-check",
-        "make production-identity-storage-pis-001-planning-gate-check",
+        "the `ERG-006`/`ERG-007` architecture review and disposition",
+        "cleared PIS-002 exact-candidate review,",
+        "separate PIS-003 entry decision record is next",
+        "make production-identity-storage-pis-002-continuation-decision-check",
+        "make production-identity-storage-pis-002-sandbox-descriptor-repository-"
+        "internal-review-check",
         "The historical ERG-003/ERG-002 dual-send commands remain available only for "
         "lineage and fallback.",
         "What This Checkpoint Does Not Approve",
@@ -2789,9 +2782,9 @@ def test_enterprise_progress_model_is_wired() -> None:
     assert report["recommended_send_set"] == ["ERG-006", "ERG-007"]
     assert report["recommended_next_enterprise_review"] == "ERG-006/ERG-007"
     assert [artifact["label"] for artifact in report["handoff_artifacts"]] == [
-        "production_identity_storage_pis_001_decision",
-        "production_identity_storage_pis_001_contract",
-        "production_identity_storage_pis_001_internal_review",
+        "production_identity_storage_pis_002_continuation_decision",
+        "production_identity_storage_pis_002_continuation_contract",
+        "production_identity_storage_pis_002_internal_review",
     ]
     assert report["response_present_count"] == 0
     assert report["closure_ready_count"] == 0
@@ -2824,10 +2817,11 @@ def test_enterprise_progress_model_is_wired() -> None:
         "Enterprise send package ready: `true`",
         "Enterprise control-plane architecture | `35-50%`",
         "Checkpoint C: Sandbox/VM Static Preflight Disposition",
-        "preparation of the separate PIS-002 entry decision record",
-        "cleared PIS-001 exact-candidate review",
-        "make production-identity-storage-pis-001-internal-review-check",
-        "make production-identity-storage-pis-001-decision-check",
+        "preparation of the separate PIS-003 entry decision record",
+        "valid PIS-002 continuation decision",
+        "make production-identity-storage-pis-002-continuation-decision-check",
+        "make production-identity-storage-pis-002-sandbox-descriptor-repository-"
+        "internal-review-check",
         "Do not manually promote a lane",
         "public/security-product positioning",
         "new governed tool powers",
@@ -3048,6 +3042,14 @@ def test_enterprise_status_export_is_wired(tmp_path: Path) -> None:
     assert report["compliance_automation_allowed"] is False
     assert report["public_security_product_positioning_allowed"] is False
     assert report["new_power_classes_allowed"] is False
+    assert report["action_commands"] == [
+        "make production-identity-storage-pis-002-continuation-decision-check",
+        "make production-identity-storage-pis-002-sandbox-descriptor-repository-"
+        "internal-review-check",
+        "make no-new-powers-guardrail",
+        "make tool-surface-invariant-gate",
+    ]
+    assert report["next_after_send_commands"] == report["action_commands"]
     assert {row["gap"] for row in report["review_lanes"]} == {
         "ERG-003",
         "ERG-002",
@@ -3091,15 +3093,18 @@ def test_enterprise_status_export_is_wired(tmp_path: Path) -> None:
         "Enterprise Status Export",
         "display-only enterprise status export",
         "recommended_send_set: `ERG-006, ERG-007`",
-        "next_action: `prepare_pis_002_entry_decision_record`",
-        "`make production-identity-storage-pis-001-planning-gate-check`",
+        "next_action: `prepare_pis_003_entry_decision_record`",
+        "`make production-identity-storage-pis-002-continuation-decision-check`",
+        "`make production-identity-storage-pis-002-sandbox-descriptor-repository-"
+        "internal-review-check`",
         "handoff_artifacts:",
-        "`production_identity_storage_pis_001_decision`: "
-        "`docs/codex/production-identity-storage-pis-001-threat-model-and-dependency-decision.md`",
-        "`production_identity_storage_pis_001_contract`: "
-        "`docs/codex/production-identity-storage-pis-001-decision.json`",
-        "`production_identity_storage_pis_001_internal_review`: "
-        "`docs/codex/production-identity-storage-pis-001-internal-source-review.md`",
+        "`production_identity_storage_pis_002_continuation_decision`: "
+        "`docs/codex/production-identity-storage-pis-002-continuation-decision-record.md`",
+        "`production_identity_storage_pis_002_continuation_contract`: "
+        "`docs/codex/production-identity-storage-pis-002-continuation-decision.json`",
+        "`production_identity_storage_pis_002_internal_review`: "
+        "`docs/codex/production-identity-storage-pis-002-sandbox-descriptor-repository-"
+        "internal-source-review.md`",
         "## Packet Paths",
         "`enterprise_review_send_package`: `var/review-packets/v3/enterprise-review-send-package`",
         "`enterprise_review_send_session_record`: "
@@ -3113,18 +3118,20 @@ def test_enterprise_status_export_is_wired(tmp_path: Path) -> None:
         '"artifact_type": "ithildin.enterprise_status_export"',
         '"status": "display_only"',
         '"tool_count": 24',
-        '"next_action": "prepare_pis_002_entry_decision_record"',
+        '"next_action": "prepare_pis_003_entry_decision_record"',
         '"handoff_artifacts": [',
-        '"label": "production_identity_storage_pis_001_decision"',
-        '"label": "production_identity_storage_pis_001_contract"',
-        '"label": "production_identity_storage_pis_001_internal_review"',
+        '"label": "production_identity_storage_pis_002_continuation_decision"',
+        '"label": "production_identity_storage_pis_002_continuation_contract"',
+        '"label": "production_identity_storage_pis_002_internal_review"',
         '"enterprise_review_send_quickstart": '
         '"var/review-packets/v3/enterprise-review-send-quickstart"',
         '"enterprise_review_send_package": '
         '"var/review-packets/v3/enterprise-review-send-package"',
         '"enterprise_review_send_session_record": '
         '"var/review-runs/enterprise-review-send-session-record"',
-        '"make production-identity-storage-pis-001-planning-gate-check"',
+        '"make production-identity-storage-pis-002-continuation-decision-check"',
+        '"make production-identity-storage-pis-002-sandbox-descriptor-repository-'
+        'internal-review-check"',
         '"runtime_changes_allowed": false',
         '"new_power_classes_allowed": false',
     ]:
@@ -3245,6 +3252,19 @@ def test_mission_control_enterprise_status_import_contract_is_wired() -> None:
 
 
 def test_mission_control_enterprise_status_fixtures_are_wired(tmp_path: Path) -> None:
+    expected_pis_003_display_commands = {
+        "make production-identity-storage-pis-002-continuation-decision-check",
+        "make production-identity-storage-pis-002-sandbox-descriptor-repository-"
+        "internal-review-check",
+        "make no-new-powers-guardrail",
+        "make tool-surface-invariant-gate",
+    }
+    assert set(enterprise_status_export.PIS_003_DISPLAY_ACTION_COMMANDS) == (
+        expected_pis_003_display_commands
+    )
+    assert expected_pis_003_display_commands.issubset(
+        mission_control_enterprise_status_fixtures.ALLOWED_ACTION_COMMANDS
+    )
     report = mission_control_enterprise_status_fixtures.build_check_report(Path.cwd())
     output_dir = tmp_path / "mission-control-enterprise-status-fixtures"
     mission_control_enterprise_status_fixtures.build_fixture_pack(
@@ -3620,8 +3640,8 @@ def test_enterprise_response_application_protocol_is_wired() -> None:
     for phrase in [
         "Status: checked operator protocol for applying enterprise external-review responses.",
         "make enterprise-response-application-protocol",
-        "Active enterprise route: preparation of the `PIS-002` entry decision record after the "
-        "cleared `PIS-001` exact-candidate review; `ERG-006`/`ERG-007` remain planning-only scope.",
+        "Active enterprise route: preparation of the `PIS-003` entry decision record after the "
+        "valid `PIS-002` continuation decision; `ERG-006`/`ERG-007` remain planning-only scope.",
         "Historical dual-response route: `ERG-003` then `ERG-002`.",
         "make enterprise-dual-response-inbox",
         "var/review-runs/enterprise-dual-response-inbox/ENTERPRISE_DUAL_RESPONSE_CHEATSHEET.md",
@@ -4972,8 +4992,8 @@ def test_enterprise_review_handoff_drill_is_wired() -> None:
     assert report["closes_enterprise_lanes"] is False
     for phrase in [
         "Status: generated operator drill for enterprise review send/receive readiness.",
-        "Active enterprise route: preparation of the `PIS-002` entry decision record after the "
-        "cleared `PIS-001` exact-candidate review; `ERG-006`/`ERG-007` remain planning-only scope.",
+        "Active enterprise route: preparation of the `PIS-003` entry decision record after the "
+        "valid `PIS-002` continuation decision; `ERG-006`/`ERG-007` remain planning-only scope.",
         "make enterprise-review-handoff-drill",
         "make enterprise-review-handoff-drill-check",
         "make enterprise-review-submission-prompt",
@@ -4991,8 +5011,8 @@ def test_enterprise_review_handoff_drill_is_wired() -> None:
     for phrase in [
         "Enterprise Review Handoff Drill",
         "Historical Dual-Send Set",
-        "Active enterprise route: preparation of the `PIS-002` entry decision record after the "
-        "cleared `PIS-001` exact-candidate review; `ERG-006`/`ERG-007` remain planning-only scope.",
+        "Active enterprise route: preparation of the `PIS-003` entry decision record after the "
+        "valid `PIS-002` continuation decision; `ERG-006`/`ERG-007` remain planning-only scope.",
         "ERG-003",
         "ERG-002",
         "Operator sequence",
@@ -6290,10 +6310,8 @@ def test_enterprise_review_send_preflight_is_wired() -> None:
     assert report["tool_count"] == 24
     assert report["selected_capability"] == "not selected"
     assert report["current_send_set"] == ["ERG-006", "ERG-007"]
-    assert report["expected_action"] == (
-        "prepare_pis_002_entry_decision_record"
-    )
-    assert report["preflight_mode"] == "pis_002_entry_decision_preparation"
+    assert report["expected_action"] == "prepare_pis_003_entry_decision_record"
+    assert report["preflight_mode"] == "pis_003_entry_decision_preparation"
     assert report["current_commit"]
     assert isinstance(report["current_dirty"], bool)
     assert report["response_present_count"] == 0
@@ -6338,13 +6356,14 @@ def test_enterprise_review_send_preflight_is_wired() -> None:
     for phrase in [
         "Status: checked final operator preflight for the current enterprise review send.",
         "make enterprise-review-send-preflight",
-        "make enterprise-review-send-refresh",
-        "current gap scope: `ERG-006`/`ERG-007`",
-        "production-identity-storage-architecture-decision-record.md",
-        "production-identity-storage-pis-001-planning-gate.md",
-        "EXT-PROD-IAM-STORAGE-###",
-        "make production-identity-storage-pis-001-planning-gate-check",
-        "make production-identity-storage-architecture-decision-record-check",
+            "make enterprise-review-send-refresh",
+            "current gap scope: `ERG-006`/`ERG-007`",
+            "production-identity-storage-pis-002-continuation-decision-record.md",
+            "production-identity-storage-pis-002-continuation-decision.json",
+            "EXT-PROD-IAM-STORAGE-###",
+            "make production-identity-storage-pis-002-continuation-decision-check",
+            "make production-identity-storage-pis-002-sandbox-descriptor-repository-"
+            "internal-review-check",
         "For speed, the preflight does not recursively rebuild every component.",
         "When the worktree is clean, the preflight also enforces",
         "When the worktree is dirty during development, that freshness check",
@@ -6512,30 +6531,29 @@ def test_enterprise_operator_next_action_is_wired() -> None:
     assert report["recommended_next_enterprise_review"] == "ERG-006/ERG-007"
     assert report["response_present_count"] == 0
     assert report["closure_ready_count"] == 0
-    assert report["next_action"] == (
-        "prepare_pis_002_entry_decision_record"
-    )
+    assert report["next_action"] == "prepare_pis_003_entry_decision_record"
     assert report["action_commands"] == [
-        "make production-identity-storage-pis-001-internal-review-check",
-        "make production-identity-storage-pis-001-decision-check",
-        "make production-identity-storage-pis-001-planning-gate-check",
+        "make production-identity-storage-pis-002-continuation-decision-check",
+        "make production-identity-storage-pis-002-sandbox-descriptor-repository-"
+        "internal-review-check",
         "make no-new-powers-guardrail",
         "make tool-surface-invariant-gate",
     ]
     assert report["next_after_send_commands"] == report["action_commands"]
     assert [artifact["label"] for artifact in report["handoff_artifacts"]] == [
-        "production_identity_storage_pis_001_decision",
-        "production_identity_storage_pis_001_contract",
-        "production_identity_storage_pis_001_internal_review",
+        "production_identity_storage_pis_002_continuation_decision",
+        "production_identity_storage_pis_002_continuation_contract",
+        "production_identity_storage_pis_002_internal_review",
     ]
     assert any(
         artifact["path"]
-        == "docs/codex/production-identity-storage-pis-001-threat-model-and-dependency-decision.md"
+        == "docs/codex/production-identity-storage-pis-002-continuation-decision-record.md"
         for artifact in report["handoff_artifacts"]
     )
     assert any(
         artifact["path"]
-        == "docs/codex/production-identity-storage-pis-001-internal-source-review.md"
+        == "docs/codex/production-identity-storage-pis-002-sandbox-descriptor-repository-"
+        "internal-source-review.md"
         for artifact in report["handoff_artifacts"]
     )
     assert report["erg005_runtime_source_findings_disposition_recorded"] is True
@@ -6560,14 +6578,14 @@ def test_enterprise_operator_next_action_is_wired() -> None:
         "make handoff-dry-run",
         "handoff_artifacts",
         "var/review-packets/v3/enterprise-review-send-manifest",
-        "The current PIS-002 entry-decision preparation route does not require a new reviewer "
+        "The current PIS-003 entry-decision preparation route does not require a new reviewer "
         "response",
-        "make production-identity-storage-pis-001-internal-review-check",
-        "make production-identity-storage-pis-001-decision-check",
-        "make production-identity-storage-pis-001-planning-gate-check",
+        "make production-identity-storage-pis-002-continuation-decision-check",
+        "make production-identity-storage-pis-002-sandbox-descriptor-repository-"
+        "internal-review-check",
         "make production-identity-storage-response-kit-check",
         "make production-identity-storage-disposition-closure-check",
-        "For the current active route, the primary lane is preparation of the `PIS-002` entry "
+        "For the current active route, the primary lane is preparation of the\n`PIS-003` entry "
         "decision",
         "`ERG-006`/`ERG-007`: use the production identity/storage response kit",
         (
@@ -6613,28 +6631,85 @@ def test_enterprise_operator_next_action_is_wired() -> None:
 
 
 def test_pis_001_fallback_remains_accepted_by_route_consumers(
-    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     fallback = "execute_pis_001_threat_model_dependency_decision"
-    monkeypatch.setattr(
-        enterprise_operator_next_action,
-        "_pis_001_exact_review_recorded",
-        lambda _repo_root: False,
-    )
+    assert enterprise_operator_next_action._next_action(
+        0,
+        0,
+        disposition_recorded=True,
+        internal_review_recorded=True,
+        runtime_gate_decision_recorded=True,
+        descriptor_only_disposition_recorded=True,
+        erg005_runtime_source_findings_disposition_recorded=True,
+        pis_architecture_decision_recorded=True,
+        pis_001_exact_review_recorded=False,
+        pis_002_continuation_artifact_present=False,
+        pis_002_continuation_decision_recorded=False,
+    ) == fallback
 
-    report = enterprise_operator_next_action.build_report(Path.cwd())
-    preflight = enterprise_review_send_preflight.build_report(Path.cwd())
-
-    assert report["valid"] is True
-    assert report["next_action"] == fallback
-    assert preflight["valid"] is True
-    assert preflight["expected_action"] == fallback
-    assert preflight["preflight_mode"] == "post_disposition_next_review"
     assert fallback in enterprise_progress_model.ALLOWED_NEXT_ACTIONS
     assert fallback in enterprise_review_send_preflight.ALLOWED_ACTIONS
     assert fallback in technical_mvp_operator_trial_readiness.ALLOWED_ENTERPRISE_NEXT_ACTIONS
     assert fallback in technical_mvp_ticket_map.ALLOWED_NEXT_ACTIONS
     assert fallback in v1_operator_trial_record.ALLOWED_ENTERPRISE_NEXT_ACTIONS
+
+
+def test_enterprise_operator_next_action_rejects_invalid_continuation_without_fallback(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    continuation = production_identity_storage_pis_002_continuation_decision_check
+    monkeypatch.setattr(
+        continuation,
+        "build_report",
+        lambda _root: {
+            "valid": False,
+            "pis_002_dependency_free_interface_phase_complete": False,
+            "pis_003_entry_decision_preparation_allowed": False,
+            "pis_003_implementation_allowed": False,
+            "dependency_changes_allowed": False,
+            "schema_changes_allowed": False,
+            "database_migrations_allowed": False,
+            "runtime_postgres_allowed": False,
+            "production_identity_allowed": False,
+            "release_allowed": False,
+            "tool_count": 24,
+            "next_required_action": "invalid_gate",
+        },
+    )
+
+    report = enterprise_operator_next_action.build_report(Path.cwd())
+
+    assert report["valid"] is False
+    assert report["pis_002_continuation_artifact_present"] is True
+    assert report["pis_002_continuation_decision_recorded"] is False
+    assert report["next_action"] == "invalid_pis_002_continuation_decision"
+    assert report["next_action"] not in {
+        "prepare_pis_002_entry_decision_record",
+        "prepare_pis_003_entry_decision_record",
+    }
+    assert report["action_commands"] == []
+    assert report["next_after_send_commands"] == []
+    assert report["handoff_artifacts"] == []
+    assert report["recommended_send_set"] == []
+    assert report["recommended_next_enterprise_review"] == "blocked"
+    assert status_now._recommended_next_commands(
+        {"git_dirty": True, "next_development_commands": ["make dev-check"]},
+        {"valid": False, "refresh_commands": ["make review-candidate"]},
+        report,
+    ) == []
+    assert status_now._handoff_paths(Path.cwd(), report) == {}
+
+    monkeypatch.setattr(
+        enterprise_operator_next_action,
+        "build_report",
+        lambda _root: report,
+    )
+    status = status_now.build_report(Path.cwd())
+
+    assert status["valid"] is False
+    assert status["recommended_next_commands"] == []
+    assert status["handoff_paths"] == {}
+    assert any("present but invalid" in failure for failure in report["failures"])
 
 
 def test_enterprise_operator_next_action_erg005_disposition_marker_fails_closed(
@@ -9468,7 +9543,7 @@ def test_production_identity_storage_pis_002_continuation_rejects_prerequisite_r
 ) -> None:
     validator = production_identity_storage_pis_002_continuation_decision_check
     prerequisite = (
-        validator.production_identity_storage_pis_002_sandbox_descriptor_repository_internal_review_check
+        production_identity_storage_pis_002_sandbox_descriptor_repository_internal_review_check
     )
     monkeypatch.setattr(
         prerequisite,
@@ -32196,9 +32271,7 @@ def test_enterprise_active_route_clarity_is_wired() -> None:
     assert report["tool_count"] == 24
     assert report["active_send_set"] == ["ERG-006", "ERG-007"]
     assert report["historical_dual_send_set"] == ["ERG-003", "ERG-002"]
-    assert report["expected_action"] == (
-        "prepare_pis_002_entry_decision_record"
-    )
+    assert report["expected_action"] == "prepare_pis_003_entry_decision_record"
     assert report["active_route_sources"][0] == (
         "enterprise-operator-next-action (canonical state reader)"
     )
@@ -32215,7 +32288,7 @@ def test_enterprise_active_route_clarity_is_wired() -> None:
     for phrase in [
         "The completed source-finding disposition route is `ERG-005`.",
         "docs/codex/production-identity-storage-architecture-decision-record.md",
-        "docs/codex/production-identity-storage-pis-001-internal-source-review.md",
+            "docs/codex/production-identity-storage-pis-002-continuation-decision-record.md",
         "EXT-PROD-IAM-STORAGE-###",
         "EXT-LIVE-DESC-###",
         "Historical dual-send route: `ERG-003`, then `ERG-002`.",
@@ -32264,7 +32337,7 @@ def test_enterprise_gap_matrix_fails_closed_on_stale_active_route() -> None:
 
     assert "active enterprise send set is not ERG-006/ERG-007" in failures
     assert "active enterprise review is not ERG-006/ERG-007" in failures
-    assert "active enterprise action is not ERG-006/ERG-007 architecture review" in failures
+    assert "active enterprise action is not PIS-003 entry-decision preparation" in failures
 
 
 def test_post_erg005_parallel_work_queue_is_wired() -> None:
@@ -37172,9 +37245,7 @@ def test_technical_mvp_ticket_map_is_wired() -> None:
     assert report["selected_capability"] == "not selected"
     assert report["latest_implemented_tool"] == "sandbox.artifact.write_text"
     assert report["recommended_next_enterprise_review"] == "ERG-006/ERG-007"
-    assert report["next_action"] == (
-        "prepare_pis_002_entry_decision_record"
-    )
+    assert report["next_action"] == "prepare_pis_003_entry_decision_record"
     assert report["response_present_count"] == 0
     assert report["capability_expansion_allowed"] is False
     assert report["public_security_product_positioning_allowed"] is False
@@ -37229,9 +37300,7 @@ def test_technical_mvp_execution_board_is_wired() -> None:
     assert report["latest_implemented_tool"] == "sandbox.artifact.write_text"
     assert report["selected_capability"] == "not selected"
     assert report["technical_mvp_state"] == "operator_trial_observed"
-    assert report["enterprise_next_action"] == (
-        "prepare_pis_002_entry_decision_record"
-    )
+    assert report["enterprise_next_action"] == "prepare_pis_003_entry_decision_record"
     assert report["active_resume_checkpoint"] == "ENT-001"
     assert report["response_present_count"] == 0
     assert report["closure_ready_count"] == 0
@@ -37279,10 +37348,10 @@ def test_technical_mvp_execution_board_is_wired() -> None:
         "Current governed tool count: `24`",
         "Technical MVP state: `operator_trial_observed`",
         "Current enterprise next action: "
-        "`prepare_pis_002_entry_decision_record`",
+        "`prepare_pis_003_entry_decision_record`",
         "Active resume checkpoint: `ENT-001`",
         (
-            "The paused umbrella goal resumes through preparation of the separate `PIS-002` "
+            "The paused umbrella goal resumes through preparation of the separate `PIS-003` "
             "entry decision record only"
         ),
         "Development Validation Ladder",
@@ -37293,7 +37362,7 @@ def test_technical_mvp_execution_board_is_wired() -> None:
         "Status: checked enterprise roadmap control board",
         "Current send set: `ERG-006`, `ERG-007`",
         "Active resume checkpoint: `ENT-001`",
-        "The current resumed goal is limited to post-`ENT-001` PIS-002 entry-decision record "
+        "The current resumed goal is limited to post-`ENT-001` PIS-003 entry-decision record "
         "preparation",
         "Enterprise Target Definition",
         "Non-Negotiable Gates",
@@ -37304,7 +37373,7 @@ def test_technical_mvp_execution_board_is_wired() -> None:
         "Tier 1: inner loop",
         "Tier 2: batch checkpoint",
         "Tier 3: handoff freeze",
-        "`PIS-002` entry-decision record preparation | active resume checkpoint",
+        "`PIS-003` entry-decision record preparation | active resume checkpoint",
         "Safe Batch Shapes",
         "Unsafe Batch Shapes",
     ]:
@@ -37362,9 +37431,7 @@ def test_technical_mvp_operator_trial_readiness_is_wired() -> None:
     if report["operator_trial_observed"]:
         assert report["observed_trial"]["patch_apply_status"] == "completed"
         assert report["observed_trial"]["audit_verification_valid"] == "true"
-    assert report["enterprise_next_action"] == (
-        "prepare_pis_002_entry_decision_record"
-    )
+    assert report["enterprise_next_action"] == "prepare_pis_003_entry_decision_record"
     assert report["response_present_count"] == 0
     assert report["runtime_changes_allowed"] is False
     assert report["capability_expansion_allowed"] is False
@@ -37430,9 +37497,7 @@ def test_development_efficiency_status_is_wired() -> None:
     }
     assert isinstance(report["operator_trial_ready"], bool)
     assert isinstance(report["operator_trial_observed"], bool)
-    assert report["enterprise_next_action"] == (
-        "prepare_pis_002_entry_decision_record"
-    )
+    assert report["enterprise_next_action"] == "prepare_pis_003_entry_decision_record"
     assert isinstance(report["enterprise_send_ready"], bool)
     assert isinstance(report["enterprise_send_artifact_commits_match_current"], bool)
     assert isinstance(report["enterprise_send_artifact_payloads_clean"], bool)

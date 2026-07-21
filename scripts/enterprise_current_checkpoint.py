@@ -29,6 +29,7 @@ DESCRIPTOR_ONLY_PLANNING_ACTION = "prepare_erg004_descriptor_only_runtime_planni
 ERG005_TRUSTED_HOST_ACTION = "prepare_erg005_trusted_host_promotion_review"
 PIS_001_PLANNING_ACTION = "execute_pis_001_threat_model_dependency_decision"
 PIS_002_ENTRY_DECISION_ACTION = "prepare_pis_002_entry_decision_record"
+PIS_003_ENTRY_DECISION_ACTION = "prepare_pis_003_entry_decision_record"
 ALLOWED_NEXT_ACTIONS = {
     PRE_DISPOSITION_ACTION,
     POST_DISPOSITION_ACTION,
@@ -36,6 +37,7 @@ ALLOWED_NEXT_ACTIONS = {
     ERG005_TRUSTED_HOST_ACTION,
     PIS_001_PLANNING_ACTION,
     PIS_002_ENTRY_DECISION_ACTION,
+    PIS_003_ENTRY_DECISION_ACTION,
 }
 
 REQUIRED_PHRASES = [
@@ -50,12 +52,11 @@ REQUIRED_PHRASES = [
     "Enterprise response evidence is not present yet",
     "`ERG-004`: descriptor-only sandbox/VM live POC runtime source review is locally dispositioned",
     "`ERG-005`: staging-only trusted-host promotion runtime source findings are dispositioned",
-    "the `ERG-006`/`ERG-007` architecture review and disposition are recorded",
-    "cleared PIS-001 exact-candidate review is recorded",
-    "the separate PIS-002 entry decision record is next",
-    "make production-identity-storage-pis-001-internal-review-check",
-    "make production-identity-storage-pis-001-decision-check",
-    "make production-identity-storage-pis-001-planning-gate-check",
+    "the `ERG-006`/`ERG-007` architecture review and disposition",
+    "cleared PIS-002 exact-candidate review,",
+    "separate PIS-003 entry decision record is next",
+    "make production-identity-storage-pis-002-continuation-decision-check",
+    "make production-identity-storage-pis-002-sandbox-descriptor-repository-internal-review-check",
     "The historical ERG-003/ERG-002 dual-send commands remain available only for "
     "lineage and fallback.",
     "What This Checkpoint Does Not Approve",
@@ -111,7 +112,11 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     operator_next_action = enterprise_operator_next_action.build_report(repo_root)
     pis_mode = (
         operator_next_action.get("next_action")
-        in {PIS_001_PLANNING_ACTION, PIS_002_ENTRY_DECISION_ACTION}
+        in {
+            PIS_001_PLANNING_ACTION,
+            PIS_002_ENTRY_DECISION_ACTION,
+            PIS_003_ENTRY_DECISION_ACTION,
+        }
     )
 
     failures.extend(f"v1-progress-assessment: {failure}" for failure in progress["failures"])

@@ -36,8 +36,10 @@ ARCHIVED_ERG004_DESCRIPTOR_ONLY_COMMANDS = [
     "make sandbox-vm-live-poc-runtime-descriptor-only-response-application-preflight-check",
     "make sandbox-vm-live-poc-runtime-descriptor-only-response-application-record-check",
 ]
-PIS_002_DISPLAY_ACTION_COMMANDS = [
-    "make production-identity-storage-pis-001-planning-gate-check",
+PIS_003_DISPLAY_ACTION_COMMANDS = [
+    "make production-identity-storage-pis-002-continuation-decision-check",
+    "make production-identity-storage-pis-002-sandbox-descriptor-repository-"
+    "internal-review-check",
     "make no-new-powers-guardrail",
     "make tool-surface-invariant-gate",
 ]
@@ -105,9 +107,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         f"enterprise-operator-next-action: {failure}" for failure in next_action["failures"]
     )
     failures.extend(f"enterprise-progress-model: {failure}" for failure in progress["failures"])
-    if next_action.get("next_action") != (
-        "prepare_pis_002_entry_decision_record"
-    ):
+    if next_action.get("next_action") != "prepare_pis_003_entry_decision_record":
         failures.extend(
             f"enterprise-review-send-readiness: {failure}"
             for failure in send["failures"]
@@ -183,16 +183,16 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         failures.append("release guardrails do not require enterprise status export check")
 
     active_send_set = set(current.get("recommended_send_set") or [])
-    pis_planning_mode = next_action.get("next_action") == (
-        "prepare_pis_002_entry_decision_record"
+    pis_planning_mode = (
+        next_action.get("next_action") == "prepare_pis_003_entry_decision_record"
     )
     display_action_commands = (
-        PIS_002_DISPLAY_ACTION_COMMANDS
+        PIS_003_DISPLAY_ACTION_COMMANDS
         if pis_planning_mode
         else next_action.get("action_commands")
     )
     display_next_after_send_commands = (
-        PIS_002_DISPLAY_ACTION_COMMANDS
+        PIS_003_DISPLAY_ACTION_COMMANDS
         if pis_planning_mode
         else next_action.get("next_after_send_commands")
     )
@@ -448,14 +448,16 @@ def _validate_generated_artifacts(artifacts: dict[str, str]) -> list[str]:
     for phrase in [
         "display-only enterprise status export",
         "recommended_send_set: `ERG-006, ERG-007`",
-        "next_action: `prepare_pis_002_entry_decision_record`",
-        "`make production-identity-storage-pis-001-planning-gate-check`",
+        "next_action: `prepare_pis_003_entry_decision_record`",
+        "`make production-identity-storage-pis-002-continuation-decision-check`",
+        "`make production-identity-storage-pis-002-sandbox-descriptor-repository-"
+        "internal-review-check`",
         "`make no-new-powers-guardrail`",
         "`make tool-surface-invariant-gate`",
         "handoff_artifacts:",
-        "production-identity-storage-pis-001-threat-model-and-dependency-decision.md",
-        "production-identity-storage-pis-001-decision.json",
-        "production-identity-storage-pis-001-internal-source-review.md",
+        "production-identity-storage-pis-002-continuation-decision-record.md",
+        "production-identity-storage-pis-002-continuation-decision.json",
+        "production-identity-storage-pis-002-sandbox-descriptor-repository-internal-source-review.md",
         "runtime_changes_allowed: `false`",
         "does not approve Mission Control runtime behavior",
         "does not approve new governed tool powers",
@@ -466,12 +468,14 @@ def _validate_generated_artifacts(artifacts: dict[str, str]) -> list[str]:
         '"artifact_type": "ithildin.enterprise_status_export"',
         '"status": "display_only"',
         '"tool_count": 24',
-        '"next_action": "prepare_pis_002_entry_decision_record"',
+        '"next_action": "prepare_pis_003_entry_decision_record"',
         '"handoff_artifacts": [',
-        "production-identity-storage-pis-001-threat-model-and-dependency-decision.md",
-        "production-identity-storage-pis-001-decision.json",
-        "production-identity-storage-pis-001-internal-source-review.md",
-        '"make production-identity-storage-pis-001-planning-gate-check"',
+        "production-identity-storage-pis-002-continuation-decision-record.md",
+        "production-identity-storage-pis-002-continuation-decision.json",
+        "production-identity-storage-pis-002-sandbox-descriptor-repository-internal-source-review.md",
+        '"make production-identity-storage-pis-002-continuation-decision-check"',
+        '"make production-identity-storage-pis-002-sandbox-descriptor-repository-'
+        'internal-review-check"',
         '"make no-new-powers-guardrail"',
         '"make tool-surface-invariant-gate"',
         '"runtime_changes_allowed": false',
