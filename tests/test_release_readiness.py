@@ -205,6 +205,7 @@ from scripts import (
     production_identity_storage_pis_002_sandbox_descriptor_repository_internal_review_check,
     production_identity_storage_pis_003_entry_decision_check,
     production_identity_storage_pis_003_entry_internal_review_check,
+    production_identity_storage_pis_003_sd_pg_001_connection_evidence_gate_check,
     production_identity_storage_pis_003_sd_pg_001_implementation_check,
     production_identity_storage_pis_003_sd_pg_001_implementation_gate_check,
     production_identity_storage_pis_003_sd_pg_001_implementation_gate_internal_review_check,
@@ -10622,6 +10623,462 @@ def test_production_identity_storage_pis_003_implementation_review_rejects_drift
     _assert_pis_003_implementation_review_fails_closed(
         validator.build_report(Path.cwd())
     )
+
+
+def test_production_identity_storage_pis_003_connection_evidence_gate_is_wired() -> None:
+    validator = production_identity_storage_pis_003_sd_pg_001_connection_evidence_gate_check
+    report = validator.build_report(Path.cwd())
+    contract = json.loads(Path(validator.CONTRACT_REL).read_text(encoding="utf-8"))
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+
+    assert report["valid"] is True
+    assert report["gate_id"] == (
+        "PRD-PROD-IAM-STORAGE-PIS-003-SD-PG-001-CONNECTION-EVIDENCE-GATE"
+    )
+    assert report["gate_outcome"] == (
+        "select_bounded_connection_evidence_candidate_pending_gate_review"
+    )
+    assert report["gate_baseline_commit"] == (
+        "bf26418b5f27b1fcd08552758e4387867b5eafe0"
+    )
+    assert report["reviewed_offline_candidate_commit"] == (
+        "ba60478ede66abce519e134981fcabcb3f68482f"
+    )
+    for field in (
+        "baseline_exists",
+        "baseline_is_ancestor",
+        "reviewed_offline_exists",
+        "reviewed_offline_is_ancestor",
+        "gate_document_hash_matches",
+        "gate_contract_hash_matches",
+        "contract_valid",
+        "candidate_inventory_exact",
+        "protected_hashes_match",
+        "offline_review_prerequisite_valid",
+        "wiring_valid",
+    ):
+        assert report[field] is True
+    assert report["tool_count"] == 24
+    assert report["candidate_path_count"] == 11
+    ambient_policy = re.compile(
+        contract["dsn_binding_contract"]["ambient_environment_key_rejection_regex"]
+    )
+    for current_libpq_key in (
+        "PGSSLNEGOTIATION",
+        "PGREQUIREAUTH",
+        "PGSSLCOMPRESSION",
+        "PGSSLCERTMODE",
+        "PGSSLMINPROTOCOLVERSION",
+        "PGSSLMAXPROTOCOLVERSION",
+        "PGGSSDELEGATION",
+        "PGCLIENTENCODING",
+        "PGLOADBALANCEHOSTS",
+        "PGMINPROTOCOLVERSION",
+        "PGMAXPROTOCOLVERSION",
+        "PGDATESTYLE",
+        "PGTZ",
+        "PGGEQO",
+        "PGLOCALEDIR",
+    ):
+        assert ambient_policy.fullmatch(current_libpq_key)
+    assert contract["dsn_binding_contract"]["ambient_environment_key_allowlist"] == []
+    for field, expected in validator.EXPECTED_AUTHORITY.items():
+        assert report[field] is expected
+    assert report["next_required_action"] == (
+        "review_pis_003_sd_pg_001_connection_evidence_gate_exact_candidate"
+    )
+    assert validator.validate_contract(contract) == []
+    assert f"{validator.TARGET}:" in makefile
+    assert f"release-check: {validator.TARGET}" in makefile
+    assert f"make {validator.TARGET}" in readme
+    assert validator.DOC_REL in review_docs.REVIEW_DOCS
+    assert validator.TARGET in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+
+
+def test_production_identity_storage_pis_003_connection_evidence_contract_is_closed() -> None:
+    validator = production_identity_storage_pis_003_sd_pg_001_connection_evidence_gate_check
+    source = Path(validator.CONTRACT_REL).read_text(encoding="utf-8")
+
+    contract = json.loads(source)
+    contract["authority"]["database_connections_allowed"] = True
+    assert any(
+        "authority is not the exact Boolean map" in item
+        for item in validator.validate_contract(contract)
+    )
+
+    contract = json.loads(source)
+    contract["gate_candidate_path_inventory"].append("apps/api/src/unsafe.py")
+    assert any(
+        "contract path inventory is not exact" in item
+        for item in validator.validate_contract(contract)
+    )
+
+    contract = json.loads(source)
+    contract["post_review_authority_ceiling"]["external_dsn_consumption_allowed"] = True
+    assert any(
+        "post-review ceiling is not exact" in item
+        for item in validator.validate_contract(contract)
+    )
+
+    contract = json.loads(source)
+    contract["execution_preflight"]["required_receipts"].remove(
+        "preconnection_rollback_receipt"
+    )
+    assert any(
+        "execution preflight is not exact" in item
+        for item in validator.validate_contract(contract)
+    )
+
+    contract = json.loads(source)
+    contract["required_connection_evidence"].remove(
+        "isolated_target_discard_receipt_after_last_connection"
+    )
+    assert any(
+        "required connection evidence is not exact" in item
+        for item in validator.validate_contract(contract)
+    )
+
+    contract = json.loads(source)
+    contract["implementation_boundary"]["protected_paths"].remove(
+        "apps/api/src/ithildin_api/storage_import.py"
+    )
+    assert any(
+        "implementation boundary is not exact" in item
+        for item in validator.validate_contract(contract)
+    )
+
+    contract = json.loads(source)
+    contract["execution_preflight"]["required_before_driver_load"] = False
+    assert any(
+        "execution preflight is not exact" in item
+        for item in validator.validate_contract(contract)
+    )
+
+    contract = json.loads(source)
+    contract["execution_preflight"][
+        "manifest_binds_exact_reviewed_implementation_commit"
+    ] = False
+    assert any(
+        "execution preflight is not exact" in item
+        for item in validator.validate_contract(contract)
+    )
+
+    contract = json.loads(source)
+    contract["execution_preflight"][
+        "manifest_binds_external_trust_record_sha256_and_issuer_fingerprint"
+    ] = False
+    assert any(
+        "execution preflight is not exact" in item
+        for item in validator.validate_contract(contract)
+    )
+
+    contract = json.loads(source)
+    contract["execution_preflight"]["forbidden_driver_packages"].remove("psycopg-binary")
+    assert any(
+        "execution preflight is not exact" in item
+        for item in validator.validate_contract(contract)
+    )
+
+    contract = json.loads(source)
+    contract["implementation_contract"]["outer_transaction_owner"] = "importer"
+    assert any(
+        "implementation contract is not exact" in item
+        for item in validator.validate_contract(contract)
+    )
+
+    contract = json.loads(source)
+    contract["safe_evidence_contract"]["allowed_values"].append("hostname")
+    assert any(
+        "safe evidence contract is not exact" in item
+        for item in validator.validate_contract(contract)
+    )
+
+    contract = json.loads(source)
+    contract["dsn_binding_contract"]["plain_unkeyed_dsn_hash_allowed"] = True
+    assert any(
+        "DSN binding contract is not exact" in item
+        for item in validator.validate_contract(contract)
+    )
+
+    contract = json.loads(source)
+    contract["dsn_binding_contract"]["ambient_environment_key_rejection_regex"] = (
+        "^PG(?:HOST|PORT)$"
+    )
+    assert any(
+        "DSN binding contract is not exact" in item
+        for item in validator.validate_contract(contract)
+    )
+
+    contract = json.loads(source)
+    contract["dsn_binding_contract"]["ambient_environment_key_allowlist"].append("PGUSER")
+    assert any(
+        "DSN binding contract is not exact" in item
+        for item in validator.validate_contract(contract)
+    )
+
+    contract = json.loads(source)
+    contract["dsn_binding_contract"]["binding_payload_exact_keys"].remove("password_utf8")
+    assert any(
+        "DSN binding contract is not exact" in item
+        for item in validator.validate_contract(contract)
+    )
+
+    contract = json.loads(source)
+    contract["dsn_binding_contract"]["uri_parsing_contract"][
+        "duplicate_query_keys_rejected"
+    ] = False
+    assert any(
+        "DSN binding contract is not exact" in item
+        for item in validator.validate_contract(contract)
+    )
+
+    contract = json.loads(source)
+    contract["dsn_binding_contract"]["uri_parsing_contract"][
+        "component_raw_safe_ascii"
+    ] += "/"
+    assert any(
+        "DSN binding contract is not exact" in item
+        for item in validator.validate_contract(contract)
+    )
+
+    contract = json.loads(source)
+    contract["dsn_binding_contract"]["uri_parsing_contract"][
+        "percent_encoded_unreserved_byte_rejected"
+    ] = False
+    assert any(
+        "DSN binding contract is not exact" in item
+        for item in validator.validate_contract(contract)
+    )
+
+    contract = json.loads(source)
+    contract["dsn_binding_contract"]["binding_payload_constraints"]["port"] = (
+        "string"
+    )
+    assert any(
+        "DSN binding contract is not exact" in item
+        for item in validator.validate_contract(contract)
+    )
+
+    contract = json.loads(source)
+    contract["receipt_authenticity_contract"][
+        "harness_receipt_creation_edit_or_overwrite_allowed"
+    ] = True
+    assert any(
+        "receipt authenticity contract is not exact" in item
+        for item in validator.validate_contract(contract)
+    )
+
+    contract = json.loads(source)
+    contract["receipt_authenticity_contract"]["receipt_specific_required_assertions"][
+        "target_owner_quarantine_receipt"
+    ]["exact_keys"].remove("target_binding_hmac_sha256_commitment")
+    assert any(
+        "receipt authenticity contract is not exact" in item
+        for item in validator.validate_contract(contract)
+    )
+
+    contract = json.loads(source)
+    contract["receipt_authenticity_contract"]["receipt_specific_required_assertions"][
+        "target_owner_quarantine_receipt"
+    ]["field_types"]["connection_attempt_budget"] = "string"
+    assert any(
+        "receipt authenticity contract is not exact" in item
+        for item in validator.validate_contract(contract)
+    )
+
+    contract = json.loads(source)
+    contract["receipt_authenticity_contract"]["receipt_specific_required_assertions"][
+        "target_owner_quarantine_receipt"
+    ]["exact_keys"].append("unexpected")
+    assert any(
+        "receipt authenticity contract is not exact" in item
+        for item in validator.validate_contract(contract)
+    )
+
+    contract = json.loads(source)
+    contract["receipt_authenticity_contract"]["receipt_specific_required_assertions"][
+        "target_owner_quarantine_receipt"
+    ]["fixed_values"]["target_empty"] = False
+    assert any(
+        "receipt authenticity contract is not exact" in item
+        for item in validator.validate_contract(contract)
+    )
+
+    contract = json.loads(source)
+    contract["receipt_authenticity_contract"]["signature_encoding"] = (
+        "base64url_no_padding_63_bytes"
+    )
+    assert any(
+        "receipt authenticity contract is not exact" in item
+        for item in validator.validate_contract(contract)
+    )
+
+    contract = json.loads(source)
+    contract["receipt_authenticity_contract"]["json_parsing_contract"][
+        "duplicate_object_members_rejected"
+    ] = False
+    assert any(
+        "receipt authenticity contract is not exact" in item
+        for item in validator.validate_contract(contract)
+    )
+
+    contract = json.loads(source)
+    contract["receipt_authenticity_contract"]["json_parsing_contract"][
+        "integer_fields_reject_boolean"
+    ] = False
+    assert any(
+        "receipt authenticity contract is not exact" in item
+        for item in validator.validate_contract(contract)
+    )
+
+    contract = json.loads(source)
+    contract["receipt_authenticity_contract"]["receipt_time_relationships"].remove(
+        "issued_at_strictly_before_expires_at"
+    )
+    assert any(
+        "receipt authenticity contract is not exact" in item
+        for item in validator.validate_contract(contract)
+    )
+
+    contract = json.loads(source)
+    contract["receipt_authenticity_contract"]["receipt_binding_relationships"].remove(
+        "receipt_type_matches_exact_assertion_schema"
+    )
+    assert any(
+        "receipt authenticity contract is not exact" in item
+        for item in validator.validate_contract(contract)
+    )
+
+    contract = json.loads(source)
+    del contract["receipt_authenticity_contract"]["receipt_provenance_by_type"][
+        "target_discard_receipt"
+    ]
+    assert any(
+        "receipt authenticity contract is not exact" in item
+        for item in validator.validate_contract(contract)
+    )
+
+    contract = json.loads(source)
+    contract["receipt_authenticity_contract"]["trust_record_encodings"][
+        "public_key_fingerprint"
+    ] = "sha1"
+    assert any(
+        "receipt authenticity contract is not exact" in item
+        for item in validator.validate_contract(contract)
+    )
+
+    contract = json.loads(source)
+    contract["receipt_authenticity_contract"]["trust_record_patterns"][
+        "issuer_id"
+    ] = ".*"
+    assert any(
+        "receipt authenticity contract is not exact" in item
+        for item in validator.validate_contract(contract)
+    )
+
+    contract = json.loads(source)
+    del contract["receipt_authenticity_contract"]["trust_record_patterns"][
+        "valid_from_and_valid_until"
+    ]
+    assert any(
+        "receipt authenticity contract is not exact" in item
+        for item in validator.validate_contract(contract)
+    )
+
+    contract = json.loads(source)
+    contract["native_dependency_identity_contract"][
+        "post_driver_load_identity_confirmation_required"
+    ] = False
+    assert any(
+        "native dependency identity contract is not exact" in item
+        for item in validator.validate_contract(contract)
+    )
+
+
+def _assert_pis_003_connection_evidence_gate_fails_closed(
+    report: dict[str, Any],
+) -> None:
+    validator = production_identity_storage_pis_003_sd_pg_001_connection_evidence_gate_check
+    assert report["valid"] is False
+    assert report["gate_id"] == "invalid"
+    assert report["gate_outcome"] == "invalid"
+    for field, expected in validator.EXPECTED_AUTHORITY.items():
+        if expected:
+            assert report[field] is False
+    assert report["database_connections_allowed"] is False
+    assert report["migration_execution_allowed"] is False
+    assert report["release_allowed"] is False
+    assert report["next_required_action"] == "invalid_gate"
+
+
+@pytest.mark.parametrize("artifact", ["document", "contract"])
+def test_production_identity_storage_pis_003_connection_evidence_gate_rejects_digest_drift(
+    monkeypatch: pytest.MonkeyPatch,
+    artifact: str,
+) -> None:
+    validator = production_identity_storage_pis_003_sd_pg_001_connection_evidence_gate_check
+    original = validator._read_bytes
+    target = Path(
+        validator.DOC_REL if artifact == "document" else validator.CONTRACT_REL
+    ).resolve()
+
+    def mutated(path: Path) -> bytes:
+        data = original(path)
+        return data + b" " if path.resolve() == target else data
+
+    monkeypatch.setattr(validator, "_read_bytes", mutated)
+    _assert_pis_003_connection_evidence_gate_fails_closed(
+        validator.build_report(Path.cwd())
+    )
+
+
+@pytest.mark.parametrize(
+    "failure_mode", ["paths", "prerequisite", "protected", "wiring", "tools"]
+)
+def test_production_identity_storage_pis_003_connection_evidence_gate_rejects_drift(
+    monkeypatch: pytest.MonkeyPatch,
+    failure_mode: str,
+) -> None:
+    validator = production_identity_storage_pis_003_sd_pg_001_connection_evidence_gate_check
+    if failure_mode == "paths":
+        monkeypatch.setattr(
+            validator,
+            "_candidate_paths",
+            lambda _root: validator.EXPECTED_GATE_CANDIDATE_PATHS | {"apps/api/src/unsafe.py"},
+        )
+    elif failure_mode == "prerequisite":
+        prerequisite = (
+            production_identity_storage_pis_003_sd_pg_001_implementation_internal_review_check
+        )
+        monkeypatch.setattr(prerequisite, "build_report", lambda _root: {"valid": False})
+    elif failure_mode == "protected":
+        hashes = dict(validator.EXPECTED_PROTECTED_HASHES)
+        hashes["apps/api/src/ithildin_api/storage_import.py"] = "0" * 64
+        monkeypatch.setattr(validator, "EXPECTED_PROTECTED_HASHES", hashes)
+    elif failure_mode == "wiring":
+        monkeypatch.setattr(validator, "_wiring_valid", lambda _root: False)
+    else:
+        monkeypatch.setattr(validator, "_tool_count", lambda _path: 23)
+
+    _assert_pis_003_connection_evidence_gate_fails_closed(
+        validator.build_report(Path.cwd())
+    )
+
+
+def test_production_identity_storage_pis_003_connection_evidence_gate_rejects_duplicate_keys(
+    tmp_path: Path,
+) -> None:
+    validator = production_identity_storage_pis_003_sd_pg_001_connection_evidence_gate_check
+    duplicate = tmp_path / "duplicate.json"
+    duplicate.write_text(
+        '{"authority":{"database_connections_allowed":false,'
+        '"database_connections_allowed":true}}',
+        encoding="utf-8",
+    )
+    contract, failures = validator._load_contract(duplicate)
+    assert contract == {}
+    assert any("duplicate JSON member: database_connections_allowed" in item for item in failures)
 
 
 @pytest.mark.parametrize(

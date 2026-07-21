@@ -851,6 +851,11 @@ checked with `make control-mapping-readiness`.
   validate the zero-finding Sol xhigh review of exact repaired implementation commit `ba60478`,
   the closed 20-path hash inventory, and connection-evidence-gate-preparation-only authority;
   Sol Ultra was not used.
+- `make production-identity-storage-pis-003-sd-pg-001-connection-evidence-gate-check` - validate
+  the closed test-only connection-evidence implementation boundary, environment-specific
+  preflight and receipt requirements, rollback/discard contract, exact reviewed-offline-candidate
+  prerequisite, and source-review stop line while driver use, DSN consumption, database
+  connections, migrations, services, runtime PostgreSQL, release, promotion, and UAT remain false.
 - `make production-identity-storage-disposition-packet` - generate the focused architecture
   disposition packet asking whether ERG-006/ERG-007 may continue planning while production identity,
   runtime Postgres, migrations, retention enforcement, and custody claims remain blocked.
@@ -1930,6 +1935,13 @@ only preparation of a separately reviewed connection-evidence gate. Its closed m
 [docs/codex/production-identity-storage-pis-003-sd-pg-001-implementation-review-authority.json](docs/codex/production-identity-storage-pis-003-sd-pg-001-implementation-review-authority.json).
 Psycopg load/use, DSN consumption, harness execution, connections, migrations, PostgreSQL service
 lifecycle, runtime activation, identity, RBAC, release, promotion, and UAT remain unauthorized.
+The next connection-evidence gate candidate is
+[docs/codex/production-identity-storage-pis-003-sd-pg-001-connection-evidence-gate.md](docs/codex/production-identity-storage-pis-003-sd-pg-001-connection-evidence-gate.md)
+and is checked with
+`make production-identity-storage-pis-003-sd-pg-001-connection-evidence-gate-check`. It binds the
+test-only harness boundary, environment-specific preflight, system-`libpq`/TLS/SBOM receipts,
+secret-safe failure evidence, transaction rollback, and target-discard proof. The gate itself grants
+no implementation or execution authority; exact source review is the next required action.
 Generate the production identity and storage disposition packet with
 `make production-identity-storage-disposition-packet`; it asks whether the current ERG-006/ERG-007
 architecture evidence is coherent enough to continue planning while keeping production identity,

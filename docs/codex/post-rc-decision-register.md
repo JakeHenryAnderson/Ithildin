@@ -449,6 +449,15 @@ Current selected capability: `not selected`.
   exact-candidate review pending and driver use, DSN consumption, connections, online migrations,
   PostgreSQL services, runtime changes, production identity, new powers, release, promotion, and
   UAT unauthorized.
+- Current PIS-003 SD-PG-001 connection-evidence gate:
+  `production-identity-storage-pis-003-sd-pg-001-connection-evidence-gate.md` selects the smallest
+  test-only harness, caller-owned online-Alembic path, immutable synthetic SQLite source, exact
+  environment/rollback/TLS/`libpq`/SBOM receipts, secret-safe failure categories, transaction
+  rollback, and external target-discard proof. Its closed JSON contract keeps both implementation
+  and execution authority false pending exact-candidate gate review. The current host has no
+  system-`libpq` receipt or PostgreSQL client/service binaries, and the gate does not authorize
+  Docker or service lifecycle, driver load, DSN consumption, connection, migration, runtime
+  PostgreSQL, identity, release, promotion, or UAT.
 - Current warning language: Ithildin may discuss production identity and durable storage
   architecture, but the current runtime remains local-preview with local principal labels and SQLite.
 - Current architecture evidence:
