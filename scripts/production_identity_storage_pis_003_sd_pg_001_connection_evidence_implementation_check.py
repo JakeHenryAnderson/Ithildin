@@ -31,12 +31,12 @@ DOC_REL = (
     "docs/codex/production-identity-storage-pis-003-sd-pg-001-"
     "connection-evidence-implementation-record.md"
 )
-DOC_SHA256 = "a4b56dafd90e3d7e72712835113dd45b7327ef28c95f1753f5259586efadac01"
+DOC_SHA256 = "5b613d2d1af46dfeac21a3f302ef70a02f103bd54f9140dde1d41a04959bb776"
 CONTRACT_REL = (
     "docs/codex/production-identity-storage-pis-003-sd-pg-001-"
     "connection-evidence-implementation-authority.json"
 )
-CONTRACT_SHA256 = "bac3904c1942b3cc4fa6e577bc0be5150d2b966dc2d7276ef23c803365be5131"
+CONTRACT_SHA256 = "bb67dd606cf1237afcb63af133a425ae1fe29b6b9c156f9468e11b51af4e1d87"
 HARNESS_REL = "scripts/production_identity_storage_pis_003_sd_pg_001_connection_evidence.py"
 TARGET = "production-identity-storage-pis-003-sd-pg-001-connection-evidence-implementation-check"
 BASELINE_COMMIT = "c84c9f9f97ee9716e1466944e26e206e85b4b729"
@@ -127,12 +127,20 @@ EXPECTED_IMPLEMENTATION_CONTRACT = {
     "native_libpq_and_tls_probe": True,
     "closed_failure_evidence": True,
     "output_tree_secret_scan": True,
+    "negative_scenario_one_attempt_bound": True,
+    "original_transaction_identity_revalidated": True,
+    "binding_secrets_consumed_before_driver_boundary": True,
+    "loaded_tls_symbol_owner_exact": True,
+    "marker_commitment_bound_complete_tree_scan": True,
+    "public_exception_boundary_closed": True,
+    "dsn_identity_control_characters_rejected": True,
+    "contextual_receipt_failure_stages": True,
     "service_or_container_lifecycle": False,
     "database_or_role_creation": False,
     "runtime_imports": False,
 }
 EXPECTED_VALIDATION_EVIDENCE = {
-    "storage_schema_import_tests": 44,
+    "storage_schema_import_tests": 74,
     "psycopg_loaded_during_tests": False,
     "database_connection_attempted": False,
     "online_migration_executed": False,
@@ -192,6 +200,8 @@ REQUIRED_PHRASES = [
     "`EXECUTION_AUTHORITY_ACTIVE` is `false`.",
     "No real DSN or target-binding key was read.",
     "Psycopg was not imported.",
+    "The first exact-candidate review of `7c6b5de5ab8055bfbe1d0384c6b1df0d372f4e03`",
+    "The focused storage/schema/import suite contains `74` passing tests.",
     "`connection_evidence_candidate_complete: true`",
     "`exact_candidate_source_review_complete: false`",
     "`database_connections_allowed: false`",
@@ -464,6 +474,12 @@ def _harness_semantics_valid(repo_root: Path) -> bool:
         "finalize_discard_receipt",
         "scan_output_tree_for_secrets",
         "_validate_loaded_native_identity",
+        "_execute_validated_preflight",
+        "_run_network_negative_attempt",
+        "_run_migration_import_attempt",
+        "_rollback_original_transaction",
+        "_require_original_transaction",
+        "secret_marker_commitment",
     }
     if not required_functions <= set(functions):
         return False
@@ -477,18 +493,46 @@ def _harness_semantics_valid(repo_root: Path) -> bool:
         and isinstance(execute.body[1], ast.If)
     )
     execute_source = ast.get_source_segment(source, execute) or ""
+    implementation_source = "\n".join(
+        ast.get_source_segment(source, functions[name]) or ""
+        for name in (
+            "execute_connection_evidence",
+            "_execute_validated_preflight",
+            "_run_network_negative_attempt",
+            "_run_migration_import_attempt",
+            "_rollback_original_transaction",
+            "_require_original_transaction",
+            "finalize_discard_receipt",
+            "scan_output_tree_for_secrets",
+            "secret_marker_commitment",
+        )
+    )
     return bool(
         authority_first
         and "if not EXECUTION_AUTHORITY_ACTIVE" in execute_source
         and "validate_execution_preflight" in execute_source
-        and "reject_ambient_libpq_environment" in execute_source
-        and "poolclass=NullPool" in execute_source
-        and ".rollback()" in execute_source
-        and ".dispose()" in execute_source
+        and "reject_ambient_libpq_environment" in implementation_source
+        and "poolclass=NullPool" in implementation_source
+        and ".rollback()" in implementation_source
+        and ".dispose()" in implementation_source
+        and ".pop(DSN_ENV" in implementation_source
+        and ".pop(BINDING_KEY_ENV" in implementation_source
+        and "connection.get_transaction() is not transaction" in implementation_source
+        and "NETWORK_NEGATIVE_SCENARIOS" in implementation_source
+        and "secret_marker_commitment" in implementation_source
+        and "expected_commitment=preflight.secret_scan_marker_commitment" in implementation_source
+        and 'raise ConnectionEvidenceError(category, "connection") from None' in execute_source
+        and '_loaded_symbol_library_path(libpq_path, "OpenSSL_version")' in source
+        and "_contains_control(user)" in source
+        and "_contains_control(database)" in source
+        and 'category="receipt_authenticity_failed"' in source
+        and 'failure_stage="discard"' in source
+        and "if path.is_symlink()" in implementation_source
+        and "not stat.S_ISREG" in implementation_source
         and "EXECUTION_AUTHORITY_ACTIVE = False" in source
         and 'DSN_ENV = "ITHILDIN_PIS3_TEST_DSN"' in source
         and 'BINDING_KEY_ENV = "ITHILDIN_PIS3_TARGET_BINDING_KEY"' in source
-        and "create_engine(" in execute_source
+        and "create_engine(" in implementation_source
         and "postgresql://" not in source
     )
 

@@ -15,7 +15,7 @@ from copy import deepcopy
 from dataclasses import replace
 from datetime import UTC, datetime
 from pathlib import Path
-from types import SimpleNamespace
+from types import MappingProxyType, SimpleNamespace
 from typing import Any, cast
 
 import pytest
@@ -47,10 +47,85 @@ from scripts import (
 
 ROOT = Path(__file__).resolve().parents[1]
 COMMIT = "a" * 40
+SECRET_MARKERS = (b"synthetic-secret-marker",)
 
 
 class ConnectionEvidenceGateRequired(RuntimeError):
     """The test-only connection contract cannot execute under the offline gate."""
+
+
+class _RunnerTransaction:
+    def __init__(self, connection: _RunnerConnection, *, rollback_error: bool = False) -> None:
+        self.connection = connection
+        self.is_active = True
+        self.rollback_error = rollback_error
+        self.rollback_count = 0
+
+    def rollback(self) -> None:
+        self.rollback_count += 1
+        if self.rollback_error:
+            raise RuntimeError("rollback exposed synthetic-secret-marker")
+        self.is_active = False
+        self.connection.current_transaction = None
+
+
+class _RunnerConnection:
+    def __init__(self, *, rollback_error: bool = False) -> None:
+        self.rollback_error = rollback_error
+        self.current_transaction: _RunnerTransaction | None = None
+        self.last_transaction: _RunnerTransaction | None = None
+        self.nested = False
+        self.autocommit = False
+
+    def __enter__(self) -> _RunnerConnection:
+        return self
+
+    def __exit__(self, *args: object) -> None:
+        del args
+
+    def begin(self) -> _RunnerTransaction:
+        transaction = _RunnerTransaction(self, rollback_error=self.rollback_error)
+        self.current_transaction = transaction
+        self.last_transaction = transaction
+        return transaction
+
+    def get_transaction(self) -> _RunnerTransaction | None:
+        return self.current_transaction
+
+    def in_transaction(self) -> bool:
+        return self.current_transaction is not None
+
+    def in_nested_transaction(self) -> bool:
+        return self.nested
+
+    def _is_autocommit_isolation(self) -> bool:
+        return self.autocommit
+
+
+class _RunnerEngine:
+    def __init__(
+        self,
+        *,
+        connection: _RunnerConnection | None = None,
+        connect_error: Exception | None = None,
+        dispose_error: bool = False,
+    ) -> None:
+        self.connection = connection or _RunnerConnection()
+        self.connect_error = connect_error
+        self.dispose_error = dispose_error
+        self.connect_count = 0
+        self.dispose_count = 0
+
+    def connect(self) -> _RunnerConnection:
+        self.connect_count += 1
+        if self.connect_error is not None:
+            raise self.connect_error
+        return self.connection
+
+    def dispose(self) -> None:
+        self.dispose_count += 1
+        if self.dispose_error:
+            raise RuntimeError("dispose exposed synthetic-secret-marker")
 
 
 def _deferred_isolated_harness_contract(
@@ -462,7 +537,9 @@ def _connection_preflight_fixture(
         },
         "connection_attempt_budget": 2,
         "negative_scenario": None,
-        "secret_scan_marker_commitment": "sha256:" + ("3" * 64),
+        "secret_scan_marker_commitment": connection_evidence.secret_marker_commitment(
+            SECRET_MARKERS
+        ),
     }
     manifest_path = tmp_path / "execution-manifest.json"
     _write_canonical(manifest_path, manifest, read_only=False)
@@ -980,6 +1057,50 @@ def test_connection_dsn_parser_rejects_noncanonical_authority_and_path(
         connection_evidence.parse_canonical_dsn(mutation + query, approved_tls_root=tls_root)
 
 
+@pytest.mark.parametrize(
+    "component",
+    ["pis3%0Auser", "pis3%0Duser", "pis3%7Fuser", "pis3%C2%80user"],
+)
+@pytest.mark.parametrize("location", ["user", "database"])
+def test_connection_dsn_parser_rejects_control_characters(
+    tmp_path: Path,
+    component: str,
+    location: str,
+) -> None:
+    tls_root = tmp_path / "root.pem"
+    tls_root.write_text("test\n", encoding="utf-8")
+    user = component if location == "user" else "pis3-user"
+    database = component if location == "database" else "pis3_evidence"
+    dsn = (
+        f"postgresql+psycopg://{user}:pis3-password@db.example.test:5432/{database}"
+        "?application_name=ithildin-pis3-evidence&connect_timeout=5&sslmode=verify-full&"
+        f"sslrootcert={connection_evidence._encode_component(str(tls_root.resolve()))}"
+    )
+
+    with pytest.raises(connection_evidence.ConnectionEvidenceError) as captured:
+        connection_evidence.parse_canonical_dsn(dsn, approved_tls_root=tls_root)
+
+    assert captured.value.category == "dsn_binding_failed"
+
+
+def test_connection_dsn_parser_accepts_canonical_nfc_non_ascii_components(
+    tmp_path: Path,
+) -> None:
+    tls_root = tmp_path / "root.pem"
+    tls_root.write_text("test\n", encoding="utf-8")
+    dsn = (
+        "postgresql+psycopg://pis3-%C3%A9:pis3-password@db.example.test:5432/"
+        "evidence-%C3%A9?application_name=ithildin-pis3-evidence&connect_timeout=5&"
+        "sslmode=verify-full&"
+        f"sslrootcert={connection_evidence._encode_component(str(tls_root.resolve()))}"
+    )
+
+    parsed = connection_evidence.parse_canonical_dsn(dsn, approved_tls_root=tls_root)
+
+    assert parsed.user_utf8 == "pis3-é"
+    assert parsed.database_utf8 == "evidence-é"
+
+
 def test_connection_preflight_rejects_every_ambient_libpq_key() -> None:
     for key in (
         "PGHOST",
@@ -998,6 +1119,343 @@ def test_connection_preflight_rejects_every_ambient_libpq_key() -> None:
     )
 
 
+@pytest.mark.parametrize("expected", sorted(connection_evidence.NETWORK_NEGATIVE_SCENARIOS))
+def test_connection_network_negative_attempt_is_exactly_one_and_category_bound(
+    expected: str,
+) -> None:
+    message = {
+        "tls_verification_failed": "certificate verify failed",
+        "authentication_or_authorization_failed": "authentication failed",
+        "target_unavailable": "connection refused",
+    }[expected]
+    engine = _RunnerEngine(connect_error=RuntimeError(message))
+
+    with pytest.raises(connection_evidence.ConnectionEvidenceError) as captured:
+        connection_evidence._run_network_negative_attempt(engine, expected)
+
+    assert captured.value.category == expected
+    assert captured.value.stage == "connection"
+    assert engine.connect_count == 1
+
+
+def test_connection_network_negative_unexpected_success_never_crosses_attempt_budget() -> None:
+    engine = _RunnerEngine()
+
+    with pytest.raises(connection_evidence.ConnectionEvidenceError) as captured:
+        connection_evidence._run_network_negative_attempt(engine, "tls_verification_failed")
+
+    assert captured.value.category == "connection_attempt_budget_exhausted"
+    assert engine.connect_count == 1
+
+
+def test_connection_runner_pops_binding_secrets_before_driver_boundary(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    manifest_path, now, manifest, dsn, binding_key, _, _ = _connection_preflight_fixture(tmp_path)
+    preflight = connection_evidence.validate_execution_preflight(
+        manifest_path,
+        expected_reviewed_commit=cast(str, manifest["reviewed_candidate_commit"]),
+        now=now,
+    )
+    environment = {
+        connection_evidence.PSYCOPG_IMPL_ENV: "python",
+        connection_evidence.DSN_ENV: dsn,
+        connection_evidence.BINDING_KEY_ENV: binding_key,
+    }
+
+    def driver_boundary() -> None:
+        assert connection_evidence.DSN_ENV not in environment
+        assert connection_evidence.BINDING_KEY_ENV not in environment
+        raise connection_evidence.ConnectionEvidenceError(
+            "native_library_identity_mismatch", "driver_identity"
+        )
+
+    monkeypatch.setattr(connection_evidence, "_load_plain_psycopg_driver", driver_boundary)
+    with pytest.raises(connection_evidence.ConnectionEvidenceError) as captured:
+        connection_evidence._execute_validated_preflight(
+            preflight,
+            checked_now=now,
+            environment=environment,
+        )
+
+    assert captured.value.category == "native_library_identity_mismatch"
+    assert connection_evidence.DSN_ENV not in environment
+    assert connection_evidence.BINDING_KEY_ENV not in environment
+
+
+def test_connection_runner_removes_secrets_even_when_binding_fails(
+    tmp_path: Path,
+) -> None:
+    manifest_path, now, manifest, dsn, _, _, _ = _connection_preflight_fixture(tmp_path)
+    preflight = connection_evidence.validate_execution_preflight(
+        manifest_path,
+        expected_reviewed_commit=cast(str, manifest["reviewed_candidate_commit"]),
+        now=now,
+    )
+    environment = {
+        connection_evidence.PSYCOPG_IMPL_ENV: "python",
+        connection_evidence.DSN_ENV: dsn,
+        connection_evidence.BINDING_KEY_ENV: _base64url(b"\x22" * 32),
+    }
+
+    with pytest.raises(connection_evidence.ConnectionEvidenceError) as captured:
+        connection_evidence._execute_validated_preflight(
+            preflight,
+            checked_now=now,
+            environment=environment,
+        )
+
+    assert captured.value.category == "dsn_binding_failed"
+    assert connection_evidence.DSN_ENV not in environment
+    assert connection_evidence.BINDING_KEY_ENV not in environment
+
+
+def test_connection_runner_rejects_immutable_environment_mapping(
+    tmp_path: Path,
+) -> None:
+    manifest_path, now, manifest, dsn, binding_key, _, _ = _connection_preflight_fixture(tmp_path)
+    preflight = connection_evidence.validate_execution_preflight(
+        manifest_path,
+        expected_reviewed_commit=cast(str, manifest["reviewed_candidate_commit"]),
+        now=now,
+    )
+    environment = MappingProxyType(
+        {
+            connection_evidence.PSYCOPG_IMPL_ENV: "python",
+            connection_evidence.DSN_ENV: dsn,
+            connection_evidence.BINDING_KEY_ENV: binding_key,
+        }
+    )
+
+    with pytest.raises(connection_evidence.ConnectionEvidenceError) as captured:
+        connection_evidence._execute_validated_preflight(
+            preflight,
+            checked_now=now,
+            environment=cast(Any, environment),
+        )
+
+    assert captured.value.category == "preflight_invalid"
+    assert captured.value.stage == "environment"
+
+
+def test_connection_attempt_rolls_back_the_exact_original_transaction(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    manifest_path, now, manifest, _, _, _, _ = _connection_preflight_fixture(tmp_path)
+    preflight = connection_evidence.validate_execution_preflight(
+        manifest_path,
+        expected_reviewed_commit=cast(str, manifest["reviewed_candidate_commit"]),
+        now=now,
+    )
+    connection = _RunnerConnection()
+    engine = _RunnerEngine(connection=connection)
+    receipt = cast(DescriptorImportReceipt, object())
+    monkeypatch.setattr(connection_evidence, "_run_online_alembic", lambda _connection: None)
+    monkeypatch.setattr(
+        connection_evidence,
+        "import_validated_descriptor_snapshot",
+        lambda *args, **kwargs: receipt,
+    )
+
+    observed = connection_evidence._run_migration_import_attempt(engine, preflight, now)
+
+    assert observed is receipt
+    assert engine.connect_count == 1
+    assert connection.current_transaction is None
+    assert connection.last_transaction is not None
+    assert connection.last_transaction.rollback_count == 1
+
+
+def test_connection_attempt_rejects_transaction_identity_replacement(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    manifest_path, now, manifest, _, _, _, _ = _connection_preflight_fixture(tmp_path)
+    preflight = connection_evidence.validate_execution_preflight(
+        manifest_path,
+        expected_reviewed_commit=cast(str, manifest["reviewed_candidate_commit"]),
+        now=now,
+    )
+    connection = _RunnerConnection()
+    engine = _RunnerEngine(connection=connection)
+    import_called = False
+
+    def replace_transaction(_connection: object) -> None:
+        original = connection.current_transaction
+        assert original is not None
+        original.is_active = False
+        connection.current_transaction = _RunnerTransaction(connection)
+
+    def unexpected_import(*args: object, **kwargs: object) -> None:
+        nonlocal import_called
+        del args, kwargs
+        import_called = True
+
+    monkeypatch.setattr(connection_evidence, "_run_online_alembic", replace_transaction)
+    monkeypatch.setattr(
+        connection_evidence,
+        "import_validated_descriptor_snapshot",
+        unexpected_import,
+    )
+
+    with pytest.raises(connection_evidence.ConnectionEvidenceError) as captured:
+        connection_evidence._run_migration_import_attempt(engine, preflight, now)
+
+    assert captured.value.category == "transaction_state_lost"
+    assert import_called is False
+
+
+def test_connection_attempt_redacts_rollback_failure(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    manifest_path, now, manifest, _, _, _, _ = _connection_preflight_fixture(tmp_path)
+    preflight = connection_evidence.validate_execution_preflight(
+        manifest_path,
+        expected_reviewed_commit=cast(str, manifest["reviewed_candidate_commit"]),
+        now=now,
+    )
+    engine = _RunnerEngine(connection=_RunnerConnection(rollback_error=True))
+    monkeypatch.setattr(connection_evidence, "_run_online_alembic", lambda _connection: None)
+    monkeypatch.setattr(
+        connection_evidence,
+        "import_validated_descriptor_snapshot",
+        lambda *args, **kwargs: cast(DescriptorImportReceipt, object()),
+    )
+
+    with pytest.raises(connection_evidence.ConnectionEvidenceError) as captured:
+        connection_evidence._run_migration_import_attempt(engine, preflight, now)
+
+    assert captured.value.category == "transaction_state_lost"
+    assert captured.value.stage == "rollback"
+    assert "synthetic-secret-marker" not in str(captured.value)
+    assert captured.value.__cause__ is None
+
+
+def test_connection_public_boundary_redacts_engine_and_cleanup_exceptions(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    manifest_path, now, manifest, dsn, binding_key, _, _ = _connection_preflight_fixture(tmp_path)
+    environment = {
+        connection_evidence.PSYCOPG_IMPL_ENV: "python",
+        connection_evidence.DSN_ENV: dsn,
+        connection_evidence.BINDING_KEY_ENV: binding_key,
+    }
+    monkeypatch.setattr(connection_evidence, "EXECUTION_AUTHORITY_ACTIVE", True)
+    monkeypatch.setattr(connection_evidence, "_load_plain_psycopg_driver", lambda: object())
+    monkeypatch.setattr(connection_evidence, "_validate_loaded_native_identity", lambda *args: None)
+    monkeypatch.setattr(
+        connection_evidence,
+        "create_engine",
+        lambda *args, **kwargs: (_ for _ in ()).throw(
+            RuntimeError("synthetic-secret-marker password=exposed")
+        ),
+    )
+
+    with pytest.raises(connection_evidence.ConnectionEvidenceError) as captured:
+        connection_evidence.execute_connection_evidence(
+            manifest_path,
+            expected_reviewed_commit=cast(str, manifest["reviewed_candidate_commit"]),
+            environment=environment,
+            now=now,
+        )
+
+    assert captured.value.category == "target_unavailable"
+    assert "synthetic-secret-marker" not in str(captured.value)
+    assert captured.value.__cause__ is None
+
+
+def test_connection_negative_failure_survives_dispose_failure(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    manifest_path, now, manifest, dsn, binding_key, _, _ = _connection_preflight_fixture(tmp_path)
+    preflight = replace(
+        connection_evidence.validate_execution_preflight(
+            manifest_path,
+            expected_reviewed_commit=cast(str, manifest["reviewed_candidate_commit"]),
+            now=now,
+        ),
+        negative_scenario="tls_verification_failed",
+    )
+    environment = {
+        connection_evidence.PSYCOPG_IMPL_ENV: "python",
+        connection_evidence.DSN_ENV: dsn,
+        connection_evidence.BINDING_KEY_ENV: binding_key,
+    }
+    engine = _RunnerEngine(
+        connect_error=RuntimeError("certificate verify failed"),
+        dispose_error=True,
+    )
+    monkeypatch.setattr(connection_evidence, "_load_plain_psycopg_driver", lambda: object())
+    monkeypatch.setattr(connection_evidence, "_validate_loaded_native_identity", lambda *args: None)
+    monkeypatch.setattr(connection_evidence, "create_engine", lambda *args, **kwargs: engine)
+
+    with pytest.raises(connection_evidence.ConnectionEvidenceError) as captured:
+        connection_evidence._execute_validated_preflight(
+            preflight,
+            checked_now=now,
+            environment=environment,
+        )
+
+    assert captured.value.category == "tls_verification_failed"
+    assert engine.connect_count == 1
+    assert engine.dispose_count == 1
+    assert "synthetic-secret-marker" not in str(captured.value)
+
+
+@pytest.mark.parametrize(
+    ("declared", "expected"),
+    [
+        ("migration_failed", "migration_failed"),
+        ("semantic_verification_failed", "connection_attempt_budget_exhausted"),
+    ],
+)
+def test_connection_connected_negative_is_one_attempt_and_exactly_category_bound(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    declared: str,
+    expected: str,
+) -> None:
+    manifest_path, now, manifest, dsn, binding_key, _, _ = _connection_preflight_fixture(tmp_path)
+    preflight = replace(
+        connection_evidence.validate_execution_preflight(
+            manifest_path,
+            expected_reviewed_commit=cast(str, manifest["reviewed_candidate_commit"]),
+            now=now,
+        ),
+        negative_scenario=declared,
+    )
+    environment = {
+        connection_evidence.PSYCOPG_IMPL_ENV: "python",
+        connection_evidence.DSN_ENV: dsn,
+        connection_evidence.BINDING_KEY_ENV: binding_key,
+    }
+    engine = _RunnerEngine()
+    monkeypatch.setattr(connection_evidence, "_load_plain_psycopg_driver", lambda: object())
+    monkeypatch.setattr(connection_evidence, "_validate_loaded_native_identity", lambda *args: None)
+    monkeypatch.setattr(connection_evidence, "create_engine", lambda *args, **kwargs: engine)
+    monkeypatch.setattr(
+        connection_evidence,
+        "_run_online_alembic",
+        lambda _connection: (_ for _ in ()).throw(RuntimeError("migration failed")),
+    )
+
+    with pytest.raises(connection_evidence.ConnectionEvidenceError) as captured:
+        connection_evidence._execute_validated_preflight(
+            preflight,
+            checked_now=now,
+            environment=environment,
+        )
+
+    assert captured.value.category == expected
+    assert engine.connect_count == 1
+    assert engine.dispose_count == 1
+
+
 def test_connection_output_scan_rejects_markers_and_connection_strings(
     tmp_path: Path,
 ) -> None:
@@ -1006,7 +1464,9 @@ def test_connection_output_scan_rejects_markers_and_connection_strings(
     safe = output / "evidence.json"
     safe.write_text('{"status":"safe"}', encoding="utf-8")
     connection_evidence.scan_output_tree_for_secrets(
-        output, secret_markers=[b"synthetic-secret-marker"]
+        output,
+        secret_markers=SECRET_MARKERS,
+        expected_commitment=connection_evidence.secret_marker_commitment(SECRET_MARKERS),
     )
 
     safe.write_text("postgresql://redacted", encoding="utf-8")
@@ -1015,8 +1475,198 @@ def test_connection_output_scan_rejects_markers_and_connection_strings(
         match="preflight_invalid at secret_scan",
     ):
         connection_evidence.scan_output_tree_for_secrets(
-            output, secret_markers=[b"synthetic-secret-marker"]
+            output,
+            secret_markers=SECRET_MARKERS,
+            expected_commitment=connection_evidence.secret_marker_commitment(SECRET_MARKERS),
         )
+
+
+def test_connection_output_scan_binds_markers_and_rejects_symlinks(
+    tmp_path: Path,
+) -> None:
+    output = tmp_path / "output"
+    output.mkdir()
+    safe = output / "evidence.json"
+    safe.write_text('{"status":"safe"}', encoding="utf-8")
+    expected = connection_evidence.secret_marker_commitment(SECRET_MARKERS)
+
+    with pytest.raises(connection_evidence.ConnectionEvidenceError):
+        connection_evidence.scan_output_tree_for_secrets(
+            output,
+            secret_markers=(b"substituted-secret-marker",),
+            expected_commitment=expected,
+        )
+    with pytest.raises(connection_evidence.ConnectionEvidenceError):
+        connection_evidence.secret_marker_commitment(())
+    with pytest.raises(connection_evidence.ConnectionEvidenceError):
+        connection_evidence.secret_marker_commitment((SECRET_MARKERS[0], SECRET_MARKERS[0]))
+
+    (output / "linked-evidence").symlink_to(safe)
+    with pytest.raises(
+        connection_evidence.ConnectionEvidenceError,
+        match="preflight_invalid at secret_scan",
+    ):
+        connection_evidence.scan_output_tree_for_secrets(
+            output,
+            secret_markers=SECRET_MARKERS,
+            expected_commitment=expected,
+        )
+
+
+def test_connection_output_scan_rejects_nested_markers_and_nonregular_files(
+    tmp_path: Path,
+) -> None:
+    output = tmp_path / "output"
+    nested = output / "nested"
+    nested.mkdir(parents=True)
+    expected = connection_evidence.secret_marker_commitment(SECRET_MARKERS)
+    artifact = nested / "evidence.json"
+    artifact.write_bytes(b'{"status":"safe","marker":"' + SECRET_MARKERS[0] + b'"}')
+
+    with pytest.raises(connection_evidence.ConnectionEvidenceError):
+        connection_evidence.scan_output_tree_for_secrets(
+            output,
+            secret_markers=SECRET_MARKERS,
+            expected_commitment=expected,
+        )
+
+    artifact.unlink()
+    fifo = nested / "evidence.fifo"
+    try:
+        import os
+
+        os.mkfifo(fifo)
+    except (AttributeError, OSError):
+        pytest.skip("FIFO creation is unavailable on this platform")
+    with pytest.raises(connection_evidence.ConnectionEvidenceError):
+        connection_evidence.scan_output_tree_for_secrets(
+            output,
+            secret_markers=SECRET_MARKERS,
+            expected_commitment=expected,
+        )
+
+
+def test_connection_native_tls_identity_rejects_same_basename_different_path(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    expected_dir = tmp_path / "expected"
+    actual_dir = tmp_path / "actual"
+    expected_dir.mkdir()
+    actual_dir.mkdir()
+    libpq = tmp_path / "libpq.test"
+    expected_tls = expected_dir / "libssl.test"
+    actual_tls = actual_dir / "libssl.test"
+    for path, content in (
+        (libpq, b"libpq"),
+        (expected_tls, b"expected tls"),
+        (actual_tls, b"actual tls"),
+    ):
+        path.write_bytes(content)
+    native = {
+        "libpq": {
+            "loaded_library_realpath": str(libpq.resolve()),
+            "library_sha256": "sha256:" + hashlib.sha256(libpq.read_bytes()).hexdigest(),
+            "version": "libpq-test",
+            "architecture": platform.machine(),
+        },
+        "tls_backend": {
+            "loaded_library_realpath": str(expected_tls.resolve()),
+            "library_sha256": (
+                "sha256:" + hashlib.sha256(expected_tls.read_bytes()).hexdigest()
+            ),
+            "version": "tls-test",
+            "architecture": platform.machine(),
+        },
+    }
+    modules = {
+        "psycopg.pq": SimpleNamespace(version=lambda: "libpq-test"),
+        "psycopg.pq._pq_ctypes": SimpleNamespace(libname=str(libpq)),
+    }
+    monkeypatch.setattr(importlib, "import_module", lambda name: modules[name])
+    monkeypatch.setattr(
+        connection_evidence,
+        "_loaded_symbol_library_path",
+        lambda *_args: actual_tls.resolve(),
+    )
+
+    with pytest.raises(connection_evidence.ConnectionEvidenceError) as captured:
+        connection_evidence._validate_loaded_native_identity(
+            cast(Any, object()),
+            {"native_dependencies": native},
+        )
+
+    assert captured.value.category == "native_library_identity_mismatch"
+    source = Path(connection_evidence.__file__).read_text(encoding="utf-8")
+    assert "dependency.name in" not in source
+    assert 'subprocess.run(["otool"' not in source
+
+
+@pytest.mark.parametrize(
+    ("failure_stage", "expected_stage"),
+    [("external_receipts", "external_receipts"), ("discard", "discard")],
+)
+def test_connection_malformed_receipt_json_uses_contextual_failure_stage(
+    tmp_path: Path,
+    failure_stage: str,
+    expected_stage: str,
+) -> None:
+    malformed = tmp_path / "malformed.json"
+    malformed.write_text('{"payload":', encoding="utf-8")
+
+    with pytest.raises(connection_evidence.ConnectionEvidenceError) as captured:
+        connection_evidence.verify_external_receipt(
+            (malformed, "sha256:" + ("0" * 64)),
+            trust_records={},
+            verification_time=datetime(2026, 7, 21, 12, 7, tzinfo=UTC),
+            failure_stage=failure_stage,
+        )
+
+    assert captured.value.category == "receipt_authenticity_failed"
+    assert captured.value.stage == expected_stage
+
+
+def test_connection_malformed_trust_json_uses_external_receipt_failure_stage(
+    tmp_path: Path,
+) -> None:
+    repo_root = tmp_path / "repo"
+    output_root = tmp_path / "output"
+    external_root = tmp_path / "external"
+    repo_root.mkdir()
+    output_root.mkdir()
+    external_root.mkdir()
+    malformed = external_root / "trust.json"
+    malformed.write_text('{"issuer_id":', encoding="utf-8")
+    malformed.chmod(0o444)
+    reference = {
+        "path": str(malformed.resolve()),
+        "sha256": "sha256:" + hashlib.sha256(malformed.read_bytes()).hexdigest(),
+    }
+
+    with pytest.raises(connection_evidence.ConnectionEvidenceError) as captured:
+        connection_evidence._load_trust_records(
+            [reference],
+            repo_root=repo_root,
+            output_root=output_root,
+            now=datetime(2026, 7, 21, 12, 7, tzinfo=UTC),
+        )
+
+    assert captured.value.category == "receipt_authenticity_failed"
+    assert captured.value.stage == "external_receipts"
+
+
+def test_connection_missing_manifest_uses_closed_manifest_failure(
+    tmp_path: Path,
+) -> None:
+    with pytest.raises(connection_evidence.ConnectionEvidenceError) as captured:
+        connection_evidence.validate_execution_preflight(
+            tmp_path / "missing.json",
+            expected_reviewed_commit="a" * 40,
+        )
+
+    assert captured.value.category == "preflight_invalid"
+    assert captured.value.stage == "manifest"
+    assert captured.value.__cause__ is None
 
 
 def test_connection_discard_finalizer_binds_named_discard_owner(
@@ -1065,6 +1715,7 @@ def test_connection_discard_finalizer_binds_named_discard_owner(
             (tmp_path / "unused", "sha256:" + ("4" * 64)),
             last_connection_closed_at=last_closed,
             verification_time=datetime(2026, 7, 21, 12, 7, tzinfo=UTC),
+            secret_markers=SECRET_MARKERS,
         )
 
     named_owner = cast(str, preflight.target_owner_receipt.assertion["discard_owner_id"])
@@ -1078,6 +1729,7 @@ def test_connection_discard_finalizer_binds_named_discard_owner(
         (tmp_path / "unused", "sha256:" + ("4" * 64)),
         last_connection_closed_at=last_closed,
         verification_time=datetime(2026, 7, 21, 12, 7, tzinfo=UTC),
+        secret_markers=SECRET_MARKERS,
     )
     assert verified.issuer_id == named_owner
 

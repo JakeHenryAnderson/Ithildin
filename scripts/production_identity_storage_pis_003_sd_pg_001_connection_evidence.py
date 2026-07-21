@@ -21,10 +21,10 @@ import os
 import platform
 import re
 import sqlite3
-import subprocess
+import stat
 import sys
 import unicodedata
-from collections.abc import Mapping, Sequence
+from collections.abc import Mapping, MutableMapping, Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -60,6 +60,7 @@ BINDING_KEY_ENV = "ITHILDIN_PIS3_TARGET_BINDING_KEY"
 PSYCOPG_IMPL_ENV = "PSYCOPG_IMPL"
 RECEIPT_DOMAIN = b"ITHILDIN-PIS3-CONNECTION-RECEIPT-V1\n"
 BINDING_DOMAIN = b"ITHILDIN-PIS3-DSN-BINDING-V1\n"
+SECRET_MARKER_DOMAIN = b"ITHILDIN-PIS3-SECRET-SCAN-MARKERS-V1\n"
 REQUIRED_RECEIPT_TYPES = {
     "preconnection_rollback_receipt",
     "target_owner_quarantine_receipt",
@@ -80,6 +81,20 @@ FAILURE_CATEGORIES = {
     "semantic_verification_failed",
     "transaction_state_lost",
     "ambiguous_commit",
+}
+NEGATIVE_SCENARIOS = {
+    "tls_verification_failed",
+    "authentication_or_authorization_failed",
+    "target_unavailable",
+    "target_not_empty",
+    "migration_failed",
+    "semantic_verification_failed",
+    "transaction_state_lost",
+}
+NETWORK_NEGATIVE_SCENARIOS = {
+    "tls_verification_failed",
+    "authentication_or_authorization_failed",
+    "target_unavailable",
 }
 FAILURE_STAGES = {
     "authority_gate",
@@ -234,6 +249,8 @@ class ValidatedPreflight:
     trust_records: Mapping[str, TrustRecord]
     output_root: Path
     manifest_digest: str
+    negative_scenario: str | None
+    secret_scan_marker_commitment: str
 
 
 @dataclass(frozen=True)
@@ -280,7 +297,12 @@ def canonical_json_bytes(value: object) -> bytes:
     ).encode("utf-8")
 
 
-def load_strict_canonical_json(path: Path) -> Mapping[str, object]:
+def load_strict_canonical_json(
+    path: Path,
+    *,
+    category: str = "preflight_invalid",
+    stage: str = "manifest",
+) -> Mapping[str, object]:
     try:
         raw = path.read_bytes()
         if raw.startswith(b"\xef\xbb\xbf"):
@@ -292,9 +314,9 @@ def load_strict_canonical_json(path: Path) -> Mapping[str, object]:
             parse_constant=_reject_nonfinite,
         )
     except (OSError, UnicodeError, json.JSONDecodeError, ValueError):
-        raise ConnectionEvidenceError("preflight_invalid", "manifest") from None
+        raise ConnectionEvidenceError(category, stage) from None
     if not isinstance(value, dict) or canonical_json_bytes(value) != raw:
-        raise ConnectionEvidenceError("preflight_invalid", "manifest")
+        raise ConnectionEvidenceError(category, stage)
     return cast(Mapping[str, object], value)
 
 
@@ -308,7 +330,10 @@ def validate_execution_preflight(
     """Validate every non-secret prerequisite without loading a driver or DSN."""
 
     checked_now = _require_utc(now or datetime.now(UTC), "manifest")
-    manifest_path = manifest_path.resolve(strict=True)
+    try:
+        manifest_path = manifest_path.resolve(strict=True)
+    except (OSError, RuntimeError):
+        _fail("preflight_invalid", "manifest")
     manifest = load_strict_canonical_json(manifest_path)
     expected_keys = {
         "schema_version",
@@ -404,10 +429,16 @@ def validate_execution_preflight(
         _fail("preflight_invalid", "manifest")
     if owner.assertion.get("connection_attempt_budget") != expected_budget:
         _fail("receipt_authenticity_failed", "external_receipts")
-    if manifest.get("negative_scenario") is not None:
-        _require_pattern(manifest.get("negative_scenario"), SAFE_LABEL, "manifest")
+    negative_value = manifest.get("negative_scenario")
+    negative_scenario: str | None = None
+    if negative_value is not None:
+        negative_scenario = _exact_string(negative_value, "manifest")
+        if negative_scenario not in NEGATIVE_SCENARIOS:
+            _fail("preflight_invalid", "manifest")
     _validate_dsn_posture(_mapping(manifest.get("dsn_posture"), "manifest"))
-    _require_pattern(manifest.get("secret_scan_marker_commitment"), DIGEST, "manifest")
+    marker_commitment = _require_pattern(
+        manifest.get("secret_scan_marker_commitment"), DIGEST, "manifest"
+    )
     return ValidatedPreflight(
         manifest=manifest,
         run_id=run_id,
@@ -419,6 +450,8 @@ def validate_execution_preflight(
         trust_records=trust_records,
         output_root=output_root,
         manifest_digest=_sha256_file(manifest_path),
+        negative_scenario=negative_scenario,
+        secret_scan_marker_commitment=marker_commitment,
     )
 
 
@@ -501,7 +534,7 @@ def parse_canonical_dsn(value: str, *, approved_tls_root: Path) -> ParsedDsn:
     raw_user, raw_password = userinfo.split(":", 1)
     user = _decode_canonical_component(raw_user, min_bytes=1, max_bytes=63)
     password = _decode_canonical_component(raw_password, min_bytes=1, max_bytes=1024)
-    if "\x00" in password:
+    if _contains_control(user) or "\x00" in password:
         _fail("dsn_binding_failed", "dsn_binding")
     authority_path, raw_query = host_path_query.split("?", 1)
     if authority_path.count("/") != 1 or authority_path.count(":") != 1:
@@ -522,7 +555,7 @@ def parse_canonical_dsn(value: str, *, approved_tls_root: Path) -> ParsedDsn:
     if not 1 <= port <= 65535:
         _fail("dsn_binding_failed", "dsn_binding")
     database = _decode_canonical_component(raw_database, min_bytes=1, max_bytes=63)
-    if "/" in database or any(ord(char) < 32 for char in database):
+    if "/" in database or _contains_control(database):
         _fail("dsn_binding_failed", "dsn_binding")
     pairs = raw_query.split("&")
     if len(pairs) != 4:
@@ -610,25 +643,32 @@ def verify_external_receipt(
     *,
     trust_records: Mapping[str, TrustRecord],
     verification_time: datetime,
+    failure_stage: str = "external_receipts",
 ) -> VerifiedReceipt:
+    if failure_stage not in {"external_receipts", "discard"}:
+        _fail("receipt_authenticity_failed", "external_receipts")
     path, expected_digest = reference
-    envelope = load_strict_canonical_json(path)
-    _require_exact_keys(envelope, {"payload", "signature"}, "external_receipts")
-    payload = _mapping(envelope.get("payload"), "external_receipts")
-    signature = _mapping(envelope.get("signature"), "external_receipts")
+    envelope = load_strict_canonical_json(
+        path,
+        category="receipt_authenticity_failed",
+        stage=failure_stage,
+    )
+    _require_exact_keys(envelope, {"payload", "signature"}, failure_stage)
+    payload = _mapping(envelope.get("payload"), failure_stage)
+    signature = _mapping(envelope.get("signature"), failure_stage)
     _require_exact_keys(
         signature,
         {"algorithm", "key_id", "signature_base64url"},
-        "external_receipts",
+        failure_stage,
     )
     if signature.get("algorithm") != "Ed25519":
-        _fail("receipt_authenticity_failed", "external_receipts")
-    issuer_id = _require_pattern(payload.get("issuer_id"), ISSUER_ID, "external_receipts")
+        _fail("receipt_authenticity_failed", failure_stage)
+    issuer_id = _require_pattern(payload.get("issuer_id"), ISSUER_ID, failure_stage)
     trust = trust_records.get(issuer_id)
     if trust is None or signature.get("key_id") != trust.public_key_fingerprint:
-        _fail("receipt_authenticity_failed", "external_receipts")
+        _fail("receipt_authenticity_failed", failure_stage)
     signature_bytes = _decode_base64url(
-        signature.get("signature_base64url"), 64, "external_receipts"
+        signature.get("signature_base64url"), 64, failure_stage
     )
     try:
         trust.public_key.verify(
@@ -636,7 +676,7 @@ def verify_external_receipt(
             RECEIPT_DOMAIN + canonical_json_bytes(payload),
         )
     except InvalidSignature:
-        raise ConnectionEvidenceError("receipt_authenticity_failed", "external_receipts") from None
+        raise ConnectionEvidenceError("receipt_authenticity_failed", failure_stage) from None
     expected_payload_keys = {
         "schema_version",
         "receipt_type",
@@ -650,48 +690,48 @@ def verify_external_receipt(
         "source_digest",
         "assertion",
     }
-    _require_exact_keys(payload, expected_payload_keys, "external_receipts")
+    _require_exact_keys(payload, expected_payload_keys, failure_stage)
     if payload.get("schema_version") != "1":
-        _fail("receipt_authenticity_failed", "external_receipts")
-    receipt_type = _exact_string(payload.get("receipt_type"), "external_receipts")
+        _fail("receipt_authenticity_failed", failure_stage)
+    receipt_type = _exact_string(payload.get("receipt_type"), failure_stage)
     if (
         receipt_type not in REQUIRED_RECEIPT_TYPES
         or receipt_type not in trust.allowed_receipt_types
     ):
-        _fail("receipt_authenticity_failed", "external_receipts")
+        _fail("receipt_authenticity_failed", failure_stage)
     expected_provenance = (
         "external_target_discard_owner_attestation"
         if receipt_type == "target_discard_receipt"
         else "external_target_owner_attestation"
     )
     if payload.get("provenance") != expected_provenance:
-        _fail("receipt_authenticity_failed", "external_receipts")
-    issued_at = _parse_utc_text(payload.get("issued_at"), "external_receipts")
-    expires_at = _parse_utc_text(payload.get("expires_at"), "external_receipts")
+        _fail("receipt_authenticity_failed", failure_stage)
+    issued_at = _parse_utc_text(payload.get("issued_at"), failure_stage)
+    expires_at = _parse_utc_text(payload.get("expires_at"), failure_stage)
     if not (issued_at < expires_at <= issued_at + timedelta(minutes=15)):
-        _fail("receipt_authenticity_failed", "external_receipts")
+        _fail("receipt_authenticity_failed", failure_stage)
     if not (
         trust.valid_from <= issued_at
         and expires_at <= trust.valid_until
         and issued_at <= verification_time <= expires_at
     ):
-        _fail("receipt_authenticity_failed", "external_receipts")
-    assertion = _mapping(payload.get("assertion"), "external_receipts")
+        _fail("receipt_authenticity_failed", failure_stage)
+    assertion = _mapping(payload.get("assertion"), failure_stage)
     if len(canonical_json_bytes(assertion)) > 4096:
-        _fail("receipt_authenticity_failed", "external_receipts")
-    _validate_receipt_assertion(receipt_type, assertion)
-    actual_digest = _sha256_file(path)
+        _fail("receipt_authenticity_failed", failure_stage)
+    _validate_receipt_assertion(receipt_type, assertion, failure_stage=failure_stage)
+    actual_digest = _sha256_file(path, stage=failure_stage)
     if actual_digest != expected_digest:
-        _fail("receipt_authenticity_failed", "external_receipts")
+        _fail("receipt_authenticity_failed", failure_stage)
     return VerifiedReceipt(
         receipt_type=receipt_type,
         issuer_id=issuer_id,
-        run_id=_require_pattern(payload.get("run_id"), RUN_ID, "external_receipts"),
-        target_label=_require_pattern(payload.get("target_label"), SAFE_LABEL, "external_receipts"),
+        run_id=_require_pattern(payload.get("run_id"), RUN_ID, failure_stage),
+        target_label=_require_pattern(payload.get("target_label"), SAFE_LABEL, failure_stage),
         reviewed_candidate_commit=_require_pattern(
-            payload.get("reviewed_candidate_commit"), COMMIT, "external_receipts"
+            payload.get("reviewed_candidate_commit"), COMMIT, failure_stage
         ),
-        source_digest=_require_pattern(payload.get("source_digest"), DIGEST, "external_receipts"),
+        source_digest=_require_pattern(payload.get("source_digest"), DIGEST, failure_stage),
         issued_at=issued_at,
         expires_at=expires_at,
         assertion=assertion,
@@ -703,25 +743,46 @@ def execute_connection_evidence(
     manifest_path: Path,
     *,
     expected_reviewed_commit: str,
-    environment: Mapping[str, str] | None = None,
+    environment: MutableMapping[str, str] | None = None,
     now: datetime | None = None,
 ) -> ConnectionRunResult:
     """Execute the future harness only after the later authority gate is active."""
 
     if not EXECUTION_AUTHORITY_ACTIVE:
         raise ConnectionEvidenceError("preflight_invalid", "authority_gate")
-    checked_now = _require_utc(now or datetime.now(UTC), "manifest")
-    preflight = validate_execution_preflight(
-        manifest_path,
-        expected_reviewed_commit=expected_reviewed_commit,
-        now=checked_now,
-    )
-    env = dict(os.environ if environment is None else environment)
+    try:
+        checked_now = _require_utc(now or datetime.now(UTC), "manifest")
+        preflight = validate_execution_preflight(
+            manifest_path,
+            expected_reviewed_commit=expected_reviewed_commit,
+            now=checked_now,
+        )
+        return _execute_validated_preflight(
+            preflight,
+            checked_now=checked_now,
+            environment=environment,
+        )
+    except ConnectionEvidenceError:
+        raise
+    except Exception as exc:
+        category = _safe_connection_failure_category(exc)
+        raise ConnectionEvidenceError(category, "connection") from None
+
+
+def _execute_validated_preflight(
+    preflight: ValidatedPreflight,
+    *,
+    checked_now: datetime,
+    environment: MutableMapping[str, str] | None,
+) -> ConnectionRunResult:
+    env = os.environ if environment is None else environment
+    if not isinstance(env, MutableMapping):
+        _fail("preflight_invalid", "environment")
     reject_ambient_libpq_environment(env)
     if env.get(PSYCOPG_IMPL_ENV) != "python":
         _fail("preflight_invalid", "environment")
-    dsn = env.get(DSN_ENV)
-    binding_key = env.get(BINDING_KEY_ENV)
+    dsn = env.pop(DSN_ENV, None)
+    binding_key = env.pop(BINDING_KEY_ENV, None)
     if not dsn or not binding_key:
         _fail("preflight_invalid", "environment")
     tls_root = _mapping(preflight.manifest.get("tls_root"), "manifest")
@@ -731,79 +792,190 @@ def execute_connection_evidence(
         preflight.target_owner_receipt.assertion.get("target_binding_hmac_sha256_commitment"),
         "external_receipts",
     )
-    validate_dsn_target_binding(
-        dsn,
-        binding_key,
-        approved_tls_root=tls_root_path,
-        sslrootcert_sha256=tls_root_digest,
-        run_id=preflight.run_id,
-        target_label=preflight.target_label,
-        reviewed_candidate_commit=preflight.reviewed_candidate_commit,
-        expected_commitment=commitment,
-    )
-    del binding_key
-    driver = _load_plain_psycopg_driver()
-    _validate_loaded_native_identity(driver, preflight.manifest)
-    engine = create_engine(dsn, poolclass=NullPool)
-    del dsn
-    attempts = 0
-    import_receipt: DescriptorImportReceipt | None = None
     try:
-        attempts += 1
+        validate_dsn_target_binding(
+            dsn,
+            binding_key,
+            approved_tls_root=tls_root_path,
+            sslrootcert_sha256=tls_root_digest,
+            run_id=preflight.run_id,
+            target_label=preflight.target_label,
+            reviewed_candidate_commit=preflight.reviewed_candidate_commit,
+            expected_commitment=commitment,
+        )
+    finally:
+        binding_key = ""
+    engine: Any | None = None
+    result: ConnectionRunResult | None = None
+    failure: ConnectionEvidenceError | None = None
+    try:
+        driver = _load_plain_psycopg_driver()
+        _validate_loaded_native_identity(driver, preflight.manifest)
+        engine = create_engine(dsn, poolclass=NullPool)
+        dsn = ""
+        if preflight.negative_scenario is not None:
+            try:
+                if preflight.negative_scenario in NETWORK_NEGATIVE_SCENARIOS:
+                    _run_network_negative_attempt(engine, preflight.negative_scenario)
+                else:
+                    _run_migration_import_attempt(engine, preflight, checked_now)
+            except ConnectionEvidenceError as exc:
+                if exc.category == preflight.negative_scenario:
+                    raise
+                _fail("connection_attempt_budget_exhausted", "connection")
+            _fail("connection_attempt_budget_exhausted", "connection")
+
+        import_receipt = _run_migration_import_attempt(engine, preflight, checked_now)
+        try:
+            with engine.connect() as verification_connection:
+                post_rollback_absent = _post_rollback_rows_absent(verification_connection)
+        except ConnectionEvidenceError:
+            raise
+        except Exception as exc:
+            raise ConnectionEvidenceError(
+                _safe_connection_failure_category(exc), "post_rollback"
+            ) from None
+        if _sha256_file(preflight.source.path) != preflight.source.file_digest:
+            _fail("preflight_invalid", "synthetic_source")
+        if not post_rollback_absent:
+            _fail("transaction_state_lost", "post_rollback")
+        result = ConnectionRunResult(
+            run_id=preflight.run_id,
+            target_label=preflight.target_label,
+            reviewed_candidate_commit=preflight.reviewed_candidate_commit,
+            source_digest=preflight.source.file_digest,
+            import_receipt=import_receipt,
+            transaction_rolled_back=True,
+            post_rollback_rows_absent=True,
+            connection_attempt_count=2,
+        )
+    except ConnectionEvidenceError as exc:
+        failure = exc
+    except Exception as exc:
+        failure = ConnectionEvidenceError(
+            _safe_connection_failure_category(exc), "connection"
+        )
+    finally:
+        if engine is not None:
+            try:
+                engine.dispose()
+            except Exception:
+                if failure is None:
+                    failure = ConnectionEvidenceError(
+                        "transaction_state_lost", "rollback"
+                    )
+    if failure is not None:
+        raise failure from None
+    if result is None:
+        _fail("semantic_verification_failed", "connection")
+    return result
+
+
+def _run_network_negative_attempt(engine: Any, expected_category: str) -> NoReturn:
+    try:
+        with engine.connect():
+            pass
+    except Exception as exc:
+        observed = _safe_connection_failure_category(exc)
+        if observed == expected_category:
+            raise ConnectionEvidenceError(observed, "connection") from None
+        _fail("connection_attempt_budget_exhausted", "connection")
+    _fail("connection_attempt_budget_exhausted", "connection")
+
+
+def _run_migration_import_attempt(
+    engine: Any,
+    preflight: ValidatedPreflight,
+    checked_now: datetime,
+) -> DescriptorImportReceipt:
+    try:
         with engine.connect() as connection:
             transaction = connection.begin()
+            failure: ConnectionEvidenceError | None = None
+            import_receipt: DescriptorImportReceipt | None = None
             try:
+                _require_original_transaction(connection, transaction)
                 try:
                     _run_online_alembic(connection)
+                except ConnectionEvidenceError as exc:
+                    failure = exc
                 except Exception:
-                    raise ConnectionEvidenceError("migration_failed", "migration") from None
-                snapshot = validate_descriptor_snapshot(preflight.source.rows)
-                rollback = PreconnectionRollbackReceipt(
-                    candidate_commit=preflight.reviewed_candidate_commit,
-                    target_label=preflight.target_label,
-                )
-                context = __import_context(rollback)
-                try:
-                    import_receipt = import_validated_descriptor_snapshot(
-                        connection,
-                        snapshot,
-                        context,
-                        rollback,
-                        verified_at=checked_now,
+                    failure = ConnectionEvidenceError("migration_failed", "migration")
+                if failure is None:
+                    _require_original_transaction(connection, transaction)
+                    snapshot = validate_descriptor_snapshot(preflight.source.rows)
+                    rollback = PreconnectionRollbackReceipt(
+                        candidate_commit=preflight.reviewed_candidate_commit,
+                        target_label=preflight.target_label,
                     )
-                except StorageImportError as exc:
-                    raise ConnectionEvidenceError(
-                        _safe_import_failure_category(exc), "import"
-                    ) from None
-            except ConnectionEvidenceError:
-                raise
+                    context = __import_context(rollback)
+                    try:
+                        import_receipt = import_validated_descriptor_snapshot(
+                            connection,
+                            snapshot,
+                            context,
+                            rollback,
+                            verified_at=checked_now,
+                        )
+                    except StorageImportError as exc:
+                        failure = ConnectionEvidenceError(
+                            _safe_import_failure_category(exc), "import"
+                        )
+                    except Exception:
+                        failure = ConnectionEvidenceError(
+                            "semantic_verification_failed", "import"
+                        )
+                    if failure is None:
+                        _require_original_transaction(connection, transaction)
             finally:
-                if transaction.is_active:
-                    transaction.rollback()
-        attempts += 1
-        with engine.connect() as verification_connection:
-            post_rollback_absent = _post_rollback_rows_absent(verification_connection)
+                _rollback_original_transaction(connection, transaction)
+            if failure is not None:
+                raise failure
+            if import_receipt is None:
+                _fail("semantic_verification_failed", "import")
+            return import_receipt
     except ConnectionEvidenceError:
         raise
     except Exception as exc:
-        category = _safe_connection_failure_category(exc)
-        raise ConnectionEvidenceError(category, "connection") from None
-    finally:
-        engine.dispose()
-    if _sha256_file(preflight.source.path) != preflight.source.file_digest:
-        _fail("preflight_invalid", "synthetic_source")
-    if attempts != 2 or not post_rollback_absent or import_receipt is None:
-        _fail("transaction_state_lost", "post_rollback")
-    return ConnectionRunResult(
-        run_id=preflight.run_id,
-        target_label=preflight.target_label,
-        reviewed_candidate_commit=preflight.reviewed_candidate_commit,
-        source_digest=preflight.source.file_digest,
-        import_receipt=import_receipt,
-        transaction_rolled_back=True,
-        post_rollback_rows_absent=True,
-        connection_attempt_count=attempts,
-    )
+        raise ConnectionEvidenceError(
+            _safe_connection_failure_category(exc), "connection"
+        ) from None
+
+
+def _rollback_original_transaction(connection: Any, transaction: Any) -> None:
+    try:
+        _require_original_transaction(connection, transaction)
+        transaction.rollback()
+        if (
+            transaction.is_active
+            or connection.get_transaction() is not None
+            or connection.in_transaction()
+            or connection.in_nested_transaction()
+        ):
+            _fail("transaction_state_lost", "rollback")
+    except ConnectionEvidenceError:
+        raise
+    except Exception:
+        raise ConnectionEvidenceError("transaction_state_lost", "rollback") from None
+
+
+def _require_original_transaction(connection: Any, transaction: Any) -> None:
+    try:
+        autocommit_check = getattr(connection, "_is_autocommit_isolation", None)
+        autocommit = autocommit_check() if callable(autocommit_check) else None
+        if (
+            type(autocommit) is not bool
+            or autocommit
+            or not transaction.is_active
+            or connection.get_transaction() is not transaction
+            or not connection.in_transaction()
+            or connection.in_nested_transaction()
+        ):
+            _fail("transaction_state_lost", "rollback")
+    except ConnectionEvidenceError:
+        raise
+    except Exception:
+        raise ConnectionEvidenceError("transaction_state_lost", "rollback") from None
 
 
 def finalize_discard_receipt(
@@ -812,11 +984,13 @@ def finalize_discard_receipt(
     *,
     last_connection_closed_at: datetime,
     verification_time: datetime,
+    secret_markers: Sequence[bytes],
 ) -> VerifiedReceipt:
     receipt = verify_external_receipt(
         reference,
         trust_records=preflight.trust_records,
         verification_time=verification_time,
+        failure_stage="discard",
     )
     owner_assertion = preflight.target_owner_receipt.assertion
     if (
@@ -834,6 +1008,11 @@ def finalize_discard_receipt(
         _fail("receipt_authenticity_failed", "discard")
     if not closed_at < discarded_at <= receipt.issued_at:
         _fail("receipt_authenticity_failed", "discard")
+    scan_output_tree_for_secrets(
+        preflight.output_root,
+        secret_markers=secret_markers,
+        expected_commitment=preflight.secret_scan_marker_commitment,
+    )
     return receipt
 
 
@@ -841,24 +1020,79 @@ def scan_output_tree_for_secrets(
     output_root: Path,
     *,
     secret_markers: Sequence[bytes],
+    expected_commitment: str,
 ) -> None:
     forbidden_patterns = (
         re.compile(rb"postgres(?:ql)?(?:\+psycopg)?://", re.IGNORECASE),
         re.compile(rb"(?:password|passwd|pwd)\s*[:=]", re.IGNORECASE),
         re.compile(rb"ITHILDIN_PIS3_(?:TEST_DSN|TARGET_BINDING_KEY)"),
     )
-    root = output_root.resolve(strict=True)
+    if not hmac.compare_digest(
+        secret_marker_commitment(secret_markers),
+        _require_pattern(expected_commitment, DIGEST, "secret_scan"),
+    ):
+        _fail("preflight_invalid", "secret_scan")
+    if output_root.is_symlink():
+        _fail("preflight_invalid", "secret_scan")
+    try:
+        root = output_root.resolve(strict=True)
+    except (OSError, RuntimeError):
+        _fail("preflight_invalid", "secret_scan")
     for path in sorted(root.rglob("*")):
-        if not path.is_file() or path.is_symlink():
-            continue
+        relative = path.relative_to(root).as_posix().encode("utf-8", errors="strict")
+        if any(marker in relative for marker in secret_markers) or any(
+            pattern.search(relative) for pattern in forbidden_patterns
+        ):
+            _fail("preflight_invalid", "secret_scan")
+        if path.is_symlink():
+            _fail("preflight_invalid", "secret_scan")
         try:
-            data = path.read_bytes()
+            metadata = path.stat(follow_symlinks=False)
+        except OSError:
+            _fail("preflight_invalid", "secret_scan")
+        if stat.S_ISDIR(metadata.st_mode):
+            continue
+        if not stat.S_ISREG(metadata.st_mode):
+            _fail("preflight_invalid", "secret_scan")
+        try:
+            flags = os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0)
+            descriptor = os.open(path, flags)
+            try:
+                opened = os.fstat(descriptor)
+                if (
+                    not stat.S_ISREG(opened.st_mode)
+                    or opened.st_dev != metadata.st_dev
+                    or opened.st_ino != metadata.st_ino
+                ):
+                    _fail("preflight_invalid", "secret_scan")
+                chunks: list[bytes] = []
+                while chunk := os.read(descriptor, 1024 * 1024):
+                    chunks.append(chunk)
+                data = b"".join(chunks)
+            finally:
+                os.close(descriptor)
         except OSError:
             _fail("preflight_invalid", "secret_scan")
         if any(marker and marker in data for marker in secret_markers):
             _fail("preflight_invalid", "secret_scan")
         if any(pattern.search(data) for pattern in forbidden_patterns):
             _fail("preflight_invalid", "secret_scan")
+
+
+def secret_marker_commitment(secret_markers: Sequence[bytes]) -> str:
+    if (
+        not secret_markers
+        or any(type(marker) is not bytes or len(marker) < 8 for marker in secret_markers)
+        or len(set(secret_markers)) != len(secret_markers)
+    ):
+        _fail("preflight_invalid", "secret_scan")
+    payload = {
+        "marker_sha256": sorted(hashlib.sha256(marker).hexdigest() for marker in secret_markers),
+        "schema_version": "1",
+    }
+    return "sha256:" + hashlib.sha256(
+        SECRET_MARKER_DOMAIN + canonical_json_bytes(payload)
+    ).hexdigest()
 
 
 def _load_plain_psycopg_driver() -> ModuleType:
@@ -899,7 +1133,7 @@ def _validate_loaded_native_identity(
         loaded_version=libpq_version,
     )
     tls_path = _absolute_path(tls.get("loaded_library_realpath"), "manifest")
-    if not _library_dependency_is_bound(libpq_path, tls_path):
+    if _loaded_symbol_library_path(libpq_path, "OpenSSL_version") != tls_path:
         _fail("native_library_identity_mismatch", "driver_identity")
     _match_loaded_identity(
         tls,
@@ -925,23 +1159,36 @@ def _match_loaded_identity(
         _fail("native_library_identity_mismatch", "driver_identity")
 
 
-def _library_dependency_is_bound(library: Path, dependency: Path) -> bool:
-    command_line = (
-        ["otool", "-L", str(library)] if sys.platform == "darwin" else ["ldd", str(library)]
-    )
+class _DlInfo(ctypes.Structure):
+    _fields_ = [
+        ("dli_fname", ctypes.c_char_p),
+        ("dli_fbase", ctypes.c_void_p),
+        ("dli_sname", ctypes.c_char_p),
+        ("dli_saddr", ctypes.c_void_p),
+    ]
+
+
+def _loaded_symbol_library_path(library_path: Path, symbol_name: str) -> Path:
+    if sys.platform not in {"darwin", "linux"}:
+        _fail("native_library_identity_mismatch", "driver_identity")
     try:
-        result = subprocess.run(
-            command_line,
-            check=False,
-            capture_output=True,
-            text=True,
-            timeout=10,
-        )
-    except (OSError, subprocess.SubprocessError):
-        return False
-    if result.returncode != 0:
-        return False
-    return str(dependency) in result.stdout or dependency.name in result.stdout
+        library = ctypes.CDLL(str(library_path))
+        symbol = getattr(library, symbol_name)
+        address = ctypes.cast(symbol, ctypes.c_void_p)
+        process = ctypes.CDLL(None)
+        dladdr = process.dladdr
+        dladdr.argtypes = [ctypes.c_void_p, ctypes.POINTER(_DlInfo)]
+        dladdr.restype = ctypes.c_int
+        info = _DlInfo()
+        if not address.value or dladdr(address, ctypes.byref(info)) == 0 or not info.dli_fname:
+            _fail("native_library_identity_mismatch", "driver_identity")
+        return Path(info.dli_fname.decode("utf-8", errors="strict")).resolve(strict=True)
+    except ConnectionEvidenceError:
+        raise
+    except (OSError, AttributeError, UnicodeError, RuntimeError):
+        raise ConnectionEvidenceError(
+            "native_library_identity_mismatch", "driver_identity"
+        ) from None
 
 
 def _openssl_library_version(path: Path) -> str:
@@ -996,9 +1243,13 @@ def _load_trust_records(
         path, expected_digest = _external_file_reference(
             item, repo_root=repo_root, output_root=output_root
         )
-        if _sha256_file(path) != expected_digest:
+        if _sha256_file(path, stage="external_receipts") != expected_digest:
             _fail("receipt_authenticity_failed", "external_receipts")
-        document = load_strict_canonical_json(path)
+        document = load_strict_canonical_json(
+            path,
+            category="receipt_authenticity_failed",
+            stage="external_receipts",
+        )
         _require_exact_keys(
             document,
             {
@@ -1043,7 +1294,12 @@ def _load_trust_records(
     return records
 
 
-def _validate_receipt_assertion(receipt_type: str, assertion: Mapping[str, object]) -> None:
+def _validate_receipt_assertion(
+    receipt_type: str,
+    assertion: Mapping[str, object],
+    *,
+    failure_stage: str,
+) -> None:
     if receipt_type == "preconnection_rollback_receipt":
         expected = {
             "activation_allowed": False,
@@ -1057,7 +1313,7 @@ def _validate_receipt_assertion(receipt_type: str, assertion: Mapping[str, objec
             type(assertion[key]) is not bool
             for key in ("activation_allowed", "bound_before_connection", "source_unchanged")
         ):
-            _fail("receipt_authenticity_failed", "external_receipts")
+            _fail("receipt_authenticity_failed", failure_stage)
         return
     if receipt_type == "target_owner_quarantine_receipt":
         _require_exact_keys(
@@ -1070,22 +1326,22 @@ def _validate_receipt_assertion(receipt_type: str, assertion: Mapping[str, objec
                 "target_empty",
                 "target_quarantined",
             },
-            "external_receipts",
+            failure_stage,
         )
         budget = assertion.get("connection_attempt_budget")
         if type(budget) is not int or budget not in {1, 2}:
-            _fail("receipt_authenticity_failed", "external_receipts")
+            _fail("receipt_authenticity_failed", failure_stage)
         if (
             assertion.get("dedicated_nonproduction_purpose") != "pis3_connection_evidence_only"
             or assertion.get("target_empty") is not True
             or assertion.get("target_quarantined") is not True
         ):
-            _fail("receipt_authenticity_failed", "external_receipts")
-        _require_pattern(assertion.get("discard_owner_id"), ISSUER_ID, "external_receipts")
+            _fail("receipt_authenticity_failed", failure_stage)
+        _require_pattern(assertion.get("discard_owner_id"), ISSUER_ID, failure_stage)
         _require_pattern(
             assertion.get("target_binding_hmac_sha256_commitment"),
             HMAC_DIGEST,
-            "external_receipts",
+            failure_stage,
         )
         return
     _require_exact_keys(
@@ -1096,15 +1352,15 @@ def _validate_receipt_assertion(receipt_type: str, assertion: Mapping[str, objec
             "target_discarded",
             "target_discarded_at",
         },
-        "external_receipts",
+        failure_stage,
     )
     if (
         assertion.get("activation_never_occurred") is not True
         or assertion.get("target_discarded") is not True
     ):
-        _fail("receipt_authenticity_failed", "external_receipts")
-    _parse_utc_text(assertion.get("last_connection_closed_at"), "external_receipts")
-    _parse_utc_text(assertion.get("target_discarded_at"), "external_receipts")
+        _fail("receipt_authenticity_failed", failure_stage)
+    _parse_utc_text(assertion.get("last_connection_closed_at"), failure_stage)
+    _parse_utc_text(assertion.get("target_discarded_at"), failure_stage)
 
 
 def _validate_artifact_hashes(value: Mapping[str, object], repo_root: Path) -> None:
@@ -1262,27 +1518,19 @@ def _encode_component(value: str) -> str:
 
 
 def _decode_base64url(value: object, expected_bytes: int, stage: str) -> bytes:
+    category = _failure_category_for_stage(stage)
     text = _exact_string(value, stage)
     if "=" in text or not re.fullmatch(r"[A-Za-z0-9_-]+", text):
-        _fail(
-            "receipt_authenticity_failed" if stage == "external_receipts" else "dsn_binding_failed",
-            stage,
-        )
+        _fail(category, stage)
     try:
         decoded = base64.urlsafe_b64decode(text + ("=" * (-len(text) % 4)))
     except (ValueError, TypeError):
-        _fail(
-            "receipt_authenticity_failed" if stage == "external_receipts" else "dsn_binding_failed",
-            stage,
-        )
+        _fail(category, stage)
     if (
         len(decoded) != expected_bytes
         or base64.urlsafe_b64encode(decoded).rstrip(b"=").decode() != text
     ):
-        _fail(
-            "receipt_authenticity_failed" if stage == "external_receipts" else "dsn_binding_failed",
-            stage,
-        )
+        _fail(category, stage)
     return decoded
 
 
@@ -1316,14 +1564,14 @@ def _distribution_version(name: str) -> str:
         _fail("preflight_invalid", "manifest")
 
 
-def _sha256_file(path: Path) -> str:
+def _sha256_file(path: Path, *, stage: str = "manifest") -> str:
     try:
         digest = hashlib.sha256()
         with path.open("rb") as handle:
             while chunk := handle.read(1024 * 1024):
                 digest.update(chunk)
     except OSError:
-        _fail("preflight_invalid", "manifest")
+        _fail(_failure_category_for_stage(stage), stage)
     return "sha256:" + digest.hexdigest()
 
 
@@ -1339,73 +1587,65 @@ def _parse_utc_text(value: object, stage: str) -> datetime:
     try:
         parsed = datetime.fromisoformat(text)
     except ValueError:
-        _fail("receipt_authenticity_failed", stage)
+        _fail(_failure_category_for_stage(stage), stage)
     return _require_utc(parsed, stage)
 
 
 def _require_utc(value: datetime, stage: str) -> datetime:
     if value.tzinfo is None or value.utcoffset() != timedelta(0):
-        _fail("preflight_invalid", stage)
+        _fail(_failure_category_for_stage(stage), stage)
     return value.astimezone(UTC)
 
 
 def _require_exact_keys(value: Mapping[str, object], keys: set[str], stage: str) -> None:
     if set(value) != keys:
-        _fail(
-            "receipt_authenticity_failed"
-            if stage in {"external_receipts", "discard"}
-            else "preflight_invalid",
-            stage,
-        )
+        _fail(_failure_category_for_stage(stage), stage)
 
 
 def _require_pattern(value: object, pattern: re.Pattern[str], stage: str) -> str:
     text = _exact_string(value, stage)
     if not pattern.fullmatch(text):
-        _fail(
-            "receipt_authenticity_failed"
-            if stage in {"external_receipts", "discard"}
-            else ("dsn_binding_failed" if stage == "dsn_binding" else "preflight_invalid"),
-            stage,
-        )
+        _fail(_failure_category_for_stage(stage), stage)
     return text
 
 
 def _exact_string(value: object, stage: str) -> str:
     if type(value) is not str:
-        _fail(
-            "receipt_authenticity_failed"
-            if stage in {"external_receipts", "discard"}
-            else ("dsn_binding_failed" if stage == "dsn_binding" else "preflight_invalid"),
-            stage,
-        )
+        _fail(_failure_category_for_stage(stage), stage)
     return value
 
 
 def _mapping(value: object, stage: str) -> Mapping[str, object]:
     if not isinstance(value, dict):
-        _fail(
-            "receipt_authenticity_failed"
-            if stage in {"external_receipts", "discard"}
-            else "preflight_invalid",
-            stage,
-        )
+        _fail(_failure_category_for_stage(stage), stage)
     if any(type(key) is not str for key in value):
-        _fail("preflight_invalid", stage)
+        _fail(_failure_category_for_stage(stage), stage)
     return cast(Mapping[str, object], value)
 
 
 def _absolute_path(value: object, stage: str) -> Path:
     text = _exact_string(value, stage)
-    if any(ord(character) < 32 for character in text):
-        _fail("preflight_invalid", stage)
+    if _contains_control(text):
+        _fail(_failure_category_for_stage(stage), stage)
     path = Path(text)
     if not path.is_absolute():
-        _fail("preflight_invalid", stage)
+        _fail(_failure_category_for_stage(stage), stage)
     try:
         return path.resolve(strict=True)
-    except OSError:
-        _fail("preflight_invalid", stage)
+    except (OSError, RuntimeError):
+        _fail(_failure_category_for_stage(stage), stage)
+
+
+def _contains_control(value: str) -> bool:
+    return any(unicodedata.category(character) == "Cc" for character in value)
+
+
+def _failure_category_for_stage(stage: str) -> str:
+    if stage in {"external_receipts", "discard"}:
+        return "receipt_authenticity_failed"
+    if stage == "dsn_binding":
+        return "dsn_binding_failed"
+    return "preflight_invalid"
 
 
 def _inside(path: Path, root: Path) -> bool:

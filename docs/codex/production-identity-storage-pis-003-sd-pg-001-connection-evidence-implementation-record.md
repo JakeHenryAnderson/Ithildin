@@ -52,6 +52,16 @@ The implemented layers are:
 - a separate final target-discard receipt verifier; and
 - complete-output secret-marker and connection-string scanning.
 
+The first exact-candidate review of `7c6b5de5ab8055bfbe1d0384c6b1df0d372f4e03`
+returned `NO-GO` with `0` Critical, `0` High, `6` Medium, and `2` Low findings. This successor
+closes those eight findings by binding negative scenarios to exactly one attempt; revalidating and
+rolling back the exact original transaction; consuming the DSN and binding key from the mutable
+environment before the driver boundary; resolving the loaded TLS symbol owner to its exact real
+path; binding the full-tree secret scan to a canonical marker commitment while rejecting symlinks
+and non-regular artifacts; closing the public exception boundary; rejecting Unicode control
+characters in DSN identity fields; and preserving contextual manifest, trust, receipt, and discard
+failure stages. These are implementation repairs, not a completed successor review.
+
 The reviewed importer, schema, migration revision, runtime stores, configuration, routes, policy,
 manifests, lockfiles, and 24-tool surface remain protected and unchanged.
 
@@ -80,7 +90,7 @@ backend, or manage PostgreSQL lifecycle.
 
 ## Offline Validation Evidence
 
-The focused storage/schema/import suite contains `44` passing tests. The added coverage proves:
+The focused storage/schema/import suite contains `74` passing tests. The added coverage proves:
 
 - authority refusal precedes manifest and environment access;
 - strict preflight accepts one fully synthetic, externally located, read-only receipt set;
@@ -91,6 +101,19 @@ The focused storage/schema/import suite contains `44` passing tests. The added c
   uppercase hosts, IP literals, leading-zero ports, and noncanonical escapes;
 - current and future-looking ambient `PG*` variables are rejected with an empty allowlist;
 - output scans reject secret markers and connection-string forms;
+- negative scenarios consume exactly one connection attempt and cannot cross into the positive
+  two-attempt workflow;
+- the exact original outer transaction remains active through migration and import, is explicitly
+  rolled back, and cannot be replaced without a closed failure;
+- environment-held DSN and binding-key values are consumed before driver import and raw driver,
+  engine, rollback, and disposal exceptions cannot escape the public boundary;
+- loaded TLS identity is bound to the exact symbol-owning library path rather than a basename;
+- the finalizer binds the complete output-tree scan to a canonical secret-marker commitment and
+  rejects symlinks, non-regular files, nested markers, and connection strings;
+- canonical NFC non-ASCII DSN identity values remain accepted while Unicode control characters are
+  rejected;
+- malformed manifest, trust, receipt, and discard inputs retain their contextual closed failure
+  categories and stages;
 - an otherwise trusted final-discard issuer cannot substitute for the named discard owner; and
 - Alembic offline rendering remains deterministic while online mode contains no engine, driver, or
   URL construction.
