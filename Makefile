@@ -1018,6 +1018,7 @@ public-security-product-positioning-response-kit-check:
 .PHONY: production-identity-storage-pis-001-internal-review-check
 .PHONY: production-identity-storage-pis-002-entry-decision-check
 .PHONY: production-identity-storage-pis-002-sandbox-descriptor-repository-check
+.PHONY: production-identity-storage-pis-002-sandbox-descriptor-repository-internal-review-check
 
 production-identity-storage-architecture-decision-record-check:
 	uv run python scripts/production_identity_storage_architecture_decision_record_check.py
@@ -1036,6 +1037,9 @@ production-identity-storage-pis-002-entry-decision-check:
 
 production-identity-storage-pis-002-sandbox-descriptor-repository-check:
 	uv run python scripts/production_identity_storage_pis_002_sandbox_descriptor_repository_check.py
+
+production-identity-storage-pis-002-sandbox-descriptor-repository-internal-review-check:
+	uv run python scripts/production_identity_storage_pis_002_sandbox_descriptor_repository_internal_review_check.py
 
 production-identity-storage-architecture-check:
 	uv run python scripts/production_identity_storage_architecture_check.py
@@ -2130,6 +2134,7 @@ release-check: production-identity-storage-pis-001-decision-check
 release-check: production-identity-storage-pis-001-internal-review-check
 release-check: production-identity-storage-pis-002-entry-decision-check
 release-check: production-identity-storage-pis-002-sandbox-descriptor-repository-check
+release-check: production-identity-storage-pis-002-sandbox-descriptor-repository-internal-review-check
 release-check: production-identity-storage-response-dry-run
 release-check: production-identity-storage-external-review-bundle-check
 release-check: production-identity-storage-response-kit-check

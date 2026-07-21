@@ -1,0 +1,40 @@
+{
+  "schema_version": "1",
+  "review_id": "PRD-PROD-IAM-STORAGE-PIS-002-SD-001-REVIEW",
+  "parent_decision": "PRD-PROD-IAM-STORAGE-PIS-002-ENTRY",
+  "implementation_slice": "PIS-002-SD-001",
+  "implementation_baseline_commit": "934ebaa4ccd5d03032e269473198e7c94755c13c",
+  "reviewed_commit": "887de154aeb4c047325eed2372c83deda1fda251",
+  "review_document_sha256": "9896aab3a4727747e3ee59e98123dc59093e34c248a4ce27cd1e2a9d7a5a46d6",
+  "review_disposition": "cleared_bounded_sandbox_descriptor_repository_interface_only",
+  "findings": {
+    "critical": 0,
+    "high": 0,
+    "medium": 0,
+    "low": 0,
+    "open": 0
+  },
+  "authority": {
+    "pis_002_sd_001_source_review_complete": true,
+    "pis_002_sd_001_cleared": true,
+    "pis_002_continuation_decision_preparation_allowed": true,
+    "additional_aggregate_implementation_allowed": false,
+    "pis_003_entry_decision_preparation_allowed": false,
+    "pis_003_implementation_allowed": false,
+    "dependency_changes_allowed": false,
+    "sqlalchemy_allowed": false,
+    "schema_changes_allowed": false,
+    "database_migrations_allowed": false,
+    "audit_ordering_changes_allowed": false,
+    "runtime_postgres_allowed": false,
+    "production_identity_allowed": false,
+    "enterprise_rbac_allowed": false,
+    "release_allowed": false,
+    "production_promotion_allowed": false,
+    "new_power_classes_allowed": false,
+    "public_security_product_positioning_allowed": false,
+    "uat_complete": false,
+    "uat_required_now": false
+  },
+  "next_required_action": "prepare_pis_002_continuation_decision_record"
+}

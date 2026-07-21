@@ -201,6 +201,7 @@ from scripts import (
     production_identity_storage_pis_001_planning_gate_check,
     production_identity_storage_pis_002_entry_decision_check,
     production_identity_storage_pis_002_sandbox_descriptor_repository_check,
+    production_identity_storage_pis_002_sandbox_descriptor_repository_internal_review_check,
     production_identity_storage_response_dry_run,
     production_identity_storage_response_kit,
     progress_check,
@@ -8792,6 +8793,8 @@ def test_production_identity_storage_pis_002_repository_implementation_is_wired(
     assert report["implementation_baseline_commit"] == (
         "934ebaa4ccd5d03032e269473198e7c94755c13c"
     )
+    assert report["candidate_commit"] == "887de154aeb4c047325eed2372c83deda1fda251"
+    assert report["candidate_is_ancestor"] is True
     assert report["selected_aggregate"] == "sandbox_descriptors"
     assert report["repository_protocol_present"] is True
     assert report["consumer_protocol_typing_valid"] is True
@@ -8950,6 +8953,302 @@ def test_production_identity_storage_pis_002_repository_rejects_protected_drift(
     )
     assert valid is False
     assert failures == ["protected entry-baseline file changed: protected.lock"]
+
+
+def test_production_identity_storage_pis_002_repository_internal_review_is_wired() -> None:
+    validator = (
+        production_identity_storage_pis_002_sandbox_descriptor_repository_internal_review_check
+    )
+    report = validator.build_report(Path.cwd())
+    contract = json.loads(Path(validator.CONTRACT_REL).read_text(encoding="utf-8"))
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+
+    assert report["valid"] is True
+    assert report["review_document_sha256"] == validator.REVIEW_DOCUMENT_SHA256
+    assert report["review_document_hash_matches"] is True
+    assert report["authority_contract"] == validator.CONTRACT_REL
+    assert report["contract_valid"] is True
+    assert validator.validate_contract(contract) == []
+    assert report["reviewed_commit"] == "887de154aeb4c047325eed2372c83deda1fda251"
+    assert report["review_disposition"] == (
+        "cleared_bounded_sandbox_descriptor_repository_interface_only"
+    )
+    assert report["reviewed_commit_exists"] is True
+    assert report["baseline_is_ancestor"] is True
+    assert report["candidate_is_ancestor"] is True
+    assert report["candidate_parent_exact"] is True
+    assert report["reviewed_inventory_exact"] is True
+    assert report["reviewed_hashes_match"] is True
+    assert report["current_stable_artifacts_match"] is True
+    assert report["implementation_check_valid"] is True
+    assert report["critical_findings"] == 0
+    assert report["high_findings"] == 0
+    assert report["medium_findings"] == 0
+    assert report["low_findings"] == 0
+    assert report["open_findings"] == 0
+    assert report["tool_count"] == 24
+    assert report["pis_002_sd_001_source_review_complete"] is True
+    assert report["pis_002_sd_001_cleared"] is True
+    assert report["pis_002_continuation_decision_preparation_allowed"] is True
+    assert report["additional_aggregate_implementation_allowed"] is False
+    assert report["pis_003_entry_decision_preparation_allowed"] is False
+    assert report["pis_003_implementation_allowed"] is False
+    assert report["dependency_changes_allowed"] is False
+    assert report["sqlalchemy_allowed"] is False
+    assert report["schema_changes_allowed"] is False
+    assert report["database_migrations_allowed"] is False
+    assert report["audit_ordering_changes_allowed"] is False
+    assert report["runtime_postgres_allowed"] is False
+    assert report["production_identity_allowed"] is False
+    assert report["enterprise_rbac_allowed"] is False
+    assert report["release_allowed"] is False
+    assert report["production_promotion_allowed"] is False
+    assert report["new_power_classes_allowed"] is False
+    assert report["public_security_product_positioning_allowed"] is False
+    assert report["uat_complete"] is False
+    assert report["uat_required_now"] is False
+    assert report["next_required_action"] == "prepare_pis_002_continuation_decision_record"
+    assert f"{validator.TARGET}:" in makefile
+    assert f"release-check: {validator.TARGET}" in makefile
+    assert f"make {validator.TARGET}" in readme
+    assert validator.CONTRACT_REL in readme
+    assert validator.REVIEW_DOC_REL in review_docs.REVIEW_DOCS
+    assert validator.TARGET in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+
+
+def test_production_identity_storage_pis_002_repository_review_rejects_hash_drift(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    validator = (
+        production_identity_storage_pis_002_sandbox_descriptor_repository_internal_review_check
+    )
+    mutated_hashes = dict(validator.REVIEWED_HASHES)
+    mutated_hashes["apps/api/src/ithildin_api/sandbox_descriptors.py"] = "0" * 64
+    monkeypatch.setattr(validator, "REVIEWED_HASHES", mutated_hashes)
+
+    report = validator.build_report(Path.cwd())
+
+    assert report["valid"] is False
+    assert report["reviewed_hashes_match"] is False
+    assert any("reviewed hash does not match" in failure for failure in report["failures"])
+
+
+def test_production_identity_storage_pis_002_repository_review_contract_is_closed() -> None:
+    validator = (
+        production_identity_storage_pis_002_sandbox_descriptor_repository_internal_review_check
+    )
+    contract = json.loads(json.dumps(validator.EXPECTED_CONTRACT))
+    contract["authority"]["release_allowed"] = True
+    assert validator.validate_contract(contract) == [
+        "PIS-002 repository review authority contract is not the exact closed contract"
+    ]
+
+    contract = json.loads(json.dumps(validator.EXPECTED_CONTRACT))
+    contract["authority"]["release_allowed"] = 0
+    failures = validator.validate_contract(contract)
+    assert any("exact Booleans" in failure for failure in failures)
+    assert any("exact closed contract" in failure for failure in failures)
+
+    contract = json.loads(json.dumps(validator.EXPECTED_CONTRACT))
+    contract["findings"]["critical"] = 0.0
+    failures = validator.validate_contract(contract)
+    assert any("exact integers" in failure for failure in failures)
+    assert any("exact closed contract" in failure for failure in failures)
+
+    contract = json.loads(json.dumps(validator.EXPECTED_CONTRACT))
+    contract["authority"]["unexpected_grant"] = False
+    assert validator.validate_contract(contract) == [
+        "PIS-002 repository review authority contract is not the exact closed contract"
+    ]
+
+    contract = json.loads(json.dumps(validator.EXPECTED_CONTRACT))
+    contract["review_document_sha256"] = "0" * 64
+    assert validator.validate_contract(contract) == [
+        "PIS-002 repository review authority contract is not the exact closed contract"
+    ]
+
+
+def test_production_identity_storage_pis_002_repository_review_contract_rejects_duplicate_keys(
+    tmp_path: Path,
+) -> None:
+    validator = (
+        production_identity_storage_pis_002_sandbox_descriptor_repository_internal_review_check
+    )
+    contract_path = tmp_path / "authority.json"
+    contract_path.write_text(
+        '{"authority":{"release_allowed":false,"release_allowed":true}}',
+        encoding="utf-8",
+    )
+
+    contract, failures = validator._load_contract(contract_path)
+
+    assert contract == {}
+    assert failures == [
+        "PIS-002 repository review authority contract has duplicate JSON member: "
+        "release_allowed"
+    ]
+
+
+def test_production_identity_storage_pis_002_repository_review_derives_authority_from_contract(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    validator = (
+        production_identity_storage_pis_002_sandbox_descriptor_repository_internal_review_check
+    )
+    contract = json.loads(json.dumps(validator.EXPECTED_CONTRACT))
+    contract["authority"]["release_allowed"] = True
+    monkeypatch.setattr(validator, "_load_contract", lambda _path: (contract, []))
+
+    report = validator.build_report(Path.cwd())
+
+    assert report["valid"] is False
+    assert report["contract_valid"] is False
+    assert report["review_disposition"] == "invalid"
+    assert report["critical_findings"] is None
+    assert report["pis_002_sd_001_source_review_complete"] is False
+    assert report["pis_002_continuation_decision_preparation_allowed"] is False
+    assert report["release_allowed"] is False
+    assert report["next_required_action"] == "invalid_contract"
+
+
+@pytest.mark.parametrize(
+    "claim",
+    [
+        "A second aggregate may now be implemented.",
+        "PIS-003 may proceed to implementation.",
+        "Dependencies can be added during the continuation.",
+        "The database schema may now be changed.",
+        "Runtime PostgreSQL may be enabled.",
+        "Production identity can be enabled.",
+        "Release is authorized.",
+        "UAT has passed.",
+        "Implementation may proceed for PIS-003.",
+        "Authorization is granted for release.",
+        "Permission has been granted for a second aggregate.",
+    ],
+)
+def test_production_identity_storage_pis_002_repository_review_rejects_authority_paraphrases(
+    monkeypatch: pytest.MonkeyPatch,
+    claim: str,
+) -> None:
+    validator = (
+        production_identity_storage_pis_002_sandbox_descriptor_repository_internal_review_check
+    )
+    original_read_bytes = validator._read_bytes
+    review_path = Path(validator.REVIEW_DOC_REL).resolve()
+    review_text = review_path.read_text(encoding="utf-8")
+    adversarial_text = f"{review_text}\n\n{claim}\n"
+
+    failures = validator.validate_review_text(adversarial_text)
+    assert any("forbidden authority pattern" in failure for failure in failures)
+
+    def adversarial_read_bytes(path: Path) -> bytes:
+        if path.resolve() == review_path:
+            return adversarial_text.encode("utf-8")
+        return original_read_bytes(path)
+
+    monkeypatch.setattr(validator, "_read_bytes", adversarial_read_bytes)
+    report = validator.build_report(Path.cwd())
+
+    assert report["valid"] is False
+    assert report["review_document_hash_matches"] is False
+    assert report["additional_aggregate_implementation_allowed"] is False
+    assert report["pis_003_implementation_allowed"] is False
+    assert report["runtime_postgres_allowed"] is False
+    assert report["production_identity_allowed"] is False
+    assert report["release_allowed"] is False
+    assert report["uat_complete"] is False
+
+
+@pytest.mark.parametrize(
+    "claim",
+    [
+        "A second aggregate is permitted.",
+        "PIS-003 is cleared to begin implementation.",
+        "Dependencies are permitted during continuation.",
+        "The database schema can change now.",
+        "Runtime PostgreSQL is sanctioned.",
+        "Production identity implementation is cleared.",
+        "Release has the green light.",
+        "UAT succeeded.",
+        "Proceed with PIS-003 implementation.",
+        "Implement a second aggregate.",
+        "We approve release.",
+        "Implementation is permitted for PIS-003.",
+    ],
+)
+def test_production_identity_storage_pis_002_repository_review_digest_rejects_unbounded_paraphrases(
+    monkeypatch: pytest.MonkeyPatch,
+    claim: str,
+) -> None:
+    validator = (
+        production_identity_storage_pis_002_sandbox_descriptor_repository_internal_review_check
+    )
+    original_read_bytes = validator._read_bytes
+    review_path = Path(validator.REVIEW_DOC_REL).resolve()
+    review_bytes = review_path.read_bytes()
+    adversarial_bytes = review_bytes + f"\n{claim}\n".encode()
+
+    def adversarial_read_bytes(path: Path) -> bytes:
+        if path.resolve() == review_path:
+            return adversarial_bytes
+        return original_read_bytes(path)
+
+    monkeypatch.setattr(validator, "_read_bytes", adversarial_read_bytes)
+    report = validator.build_report(Path.cwd())
+
+    assert report["valid"] is False
+    assert report["review_document_hash_matches"] is False
+    assert any("reviewed digest" in failure for failure in report["failures"])
+    assert report["additional_aggregate_implementation_allowed"] is False
+    assert report["pis_003_implementation_allowed"] is False
+    assert report["release_allowed"] is False
+    assert report["uat_complete"] is False
+
+
+@pytest.mark.parametrize(
+    "mutation",
+    [
+        "replace_first_byte",
+        "truncate_last_byte",
+        "append_whitespace",
+        "convert_to_crlf",
+        "append_invalid_utf8",
+    ],
+)
+def test_production_identity_storage_pis_002_repository_review_digest_rejects_any_byte_drift(
+    monkeypatch: pytest.MonkeyPatch,
+    mutation: str,
+) -> None:
+    validator = (
+        production_identity_storage_pis_002_sandbox_descriptor_repository_internal_review_check
+    )
+    original_read_bytes = validator._read_bytes
+    review_path = Path(validator.REVIEW_DOC_REL).resolve()
+    canonical = review_path.read_bytes()
+    mutations = {
+        "replace_first_byte": b"X" + canonical[1:],
+        "truncate_last_byte": canonical[:-1],
+        "append_whitespace": canonical + b" ",
+        "convert_to_crlf": canonical.replace(b"\n", b"\r\n"),
+        "append_invalid_utf8": canonical + b"\xff",
+    }
+    mutated = mutations[mutation]
+    assert mutated != canonical
+
+    def mutated_read_bytes(path: Path) -> bytes:
+        if path.resolve() == review_path:
+            return mutated
+        return original_read_bytes(path)
+
+    monkeypatch.setattr(validator, "_read_bytes", mutated_read_bytes)
+    report = validator.build_report(Path.cwd())
+
+    assert report["valid"] is False
+    assert report["review_document_hash_matches"] is False
+    assert report["review_document_sha256"] != validator.REVIEW_DOCUMENT_SHA256
+    assert any("reviewed digest" in failure for failure in report["failures"])
 
 
 def test_production_identity_storage_architecture_is_wired() -> None:

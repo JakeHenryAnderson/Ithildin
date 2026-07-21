@@ -35,6 +35,7 @@ DOC_TITLE = (
 )
 TARGET = "production-identity-storage-pis-002-sandbox-descriptor-repository-check"
 BASELINE_COMMIT = "934ebaa4ccd5d03032e269473198e7c94755c13c"
+CANDIDATE_COMMIT = "887de154aeb4c047325eed2372c83deda1fda251"
 
 IMPLEMENTATION_PATHS = frozenset(
     cast(
@@ -140,9 +141,12 @@ def build_report(repo_root: Path, *, require_clean: bool = True) -> dict[str, An
         if phrase not in doc:
             failures.append(f"PIS-002 repository implementation doc missing phrase: {phrase}")
 
-    baseline_is_ancestor = _is_ancestor(repo_root, BASELINE_COMMIT, "HEAD")
+    baseline_is_ancestor = _is_ancestor(repo_root, BASELINE_COMMIT, CANDIDATE_COMMIT)
     if not baseline_is_ancestor:
-        failures.append("PIS-002 implementation baseline is not an ancestor of current HEAD")
+        failures.append("PIS-002 candidate does not descend from its implementation baseline")
+    candidate_is_ancestor = _is_ancestor(repo_root, CANDIDATE_COMMIT, "HEAD")
+    if not candidate_is_ancestor:
+        failures.append("PIS-002 implementation candidate is not an ancestor of current HEAD")
     committed_paths = _changed_paths(repo_root) if baseline_is_ancestor else []
     worktree_paths = _working_tree_changed_paths(repo_root)
     rename_records = _rename_records(repo_root) if baseline_is_ancestor else []
@@ -224,7 +228,6 @@ def build_report(repo_root: Path, *, require_clean: bool = True) -> dict[str, An
     if DOC_TITLE not in review_index:
         failures.append("review-docs index is missing the PIS-002 repository implementation")
 
-    candidate_commit = _git(repo_root, "rev-parse", "HEAD")
     candidate_tree_clean = not worktree_paths
     candidate_scope_valid = not scope_failures
     return {
@@ -234,7 +237,8 @@ def build_report(repo_root: Path, *, require_clean: bool = True) -> dict[str, An
         "implementation_doc": DOC_REL,
         "implementation_slice": "PIS-002-SD-001",
         "implementation_baseline_commit": BASELINE_COMMIT,
-        "candidate_commit": candidate_commit,
+        "candidate_commit": CANDIDATE_COMMIT,
+        "candidate_is_ancestor": candidate_is_ancestor,
         "candidate_tree_clean": candidate_tree_clean,
         "candidate_scope_valid": candidate_scope_valid,
         "selected_aggregate": "sandbox_descriptors",
@@ -414,6 +418,7 @@ def render_report(report: dict[str, Any]) -> str:
         "implementation_slice",
         "implementation_baseline_commit",
         "candidate_commit",
+        "candidate_is_ancestor",
         "candidate_tree_clean",
         "candidate_scope_valid",
         "selected_aggregate",
@@ -530,7 +535,7 @@ def _changed_paths(repo_root: Path) -> list[str]:
         "diff",
         "--no-renames",
         "--name-only",
-        f"{BASELINE_COMMIT}..HEAD",
+        f"{BASELINE_COMMIT}..{CANDIDATE_COMMIT}",
     )
     return sorted(line for line in output.splitlines() if line)
 
@@ -553,7 +558,7 @@ def _rename_records(repo_root: Path) -> list[str]:
         "diff",
         "--name-status",
         "--find-renames",
-        f"{BASELINE_COMMIT}..HEAD",
+        f"{BASELINE_COMMIT}..{CANDIDATE_COMMIT}",
     )
     return sorted(
         line for line in output.splitlines() if line.startswith(("R", "C"))

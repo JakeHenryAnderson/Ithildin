@@ -390,6 +390,13 @@ Current selected capability: `not selected`.
   dependency-free `SandboxDescriptorRepository` seam over the existing SQLite store and its parity
   evidence. Exact-candidate source review remains pending; a second aggregate, dependency or schema
   change, PostgreSQL, production identity, release, promotion, and UAT remain unauthorized.
+- Current PIS-002 implementation disposition:
+  `production-identity-storage-pis-002-sandbox-descriptor-repository-internal-source-review.md`
+  clears exact candidate `887de154` for the bounded repository interface only, with zero open
+  findings and a green exact-candidate release gate. Only preparation of a separate PIS-002
+  continuation decision is allowed; another aggregate, PIS-003 implementation, dependencies,
+  schema/migration changes, PostgreSQL, production identity, release, promotion, and UAT remain
+  unauthorized.
 - Current warning language: Ithildin may discuss production identity and durable storage
   architecture, but the current runtime remains local-preview with local principal labels and SQLite.
 - Current architecture evidence:

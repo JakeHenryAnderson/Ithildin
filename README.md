@@ -824,6 +824,9 @@ checked with `make control-mapping-readiness`.
 - `make production-identity-storage-pis-002-sandbox-descriptor-repository-check` - validate the
   bounded `PIS-002-SD-001` internal repository protocol, SQLite/schema/dependency invariance, parity
   evidence, and the exact-candidate source-review stop line.
+- `make production-identity-storage-pis-002-sandbox-descriptor-repository-internal-review-check` -
+  validate the hash-bound zero-finding review of exact candidate `887de154`, its repaired
+  governance validators, green release checkpoint, and continuation-decision-only authority.
 - `make production-identity-storage-disposition-packet` - generate the focused architecture
   disposition packet asking whether ERG-006/ERG-007 may continue planning while production identity,
   runtime Postgres, migrations, retention enforcement, and custody claims remain blocked.
@@ -1830,6 +1833,16 @@ and checked with
 internal `SandboxDescriptorRepository` protocol over the current SQLite store and focused parity
 evidence. Independent exact-candidate source review remains the next gate; PostgreSQL, production
 identity, a second aggregate, dependency/schema changes, release, promotion, and UAT remain blocked.
+The exact-candidate source-review disposition is recorded in
+[docs/codex/production-identity-storage-pis-002-sandbox-descriptor-repository-internal-source-review.md](docs/codex/production-identity-storage-pis-002-sandbox-descriptor-repository-internal-source-review.md)
+and checked with
+`make production-identity-storage-pis-002-sandbox-descriptor-repository-internal-review-check`.
+It clears only exact commit `887de154` for the dependency-free SQLite repository seam and permits
+preparation of a separate PIS-002 continuation decision. Another aggregate, PIS-003 implementation,
+dependencies, schemas/migrations, PostgreSQL, production identity, release, promotion, and UAT
+remain blocked. The exact machine authority is closed in
+[docs/codex/production-identity-storage-pis-002-sandbox-descriptor-repository-review-authority.json](docs/codex/production-identity-storage-pis-002-sandbox-descriptor-repository-review-authority.json);
+prose cannot broaden its reviewed identity, findings, next action, or Boolean allow/deny values.
 Generate the production identity and storage disposition packet with
 `make production-identity-storage-disposition-packet`; it asks whether the current ERG-006/ERG-007
 architecture evidence is coherent enough to continue planning while keeping production identity,
