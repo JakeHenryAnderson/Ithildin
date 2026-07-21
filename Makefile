@@ -1024,6 +1024,7 @@ public-security-product-positioning-response-kit-check:
 .PHONY: production-identity-storage-pis-003-entry-internal-review-check
 .PHONY: production-identity-storage-pis-003-sd-pg-001-implementation-gate-check
 .PHONY: production-identity-storage-pis-003-sd-pg-001-implementation-gate-internal-review-check
+.PHONY: production-identity-storage-pis-003-sd-pg-001-implementation-check
 
 production-identity-storage-architecture-decision-record-check:
 	uv run python scripts/production_identity_storage_architecture_decision_record_check.py
@@ -1060,6 +1061,10 @@ production-identity-storage-pis-003-sd-pg-001-implementation-gate-check:
 
 production-identity-storage-pis-003-sd-pg-001-implementation-gate-internal-review-check:
 	uv run python scripts/production_identity_storage_pis_003_sd_pg_001_implementation_gate_internal_review_check.py
+
+production-identity-storage-pis-003-sd-pg-001-implementation-check:
+	uv run --group pis3 python scripts/production_identity_storage_pis_003_sd_pg_001_implementation_check.py
+	uv run --group pis3 pytest tests/test_storage_schema_import.py -q
 
 production-identity-storage-architecture-check:
 	uv run python scripts/production_identity_storage_architecture_check.py
@@ -2160,6 +2165,7 @@ release-check: production-identity-storage-pis-003-entry-decision-check
 release-check: production-identity-storage-pis-003-entry-internal-review-check
 release-check: production-identity-storage-pis-003-sd-pg-001-implementation-gate-check
 release-check: production-identity-storage-pis-003-sd-pg-001-implementation-gate-internal-review-check
+release-check: production-identity-storage-pis-003-sd-pg-001-implementation-check
 release-check: production-identity-storage-response-dry-run
 release-check: production-identity-storage-external-review-bundle-check
 release-check: production-identity-storage-response-kit-check

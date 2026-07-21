@@ -843,6 +843,10 @@ checked with `make control-mapping-readiness`.
 - `make production-identity-storage-pis-003-sd-pg-001-implementation-gate-internal-review-check` -
   validate the zero-finding Sol xhigh review of exact repaired gate commit `9f347fa`, the closed
   17-path hash inventory, and offline-implementation-only authority; Sol Ultra was not used.
+- `make production-identity-storage-pis-003-sd-pg-001-implementation-check` - validate the exact
+  non-default dependency transition, one-table Core schema, deterministic offline Alembic SQL,
+  pure descriptor snapshot validation, caller-owned importer, refusing test harness, protected
+  runtime invariance, and the exact-candidate-review stop line.
 - `make production-identity-storage-disposition-packet` - generate the focused architecture
   disposition packet asking whether ERG-006/ERG-007 may continue planning while production identity,
   runtime Postgres, migrations, retention enforcement, and custody claims remain blocked.
@@ -1905,6 +1909,14 @@ closed machine authority is
 [docs/codex/production-identity-storage-pis-003-sd-pg-001-implementation-gate-review-authority.json](docs/codex/production-identity-storage-pis-003-sd-pg-001-implementation-gate-review-authority.json).
 Psycopg driver load/use, external DSN consumption, connections, migration execution, PostgreSQL
 service lifecycle, runtime activation, identity, release, promotion, and UAT remain unauthorized.
+The bounded offline implementation candidate is recorded in
+[docs/codex/production-identity-storage-pis-003-sd-pg-001-implementation-record.md](docs/codex/production-identity-storage-pis-003-sd-pg-001-implementation-record.md)
+and checked with `make production-identity-storage-pis-003-sd-pg-001-implementation-check`. Its
+closed machine authority is
+[docs/codex/production-identity-storage-pis-003-sd-pg-001-implementation-authority.json](docs/codex/production-identity-storage-pis-003-sd-pg-001-implementation-authority.json).
+The candidate implements offline artifacts only and remains pending exact-candidate review. Its
+test-only external-DSN/`NullPool` contract refuses execution; no driver, DSN, connection, online
+migration, service, runtime backend, production identity, release, promotion, or UAT is authorized.
 Generate the production identity and storage disposition packet with
 `make production-identity-storage-disposition-packet`; it asks whether the current ERG-006/ERG-007
 architecture evidence is coherent enough to continue planning while keeping production identity,

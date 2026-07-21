@@ -409,6 +409,7 @@ REVIEW_DOCS = [
     "docs/codex/production-identity-storage-pis-003-entry-internal-source-review.md",
     "docs/codex/production-identity-storage-pis-003-sd-pg-001-implementation-gate.md",
     "docs/codex/production-identity-storage-pis-003-sd-pg-001-implementation-gate-internal-source-review.md",
+    "docs/codex/production-identity-storage-pis-003-sd-pg-001-implementation-record.md",
     "docs/codex/production-identity-storage-architecture.md",
     "docs/codex/production-identity-storage-disposition-packet.md",
     "docs/codex/production-identity-storage-external-review-bundle.md",

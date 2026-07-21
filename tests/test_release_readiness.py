@@ -205,6 +205,7 @@ from scripts import (
     production_identity_storage_pis_002_sandbox_descriptor_repository_internal_review_check,
     production_identity_storage_pis_003_entry_decision_check,
     production_identity_storage_pis_003_entry_internal_review_check,
+    production_identity_storage_pis_003_sd_pg_001_implementation_check,
     production_identity_storage_pis_003_sd_pg_001_implementation_gate_check,
     production_identity_storage_pis_003_sd_pg_001_implementation_gate_internal_review_check,
     production_identity_storage_response_dry_run,
@@ -10004,7 +10005,7 @@ def test_production_identity_storage_pis_003_sd_pg_001_implementation_gate_is_wi
     assert report["contract_valid"] is True
     assert report["protected_hashes_match"] is True
     assert report["entry_review_valid"] is True
-    assert report["dependency_transition_state"] == "preimplementation"
+    assert report["dependency_transition_state"] == "post_review_implementation"
     assert report["tool_count"] == 24
     assert report["wiring_valid"] is True
     assert report["pis_003_sd_pg_001_implementation_gate_recorded"] is True
@@ -10364,6 +10365,172 @@ def test_production_identity_storage_pis_003_gate_review_rejects_drift(
         monkeypatch.setattr(validator, "_tool_count", lambda _path: 23)
 
     _assert_pis_003_gate_review_fails_closed(validator.build_report(Path.cwd()))
+
+
+def test_production_identity_storage_pis_003_offline_implementation_is_wired() -> None:
+    validator = production_identity_storage_pis_003_sd_pg_001_implementation_check
+    report = validator.build_report(Path.cwd())
+    contract = json.loads(Path(validator.CONTRACT_REL).read_text(encoding="utf-8"))
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+
+    assert report["valid"] is True
+    assert report["implementation_id"] == (
+        "PRD-PROD-IAM-STORAGE-PIS-003-SD-PG-001-OFFLINE-IMPLEMENTATION"
+    )
+    assert report["implementation_outcome"] == (
+        "offline_implementation_complete_connection_evidence_gate_pending_"
+        "exact_source_review"
+    )
+    assert report["implementation_baseline_commit"] == (
+        "21cc758e2dd438c10f852574528f3ea971825b55"
+    )
+    for field in (
+        "baseline_exists",
+        "baseline_is_ancestor",
+        "implementation_document_hash_matches",
+        "authority_contract_hash_matches",
+        "contract_valid",
+        "candidate_inventory_exact",
+        "artifact_hashes_match",
+        "protected_hashes_match",
+        "dependency_contract_valid",
+        "gate_review_valid",
+        "gate_transition_valid",
+        "schema_valid",
+        "offline_sql_deterministic",
+        "source_boundaries_valid",
+        "harness_refuses_execution",
+        "wiring_valid",
+    ):
+        assert report[field] is True
+    assert report["candidate_path_count"] == 20
+    assert report["alembic_head_count"] == 1
+    assert report["psycopg_driver_loaded"] is False
+    assert report["database_connection_attempted"] is False
+    assert report["online_migration_executed"] is False
+    assert report["tool_count"] == 24
+    for field, expected in validator.EXPECTED_AUTHORITY.items():
+        assert report[field] is expected
+    assert report["next_required_action"] == (
+        "review_pis_003_sd_pg_001_offline_candidate_exact_commit"
+    )
+    assert validator.validate_contract(contract) == []
+    assert f"{validator.TARGET}:" in makefile
+    assert f"release-check: {validator.TARGET}" in makefile
+    assert f"make {validator.TARGET}" in readme
+    assert validator.DOC_REL in review_docs.REVIEW_DOCS
+    assert validator.TARGET in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+
+
+def test_production_identity_storage_pis_003_offline_contract_is_closed() -> None:
+    validator = production_identity_storage_pis_003_sd_pg_001_implementation_check
+    source = Path(validator.CONTRACT_REL).read_text(encoding="utf-8")
+
+    contract = json.loads(source)
+    contract["authority"]["database_connections_allowed"] = True
+    assert any(
+        "authority is not exact" in item
+        for item in validator.validate_contract(contract)
+    )
+
+    contract = json.loads(source)
+    contract["implementation_path_inventory"].append("apps/api/src/ithildin_api/app.py")
+    assert any(
+        "implementation_path_inventory is not exact" in item
+        for item in validator.validate_contract(contract)
+    )
+
+    contract = json.loads(source)
+    contract["test_harness_contract"]["create_engine_present"] = True
+    assert any(
+        "test_harness_contract is not exact" in item
+        for item in validator.validate_contract(contract)
+    )
+
+
+def _assert_pis_003_offline_implementation_fails_closed(report: dict[str, Any]) -> None:
+    validator = production_identity_storage_pis_003_sd_pg_001_implementation_check
+    assert report["valid"] is False
+    assert report["implementation_id"] == "invalid"
+    assert report["implementation_outcome"] == "invalid"
+    for field, expected in validator.EXPECTED_AUTHORITY.items():
+        if expected:
+            assert report[field] is False
+    assert report["database_connections_allowed"] is False
+    assert report["migration_execution_allowed"] is False
+    assert report["release_allowed"] is False
+    assert report["next_required_action"] == "invalid_gate"
+
+
+@pytest.mark.parametrize("artifact", ["document", "contract"])
+def test_production_identity_storage_pis_003_offline_rejects_digest_drift(
+    monkeypatch: pytest.MonkeyPatch,
+    artifact: str,
+) -> None:
+    validator = production_identity_storage_pis_003_sd_pg_001_implementation_check
+    original = validator._read_bytes
+    target = Path(
+        validator.DOC_REL if artifact == "document" else validator.CONTRACT_REL
+    ).resolve()
+
+    def mutated(path: Path) -> bytes:
+        data = original(path)
+        return data + b" " if path.resolve() == target else data
+
+    monkeypatch.setattr(validator, "_read_bytes", mutated)
+    _assert_pis_003_offline_implementation_fails_closed(
+        validator.build_report(Path.cwd())
+    )
+
+
+@pytest.mark.parametrize(
+    "failure_mode",
+    [
+        "paths",
+        "artifact",
+        "dependency",
+        "gate_review",
+        "gate",
+        "schema",
+        "source",
+        "wiring",
+        "tools",
+    ],
+)
+def test_production_identity_storage_pis_003_offline_rejects_drift(
+    monkeypatch: pytest.MonkeyPatch,
+    failure_mode: str,
+) -> None:
+    validator = production_identity_storage_pis_003_sd_pg_001_implementation_check
+    if failure_mode == "paths":
+        monkeypatch.setattr(validator, "_candidate_paths", lambda _root: set())
+    elif failure_mode == "artifact":
+        hashes = dict(validator.EXPECTED_ARTIFACT_HASHES)
+        hashes["pyproject.toml"] = "0" * 64
+        monkeypatch.setattr(validator, "EXPECTED_ARTIFACT_HASHES", hashes)
+    elif failure_mode == "dependency":
+        monkeypatch.setattr(validator, "_dependency_contract_valid", lambda _root: False)
+    elif failure_mode == "gate_review":
+        review = (
+            production_identity_storage_pis_003_sd_pg_001_implementation_gate_internal_review_check
+        )
+        monkeypatch.setattr(review, "build_report", lambda _root: {"valid": False})
+    elif failure_mode == "gate":
+        gate = production_identity_storage_pis_003_sd_pg_001_implementation_gate_check
+        monkeypatch.setattr(gate, "build_report", lambda _root: {"valid": False})
+    elif failure_mode == "schema":
+        monkeypatch.setattr(validator, "_schema_evidence", lambda _root: (False, False, -1))
+    elif failure_mode == "source":
+        monkeypatch.setattr(validator, "_source_boundaries", lambda _root: (False, False))
+    elif failure_mode == "wiring":
+        monkeypatch.setattr(validator, "_wiring_valid", lambda _root: False)
+    else:
+        monkeypatch.setattr(validator, "_tool_count", lambda _path: 23)
+
+    _assert_pis_003_offline_implementation_fails_closed(
+        validator.build_report(Path.cwd())
+    )
 
 
 def test_pis_predecessor_truth_is_bound_to_historical_dependency_objects(

@@ -30,6 +30,11 @@ dev = [
     "types-jsonschema>=4.26.0.20260518",
     "types-pyyaml>=6.0.12.20250915",
 ]
+pis3 = [
+    "SQLAlchemy==2.0.51",
+    "alembic==1.18.5",
+    "psycopg==3.3.4",
+]
 
 [tool.pytest.ini_options]
 addopts = "-q"

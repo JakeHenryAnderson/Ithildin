@@ -440,6 +440,15 @@ Current selected capability: `not selected`.
   schema/importer, and unexecuted test-harness implementation ceiling. Driver load/use, DSN use,
   connections, migration execution, services, runtime PostgreSQL, production identity, new powers,
   release, promotion, and UAT remain unauthorized pending later gates.
+- Current PIS-003 SD-PG-001 offline implementation:
+  `production-identity-storage-pis-003-sd-pg-001-implementation-record.md` records the exact
+  non-default lock transition, one-table Core/JSONB schema, one linear offline Alembic revision,
+  pure canonical descriptor snapshot validation, caller-owned PostgreSQL importer, secret-free
+  receipt, and test-only external-DSN/`NullPool` contract that always refuses execution. Its closed
+  `production-identity-storage-pis-003-sd-pg-001-implementation-authority.json` contract keeps the
+  exact-candidate review pending and driver use, DSN consumption, connections, online migrations,
+  PostgreSQL services, runtime changes, production identity, new powers, release, promotion, and
+  UAT unauthorized.
 - Current warning language: Ithildin may discuss production identity and durable storage
   architecture, but the current runtime remains local-preview with local principal labels and SQLite.
 - Current architecture evidence:
