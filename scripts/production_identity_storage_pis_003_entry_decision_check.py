@@ -24,9 +24,9 @@ ROOT = Path(__file__).resolve().parents[1]
 DOC_REL = "docs/codex/production-identity-storage-pis-003-entry-decision-record.md"
 DOC_NAME = "production-identity-storage-pis-003-entry-decision-record.md"
 DOC_TITLE = "Production Identity And Storage PIS-003 Entry Decision Record"
-DOC_SHA256 = "ae4dd13ae0455aa57fd010247313c85a9312055f7ddba09ed364a13640c715b8"
+DOC_SHA256 = "1af9d450dac5214995adf34a3dabfd877b0e98bd1f5085263eafe496edf299f8"
 CONTRACT_REL = "docs/codex/production-identity-storage-pis-003-entry-decision.json"
-CONTRACT_SHA256 = "a86137cffbf2841c2c0c678ee73bb5523bee3fcdb64377ba626669442f5d56b2"
+CONTRACT_SHA256 = "00298c7217749d599a1413ee12c70c505ee212da4e181e82f194ca3e532ade3c"
 TARGET = "production-identity-storage-pis-003-entry-decision-check"
 BASELINE_COMMIT = "159bf93b4b1e3975d7cab615ef51d2e951f9a80a"
 
@@ -225,8 +225,10 @@ def validate_contract(contract: dict[str, Any]) -> list[str]:
     if not isinstance(dependency, dict):
         failures.append("PIS-003 dependency decision must be an object")
     else:
-        if dependency.get("dependency_group") != "pis3_non_default":
+        if dependency.get("dependency_group") != "pis3":
             failures.append("PIS-003 dependencies are not confined to the non-default pis3 group")
+        if dependency.get("dependency_group_default_enabled") is not False:
+            failures.append("PIS-003 pis3 dependency group must remain non-default")
         if dependency.get("selected_direct_requirements") != EXPECTED_DIRECT_REQUIREMENTS:
             failures.append("PIS-003 direct dependency selection is not exact")
         if dependency.get("psycopg_package_flavor") != (
@@ -258,6 +260,17 @@ def validate_contract(contract: dict[str, Any]) -> list[str]:
             ),
             "physical_row_order_authoritative": False,
             "canonical_json_digest_owned_by_ithildin": True,
+            "isolated_test_harness_input": "externally_supplied_dsn",
+            "isolated_test_harness_engine": (
+                "synchronous_sqlalchemy_engine_with_nullpool"
+            ),
+            "isolated_test_harness_owns_connection_and_outer_transaction": True,
+            "importer_input": "caller_owned_sqlalchemy_connection",
+            "importer_accepts_dsn": False,
+            "importer_creates_engine_or_pool": False,
+            "importer_commits_or_rolls_back": False,
+            "alembic_input": "caller_owned_sqlalchemy_connection",
+            "dsn_or_credentials_persisted_or_logged": False,
         }
         for key, expected in expected_transaction_values.items():
             if type(transaction.get(key)) is not type(expected) or transaction.get(key) != expected:

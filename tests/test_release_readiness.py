@@ -9669,7 +9669,23 @@ def test_production_identity_storage_pis_003_entry_decision_is_wired() -> None:
         "alembic==1.18.5",
         "psycopg==3.3.4",
     ]
-    assert contract["dependency_decision"]["dependency_group"] == "pis3_non_default"
+    assert contract["dependency_decision"]["dependency_group"] == "pis3"
+    assert contract["dependency_decision"]["dependency_group_default_enabled"] is False
+    assert contract["transaction_contract"]["isolated_test_harness_input"] == (
+        "externally_supplied_dsn"
+    )
+    assert contract["transaction_contract"]["isolated_test_harness_engine"] == (
+        "synchronous_sqlalchemy_engine_with_nullpool"
+    )
+    assert contract["transaction_contract"][
+        "isolated_test_harness_owns_connection_and_outer_transaction"
+    ] is True
+    assert contract["transaction_contract"]["importer_input"] == (
+        "caller_owned_sqlalchemy_connection"
+    )
+    assert contract["transaction_contract"]["importer_accepts_dsn"] is False
+    assert contract["transaction_contract"]["importer_creates_engine_or_pool"] is False
+    assert contract["transaction_contract"]["importer_commits_or_rolls_back"] is False
     assert contract["proposed_slice"]["slice_id"] == "PIS-003-SD-PG-001"
     assert validator.validate_contract(contract) == []
     assert f"{validator.TARGET}:" in makefile

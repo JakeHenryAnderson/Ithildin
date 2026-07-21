@@ -9,7 +9,8 @@
     "snapshot_date": "2026-07-20",
     "python_version": "3.12",
     "index": "https://pypi.org/simple",
-    "dependency_group": "pis3_non_default",
+    "dependency_group": "pis3",
+    "dependency_group_default_enabled": false,
     "selected_direct_requirements": [
       "SQLAlchemy==2.0.51",
       "alembic==1.18.5",
@@ -86,7 +87,16 @@
     "domain_audit_outbox_atomicity_target": "deferred_to_separately_gated_pis_006",
     "current_descriptor_audit_residual": "preserve_descriptor_commit_then_audit_write",
     "isolated_import_mode": "frozen_known_version_sqlite_to_empty_quarantined_postgresql_target",
-    "isolated_import_failure": "discard_or_quarantine_target_without_repair_or_activation"
+    "isolated_import_failure": "discard_or_quarantine_target_without_repair_or_activation",
+    "isolated_test_harness_input": "externally_supplied_dsn",
+    "isolated_test_harness_engine": "synchronous_sqlalchemy_engine_with_nullpool",
+    "isolated_test_harness_owns_connection_and_outer_transaction": true,
+    "importer_input": "caller_owned_sqlalchemy_connection",
+    "importer_accepts_dsn": false,
+    "importer_creates_engine_or_pool": false,
+    "importer_commits_or_rolls_back": false,
+    "alembic_input": "caller_owned_sqlalchemy_connection",
+    "dsn_or_credentials_persisted_or_logged": false
   },
   "proposed_slice": {
     "slice_id": "PIS-003-SD-PG-001",
@@ -113,7 +123,7 @@
       "no_embedded_live_url_runtime_pool_or_startup_migration",
       "current_sqlite_schema_runtime_api_audit_and_authority_invariance",
       "policy_manifest_and_24_tool_invariance",
-      "rollback_before_any_connection_or_target_activation"
+      "rollback_by_discarding_isolated_target_before_any_activation"
     ],
     "rollback": "revert_pis_003_sd_pg_001_and_discard_isolated_target_before_activation"
   },

@@ -178,12 +178,16 @@ After exact source review and a separate implementation gate, the proposed slice
 - adding an offline-only schema metadata module for `sandbox_descriptors`;
 - adding an offline Alembic environment with one linear candidate revision;
 - producing deterministic PostgreSQL DDL without a driver or database connection;
-- adding a synchronous Core/Psycopg importer that accepts only an externally supplied isolated test
-  connection, enforces an empty target, uses `NullPool`, and produces a secret-free verification
-  receipt while leaving the target non-activatable;
+- adding a synchronous Core/Psycopg importer that accepts only a caller-owned SQLAlchemy
+  `Connection`, enforces an empty target, never commits or rolls back its caller's transaction, and
+  produces a secret-free verification receipt while leaving the target non-activatable;
+- adding a test-only harness that accepts the externally supplied isolated-test DSN, creates and
+  disposes a synchronous SQLAlchemy engine with `NullPool`, owns the connection and explicit outer
+  transaction, passes that connection to Alembic and the importer, and never persists or logs the
+  DSN or credentials;
 - tests for exact table, constraint, index, type, head, and rendered-SQL invariants;
-- tests proving no API/startup import, no database connection, no SQLite schema/runtime change, no
-  ORM use, and no second aggregate; and
+- tests proving no API/startup import or runtime database connection, no SQLite schema/runtime
+  change, no ORM use, and no second aggregate; and
 - documentation, validator, and review evidence for that exact slice.
 
 The future implementation gate must enumerate every allowed path. The default proposed code roots
@@ -205,12 +209,15 @@ The later implementation gate must require:
 - canonical payload and UTC timestamp round-trip fixtures, including rejection of malformed,
   duplicate, unknown-status, digest-mismatch, naive-time, and non-object JSON records;
 - exact plain-Psycopg implementation and system-`libpq`/TLS/SBOM receipt; no binary/C/pool extra;
-- real isolated PostgreSQL import verification through an externally supplied test DSN, with no
-  repository-controlled service lifecycle, embedded credentials, or application startup migration;
+- real isolated PostgreSQL import verification through a test harness that alone accepts the
+  externally supplied test DSN and owns a `NullPool` engine/connection/transaction; the importer and
+  Alembic receive only the caller-owned connection, with no repository-controlled service
+  lifecycle, embedded/persisted credentials, or application startup migration;
 - unchanged current SQLite schema, behavior, audit residual, public API, dependency-unrelated code,
   policy, manifests, and 24-tool surface;
 - clean focused tests, lint, mypy, docs, no-new-powers, release check, and exact-candidate review; and
-- rollback proof before any target activation or runtime data exists.
+- a rollback plan bound before connection plus proof that the isolated target is discarded before
+  any activation or runtime data exists.
 
 Generated or compiled DDL is evidence only. It does not authorize execution, a database service,
 an import, runtime PostgreSQL, production custody, release, promotion, or the next PIS slice.
