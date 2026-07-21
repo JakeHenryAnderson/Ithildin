@@ -123,7 +123,8 @@
       "no_embedded_live_url_runtime_pool_or_startup_migration",
       "current_sqlite_schema_runtime_api_audit_and_authority_invariance",
       "policy_manifest_and_24_tool_invariance",
-      "rollback_by_discarding_isolated_target_before_any_activation"
+      "rollback_plan_bound_before_database_connection",
+      "isolated_target_discard_proved_before_activation_or_runtime_use"
     ],
     "rollback": "revert_pis_003_sd_pg_001_and_discard_isolated_target_before_activation"
   },

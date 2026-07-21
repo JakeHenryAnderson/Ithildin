@@ -26,7 +26,7 @@ DOC_NAME = "production-identity-storage-pis-003-entry-decision-record.md"
 DOC_TITLE = "Production Identity And Storage PIS-003 Entry Decision Record"
 DOC_SHA256 = "1af9d450dac5214995adf34a3dabfd877b0e98bd1f5085263eafe496edf299f8"
 CONTRACT_REL = "docs/codex/production-identity-storage-pis-003-entry-decision.json"
-CONTRACT_SHA256 = "00298c7217749d599a1413ee12c70c505ee212da4e181e82f194ca3e532ade3c"
+CONTRACT_SHA256 = "41f413e1d9532019d91aa39daaec13bdcf679a761bc4d73f8d9575a229fd9269"
 TARGET = "production-identity-storage-pis-003-entry-decision-check"
 BASELINE_COMMIT = "159bf93b4b1e3975d7cab615ef51d2e951f9a80a"
 
@@ -34,6 +34,22 @@ EXPECTED_DIRECT_REQUIREMENTS = [
     "SQLAlchemy==2.0.51",
     "alembic==1.18.5",
     "psycopg==3.3.4",
+]
+
+EXPECTED_REQUIRED_EVIDENCE = [
+    "exact_dependency_lock_source_hash_marker_and_license_inventory",
+    "sqlalchemy_core_only_no_orm_session_async_pool_or_runtime_import",
+    "single_alembic_head_and_deterministic_offline_postgresql_sql",
+    "plain_sync_psycopg_system_libpq_tls_and_sbom_receipt",
+    "sandbox_descriptor_schema_constraint_type_and_index_contract",
+    "canonical_payload_digest_and_utc_timestamp_round_trip",
+    "negative_import_fixture_rejections",
+    "externally_supplied_isolated_test_dsn_without_repo_controlled_service_lifecycle",
+    "no_embedded_live_url_runtime_pool_or_startup_migration",
+    "current_sqlite_schema_runtime_api_audit_and_authority_invariance",
+    "policy_manifest_and_24_tool_invariance",
+    "rollback_plan_bound_before_database_connection",
+    "isolated_target_discard_proved_before_activation_or_runtime_use",
 ]
 
 EXPECTED_AUTHORITY = {
@@ -286,6 +302,8 @@ def validate_contract(contract: dict[str, Any]) -> list[str]:
             failures.append("PIS-003 selected aggregate is not sandbox_descriptors")
         if proposed_slice.get("implementation_gate_required") is not True:
             failures.append("PIS-003 proposed slice does not require an implementation gate")
+        if proposed_slice.get("required_evidence") != EXPECTED_REQUIRED_EVIDENCE:
+            failures.append("PIS-003 proposed slice required evidence is not exact")
         if proposed_slice.get("rollback") != (
             "revert_pis_003_sd_pg_001_and_discard_isolated_target_before_activation"
         ):

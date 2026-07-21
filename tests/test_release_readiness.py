@@ -9687,6 +9687,9 @@ def test_production_identity_storage_pis_003_entry_decision_is_wired() -> None:
     assert contract["transaction_contract"]["importer_creates_engine_or_pool"] is False
     assert contract["transaction_contract"]["importer_commits_or_rolls_back"] is False
     assert contract["proposed_slice"]["slice_id"] == "PIS-003-SD-PG-001"
+    assert contract["proposed_slice"]["required_evidence"] == (
+        validator.EXPECTED_REQUIRED_EVIDENCE
+    )
     assert validator.validate_contract(contract) == []
     assert f"{validator.TARGET}:" in makefile
     assert f"release-check: {validator.TARGET}" in makefile
@@ -9725,6 +9728,13 @@ def test_production_identity_storage_pis_003_entry_contract_is_closed() -> None:
     contract["proposed_slice"]["selected_aggregate"] = "missions"
     failures = validator.validate_contract(contract)
     assert any("selected aggregate is not sandbox_descriptors" in item for item in failures)
+
+    contract = json.loads(source)
+    contract["proposed_slice"]["required_evidence"].remove(
+        "rollback_plan_bound_before_database_connection"
+    )
+    failures = validator.validate_contract(contract)
+    assert any("required evidence is not exact" in item for item in failures)
 
 
 def test_production_identity_storage_pis_003_entry_contract_rejects_duplicate_keys(
