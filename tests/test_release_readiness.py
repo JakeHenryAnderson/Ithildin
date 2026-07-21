@@ -203,6 +203,7 @@ from scripts import (
     production_identity_storage_pis_002_entry_decision_check,
     production_identity_storage_pis_002_sandbox_descriptor_repository_check,
     production_identity_storage_pis_002_sandbox_descriptor_repository_internal_review_check,
+    production_identity_storage_pis_003_entry_decision_check,
     production_identity_storage_response_dry_run,
     production_identity_storage_response_kit,
     progress_check,
@@ -9621,6 +9622,185 @@ def test_production_identity_storage_pis_002_continuation_rejects_surface_drift(
         fragment in " ".join(report["failures"])
         for fragment in ("wiring is incomplete", "tool count is 23")
     )
+
+
+def test_production_identity_storage_pis_003_entry_decision_is_wired() -> None:
+    validator = production_identity_storage_pis_003_entry_decision_check
+    report = validator.build_report(Path.cwd())
+    contract = json.loads(Path(validator.CONTRACT_REL).read_text(encoding="utf-8"))
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+
+    assert report["valid"] is True
+    assert report["decision_document_hash_matches"] is True
+    assert report["authority_contract_hash_matches"] is True
+    assert report["contract_valid"] is True
+    assert report["decision_id"] == "PRD-PROD-IAM-STORAGE-PIS-003-ENTRY"
+    assert report["decision_outcome"] == (
+        "select_bounded_isolated_postgresql_schema_import_slice_"
+        "pending_review_and_gate"
+    )
+    assert report["entry_baseline_commit"] == (
+        "159bf93b4b1e3975d7cab615ef51d2e951f9a80a"
+    )
+    assert report["baseline_exists"] is True
+    assert report["baseline_is_ancestor"] is True
+    assert report["protected_hashes_match"] is True
+    assert report["parent_continuation_valid"] is True
+    assert report["selected_dependencies_absent"] is True
+    assert report["tool_count"] == 24
+    assert report["wiring_valid"] is True
+    assert report["pis_003_entry_decision_recorded"] is True
+    assert report["pis_003_sd_pg_001_selected"] is True
+    assert report["exact_candidate_source_review_required"] is True
+    assert report["implementation_gate_required"] is True
+    for field in set(validator.EXPECTED_AUTHORITY) - {
+        "pis_003_entry_decision_recorded",
+        "pis_003_sd_pg_001_selected",
+        "exact_candidate_source_review_required",
+        "implementation_gate_required",
+    }:
+        assert report[field] is False
+    assert report["next_required_action"] == (
+        "review_pis_003_entry_decision_exact_candidate"
+    )
+    assert contract["dependency_decision"]["selected_direct_requirements"] == [
+        "SQLAlchemy==2.0.51",
+        "alembic==1.18.5",
+        "psycopg==3.3.4",
+    ]
+    assert contract["dependency_decision"]["dependency_group"] == "pis3_non_default"
+    assert contract["proposed_slice"]["slice_id"] == "PIS-003-SD-PG-001"
+    assert validator.validate_contract(contract) == []
+    assert f"{validator.TARGET}:" in makefile
+    assert f"release-check: {validator.TARGET}" in makefile
+    assert f"make {validator.TARGET}" in readme
+    assert validator.DOC_REL in review_docs.REVIEW_DOCS
+    assert validator.TARGET in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+
+
+def test_production_identity_storage_pis_003_entry_contract_is_closed() -> None:
+    validator = production_identity_storage_pis_003_entry_decision_check
+    source = Path(validator.CONTRACT_REL).read_text(encoding="utf-8")
+
+    contract = json.loads(source)
+    contract["authority"]["dependency_changes_allowed"] = True
+    failures = validator.validate_contract(contract)
+    assert any("authority map is not the exact closed Boolean map" in item for item in failures)
+
+    contract = json.loads(source)
+    contract["authority"]["runtime_postgres_allowed"] = 0
+    failures = validator.validate_contract(contract)
+    assert any("authority map is not the exact closed Boolean map" in item for item in failures)
+
+    contract = json.loads(source)
+    contract["dependency_decision"]["selected_direct_requirements"].append(
+        "psycopg-binary==3.3.4"
+    )
+    failures = validator.validate_contract(contract)
+    assert any("direct dependency selection is not exact" in item for item in failures)
+
+    contract = json.loads(source)
+    contract["transaction_contract"]["transparent_retries_allowed"] = True
+    failures = validator.validate_contract(contract)
+    assert any("transparent_retries_allowed is not exact" in item for item in failures)
+
+    contract = json.loads(source)
+    contract["proposed_slice"]["selected_aggregate"] = "missions"
+    failures = validator.validate_contract(contract)
+    assert any("selected aggregate is not sandbox_descriptors" in item for item in failures)
+
+
+def test_production_identity_storage_pis_003_entry_contract_rejects_duplicate_keys(
+    tmp_path: Path,
+) -> None:
+    validator = production_identity_storage_pis_003_entry_decision_check
+    contract_path = tmp_path / "entry.json"
+    contract_path.write_text(
+        '{"authority":{"runtime_postgres_allowed":false,'
+        '"runtime_postgres_allowed":true}}',
+        encoding="utf-8",
+    )
+
+    contract, failures = validator._load_contract(contract_path)
+
+    assert contract == {}
+    assert failures == [
+        "PIS-003 entry contract has duplicate JSON member: runtime_postgres_allowed"
+    ]
+
+
+def _assert_pis_003_entry_report_fails_closed(report: dict[str, Any]) -> None:
+    validator = production_identity_storage_pis_003_entry_decision_check
+    assert report["valid"] is False
+    assert report["decision_id"] == "invalid"
+    assert report["decision_outcome"] == "invalid"
+    for field, expected in validator.EXPECTED_AUTHORITY.items():
+        if expected:
+            assert report[field] is False
+    assert report["pis_003_sd_pg_001_implementation_allowed"] is False
+    assert report["dependency_changes_allowed"] is False
+    assert report["database_connections_allowed"] is False
+    assert report["runtime_postgres_allowed"] is False
+    assert report["release_allowed"] is False
+    assert report["next_required_action"] == "invalid_gate"
+
+
+@pytest.mark.parametrize("artifact", ["decision", "contract"])
+def test_production_identity_storage_pis_003_entry_rejects_digest_drift(
+    monkeypatch: pytest.MonkeyPatch,
+    artifact: str,
+) -> None:
+    validator = production_identity_storage_pis_003_entry_decision_check
+    original_read_bytes = validator._read_bytes
+    target = Path(
+        validator.DOC_REL if artifact == "decision" else validator.CONTRACT_REL
+    ).resolve()
+
+    def mutated_read_bytes(path: Path) -> bytes:
+        data = original_read_bytes(path)
+        return data + b" " if path.resolve() == target else data
+
+    monkeypatch.setattr(validator, "_read_bytes", mutated_read_bytes)
+    report = validator.build_report(Path.cwd())
+
+    _assert_pis_003_entry_report_fails_closed(report)
+    hash_field = (
+        "decision_document_hash_matches"
+        if artifact == "decision"
+        else "authority_contract_hash_matches"
+    )
+    assert report[hash_field] is False
+    assert any("closed digest" in failure for failure in report["failures"])
+
+
+@pytest.mark.parametrize(
+    "failure_mode",
+    ["protected_hash", "dependency", "wiring", "tool_count", "parent"],
+)
+def test_production_identity_storage_pis_003_entry_rejects_gate_drift(
+    monkeypatch: pytest.MonkeyPatch,
+    failure_mode: str,
+) -> None:
+    validator = production_identity_storage_pis_003_entry_decision_check
+    if failure_mode == "protected_hash":
+        hashes = dict(validator.EXPECTED_PROTECTED_HASHES)
+        hashes["apps/api/src/ithildin_api/app.py"] = "0" * 64
+        monkeypatch.setattr(validator, "EXPECTED_PROTECTED_HASHES", hashes)
+    elif failure_mode == "dependency":
+        monkeypatch.setattr(validator, "_selected_dependencies_absent", lambda _root: False)
+    elif failure_mode == "wiring":
+        monkeypatch.setattr(validator, "_wiring_valid", lambda _root: False)
+    elif failure_mode == "tool_count":
+        monkeypatch.setattr(validator, "_tool_count", lambda _path: 23)
+    else:
+        parent = production_identity_storage_pis_002_continuation_decision_check
+        monkeypatch.setattr(parent, "build_report", lambda _root: {"valid": False})
+
+    report = validator.build_report(Path.cwd())
+
+    _assert_pis_003_entry_report_fails_closed(report)
+    assert report["valid"] is False
 
 
 def test_production_identity_storage_architecture_is_wired() -> None:

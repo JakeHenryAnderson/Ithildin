@@ -830,6 +830,10 @@ checked with `make control-mapping-readiness`.
 - `make production-identity-storage-pis-002-continuation-decision-check` - validate the hash-bound
   decision to end the dependency-free PIS-002 interface phase after one proven repository seam and
   permit only preparation of a separately gated PIS-003 entry decision.
+- `make production-identity-storage-pis-003-entry-decision-check` - validate the hash-bound
+  PIS-003 entry-decision candidate selecting exact non-default tooling dependencies, transaction
+  semantics, and one isolated sandbox-descriptor PostgreSQL schema/import proof while keeping all
+  implementation, connection, runtime, identity, release, promotion, and UAT authority false.
 - `make production-identity-storage-disposition-packet` - generate the focused architecture
   disposition packet asking whether ERG-006/ERG-007 may continue planning while production identity,
   runtime Postgres, migrations, retention enforcement, and custody claims remain blocked.
@@ -1856,6 +1860,15 @@ It permits only preparation and dependency evaluation for a separately gated PIS
 decision; it does not authorize PIS-003 implementation, dependency or schema changes, PostgreSQL,
 production identity, release, promotion, or UAT. Its exact machine authority is closed in
 [docs/codex/production-identity-storage-pis-002-continuation-decision.json](docs/codex/production-identity-storage-pis-002-continuation-decision.json).
+The separately gated PIS-003 entry-decision candidate is
+[docs/codex/production-identity-storage-pis-003-entry-decision-record.md](docs/codex/production-identity-storage-pis-003-entry-decision-record.md)
+and checked with `make production-identity-storage-pis-003-entry-decision-check`. It selects
+`PIS-003-SD-PG-001`: exact SQLAlchemy Core, Alembic, and plain synchronous Psycopg tooling for one
+future isolated `sandbox_descriptors` PostgreSQL schema/import proof. It requires exact-candidate
+source review and a separate committed implementation gate before any dependency, lockfile, code,
+schema, migration, connection, or service change. The closed authority contract is
+[docs/codex/production-identity-storage-pis-003-entry-decision.json](docs/codex/production-identity-storage-pis-003-entry-decision.json);
+all implementation/runtime/identity/release/promotion/UAT authority remains false.
 Generate the production identity and storage disposition packet with
 `make production-identity-storage-disposition-packet`; it asks whether the current ERG-006/ERG-007
 architecture evidence is coherent enough to continue planning while keeping production identity,

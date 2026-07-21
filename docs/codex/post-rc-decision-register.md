@@ -406,6 +406,14 @@ Current selected capability: `not selected`.
   for a separately gated PIS-003 entry decision are allowed; PIS-003 implementation, dependencies,
   schemas/migrations, PostgreSQL, production identity, new powers, release, promotion, and UAT remain
   unauthorized.
+- Current PIS-003 entry-decision candidate:
+  `production-identity-storage-pis-003-entry-decision-record.md` selects proposed slice
+  `PIS-003-SD-PG-001` and exact non-default SQLAlchemy Core, Alembic, and plain synchronous Psycopg
+  tooling for one isolated `sandbox_descriptors` PostgreSQL schema/import proof. Its closed contract
+  is `production-identity-storage-pis-003-entry-decision.json`. The candidate requires independent
+  exact-candidate source review followed by a separate committed implementation gate. Dependency
+  changes, implementation, database connections/services, migration execution, runtime PostgreSQL,
+  production identity, new powers, release, promotion, and UAT remain unauthorized.
 - Current warning language: Ithildin may discuss production identity and durable storage
   architecture, but the current runtime remains local-preview with local principal labels and SQLite.
 - Current architecture evidence:
