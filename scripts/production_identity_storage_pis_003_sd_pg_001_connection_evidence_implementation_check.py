@@ -31,12 +31,12 @@ DOC_REL = (
     "docs/codex/production-identity-storage-pis-003-sd-pg-001-"
     "connection-evidence-implementation-record.md"
 )
-DOC_SHA256 = "5b613d2d1af46dfeac21a3f302ef70a02f103bd54f9140dde1d41a04959bb776"
+DOC_SHA256 = "2c7da134e8a01f18b64f5fdc3892ef049d1530b2a1e8babde8735830f990f020"
 CONTRACT_REL = (
     "docs/codex/production-identity-storage-pis-003-sd-pg-001-"
     "connection-evidence-implementation-authority.json"
 )
-CONTRACT_SHA256 = "bb67dd606cf1237afcb63af133a425ae1fe29b6b9c156f9468e11b51af4e1d87"
+CONTRACT_SHA256 = "3c65225f537bc50fa5208a89dfb10b9178625f8fbe690f6361682fde881e14e6"
 HARNESS_REL = "scripts/production_identity_storage_pis_003_sd_pg_001_connection_evidence.py"
 TARGET = "production-identity-storage-pis-003-sd-pg-001-connection-evidence-implementation-check"
 BASELINE_COMMIT = "c84c9f9f97ee9716e1466944e26e206e85b4b729"
@@ -135,12 +135,14 @@ EXPECTED_IMPLEMENTATION_CONTRACT = {
     "public_exception_boundary_closed": True,
     "dsn_identity_control_characters_rejected": True,
     "contextual_receipt_failure_stages": True,
+    "loaded_libpq_and_libssl_symbol_owners_exact": True,
+    "source_digest_all_engine_outcomes_and_discard": True,
     "service_or_container_lifecycle": False,
     "database_or_role_creation": False,
     "runtime_imports": False,
 }
 EXPECTED_VALIDATION_EVIDENCE = {
-    "storage_schema_import_tests": 74,
+    "storage_schema_import_tests": 78,
     "psycopg_loaded_during_tests": False,
     "database_connection_attempted": False,
     "online_migration_executed": False,
@@ -201,7 +203,8 @@ REQUIRED_PHRASES = [
     "No real DSN or target-binding key was read.",
     "Psycopg was not imported.",
     "The first exact-candidate review of `7c6b5de5ab8055bfbe1d0384c6b1df0d372f4e03`",
-    "The focused storage/schema/import suite contains `74` passing tests.",
+    "The repeat exact-candidate review of `86fa34214f569d7380157f136a3963cb04204575`",
+    "The focused storage/schema/import suite contains `78` passing tests.",
     "`connection_evidence_candidate_complete: true`",
     "`exact_candidate_source_review_complete: false`",
     "`database_connections_allowed: false`",
@@ -479,6 +482,7 @@ def _harness_semantics_valid(repo_root: Path) -> bool:
         "_run_migration_import_attempt",
         "_rollback_original_transaction",
         "_require_original_transaction",
+        "_require_source_unchanged",
         "secret_marker_commitment",
     }
     if not required_functions <= set(functions):
@@ -502,6 +506,7 @@ def _harness_semantics_valid(repo_root: Path) -> bool:
             "_run_migration_import_attempt",
             "_rollback_original_transaction",
             "_require_original_transaction",
+            "_require_source_unchanged",
             "finalize_discard_receipt",
             "scan_output_tree_for_secrets",
             "secret_marker_commitment",
@@ -522,7 +527,9 @@ def _harness_semantics_valid(repo_root: Path) -> bool:
         and "secret_marker_commitment" in implementation_source
         and "expected_commitment=preflight.secret_scan_marker_commitment" in implementation_source
         and 'raise ConnectionEvidenceError(category, "connection") from None' in execute_source
-        and '_loaded_symbol_library_path(libpq_path, "OpenSSL_version")' in source
+        and '_loaded_symbol_library_path(declared_libpq_path, "PQlibVersion")' in source
+        and '_loaded_symbol_library_path(libpq_path, "SSL_CTX_new")' in source
+        and implementation_source.count("_require_source_unchanged(preflight)") >= 2
         and "_contains_control(user)" in source
         and "_contains_control(database)" in source
         and 'category="receipt_authenticity_failed"' in source

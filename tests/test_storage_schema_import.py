@@ -1456,6 +1456,121 @@ def test_connection_connected_negative_is_one_attempt_and_exactly_category_bound
     assert engine.dispose_count == 1
 
 
+@pytest.mark.parametrize(
+    ("negative_scenario", "attempt_kind", "observed_category", "observed_stage"),
+    [
+        ("tls_verification_failed", "network", "tls_verification_failed", "connection"),
+        (
+            "semantic_verification_failed",
+            "connected",
+            "semantic_verification_failed",
+            "import",
+        ),
+        (None, "connected", "migration_failed", "migration"),
+    ],
+)
+def test_connection_source_integrity_overrides_every_engine_run_outcome(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    negative_scenario: str | None,
+    attempt_kind: str,
+    observed_category: str,
+    observed_stage: str,
+) -> None:
+    manifest_path, now, manifest, dsn, binding_key, _, _ = _connection_preflight_fixture(tmp_path)
+    preflight = replace(
+        connection_evidence.validate_execution_preflight(
+            manifest_path,
+            expected_reviewed_commit=cast(str, manifest["reviewed_candidate_commit"]),
+            now=now,
+        ),
+        negative_scenario=negative_scenario,
+    )
+    environment = {
+        connection_evidence.PSYCOPG_IMPL_ENV: "python",
+        connection_evidence.DSN_ENV: dsn,
+        connection_evidence.BINDING_KEY_ENV: binding_key,
+    }
+
+    def mutate_source_and_fail(*args: object) -> None:
+        del args
+        preflight.source.path.chmod(0o644)
+        preflight.source.path.write_bytes(b"mutated synthetic source")
+        raise connection_evidence.ConnectionEvidenceError(
+            observed_category,
+            observed_stage,
+        )
+
+    monkeypatch.setattr(connection_evidence, "_load_plain_psycopg_driver", lambda: object())
+    monkeypatch.setattr(connection_evidence, "_validate_loaded_native_identity", lambda *args: None)
+    monkeypatch.setattr(
+        connection_evidence,
+        "create_engine",
+        lambda *args, **kwargs: _RunnerEngine(),
+    )
+    helper = (
+        "_run_network_negative_attempt"
+        if attempt_kind == "network"
+        else "_run_migration_import_attempt"
+    )
+    monkeypatch.setattr(connection_evidence, helper, mutate_source_and_fail)
+
+    with pytest.raises(connection_evidence.ConnectionEvidenceError) as captured:
+        connection_evidence._execute_validated_preflight(
+            preflight,
+            checked_now=now,
+            environment=environment,
+        )
+
+    assert captured.value.category == "preflight_invalid"
+    assert captured.value.stage == "synthetic_source"
+
+
+def test_connection_source_integrity_overrides_cleanup_failure(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    manifest_path, now, manifest, dsn, binding_key, _, _ = _connection_preflight_fixture(tmp_path)
+    preflight = connection_evidence.validate_execution_preflight(
+        manifest_path,
+        expected_reviewed_commit=cast(str, manifest["reviewed_candidate_commit"]),
+        now=now,
+    )
+
+    class SourceMutatingEngine(_RunnerEngine):
+        def dispose(self) -> None:
+            preflight.source.path.chmod(0o644)
+            preflight.source.path.write_bytes(b"mutated during cleanup")
+            raise RuntimeError("cleanup exposed synthetic-secret-marker")
+
+    engine = SourceMutatingEngine()
+    environment = {
+        connection_evidence.PSYCOPG_IMPL_ENV: "python",
+        connection_evidence.DSN_ENV: dsn,
+        connection_evidence.BINDING_KEY_ENV: binding_key,
+    }
+    monkeypatch.setattr(connection_evidence, "_load_plain_psycopg_driver", lambda: object())
+    monkeypatch.setattr(connection_evidence, "_validate_loaded_native_identity", lambda *args: None)
+    monkeypatch.setattr(connection_evidence, "create_engine", lambda *args, **kwargs: engine)
+    monkeypatch.setattr(
+        connection_evidence,
+        "_run_migration_import_attempt",
+        lambda *args: cast(DescriptorImportReceipt, object()),
+    )
+    monkeypatch.setattr(connection_evidence, "_post_rollback_rows_absent", lambda *args: True)
+
+    with pytest.raises(connection_evidence.ConnectionEvidenceError) as captured:
+        connection_evidence._execute_validated_preflight(
+            preflight,
+            checked_now=now,
+            environment=environment,
+        )
+
+    assert captured.value.category == "preflight_invalid"
+    assert captured.value.stage == "synthetic_source"
+    assert "synthetic-secret-marker" not in str(captured.value)
+
+
 def test_connection_output_scan_rejects_markers_and_connection_strings(
     tmp_path: Path,
 ) -> None:
@@ -1583,11 +1698,21 @@ def test_connection_native_tls_identity_rejects_same_basename_different_path(
         "psycopg.pq": SimpleNamespace(version=lambda: "libpq-test"),
         "psycopg.pq._pq_ctypes": SimpleNamespace(libname=str(libpq)),
     }
+    symbol_lookups: list[tuple[Path, str]] = []
+
+    def loaded_symbol_owner(path: Path, symbol: str) -> Path:
+        symbol_lookups.append((path, symbol))
+        if symbol == "PQlibVersion":
+            return libpq.resolve()
+        if symbol == "SSL_CTX_new":
+            return actual_tls.resolve()
+        raise AssertionError(f"unexpected native symbol lookup: {symbol}")
+
     monkeypatch.setattr(importlib, "import_module", lambda name: modules[name])
     monkeypatch.setattr(
         connection_evidence,
         "_loaded_symbol_library_path",
-        lambda *_args: actual_tls.resolve(),
+        loaded_symbol_owner,
     )
 
     with pytest.raises(connection_evidence.ConnectionEvidenceError) as captured:
@@ -1597,9 +1722,14 @@ def test_connection_native_tls_identity_rejects_same_basename_different_path(
         )
 
     assert captured.value.category == "native_library_identity_mismatch"
+    assert symbol_lookups == [
+        (libpq.resolve(), "PQlibVersion"),
+        (libpq.resolve(), "SSL_CTX_new"),
+    ]
     source = Path(connection_evidence.__file__).read_text(encoding="utf-8")
     assert "dependency.name in" not in source
     assert 'subprocess.run(["otool"' not in source
+    assert '_loaded_symbol_library_path(libpq_path, "OpenSSL_version")' not in source
 
 
 @pytest.mark.parametrize(
@@ -1732,6 +1862,19 @@ def test_connection_discard_finalizer_binds_named_discard_owner(
         secret_markers=SECRET_MARKERS,
     )
     assert verified.issuer_id == named_owner
+
+    preflight.source.path.chmod(0o644)
+    preflight.source.path.write_bytes(b"mutated after last connection")
+    with pytest.raises(connection_evidence.ConnectionEvidenceError) as captured:
+        connection_evidence.finalize_discard_receipt(
+            preflight,
+            (tmp_path / "unused", "sha256:" + ("4" * 64)),
+            last_connection_closed_at=last_closed,
+            verification_time=datetime(2026, 7, 21, 12, 7, tzinfo=UTC),
+            secret_markers=SECRET_MARKERS,
+        )
+    assert captured.value.category == "preflight_invalid"
+    assert captured.value.stage == "synthetic_source"
 
 
 def test_offline_modules_are_not_imported_by_runtime_or_startup() -> None:

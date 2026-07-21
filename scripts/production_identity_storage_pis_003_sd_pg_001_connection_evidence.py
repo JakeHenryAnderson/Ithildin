@@ -835,8 +835,6 @@ def _execute_validated_preflight(
             raise ConnectionEvidenceError(
                 _safe_connection_failure_category(exc), "post_rollback"
             ) from None
-        if _sha256_file(preflight.source.path) != preflight.source.file_digest:
-            _fail("preflight_invalid", "synthetic_source")
         if not post_rollback_absent:
             _fail("transaction_state_lost", "post_rollback")
         result = ConnectionRunResult(
@@ -864,6 +862,7 @@ def _execute_validated_preflight(
                     failure = ConnectionEvidenceError(
                         "transaction_state_lost", "rollback"
                     )
+    _require_source_unchanged(preflight)
     if failure is not None:
         raise failure from None
     if result is None:
@@ -1013,6 +1012,7 @@ def finalize_discard_receipt(
         secret_markers=secret_markers,
         expected_commitment=preflight.secret_scan_marker_commitment,
     )
+    _require_source_unchanged(preflight)
     return receipt
 
 
@@ -1095,6 +1095,14 @@ def secret_marker_commitment(secret_markers: Sequence[bytes]) -> str:
     ).hexdigest()
 
 
+def _require_source_unchanged(preflight: ValidatedPreflight) -> None:
+    if (
+        _sha256_file(preflight.source.path, stage="synthetic_source")
+        != preflight.source.file_digest
+    ):
+        _fail("preflight_invalid", "synthetic_source")
+
+
 def _load_plain_psycopg_driver() -> ModuleType:
     try:
         driver = importlib.import_module("psycopg")
@@ -1118,7 +1126,7 @@ def _validate_loaded_native_identity(
     try:
         pq = importlib.import_module("psycopg.pq")
         pq_ctypes = importlib.import_module("psycopg.pq._pq_ctypes")
-        libpq_path = Path(cast(str, pq_ctypes.libname)).resolve(strict=True)
+        declared_libpq_path = Path(cast(str, pq_ctypes.libname)).resolve(strict=True)
         libpq_version = str(cast(Any, pq.version)())
     except Exception:
         raise ConnectionEvidenceError(
@@ -1127,13 +1135,14 @@ def _validate_loaded_native_identity(
     native = _mapping(manifest.get("native_dependencies"), "manifest")
     libpq = _mapping(native.get("libpq"), "manifest")
     tls = _mapping(native.get("tls_backend"), "manifest")
+    libpq_path = _loaded_symbol_library_path(declared_libpq_path, "PQlibVersion")
     _match_loaded_identity(
         libpq,
         loaded_path=libpq_path,
         loaded_version=libpq_version,
     )
     tls_path = _absolute_path(tls.get("loaded_library_realpath"), "manifest")
-    if _loaded_symbol_library_path(libpq_path, "OpenSSL_version") != tls_path:
+    if _loaded_symbol_library_path(libpq_path, "SSL_CTX_new") != tls_path:
         _fail("native_library_identity_mismatch", "driver_identity")
     _match_loaded_identity(
         tls,

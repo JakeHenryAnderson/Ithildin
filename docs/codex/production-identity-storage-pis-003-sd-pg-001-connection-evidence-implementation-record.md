@@ -62,6 +62,17 @@ and non-regular artifacts; closing the public exception boundary; rejecting Unic
 characters in DSN identity fields; and preserving contextual manifest, trust, receipt, and discard
 failure stages. These are implementation repairs, not a completed successor review.
 
+The repeat exact-candidate review of `86fa34214f569d7380157f136a3963cb04204575`
+returned `NO-GO` with `0` Critical, `0` High, `2` Medium, and `0` Low findings. It confirmed that
+seven of the original eight findings were closed, then identified incomplete native-image proof and
+source continuity on negative and discard paths. This successor resolves `PQlibVersion` to the
+actual loaded `libpq` image, resolves the `libssl`-owned `SSL_CTX_new` symbol through that image's
+dependency scope, and binds both exact real paths to the signed native identities. It also rehashes
+the frozen synthetic source after every engine-run outcome—successful, expected-negative, or
+failed—and after output scanning immediately before final discard acceptance. Source drift
+overrides scenario evidence as a closed `preflight_invalid` failure. These two repairs still require
+a fresh exact-candidate review and do not activate execution authority.
+
 The reviewed importer, schema, migration revision, runtime stores, configuration, routes, policy,
 manifests, lockfiles, and 24-tool surface remain protected and unchanged.
 
@@ -90,7 +101,7 @@ backend, or manage PostgreSQL lifecycle.
 
 ## Offline Validation Evidence
 
-The focused storage/schema/import suite contains `74` passing tests. The added coverage proves:
+The focused storage/schema/import suite contains `78` passing tests. The added coverage proves:
 
 - authority refusal precedes manifest and environment access;
 - strict preflight accepts one fully synthetic, externally located, read-only receipt set;
@@ -108,6 +119,10 @@ The focused storage/schema/import suite contains `74` passing tests. The added c
 - environment-held DSN and binding-key values are consumed before driver import and raw driver,
   engine, rollback, and disposal exceptions cannot escape the public boundary;
 - loaded TLS identity is bound to the exact symbol-owning library path rather than a basename;
+- the native probe binds `PQlibVersion` to the actual loaded `libpq` image and `SSL_CTX_new` to the
+  actual loaded `libssl` image rather than treating `libcrypto` identity as TLS-image proof;
+- frozen-source drift overrides network-negative, connected-negative, migration/import, cleanup,
+  and positive evidence, and final discard revalidates the source after output scanning;
 - the finalizer binds the complete output-tree scan to a canonical secret-marker commitment and
   rejects symlinks, non-regular files, nested markers, and connection strings;
 - canonical NFC non-ASCII DSN identity values remain accepted while Unicode control characters are

@@ -72,12 +72,14 @@
     "public_exception_boundary_closed": true,
     "dsn_identity_control_characters_rejected": true,
     "contextual_receipt_failure_stages": true,
+    "loaded_libpq_and_libssl_symbol_owners_exact": true,
+    "source_digest_all_engine_outcomes_and_discard": true,
     "service_or_container_lifecycle": false,
     "database_or_role_creation": false,
     "runtime_imports": false
   },
   "validation_evidence": {
-    "storage_schema_import_tests": 74,
+    "storage_schema_import_tests": 78,
     "psycopg_loaded_during_tests": false,
     "database_connection_attempted": false,
     "online_migration_executed": false,
