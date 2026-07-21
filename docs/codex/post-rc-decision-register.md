@@ -458,6 +458,15 @@ Current selected capability: `not selected`.
   system-`libpq` receipt or PostgreSQL client/service binaries, and the gate does not authorize
   Docker or service lifecycle, driver load, DSN consumption, connection, migration, runtime
   PostgreSQL, identity, release, promotion, or UAT.
+- Current PIS-003 SD-PG-001 connection-evidence gate review:
+  `production-identity-storage-pis-003-sd-pg-001-connection-evidence-gate-internal-source-review.md`
+  records the zero-finding independent Sol xhigh review of exact repaired commit `86b2074`; Sol
+  Ultra was not used. Its closed review authority permits implementation only of the exact test-only
+  harness, environment receipt/preflight machinery, synthetic snapshot reader, caller-owned
+  Alembic online path, secret-safe evidence, tests, documentation, and validators. Psycopg use, DSN
+  or binding-key consumption, harness execution, database connections, migration execution,
+  PostgreSQL/container lifecycle, runtime PostgreSQL, production identity, new powers, release,
+  promotion, and UAT remain unauthorized pending later exact-candidate and execution gates.
 - Current warning language: Ithildin may discuss production identity and durable storage
   architecture, but the current runtime remains local-preview with local principal labels and SQLite.
 - Current architecture evidence:

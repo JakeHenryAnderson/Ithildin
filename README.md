@@ -856,6 +856,11 @@ checked with `make control-mapping-readiness`.
   preflight and receipt requirements, rollback/discard contract, exact reviewed-offline-candidate
   prerequisite, and source-review stop line while driver use, DSN consumption, database
   connections, migrations, services, runtime PostgreSQL, release, promotion, and UAT remain false.
+- `make production-identity-storage-pis-003-sd-pg-001-connection-evidence-gate-internal-review-check`
+  - validate the zero-finding Sol xhigh review of exact repaired gate commit `86b2074`, its closed
+  11-path hashes, and test-only connection-evidence implementation authority while all driver,
+  DSN, connection, migration, service, runtime, release, promotion, and UAT authority remains false;
+  Sol Ultra was not used.
 - `make production-identity-storage-disposition-packet` - generate the focused architecture
   disposition packet asking whether ERG-006/ERG-007 may continue planning while production identity,
   runtime Postgres, migrations, retention enforcement, and custody claims remain blocked.
@@ -1941,7 +1946,18 @@ and is checked with
 `make production-identity-storage-pis-003-sd-pg-001-connection-evidence-gate-check`. It binds the
 test-only harness boundary, environment-specific preflight, system-`libpq`/TLS/SBOM receipts,
 secret-safe failure evidence, transaction rollback, and target-discard proof. The gate itself grants
-no implementation or execution authority; exact source review is the next required action.
+no implementation or execution authority before review. The zero-finding exact-candidate gate
+review is recorded in
+[docs/codex/production-identity-storage-pis-003-sd-pg-001-connection-evidence-gate-internal-source-review.md](docs/codex/production-identity-storage-pis-003-sd-pg-001-connection-evidence-gate-internal-source-review.md)
+and checked with
+`make production-identity-storage-pis-003-sd-pg-001-connection-evidence-gate-internal-review-check`.
+It closes the original candidate's discard-owner binding finding at exact repaired commit
+`86b2074` and permits only implementation of the closed test-only harness and preflight/evidence
+machinery. Its closed machine authority is
+[docs/codex/production-identity-storage-pis-003-sd-pg-001-connection-evidence-gate-review-authority.json](docs/codex/production-identity-storage-pis-003-sd-pg-001-connection-evidence-gate-review-authority.json).
+Driver load/use, DSN or binding-key consumption, harness execution, database connections,
+migrations, PostgreSQL/container lifecycle, runtime activation, production identity, release,
+promotion, and UAT remain unauthorized.
 Generate the production identity and storage disposition packet with
 `make production-identity-storage-disposition-packet`; it asks whether the current ERG-006/ERG-007
 architecture evidence is coherent enough to continue planning while keeping production identity,

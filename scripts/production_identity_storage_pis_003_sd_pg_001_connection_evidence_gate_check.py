@@ -39,6 +39,7 @@ TARGET = (
 )
 BASELINE_COMMIT = "bf26418b5f27b1fcd08552758e4387867b5eafe0"
 REVIEWED_OFFLINE_COMMIT = "ba60478ede66abce519e134981fcabcb3f68482f"
+CANDIDATE_COMMIT = "86b2074493410019914b8190e1cc9e079c0ce929"
 
 EXPECTED_GATE_CANDIDATE_PATHS = {
     "Makefile",
@@ -984,11 +985,14 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     failures.extend(contract_failures)
 
     baseline_exists = _commit_exists(repo_root, BASELINE_COMMIT)
-    baseline_is_ancestor = _is_ancestor(repo_root, BASELINE_COMMIT, "HEAD")
+    baseline_is_ancestor = _is_ancestor(repo_root, BASELINE_COMMIT, CANDIDATE_COMMIT)
+    candidate_is_ancestor = _is_ancestor(repo_root, CANDIDATE_COMMIT, "HEAD")
     if not baseline_exists:
         failures.append("PIS-003 connection gate baseline commit is unavailable")
     if not baseline_is_ancestor:
-        failures.append("PIS-003 connection gate baseline is not an ancestor of HEAD")
+        failures.append("PIS-003 connection gate baseline is not an ancestor of candidate")
+    if not candidate_is_ancestor:
+        failures.append("PIS-003 connection gate candidate is not an ancestor of HEAD")
 
     candidate_paths = _candidate_paths(repo_root)
     candidate_inventory_exact = candidate_paths == EXPECTED_GATE_CANDIDATE_PATHS
@@ -1056,8 +1060,10 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "gate_id": contract.get("gate_id") if valid else "invalid",
         "gate_outcome": contract.get("gate_outcome") if valid else "invalid",
         "gate_baseline_commit": BASELINE_COMMIT,
+        "candidate_commit": CANDIDATE_COMMIT,
         "baseline_exists": baseline_exists,
         "baseline_is_ancestor": baseline_is_ancestor,
+        "candidate_is_ancestor": candidate_is_ancestor,
         "candidate_path_count": len(candidate_paths),
         "candidate_inventory_exact": candidate_inventory_exact,
         "reviewed_offline_candidate_commit": REVIEWED_OFFLINE_COMMIT,
@@ -1081,8 +1087,10 @@ def render_report(report: dict[str, Any]) -> str:
         "gate_id",
         "gate_outcome",
         "gate_baseline_commit",
+        "candidate_commit",
         "baseline_exists",
         "baseline_is_ancestor",
+        "candidate_is_ancestor",
         "candidate_path_count",
         "candidate_inventory_exact",
         "reviewed_offline_candidate_commit",
@@ -1163,24 +1171,17 @@ def _commit_exists(repo_root: Path, commit: str) -> bool:
 
 def _candidate_paths(repo_root: Path) -> set[str]:
     tracked = subprocess.run(
-        ["git", "diff", "--name-only", BASELINE_COMMIT],
+        ["git", "diff", "--name-only", f"{BASELINE_COMMIT}..{CANDIDATE_COMMIT}"],
         cwd=repo_root,
         check=False,
         capture_output=True,
         text=True,
     )
-    untracked = subprocess.run(
-        ["git", "ls-files", "--others", "--exclude-standard"],
-        cwd=repo_root,
-        check=False,
-        capture_output=True,
-        text=True,
-    )
-    if tracked.returncode != 0 or untracked.returncode != 0:
+    if tracked.returncode != 0:
         return set()
     return {
         line.strip()
-        for line in (tracked.stdout + "\n" + untracked.stdout).splitlines()
+        for line in tracked.stdout.splitlines()
         if line.strip()
     }
 

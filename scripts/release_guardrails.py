@@ -152,6 +152,7 @@ REQUIRED_RELEASE_CHECK_FRAGMENTS = [
     "production-identity-storage-pis-003-sd-pg-001-implementation-check",
     "production-identity-storage-pis-003-sd-pg-001-implementation-internal-review-check",
     "production-identity-storage-pis-003-sd-pg-001-connection-evidence-gate-check",
+    "production-identity-storage-pis-003-sd-pg-001-connection-evidence-gate-internal-review-check",
     "production-identity-storage-architecture-check",
     "production-identity-storage-disposition-packet-check",
     "production-identity-storage-disposition-closure-check",
