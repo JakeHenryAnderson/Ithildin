@@ -497,11 +497,13 @@ Current selected capability: `not selected`.
   false.
 - Current PIS-003 environment evidence collection authority record:
   `production-identity-storage-pis-003-sd-pg-001-environment-evidence-collection-authority-record.md`
-  prepares a separate twelve-path exact-review boundary. Its candidate keeps both target selection
-  and signed secret-free receipt collection false; only its post-review ceiling contains those two
-  permissions. Activation preparation, ambient credential inspection, DSN or binding-key use,
-  driver loading, connections, migrations, PostgreSQL/service/container lifecycle, runtime
-  PostgreSQL, production identity, arbitrary host control, release, promotion, and UAT remain false.
+  now carries a separate twelve-path, two-permission activation candidate based on review record
+  `e259383`. It proposes only safe-label target selection and signed secret-free receipt collection,
+  but operational action remains ineffective pending its own exact Sol xhigh review. No target or
+  receipt action has occurred. Activation preparation, ambient credential inspection, DSN or
+  binding-key use, driver loading, connections, migrations, PostgreSQL/service/container lifecycle,
+  runtime PostgreSQL, production identity, arbitrary host control, release, promotion, and UAT
+  remain false.
 - Current warning language: Ithildin may discuss production identity and durable storage
   architecture, but the current runtime remains local-preview with local principal labels and SQLite.
 - Current architecture evidence:

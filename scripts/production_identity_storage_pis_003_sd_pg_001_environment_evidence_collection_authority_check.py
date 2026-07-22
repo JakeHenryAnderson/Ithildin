@@ -31,8 +31,8 @@ CONTRACT_REL = (
     "docs/codex/production-identity-storage-pis-003-sd-pg-001-"
     "environment-evidence-collection-authority.json"
 )
-DOC_SHA256 = "615319d9d9b8b1fb9a3569fa97bf0c9b7bf28438229e0e88674328c0714e0649"
-CONTRACT_SHA256 = "fa6068fda80ec1e065e96b7518c6fa62705eb8dad7ce6cc826fabb30caa76db1"
+DOC_SHA256 = "dea856fd21c3e3abcc107a7a7a2df2aa19a7c6fb481be92c1699adb77e7a1ebb"
+CONTRACT_SHA256 = "91dff502dbfce7940f4e02e7ceea65c4a933063c10fe80c93e0c9a49b7ce6291"
 TARGET = (
     "production-identity-storage-pis-003-sd-pg-001-"
     "environment-evidence-collection-authority-check"
@@ -45,7 +45,8 @@ PARENT_GATE_ID = (
     "PRD-PROD-IAM-STORAGE-PIS-003-SD-PG-001-"
     "ENVIRONMENT-EVIDENCE-COLLECTION-GATE"
 )
-BASELINE_COMMIT = "31c5653f04b1c7d20d2573cabfed2d0c677d6d4e"
+PARENT_REVIEW_RECORD_COMMIT = "31c5653f04b1c7d20d2573cabfed2d0c677d6d4e"
+BASELINE_COMMIT = "e259383fcb63fbdaf1731bfaf55815eedccd0aac"
 REVIEWED_AUTHORITY_COMMIT = "35e3148b6573729958196ca962e36f1156c7ae25"
 
 EXPECTED_REVIEWED_PATH_HASHES = {
@@ -86,18 +87,18 @@ EXPECTED_REVIEW_FINDINGS = {
     "open": 0,
 }
 EXPECTED_VALIDATION_EVIDENCE = {
-    "focused_environment_collection_tests": 19,
-    "focused_authority_review_tests": 9,
+    "focused_environment_collection_tests": 20,
+    "focused_authority_candidate_tests": 10,
     "docs_site_tests": 3,
-    "full_release_python_tests": 1760,
-    "full_release_ui_tests": 59,
-    "strict_mypy_source_files": 132,
-    "packet_redaction_files_scanned": 622,
+    "full_release_python_tests": 0,
+    "full_release_ui_tests": 0,
+    "strict_mypy_source_files": 2,
+    "packet_redaction_files_scanned": 0,
     "packet_redaction_findings": 0,
-    "full_release_check_passed": True,
-    "artifact_freshness_check_passed": True,
+    "full_release_check_passed": False,
+    "artifact_freshness_check_passed": False,
     "agent_workflow_check_passed": True,
-    "exact_review_findings_zero": True,
+    "exact_review_findings_zero": False,
     "tool_count_unchanged": True,
     "sol_ultra_used": False,
 }
@@ -168,7 +169,7 @@ EXPECTED_PROTECTED_HASHES = {
     (
         "scripts/production_identity_storage_pis_003_sd_pg_001_"
         "environment_evidence_collection_gate_check.py"
-    ): "98e021a52fe7668977ea6092cc07773abe231cabac20260239e67c75f71a090e",
+    ): "5e45f5e506b15867f6650e42cdf6d3982892a50651250dbb9108e2efb81f1a50",
     (
         "scripts/production_identity_storage_pis_003_sd_pg_001_"
         "environment_execution_gate_check.py"
@@ -181,7 +182,7 @@ EXPECTED_PROTECTED_HASHES = {
 EXPECTED_PARENT_HASHES = {
     "document_sha256": "6ec53068768dab031533dd11067dd065531149f0c0799b86f9a566e7cf8fdf8f",
     "contract_sha256": "d59a15288b7f183877ab9fe292a3949f8f31cb3da175586de0a2cce20cf751e8",
-    "validator_sha256": "98e021a52fe7668977ea6092cc07773abe231cabac20260239e67c75f71a090e",
+    "validator_sha256": "5e45f5e506b15867f6650e42cdf6d3982892a50651250dbb9108e2efb81f1a50",
 }
 EXPECTED_COLLECTION_BINDING: dict[str, Any] = {
     "scope": "external_evidence_intake_preparation_only",
@@ -238,10 +239,12 @@ EXPECTED_POST_REVIEW_CEILING = {
 }
 EXPECTED_AUTHORITY = {
     "environment_evidence_collection_authority_record_prepared": True,
+    "two_permission_activation_candidate_prepared": True,
     "exact_candidate_source_review_required": True,
-    "exact_candidate_source_review_complete": True,
-    "external_target_selection_allowed": False,
-    "external_environment_receipt_collection_allowed": False,
+    "exact_candidate_source_review_complete": False,
+    "external_target_selection_allowed": True,
+    "external_environment_receipt_collection_allowed": True,
+    "operational_collection_action_effective": False,
     "activation_candidate_preparation_allowed": False,
     "host_credential_inspection_allowed": False,
     "test_harness_execution_allowed": False,
@@ -271,13 +274,12 @@ EXPECTED_AUTHORITY = {
     "uat_required_now": False,
 }
 NEXT_ACTION = (
-    "prepare_separate_pis_003_sd_pg_001_"
-    "environment_evidence_collection_authority_activation_candidate"
+    "review_pis_003_sd_pg_001_"
+    "environment_evidence_collection_authority_activation_exact_candidate"
 )
 REQUIRED_PHRASES = [
     (
-        "Status: environment-evidence-collection authority-record exact-candidate review "
-        "complete with zero findings"
+        "Status: two-permission environment-evidence-collection activation candidate prepared"
     ),
     f"`{AUTHORITY_RECORD_ID}`.",
     f"`{BASELINE_COMMIT}`.",
@@ -289,9 +291,11 @@ REQUIRED_PHRASES = [
     "No target is selected, provisioned, inspected, or recorded.",
     "No intake root is created.",
     "This candidate changes exactly twelve",
-    "`exact_candidate_source_review_complete: true`",
-    "`external_target_selection_allowed: false`",
-    "`external_environment_receipt_collection_allowed: false`",
+    "`two_permission_activation_candidate_prepared: true`",
+    "`exact_candidate_source_review_complete: false`",
+    "`external_target_selection_allowed: true`",
+    "`external_environment_receipt_collection_allowed: true`",
+    "`operational_collection_action_effective: false`",
     "`activation_candidate_preparation_allowed: false`",
     "`database_connections_allowed: false`",
     "`migration_execution_allowed: false`",
@@ -327,13 +331,13 @@ def validate_contract(contract: dict[str, Any]) -> list[str]:
         "parent_gate_id",
         "parent_review_record_commit",
         "authority_baseline_commit",
-        "reviewed_candidate_commit",
+        "parent_reviewed_candidate_commit",
         "authority_outcome",
         "review_disposition",
         "review_method",
-        "reviewed_candidate_path_hashes",
-        "review_findings",
-        "validation_evidence",
+        "parent_reviewed_candidate_path_hashes",
+        "parent_review_findings",
+        "candidate_validation_evidence",
         "tool_count",
         "authority_candidate_path_inventory",
         "protected_hashes",
@@ -350,17 +354,16 @@ def validate_contract(contract: dict[str, Any]) -> list[str]:
         "schema_version": "1",
         "authority_record_id": AUTHORITY_RECORD_ID,
         "parent_gate_id": PARENT_GATE_ID,
-        "parent_review_record_commit": BASELINE_COMMIT,
+        "parent_review_record_commit": PARENT_REVIEW_RECORD_COMMIT,
         "authority_baseline_commit": BASELINE_COMMIT,
-        "reviewed_candidate_commit": REVIEWED_AUTHORITY_COMMIT,
+        "parent_reviewed_candidate_commit": REVIEWED_AUTHORITY_COMMIT,
         "authority_outcome": (
-            "environment_evidence_collection_authority_record_exact_review_complete_"
-            "all_live_authority_false"
+            "two_permission_activation_candidate_prepared_exact_review_pending_no_actions"
         ),
         "review_disposition": (
-            "cleared_for_separate_two_permission_activation_candidate_preparation_only"
+            "pending_independent_exact_review_no_external_action_authorized"
         ),
-        "review_method": "independent_read_only_gpt_5_6_sol_xhigh_no_ultra",
+        "review_method": "independent_read_only_gpt_5_6_sol_xhigh_required_no_ultra",
         "tool_count": 24,
         "next_required_action": NEXT_ACTION,
     }
@@ -371,9 +374,9 @@ def validate_contract(contract: dict[str, Any]) -> list[str]:
             )
     exact_objects = {
         "authority_candidate_path_inventory": sorted(EXPECTED_PATHS),
-        "reviewed_candidate_path_hashes": EXPECTED_REVIEWED_PATH_HASHES,
-        "review_findings": EXPECTED_REVIEW_FINDINGS,
-        "validation_evidence": EXPECTED_VALIDATION_EVIDENCE,
+        "parent_reviewed_candidate_path_hashes": EXPECTED_REVIEWED_PATH_HASHES,
+        "parent_review_findings": EXPECTED_REVIEW_FINDINGS,
+        "candidate_validation_evidence": EXPECTED_VALIDATION_EVIDENCE,
         "protected_hashes": EXPECTED_PROTECTED_HASHES,
         "parent_collection_gate_hashes": EXPECTED_PARENT_HASHES,
         "collection_contract_binding": EXPECTED_COLLECTION_BINDING,
@@ -392,18 +395,19 @@ def validate_contract(contract: dict[str, Any]) -> list[str]:
             failures.append(
                 f"PIS-003 environment evidence collection authority {key} types are not closed"
             )
-    findings = contract.get("review_findings")
+    findings = contract.get("parent_review_findings")
     if not isinstance(findings, dict) or any(type(item) is not int for item in findings.values()):
         failures.append(
-            "PIS-003 environment evidence collection authority review_findings types are not closed"
+            "PIS-003 environment evidence collection authority "
+            "parent_review_findings types are not closed"
         )
-    evidence = contract.get("validation_evidence")
+    evidence = contract.get("candidate_validation_evidence")
     if not isinstance(evidence, dict) or any(
         type(item) not in {int, bool} for item in evidence.values()
     ):
         failures.append(
             "PIS-003 environment evidence collection authority "
-            "validation_evidence types are not closed"
+            "candidate_validation_evidence types are not closed"
         )
     return failures
 
@@ -471,7 +475,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     parent_gate_valid = bool(
         parent_report.get("valid")
         and parent_report.get("gate_id") == PARENT_GATE_ID
-        and parent_report.get("review_record_commit") == BASELINE_COMMIT
+        and parent_report.get("review_record_commit") == PARENT_REVIEW_RECORD_COMMIT
         and parent_report.get("review_record_commit_exists") is True
         and parent_report.get("review_record_commit_is_ancestor") is True
         and parent_report.get("reviewed_candidate_path_hashes_match") is True
@@ -620,7 +624,7 @@ def _wiring_valid(repo_root: Path) -> bool:
         and DOC_REL in review_docs.REVIEW_DOCS
         and DOC_REL in docs_site
         and TARGET in guardrails
-        and "Environment Evidence Collection Authority Record" in index
+        and "Environment Evidence Collection Authority Activation Candidate" in index
         and "Current PIS-003 environment evidence collection authority record" in register
         and "review complete at `e33cca9` with zero findings" in register
     )

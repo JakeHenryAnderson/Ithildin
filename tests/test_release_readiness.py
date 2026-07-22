@@ -11731,8 +11731,7 @@ def test_pis_003_environment_evidence_collection_authority_is_wired() -> None:
         "ENVIRONMENT-EVIDENCE-COLLECTION-AUTHORITY"
     )
     assert report["authority_outcome"] == (
-        "environment_evidence_collection_authority_record_exact_review_complete_"
-        "all_live_authority_false"
+        "two_permission_activation_candidate_prepared_exact_review_pending_no_actions"
     )
     for field in (
         "baseline_exists",
@@ -11756,6 +11755,10 @@ def test_pis_003_environment_evidence_collection_authority_is_wired() -> None:
     assert report["psycopg_driver_loaded"] is False
     assert report["database_connection_attempted"] is False
     assert report["online_migration_executed"] is False
+    assert report["external_target_selection_allowed"] is True
+    assert report["external_environment_receipt_collection_allowed"] is True
+    assert report["operational_collection_action_effective"] is False
+    assert report["exact_candidate_source_review_complete"] is False
     assert report["tool_count"] == 24
     for field, expected in validator.EXPECTED_AUTHORITY.items():
         assert report[field] is expected
@@ -11776,7 +11779,11 @@ def test_pis_003_environment_evidence_collection_authority_contract_is_closed() 
     source = Path(validator.CONTRACT_REL).read_text(encoding="utf-8")
 
     contract = json.loads(source)
-    contract["authority"]["external_target_selection_allowed"] = True
+    contract["authority"]["external_target_selection_allowed"] = False
+    assert any("authority is not exact" in item for item in validator.validate_contract(contract))
+
+    contract = json.loads(source)
+    contract["authority"]["operational_collection_action_effective"] = True
     assert any("authority is not exact" in item for item in validator.validate_contract(contract))
 
     contract = json.loads(source)
@@ -11801,15 +11808,16 @@ def test_pis_003_environment_evidence_collection_authority_contract_is_closed() 
     )
 
     contract = json.loads(source)
-    contract["review_findings"]["low"] = 1
+    contract["parent_review_findings"]["low"] = 1
     assert any(
-        "review_findings is not exact" in item for item in validator.validate_contract(contract)
+        "parent_review_findings is not exact" in item
+        for item in validator.validate_contract(contract)
     )
 
     contract = json.loads(source)
-    contract["validation_evidence"]["sol_ultra_used"] = True
+    contract["candidate_validation_evidence"]["sol_ultra_used"] = True
     assert any(
-        "validation_evidence is not exact" in item
+        "candidate_validation_evidence is not exact" in item
         for item in validator.validate_contract(contract)
     )
 

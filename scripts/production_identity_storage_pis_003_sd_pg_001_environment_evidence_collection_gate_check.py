@@ -1,4 +1,7 @@
-"""Validate the bounded PIS-003 environment-evidence collection gate candidate."""
+"""Validate the historical PIS-003 environment-evidence collection gate candidate.
+
+Successor authority-activation review remains a separate, action-free boundary.
+"""
 
 from __future__ import annotations
 

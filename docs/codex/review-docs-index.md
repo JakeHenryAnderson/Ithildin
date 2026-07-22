@@ -470,7 +470,7 @@ externally closed.
 - [Production Identity And Storage PIS-003 SD-PG-001 Connection Evidence Implementation Record](production-identity-storage-pis-003-sd-pg-001-connection-evidence-implementation-record.md)
 - [Production Identity And Storage PIS-003 SD-PG-001 Environment Execution Gate](production-identity-storage-pis-003-sd-pg-001-environment-execution-gate.md)
 - [Production Identity And Storage PIS-003 SD-PG-001 Environment Evidence Collection Gate](production-identity-storage-pis-003-sd-pg-001-environment-evidence-collection-gate.md)
-- [Production Identity And Storage PIS-003 SD-PG-001 Environment Evidence Collection Authority Record](production-identity-storage-pis-003-sd-pg-001-environment-evidence-collection-authority-record.md)
+- [Production Identity And Storage PIS-003 SD-PG-001 Environment Evidence Collection Authority Activation Candidate](production-identity-storage-pis-003-sd-pg-001-environment-evidence-collection-authority-record.md)
 - [Production Identity And Storage Architecture](production-identity-storage-architecture.md)
 - [Production Identity And Storage Disposition Packet](production-identity-storage-disposition-packet.md)
 - [Production Identity And Storage External Review Bundle](production-identity-storage-external-review-bundle.md)

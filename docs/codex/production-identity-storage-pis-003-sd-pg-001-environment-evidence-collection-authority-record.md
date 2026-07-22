@@ -1,14 +1,15 @@
 # Production Identity And Storage PIS-003 SD-PG-001 Environment Evidence Collection Authority Record
 
-Status: environment-evidence-collection authority-record exact-candidate review complete with zero
-findings; no target or receipt is selected or collected, and all live authority remains false.
+Status: two-permission environment-evidence-collection activation candidate prepared; exact-candidate
+review is pending, no target or receipt is selected or collected, and no external action is effective.
 
 Authority record ID:
 `PRD-PROD-IAM-STORAGE-PIS-003-SD-PG-001-ENVIRONMENT-EVIDENCE-COLLECTION-AUTHORITY`.
 
 Parent collection-gate review record: `31c5653f04b1c7d20d2573cabfed2d0c677d6d4e`.
 
-Authority baseline commit: `31c5653f04b1c7d20d2573cabfed2d0c677d6d4e`.
+Activation baseline and authority-review record commit:
+`e259383fcb63fbdaf1731bfaf55815eedccd0aac`.
 
 Reviewed authority-record candidate: `35e3148b6573729958196ca962e36f1156c7ae25`.
 
@@ -27,10 +28,11 @@ pre-review authority, post-review ceiling, live authority, or next action.
 
 ## Purpose And Stop Line
 
-This record is the separate review boundary required by the zero-finding collection-gate review. It
-does not activate the reviewed ceiling. Before its own independent exact-candidate review, both
-`external_target_selection_allowed` and `external_environment_receipt_collection_allowed` remain
-false.
+This record now carries the separate activation candidate required by the zero-finding authority
+review. The candidate places exactly `external_target_selection_allowed` and
+`external_environment_receipt_collection_allowed` in its proposed live authority map, while
+`operational_collection_action_effective` remains false. The proposal cannot be acted on until this
+exact candidate receives an independent zero-finding review and that disposition is recorded.
 
 The independent read-only GPT-5.6 Sol xhigh review of exact candidate
 `35e3148b6573729958196ca962e36f1156c7ae25` returned `GO` for recording the review only, with `0`
@@ -64,12 +66,18 @@ DSNs and the 32-byte target-binding key remain external-custody material, never 
 signing keys, plaintext secrets, symlinks, writable receipts, and repository-local or output-local
 receipts remain forbidden. A final discard receipt is future post-connection evidence only.
 
-## Authority Ceiling
+## Activation Candidate And Effective Stop Line
 
-The candidate's live authority remains:
+The candidate proposes exactly:
 
-- `external_target_selection_allowed: false`;
-- `external_environment_receipt_collection_allowed: false`;
+- `external_target_selection_allowed: true`; and
+- `external_environment_receipt_collection_allowed: true`.
+
+Its review and effective-action state remains:
+
+- `two_permission_activation_candidate_prepared: true`;
+- `exact_candidate_source_review_complete: false`;
+- `operational_collection_action_effective: false`;
 - `activation_candidate_preparation_allowed: false`;
 - `host_credential_inspection_allowed: false`;
 - `test_harness_execution_allowed: false`;
@@ -88,9 +96,8 @@ The candidate's live authority remains:
 - `uat_complete: false`; and
 - `uat_required_now: false`.
 
-The separately named post-review ceiling sets only target selection and secret-free signed receipt
-collection to true. Every other value above remains false. A review result does not itself select a
-target, create the intake root, or collect evidence.
+Every other value above remains false. Candidate preparation and a later review result do not
+themselves select a target, create the intake root, or collect evidence.
 
 ## Protected History
 
@@ -109,15 +116,17 @@ arbitrary host-control surface.
 This candidate records:
 
 - `environment_evidence_collection_authority_record_prepared: true`;
+- `two_permission_activation_candidate_prepared: true`;
 - `exact_candidate_source_review_required: true`;
-- `exact_candidate_source_review_complete: true`; and
-- all live collection, activation, execution, runtime, release, promotion, and UAT authority false.
+- `exact_candidate_source_review_complete: false`;
+- the two proposed collection permissions true;
+- `operational_collection_action_effective: false`; and
+- every activation, execution, runtime, release, promotion, and UAT permission false.
 
 The next required action is
-`prepare_separate_pis_003_sd_pg_001_environment_evidence_collection_authority_activation_candidate`.
-That separately committed candidate may place exactly the two reviewed ceiling permissions in live
-authority for its own exact review, but this review record does not raise them. Until that activation
-candidate is committed, release-green, and independently reviewed, external target selection and
-receipt collection remain unauthorized. Activation preparation, credential inspection, DSN/key or
-driver use, connections, migrations, services, containers, runtime, release, promotion, arbitrary
-host control, and UAT remain outside the ceiling.
+`review_pis_003_sd_pg_001_environment_evidence_collection_authority_activation_exact_candidate`.
+Until that exact review is zero-finding and durably recorded, external target selection and receipt
+collection remain unauthorized even though the proposal carries the two reviewed ceiling flags.
+Activation preparation, credential inspection, DSN/key or driver use, connections, migrations,
+services, containers, runtime, release, promotion, arbitrary host control, and UAT remain outside
+the ceiling.
