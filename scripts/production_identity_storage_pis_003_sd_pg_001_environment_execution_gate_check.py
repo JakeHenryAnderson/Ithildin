@@ -32,13 +32,64 @@ DOC_REL = "docs/codex/production-identity-storage-pis-003-sd-pg-001-environment-
 CONTRACT_REL = (
     "docs/codex/production-identity-storage-pis-003-sd-pg-001-environment-execution-gate.json"
 )
-DOC_SHA256 = "c0115deb144c23f1df5d758a37c588d64b40f7a7dc657ec7537473aec927c426"
-CONTRACT_SHA256 = "31d72b46ab521efbb634d632ad83f5907dbdf0ecd852f1b223c84af4608d3923"
+DOC_SHA256 = "dd834a15025e6f859f8dfee1992883241cea584257b5abbde96dbeb390a3945a"
+CONTRACT_SHA256 = "65161e4d66fe34625813091859ec2adf979ed9c958ea3572727a6742cf89a07b"
 TARGET = "production-identity-storage-pis-003-sd-pg-001-environment-execution-gate-check"
 GATE_ID = "PRD-PROD-IAM-STORAGE-PIS-003-SD-PG-001-ENVIRONMENT-EXECUTION-GATE"
 BASELINE_COMMIT = "8da9ac630b191a36a2782e5febb45d739030cd48"
 PARENT_REVIEW_RECORD_COMMIT = "8da9ac630b191a36a2782e5febb45d739030cd48"
 REVIEWED_IMPLEMENTATION_COMMIT = "5d929d8e24e4f529cea08796e614fbf544d066bc"
+REVIEWED_GATE_COMMIT = "c1ed12cb98ce263a57cf37f17c6b45ff4fb8596f"
+
+EXPECTED_REVIEWED_PATH_HASHES = {
+    "Makefile": "8a36b5010ec980352c9347b1fe889e90419372b8e0ae489b7eca6bc8d012398b",
+    "README.md": "73d75dd4cf6b33bedb8f9efdcd62ce52c17469ed1797ed0ad67807d2e03767f6",
+    "docs/codex/post-rc-decision-register.md": (
+        "c794f804271043122aee783d4c7d1befcc21391bc35fb7262cdc0ad399061774"
+    ),
+    CONTRACT_REL: "31d72b46ab521efbb634d632ad83f5907dbdf0ecd852f1b223c84af4608d3923",
+    DOC_REL: "c0115deb144c23f1df5d758a37c588d64b40f7a7dc657ec7537473aec927c426",
+    "docs/codex/review-docs-index.md": (
+        "bd17bad1645f01d9d45251b84d2c2673f69683dc1790613496221d2b5fbe0590"
+    ),
+    "scripts/build_docs_site.py": (
+        "0bd69956abb8fe79142c2e6d2fffcdca8cb348094824dc72b89b8da5d5490666"
+    ),
+    (
+        "scripts/production_identity_storage_pis_003_sd_pg_001_"
+        "connection_evidence_implementation_check.py"
+    ): "f864605d79dc1d9693bc7ef18e6a9e94298171dcdd133081ddf69cdde9dabc71",
+    ("scripts/production_identity_storage_pis_003_sd_pg_001_environment_execution_gate_check.py"): (
+        "d922bb85973300190a00da8881848f90764e910c6d7ccdf9116eb8dedd8c36f0"
+    ),
+    "scripts/release_guardrails.py": (
+        "3c94253ece3ddc563cf31210a3fb8834abbcbbf1f1badf3696f707a2f28e5340"
+    ),
+    "scripts/review_docs.py": "6366ba140993dcc11bb18e50ad8a48231d3e338767a3eebcf6bebc295d796cbe",
+    "tests/test_release_readiness.py": (
+        "4a72c127edf1c9272fbbe8c84720e153abb1562408d4e6b5db21a2c531a78e21"
+    ),
+}
+EXPECTED_REVIEW_FINDINGS = {
+    "critical": 0,
+    "high": 0,
+    "medium": 0,
+    "low": 0,
+    "open": 0,
+}
+EXPECTED_VALIDATION_EVIDENCE = {
+    "focused_environment_gate_tests": 20,
+    "full_release_python_tests": 1740,
+    "full_release_ui_tests": 59,
+    "strict_mypy_source_files": 132,
+    "packet_redaction_files_scanned": 620,
+    "packet_redaction_findings": 0,
+    "full_release_check_passed": True,
+    "artifact_freshness_check_passed": True,
+    "exact_review_findings_zero": True,
+    "tool_count_unchanged": True,
+    "sol_ultra_used": False,
+}
 
 EXPECTED_PATHS = {
     "Makefile",
@@ -179,7 +230,7 @@ EXPECTED_POST_REVIEW_CEILING = {
 EXPECTED_AUTHORITY = {
     "environment_execution_gate_prepared": True,
     "exact_candidate_source_review_required": True,
-    "exact_candidate_source_review_complete": False,
+    "exact_candidate_source_review_complete": True,
     "external_target_selection_allowed": False,
     "external_environment_receipt_collection_allowed": False,
     "activation_candidate_preparation_allowed": False,
@@ -209,9 +260,10 @@ EXPECTED_AUTHORITY = {
     "uat_required_now": False,
 }
 REQUIRED_PHRASES = [
-    "Status: environment-execution-gate candidate prepared",
+    "Status: environment-execution-gate exact-candidate review complete with zero findings",
     f"Gate ID: `{GATE_ID}`.",
     f"`{REVIEWED_IMPLEMENTATION_COMMIT}`.",
+    f"`{REVIEWED_GATE_COMMIT}`.",
     f"Parent review-record commit: `{PARENT_REVIEW_RECORD_COMMIT}`.",
     "Current governed tool count: `24`.",
     f"make {TARGET}",
@@ -223,14 +275,18 @@ REQUIRED_PHRASES = [
     "one positive run with exactly two attempts",
     "each negative network scenario in a separate signed run with exactly one attempt",
     "`environment_execution_gate_prepared: true`",
-    "`exact_candidate_source_review_complete: false`",
+    "`exact_candidate_source_review_complete: true`",
+    (
+        "External target selection, receipt collection, and activation-candidate preparation "
+        "remain false"
+    ),
     "`test_harness_execution_allowed: false`",
     "`database_connections_allowed: false`",
     "`migration_execution_allowed: false`",
     "`runtime_postgres_allowed: false`",
     "`production_identity_allowed: false`",
     "`uat_complete: false`",
-    "`review_pis_003_sd_pg_001_environment_execution_gate_exact_candidate`",
+    "`prepare_separate_pis_003_sd_pg_001_environment_evidence_collection_gate`",
 ]
 
 
@@ -261,7 +317,13 @@ def validate_contract(contract: dict[str, Any]) -> list[str]:
         "reviewed_connection_evidence_candidate_commit",
         "parent_review_record_commit",
         "gate_baseline_commit",
+        "reviewed_candidate_commit",
         "gate_outcome",
+        "review_disposition",
+        "review_method",
+        "reviewed_candidate_path_hashes",
+        "review_findings",
+        "validation_evidence",
         "tool_count",
         "gate_candidate_path_inventory",
         "protected_hashes",
@@ -283,12 +345,18 @@ def validate_contract(contract: dict[str, Any]) -> list[str]:
         "reviewed_connection_evidence_candidate_commit": REVIEWED_IMPLEMENTATION_COMMIT,
         "parent_review_record_commit": PARENT_REVIEW_RECORD_COMMIT,
         "gate_baseline_commit": BASELINE_COMMIT,
+        "reviewed_candidate_commit": REVIEWED_GATE_COMMIT,
         "gate_outcome": (
-            "environment_execution_gate_prepared_external_environment_evidence_pending_exact_review"
+            "environment_execution_gate_exact_review_complete_"
+            "external_environment_evidence_pending_execution_blocked"
         ),
+        "review_disposition": (
+            "cleared_for_separate_environment_evidence_collection_gate_preparation_only"
+        ),
+        "review_method": "independent_read_only_gpt_5_6_sol_xhigh_no_ultra",
         "tool_count": 24,
         "next_required_action": (
-            "review_pis_003_sd_pg_001_environment_execution_gate_exact_candidate"
+            "prepare_separate_pis_003_sd_pg_001_environment_evidence_collection_gate"
         ),
     }
     for key, expected in expected_scalars.items():
@@ -296,6 +364,9 @@ def validate_contract(contract: dict[str, Any]) -> list[str]:
             failures.append(f"PIS-003 environment execution gate field {key} is not exact")
     exact_objects = {
         "gate_candidate_path_inventory": sorted(EXPECTED_PATHS),
+        "reviewed_candidate_path_hashes": EXPECTED_REVIEWED_PATH_HASHES,
+        "review_findings": EXPECTED_REVIEW_FINDINGS,
+        "validation_evidence": EXPECTED_VALIDATION_EVIDENCE,
         "protected_hashes": EXPECTED_PROTECTED_HASHES,
         "gate_environment_evidence_state": EXPECTED_GATE_ENVIRONMENT_EVIDENCE_STATE,
         "required_external_environment_evidence": EXPECTED_EXTERNAL_EVIDENCE,
@@ -310,6 +381,16 @@ def validate_contract(contract: dict[str, Any]) -> list[str]:
         value = contract.get(key)
         if not isinstance(value, dict) or any(type(item) is not bool for item in value.values()):
             failures.append(f"PIS-003 environment execution gate {key} types are not closed")
+    findings = contract.get("review_findings")
+    if not isinstance(findings, dict) or any(type(item) is not int for item in findings.values()):
+        failures.append("PIS-003 environment execution gate review_findings types are not closed")
+    evidence = contract.get("validation_evidence")
+    if not isinstance(evidence, dict) or any(
+        type(item) not in {int, bool} for item in evidence.values()
+    ):
+        failures.append(
+            "PIS-003 environment execution gate validation_evidence types are not closed"
+        )
     return failures
 
 
@@ -341,10 +422,21 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     reviewed_implementation_is_ancestor = _is_ancestor(
         repo_root, REVIEWED_IMPLEMENTATION_COMMIT, "HEAD"
     )
+    reviewed_gate_exists = _commit_exists(repo_root, REVIEWED_GATE_COMMIT)
+    reviewed_gate_is_ancestor = _is_ancestor(repo_root, REVIEWED_GATE_COMMIT, "HEAD")
     if not baseline_exists or not baseline_is_ancestor:
         failures.append("PIS-003 environment execution gate baseline is invalid")
     if not reviewed_implementation_exists or not reviewed_implementation_is_ancestor:
         failures.append("PIS-003 reviewed connection implementation ancestry is invalid")
+    if not reviewed_gate_exists or not reviewed_gate_is_ancestor:
+        failures.append("PIS-003 reviewed environment execution gate ancestry is invalid")
+
+    reviewed_candidate_path_hashes_match = all(
+        _sha256_at_commit(repo_root, REVIEWED_GATE_COMMIT, path) == digest
+        for path, digest in EXPECTED_REVIEWED_PATH_HASHES.items()
+    )
+    if not reviewed_candidate_path_hashes_match:
+        failures.append("PIS-003 reviewed environment execution gate path hashes changed")
 
     candidate_paths = _candidate_paths(repo_root)
     candidate_inventory_exact = candidate_paths == EXPECTED_PATHS
@@ -411,6 +503,10 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "reviewed_implementation_commit": REVIEWED_IMPLEMENTATION_COMMIT,
         "reviewed_implementation_exists": reviewed_implementation_exists,
         "reviewed_implementation_is_ancestor": reviewed_implementation_is_ancestor,
+        "reviewed_candidate_commit": REVIEWED_GATE_COMMIT,
+        "reviewed_candidate_commit_exists": reviewed_gate_exists,
+        "reviewed_candidate_commit_is_ancestor": reviewed_gate_is_ancestor,
+        "reviewed_candidate_path_hashes_match": reviewed_candidate_path_hashes_match,
         "candidate_commit": _git_one(repo_root, "rev-parse", "HEAD"),
         "candidate_path_count": len(candidate_paths),
         "candidate_inventory_exact": candidate_inventory_exact,
@@ -443,6 +539,10 @@ def render_report(report: dict[str, Any]) -> str:
         "reviewed_implementation_commit",
         "reviewed_implementation_exists",
         "reviewed_implementation_is_ancestor",
+        "reviewed_candidate_commit",
+        "reviewed_candidate_commit_exists",
+        "reviewed_candidate_commit_is_ancestor",
+        "reviewed_candidate_path_hashes_match",
         "candidate_commit",
         "candidate_path_count",
         "candidate_inventory_exact",
@@ -550,6 +650,16 @@ def _sha256(path: Path) -> str:
         return hashlib.sha256(path.read_bytes()).hexdigest()
     except OSError:
         return ""
+
+
+def _sha256_at_commit(repo_root: Path, commit: str, path: str) -> str:
+    result = subprocess.run(
+        ["git", "show", f"{commit}:{path}"],
+        cwd=repo_root,
+        check=False,
+        capture_output=True,
+    )
+    return hashlib.sha256(result.stdout).hexdigest() if result.returncode == 0 else ""
 
 
 def _read_bytes(path: Path) -> bytes:
