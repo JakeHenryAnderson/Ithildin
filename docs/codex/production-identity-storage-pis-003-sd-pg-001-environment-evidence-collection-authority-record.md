@@ -1,7 +1,7 @@
 # Production Identity And Storage PIS-003 SD-PG-001 Environment Evidence Collection Authority Record
 
-Status: two-permission environment-evidence-collection activation candidate prepared; exact-candidate
-review is pending, no target or receipt is selected or collected, and no external action is effective.
+Status: two-permission environment-evidence-collection activation candidate exact review complete
+with zero findings; no target or receipt is selected or collected, and no external action is effective.
 
 Authority record ID:
 `PRD-PROD-IAM-STORAGE-PIS-003-SD-PG-001-ENVIRONMENT-EVIDENCE-COLLECTION-AUTHORITY`.
@@ -12,6 +12,8 @@ Activation baseline and authority-review record commit:
 `e259383fcb63fbdaf1731bfaf55815eedccd0aac`.
 
 Reviewed authority-record candidate: `35e3148b6573729958196ca962e36f1156c7ae25`.
+
+Reviewed activation candidate: `ec7af457208928d319ec11c61da271efe8f4a9aa`.
 
 Current governed tool count: `24`.
 
@@ -28,11 +30,13 @@ pre-review authority, post-review ceiling, live authority, or next action.
 
 ## Purpose And Stop Line
 
-This record now carries the separate activation candidate required by the zero-finding authority
-review. The candidate places exactly `external_target_selection_allowed` and
+This record carries the reviewed activation candidate required by the zero-finding authority
+review. Candidate `ec7af457208928d319ec11c61da271efe8f4a9aa` places exactly
+`external_target_selection_allowed` and
 `external_environment_receipt_collection_allowed` in its proposed live authority map, while
-`operational_collection_action_effective` remains false. The proposal cannot be acted on until this
-exact candidate receives an independent zero-finding review and that disposition is recorded.
+`operational_collection_action_effective` remains false. Its independent read-only GPT-5.6 Sol
+xhigh review returned zero Critical, High, Medium, and Low findings and GO only to record this
+disposition. Sol Ultra was not used.
 
 The independent read-only GPT-5.6 Sol xhigh review of exact candidate
 `35e3148b6573729958196ca962e36f1156c7ae25` returned `GO` for recording the review only, with `0`
@@ -76,7 +80,7 @@ The candidate proposes exactly:
 Its review and effective-action state remains:
 
 - `two_permission_activation_candidate_prepared: true`;
-- `exact_candidate_source_review_complete: false`;
+- `exact_candidate_source_review_complete: true`;
 - `operational_collection_action_effective: false`;
 - `activation_candidate_preparation_allowed: false`;
 - `host_credential_inspection_allowed: false`;
@@ -118,15 +122,16 @@ This candidate records:
 - `environment_evidence_collection_authority_record_prepared: true`;
 - `two_permission_activation_candidate_prepared: true`;
 - `exact_candidate_source_review_required: true`;
-- `exact_candidate_source_review_complete: false`;
+- `exact_candidate_source_review_complete: true`;
 - the two proposed collection permissions true;
 - `operational_collection_action_effective: false`; and
 - every activation, execution, runtime, release, promotion, and UAT permission false.
 
 The next required action is
-`review_pis_003_sd_pg_001_environment_evidence_collection_authority_activation_exact_candidate`.
-Until that exact review is zero-finding and durably recorded, external target selection and receipt
-collection remain unauthorized even though the proposal carries the two reviewed ceiling flags.
-Activation preparation, credential inspection, DSN/key or driver use, connections, migrations,
-services, containers, runtime, release, promotion, arbitrary host control, and UAT remain outside
-the ceiling.
+`await_external_operator_target_and_signed_receipt_inputs_before_separate_collection_action_authority`.
+The repository cannot cross that external-dependency line by inventing or inspecting a target,
+credential, trust record, or receipt. A later separately reviewed action-authority record would have
+to bind the operator-supplied safe target label and complete secret-free signed receipt set before
+`operational_collection_action_effective` could become true. Activation preparation, credential
+inspection, DSN/key or driver use, connections, migrations, services, containers, runtime, release,
+promotion, arbitrary host control, and UAT remain outside the ceiling.

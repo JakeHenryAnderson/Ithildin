@@ -11731,7 +11731,7 @@ def test_pis_003_environment_evidence_collection_authority_is_wired() -> None:
         "ENVIRONMENT-EVIDENCE-COLLECTION-AUTHORITY"
     )
     assert report["authority_outcome"] == (
-        "two_permission_activation_candidate_prepared_exact_review_pending_no_actions"
+        "two_permission_activation_candidate_exact_review_complete_zero_findings_no_actions"
     )
     for field in (
         "baseline_exists",
@@ -11739,6 +11739,9 @@ def test_pis_003_environment_evidence_collection_authority_is_wired() -> None:
         "reviewed_candidate_commit_exists",
         "reviewed_candidate_commit_is_ancestor",
         "reviewed_candidate_path_hashes_match",
+        "activation_reviewed_candidate_commit_exists",
+        "activation_reviewed_candidate_commit_is_ancestor",
+        "activation_reviewed_candidate_path_hashes_match",
         "candidate_inventory_exact",
         "authority_document_hash_matches",
         "authority_contract_hash_matches",
@@ -11758,12 +11761,15 @@ def test_pis_003_environment_evidence_collection_authority_is_wired() -> None:
     assert report["external_target_selection_allowed"] is True
     assert report["external_environment_receipt_collection_allowed"] is True
     assert report["operational_collection_action_effective"] is False
-    assert report["exact_candidate_source_review_complete"] is False
+    assert report["exact_candidate_source_review_complete"] is True
     assert report["tool_count"] == 24
     for field, expected in validator.EXPECTED_AUTHORITY.items():
         assert report[field] is expected
     assert report["next_required_action"] == validator.NEXT_ACTION
     assert report["reviewed_candidate_commit"] == validator.REVIEWED_AUTHORITY_COMMIT
+    assert report["activation_reviewed_candidate_commit"] == (
+        validator.REVIEWED_ACTIVATION_COMMIT
+    )
     assert validator.validate_contract(contract) == []
     assert f"{validator.TARGET}:" in makefile
     assert f"release-check: {validator.TARGET}" in makefile
@@ -11818,6 +11824,27 @@ def test_pis_003_environment_evidence_collection_authority_contract_is_closed() 
     contract["candidate_validation_evidence"]["sol_ultra_used"] = True
     assert any(
         "candidate_validation_evidence is not exact" in item
+        for item in validator.validate_contract(contract)
+    )
+
+    contract = json.loads(source)
+    contract["activation_reviewed_candidate_path_hashes"]["Makefile"] = "0" * 64
+    assert any(
+        "activation_reviewed_candidate_path_hashes is not exact" in item
+        for item in validator.validate_contract(contract)
+    )
+
+    contract = json.loads(source)
+    contract["activation_review_findings"]["medium"] = 1
+    assert any(
+        "activation_review_findings is not exact" in item
+        for item in validator.validate_contract(contract)
+    )
+
+    contract = json.loads(source)
+    contract["activation_review_validation_evidence"]["sol_ultra_used"] = True
+    assert any(
+        "activation_review_validation_evidence is not exact" in item
         for item in validator.validate_contract(contract)
     )
 

@@ -31,8 +31,8 @@ CONTRACT_REL = (
     "docs/codex/production-identity-storage-pis-003-sd-pg-001-"
     "environment-evidence-collection-authority.json"
 )
-DOC_SHA256 = "dea856fd21c3e3abcc107a7a7a2df2aa19a7c6fb481be92c1699adb77e7a1ebb"
-CONTRACT_SHA256 = "91dff502dbfce7940f4e02e7ceea65c4a933063c10fe80c93e0c9a49b7ce6291"
+DOC_SHA256 = "d2da7f89adc5f58561f760cea672185599ed6b10568b573521107eda3a47d5b7"
+CONTRACT_SHA256 = "95ec69aeaff0284ab54b2e894804b309a5db83c3a4bbf83a6ccba4ddc01a0def"
 TARGET = (
     "production-identity-storage-pis-003-sd-pg-001-"
     "environment-evidence-collection-authority-check"
@@ -48,6 +48,7 @@ PARENT_GATE_ID = (
 PARENT_REVIEW_RECORD_COMMIT = "31c5653f04b1c7d20d2573cabfed2d0c677d6d4e"
 BASELINE_COMMIT = "e259383fcb63fbdaf1731bfaf55815eedccd0aac"
 REVIEWED_AUTHORITY_COMMIT = "35e3148b6573729958196ca962e36f1156c7ae25"
+REVIEWED_ACTIVATION_COMMIT = "ec7af457208928d319ec11c61da271efe8f4a9aa"
 
 EXPECTED_REVIEWED_PATH_HASHES = {
     "Makefile": "73aa48c4265a073fcb7ba36b2683e710ea600a2f58fac9cff8caf014c47e019d",
@@ -85,6 +86,54 @@ EXPECTED_REVIEW_FINDINGS = {
     "medium": 0,
     "low": 0,
     "open": 0,
+}
+EXPECTED_ACTIVATION_REVIEWED_PATH_HASHES = {
+    "Makefile": "c0ac7f9dde123b0c17e668725c97fad4271f9d7aa24b49fc67a940a8e46317c8",
+    "README.md": "f1e34d34bd29a1c9f2fe4ba46fa5386adc5da66f495abe660f763cc6904d6a29",
+    "docs/codex/post-rc-decision-register.md": (
+        "7b1a54737e27d7c904dbed8eb3055e98b9a8725692843b5b1d5fb51cf34ef212"
+    ),
+    DOC_REL: "dea856fd21c3e3abcc107a7a7a2df2aa19a7c6fb481be92c1699adb77e7a1ebb",
+    CONTRACT_REL: "91dff502dbfce7940f4e02e7ceea65c4a933063c10fe80c93e0c9a49b7ce6291",
+    "docs/codex/review-docs-index.md": (
+        "1a228e99cf6c2d7508d9d1bfffb9f14bb6483052ae966d30d74cbba333b435da"
+    ),
+    "scripts/build_docs_site.py": (
+        "0d97486fd1cbb503351a28906a15490cf95198155f28ee6aee1619f09699c71a"
+    ),
+    (
+        "scripts/production_identity_storage_pis_003_sd_pg_001_"
+        "environment_evidence_collection_authority_check.py"
+    ): "d50fe5382b3437cc9414c56b5a6ab9f4e569fdd1a8648dc04175df9f7fd53ad7",
+    (
+        "scripts/production_identity_storage_pis_003_sd_pg_001_"
+        "environment_evidence_collection_gate_check.py"
+    ): "5e45f5e506b15867f6650e42cdf6d3982892a50651250dbb9108e2efb81f1a50",
+    "scripts/release_guardrails.py": (
+        "033e9fef6ed9b8cf2bb8a2bb6a8e8a01a5a2c80c7dd9bba5c34fa4c099206e65"
+    ),
+    "scripts/review_docs.py": (
+        "f624c40e4e16e50a6f2a7595e96f7c95f42b87793ecf06afe1edba5f3e0bcc9f"
+    ),
+    "tests/test_release_readiness.py": (
+        "bb3a56ddba928d9e1e87d503cfb220bbc5e7bf72ff99d0a49f0323a814593675"
+    ),
+}
+EXPECTED_ACTIVATION_REVIEW_EVIDENCE = {
+    "focused_environment_collection_tests": 20,
+    "focused_authority_candidate_tests": 10,
+    "docs_site_tests": 3,
+    "full_release_python_tests": 1761,
+    "full_release_ui_tests": 59,
+    "strict_mypy_source_files": 132,
+    "general_packet_redaction_files_scanned": 622,
+    "general_packet_redaction_findings": 0,
+    "full_release_check_passed": True,
+    "artifact_freshness_check_passed": True,
+    "agent_workflow_check_passed": True,
+    "exact_review_findings_zero": True,
+    "tool_count_unchanged": True,
+    "sol_ultra_used": False,
 }
 EXPECTED_VALIDATION_EVIDENCE = {
     "focused_environment_collection_tests": 20,
@@ -241,7 +290,7 @@ EXPECTED_AUTHORITY = {
     "environment_evidence_collection_authority_record_prepared": True,
     "two_permission_activation_candidate_prepared": True,
     "exact_candidate_source_review_required": True,
-    "exact_candidate_source_review_complete": False,
+    "exact_candidate_source_review_complete": True,
     "external_target_selection_allowed": True,
     "external_environment_receipt_collection_allowed": True,
     "operational_collection_action_effective": False,
@@ -274,16 +323,18 @@ EXPECTED_AUTHORITY = {
     "uat_required_now": False,
 }
 NEXT_ACTION = (
-    "review_pis_003_sd_pg_001_"
-    "environment_evidence_collection_authority_activation_exact_candidate"
+    "await_external_operator_target_and_signed_receipt_inputs_before_separate_"
+    "collection_action_authority"
 )
 REQUIRED_PHRASES = [
     (
-        "Status: two-permission environment-evidence-collection activation candidate prepared"
+        "Status: two-permission environment-evidence-collection activation candidate exact "
+        "review complete with zero findings"
     ),
     f"`{AUTHORITY_RECORD_ID}`.",
     f"`{BASELINE_COMMIT}`.",
     f"`{REVIEWED_AUTHORITY_COMMIT}`.",
+    f"`{REVIEWED_ACTIVATION_COMMIT}`.",
     "Current governed tool count: `24`.",
     f"make {TARGET}",
     CONTRACT_REL,
@@ -292,7 +343,7 @@ REQUIRED_PHRASES = [
     "No intake root is created.",
     "This candidate changes exactly twelve",
     "`two_permission_activation_candidate_prepared: true`",
-    "`exact_candidate_source_review_complete: false`",
+    "`exact_candidate_source_review_complete: true`",
     "`external_target_selection_allowed: true`",
     "`external_environment_receipt_collection_allowed: true`",
     "`operational_collection_action_effective: false`",
@@ -338,6 +389,10 @@ def validate_contract(contract: dict[str, Any]) -> list[str]:
         "parent_reviewed_candidate_path_hashes",
         "parent_review_findings",
         "candidate_validation_evidence",
+        "activation_reviewed_candidate_commit",
+        "activation_reviewed_candidate_path_hashes",
+        "activation_review_findings",
+        "activation_review_validation_evidence",
         "tool_count",
         "authority_candidate_path_inventory",
         "protected_hashes",
@@ -357,13 +412,14 @@ def validate_contract(contract: dict[str, Any]) -> list[str]:
         "parent_review_record_commit": PARENT_REVIEW_RECORD_COMMIT,
         "authority_baseline_commit": BASELINE_COMMIT,
         "parent_reviewed_candidate_commit": REVIEWED_AUTHORITY_COMMIT,
+        "activation_reviewed_candidate_commit": REVIEWED_ACTIVATION_COMMIT,
         "authority_outcome": (
-            "two_permission_activation_candidate_prepared_exact_review_pending_no_actions"
+            "two_permission_activation_candidate_exact_review_complete_zero_findings_no_actions"
         ),
         "review_disposition": (
-            "pending_independent_exact_review_no_external_action_authorized"
+            "exact_candidate_zero_findings_collection_actions_remain_ineffective"
         ),
-        "review_method": "independent_read_only_gpt_5_6_sol_xhigh_required_no_ultra",
+        "review_method": "independent_read_only_gpt_5_6_sol_xhigh_no_ultra",
         "tool_count": 24,
         "next_required_action": NEXT_ACTION,
     }
@@ -377,6 +433,11 @@ def validate_contract(contract: dict[str, Any]) -> list[str]:
         "parent_reviewed_candidate_path_hashes": EXPECTED_REVIEWED_PATH_HASHES,
         "parent_review_findings": EXPECTED_REVIEW_FINDINGS,
         "candidate_validation_evidence": EXPECTED_VALIDATION_EVIDENCE,
+        "activation_reviewed_candidate_path_hashes": (
+            EXPECTED_ACTIVATION_REVIEWED_PATH_HASHES
+        ),
+        "activation_review_findings": EXPECTED_REVIEW_FINDINGS,
+        "activation_review_validation_evidence": EXPECTED_ACTIVATION_REVIEW_EVIDENCE,
         "protected_hashes": EXPECTED_PROTECTED_HASHES,
         "parent_collection_gate_hashes": EXPECTED_PARENT_HASHES,
         "collection_contract_binding": EXPECTED_COLLECTION_BINDING,
@@ -395,20 +456,22 @@ def validate_contract(contract: dict[str, Any]) -> list[str]:
             failures.append(
                 f"PIS-003 environment evidence collection authority {key} types are not closed"
             )
-    findings = contract.get("parent_review_findings")
-    if not isinstance(findings, dict) or any(type(item) is not int for item in findings.values()):
-        failures.append(
-            "PIS-003 environment evidence collection authority "
-            "parent_review_findings types are not closed"
-        )
-    evidence = contract.get("candidate_validation_evidence")
-    if not isinstance(evidence, dict) or any(
-        type(item) not in {int, bool} for item in evidence.values()
-    ):
-        failures.append(
-            "PIS-003 environment evidence collection authority "
-            "candidate_validation_evidence types are not closed"
-        )
+    for key in ("parent_review_findings", "activation_review_findings"):
+        findings = contract.get(key)
+        if not isinstance(findings, dict) or any(
+            type(item) is not int for item in findings.values()
+        ):
+            failures.append(
+                f"PIS-003 environment evidence collection authority {key} types are not closed"
+            )
+    for key in ("candidate_validation_evidence", "activation_review_validation_evidence"):
+        evidence = contract.get(key)
+        if not isinstance(evidence, dict) or any(
+            type(item) not in {int, bool} for item in evidence.values()
+        ):
+            failures.append(
+                f"PIS-003 environment evidence collection authority {key} types are not closed"
+            )
     return failures
 
 
@@ -444,10 +507,16 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     reviewed_authority_is_ancestor = _is_ancestor(
         repo_root, REVIEWED_AUTHORITY_COMMIT, "HEAD"
     )
+    reviewed_activation_exists = _commit_exists(repo_root, REVIEWED_ACTIVATION_COMMIT)
+    reviewed_activation_is_ancestor = _is_ancestor(
+        repo_root, REVIEWED_ACTIVATION_COMMIT, "HEAD"
+    )
     if not baseline_exists or not baseline_is_ancestor:
         failures.append("PIS-003 environment evidence collection authority baseline is invalid")
     if not reviewed_authority_exists or not reviewed_authority_is_ancestor:
         failures.append("PIS-003 reviewed environment evidence collection authority is invalid")
+    if not reviewed_activation_exists or not reviewed_activation_is_ancestor:
+        failures.append("PIS-003 reviewed environment evidence activation candidate is invalid")
 
     reviewed_candidate_path_hashes_match = all(
         _sha256_at_commit(repo_root, REVIEWED_AUTHORITY_COMMIT, path) == digest
@@ -457,6 +526,12 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         failures.append(
             "PIS-003 reviewed environment evidence collection authority path hashes changed"
         )
+    activation_reviewed_path_hashes_match = all(
+        _sha256_at_commit(repo_root, REVIEWED_ACTIVATION_COMMIT, path) == digest
+        for path, digest in EXPECTED_ACTIVATION_REVIEWED_PATH_HASHES.items()
+    )
+    if not activation_reviewed_path_hashes_match:
+        failures.append("PIS-003 reviewed activation candidate path hashes changed")
 
     candidate_paths = _candidate_paths(repo_root)
     candidate_inventory_exact = candidate_paths == EXPECTED_PATHS
@@ -520,6 +595,12 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "reviewed_candidate_commit_exists": reviewed_authority_exists,
         "reviewed_candidate_commit_is_ancestor": reviewed_authority_is_ancestor,
         "reviewed_candidate_path_hashes_match": reviewed_candidate_path_hashes_match,
+        "activation_reviewed_candidate_commit": REVIEWED_ACTIVATION_COMMIT,
+        "activation_reviewed_candidate_commit_exists": reviewed_activation_exists,
+        "activation_reviewed_candidate_commit_is_ancestor": reviewed_activation_is_ancestor,
+        "activation_reviewed_candidate_path_hashes_match": (
+            activation_reviewed_path_hashes_match
+        ),
         "candidate_commit": _git_one(repo_root, "rev-parse", "HEAD"),
         "candidate_path_count": len(candidate_paths),
         "candidate_inventory_exact": candidate_inventory_exact,
@@ -554,6 +635,10 @@ def render_report(report: dict[str, Any]) -> str:
         "reviewed_candidate_commit_exists",
         "reviewed_candidate_commit_is_ancestor",
         "reviewed_candidate_path_hashes_match",
+        "activation_reviewed_candidate_commit",
+        "activation_reviewed_candidate_commit_exists",
+        "activation_reviewed_candidate_commit_is_ancestor",
+        "activation_reviewed_candidate_path_hashes_match",
         "candidate_commit",
         "candidate_path_count",
         "candidate_inventory_exact",
@@ -624,7 +709,7 @@ def _wiring_valid(repo_root: Path) -> bool:
         and DOC_REL in review_docs.REVIEW_DOCS
         and DOC_REL in docs_site
         and TARGET in guardrails
-        and "Environment Evidence Collection Authority Activation Candidate" in index
+        and "Environment Evidence Collection Authority Activation Review Record" in index
         and "Current PIS-003 environment evidence collection authority record" in register
         and "review complete at `e33cca9` with zero findings" in register
     )

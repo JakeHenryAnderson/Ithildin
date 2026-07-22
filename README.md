@@ -877,10 +877,11 @@ checked with `make control-mapping-readiness`.
   live target, collection, activation, driver/DSN, connection, migration, service, runtime,
   release, promotion, and UAT authority remains false.
 - `make production-identity-storage-pis-003-sd-pg-001-environment-evidence-collection-authority-check`
-  - validate the separate two-permission activation candidate, historical parent binding, protected
-  hashes, and exact-review stop line. The proposal carries only target-selection and signed-receipt
-  flags; no external action is effective, and activation, credential/DSN use, connection, migration,
-  service, runtime, release, promotion, and UAT authority remains false.
+  - validate the zero-finding exact review of the separate two-permission activation candidate,
+  historical parent binding, protected hashes, and effective-action stop line. The proposal carries
+  only target-selection and signed-receipt flags; no external action is effective, and activation,
+  credential/DSN use, connection, migration, service, runtime, release, promotion, and UAT authority
+  remains false.
 - `make production-identity-storage-disposition-packet` - generate the focused architecture
   disposition packet asking whether ERG-006/ERG-007 may continue planning while production identity,
   runtime Postgres, migrations, retention enforcement, and custody claims remain blocked.
@@ -2016,9 +2017,10 @@ with its closed contract at
 [docs/codex/production-identity-storage-pis-003-sd-pg-001-environment-evidence-collection-authority.json](docs/codex/production-identity-storage-pis-003-sd-pg-001-environment-evidence-collection-authority.json).
 Validate it with
 `make production-identity-storage-pis-003-sd-pg-001-environment-evidence-collection-authority-check`.
-Its review-pending activation candidate proposes only safe-label target selection and secret-free
-signed receipt collection. Operational collection action remains ineffective until exact Sol xhigh
-review is durably recorded, and it does not authorize activation preparation or any driver, DSN,
+Its activation candidate `ec7af45` proposes only safe-label target selection and secret-free signed
+receipt collection. Independent Sol xhigh review found zero issues and is durably recorded, but
+operational collection action remains ineffective pending external operator inputs and a separate
+action-authority record. It does not authorize activation preparation or any driver, DSN,
 connection, migration, service, container, runtime, release, promotion, or UAT action.
 Generate the production identity and storage disposition packet with
 `make production-identity-storage-disposition-packet`; it asks whether the current ERG-006/ERG-007

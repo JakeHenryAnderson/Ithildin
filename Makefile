@@ -1031,7 +1031,7 @@ public-security-product-positioning-response-kit-check:
 .PHONY: production-identity-storage-pis-003-sd-pg-001-connection-evidence-implementation-check
 .PHONY: production-identity-storage-pis-003-sd-pg-001-environment-execution-gate-check
 .PHONY: production-identity-storage-pis-003-sd-pg-001-environment-evidence-collection-gate-check
-# The authority check now validates the review-pending two-permission activation candidate.
+# The authority check validates the zero-finding activation review while collection action is false.
 .PHONY: production-identity-storage-pis-003-sd-pg-001-environment-evidence-collection-authority-check
 
 production-identity-storage-architecture-decision-record-check:

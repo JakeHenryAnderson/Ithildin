@@ -5,9 +5,9 @@
   "parent_review_record_commit": "31c5653f04b1c7d20d2573cabfed2d0c677d6d4e",
   "authority_baseline_commit": "e259383fcb63fbdaf1731bfaf55815eedccd0aac",
   "parent_reviewed_candidate_commit": "35e3148b6573729958196ca962e36f1156c7ae25",
-  "authority_outcome": "two_permission_activation_candidate_prepared_exact_review_pending_no_actions",
-  "review_disposition": "pending_independent_exact_review_no_external_action_authorized",
-  "review_method": "independent_read_only_gpt_5_6_sol_xhigh_required_no_ultra",
+  "authority_outcome": "two_permission_activation_candidate_exact_review_complete_zero_findings_no_actions",
+  "review_disposition": "exact_candidate_zero_findings_collection_actions_remain_ineffective",
+  "review_method": "independent_read_only_gpt_5_6_sol_xhigh_no_ultra",
   "parent_reviewed_candidate_path_hashes": {
     "Makefile": "73aa48c4265a073fcb7ba36b2683e710ea600a2f58fac9cff8caf014c47e019d",
     "README.md": "2b4304b9b8e9eb49005b8a802405188b5b508255cc7b88b8dcf0c01d2cd39067",
@@ -42,6 +42,44 @@
     "artifact_freshness_check_passed": false,
     "agent_workflow_check_passed": true,
     "exact_review_findings_zero": false,
+    "tool_count_unchanged": true,
+    "sol_ultra_used": false
+  },
+  "activation_reviewed_candidate_commit": "ec7af457208928d319ec11c61da271efe8f4a9aa",
+  "activation_reviewed_candidate_path_hashes": {
+    "Makefile": "c0ac7f9dde123b0c17e668725c97fad4271f9d7aa24b49fc67a940a8e46317c8",
+    "README.md": "f1e34d34bd29a1c9f2fe4ba46fa5386adc5da66f495abe660f763cc6904d6a29",
+    "docs/codex/post-rc-decision-register.md": "7b1a54737e27d7c904dbed8eb3055e98b9a8725692843b5b1d5fb51cf34ef212",
+    "docs/codex/production-identity-storage-pis-003-sd-pg-001-environment-evidence-collection-authority-record.md": "dea856fd21c3e3abcc107a7a7a2df2aa19a7c6fb481be92c1699adb77e7a1ebb",
+    "docs/codex/production-identity-storage-pis-003-sd-pg-001-environment-evidence-collection-authority.json": "91dff502dbfce7940f4e02e7ceea65c4a933063c10fe80c93e0c9a49b7ce6291",
+    "docs/codex/review-docs-index.md": "1a228e99cf6c2d7508d9d1bfffb9f14bb6483052ae966d30d74cbba333b435da",
+    "scripts/build_docs_site.py": "0d97486fd1cbb503351a28906a15490cf95198155f28ee6aee1619f09699c71a",
+    "scripts/production_identity_storage_pis_003_sd_pg_001_environment_evidence_collection_authority_check.py": "d50fe5382b3437cc9414c56b5a6ab9f4e569fdd1a8648dc04175df9f7fd53ad7",
+    "scripts/production_identity_storage_pis_003_sd_pg_001_environment_evidence_collection_gate_check.py": "5e45f5e506b15867f6650e42cdf6d3982892a50651250dbb9108e2efb81f1a50",
+    "scripts/release_guardrails.py": "033e9fef6ed9b8cf2bb8a2bb6a8e8a01a5a2c80c7dd9bba5c34fa4c099206e65",
+    "scripts/review_docs.py": "f624c40e4e16e50a6f2a7595e96f7c95f42b87793ecf06afe1edba5f3e0bcc9f",
+    "tests/test_release_readiness.py": "bb3a56ddba928d9e1e87d503cfb220bbc5e7bf72ff99d0a49f0323a814593675"
+  },
+  "activation_review_findings": {
+    "critical": 0,
+    "high": 0,
+    "medium": 0,
+    "low": 0,
+    "open": 0
+  },
+  "activation_review_validation_evidence": {
+    "focused_environment_collection_tests": 20,
+    "focused_authority_candidate_tests": 10,
+    "docs_site_tests": 3,
+    "full_release_python_tests": 1761,
+    "full_release_ui_tests": 59,
+    "strict_mypy_source_files": 132,
+    "general_packet_redaction_files_scanned": 622,
+    "general_packet_redaction_findings": 0,
+    "full_release_check_passed": true,
+    "artifact_freshness_check_passed": true,
+    "agent_workflow_check_passed": true,
+    "exact_review_findings_zero": true,
     "tool_count_unchanged": true,
     "sol_ultra_used": false
   },
@@ -142,7 +180,7 @@
     "environment_evidence_collection_authority_record_prepared": true,
     "two_permission_activation_candidate_prepared": true,
     "exact_candidate_source_review_required": true,
-    "exact_candidate_source_review_complete": false,
+    "exact_candidate_source_review_complete": true,
     "external_target_selection_allowed": true,
     "external_environment_receipt_collection_allowed": true,
     "operational_collection_action_effective": false,
@@ -174,5 +212,5 @@
     "uat_complete": false,
     "uat_required_now": false
   },
-  "next_required_action": "review_pis_003_sd_pg_001_environment_evidence_collection_authority_activation_exact_candidate"
+  "next_required_action": "await_external_operator_target_and_signed_receipt_inputs_before_separate_collection_action_authority"
 }
