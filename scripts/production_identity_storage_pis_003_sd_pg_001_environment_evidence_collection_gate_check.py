@@ -1,4 +1,4 @@
-"""Validate the bounded PIS-003 environment-execution gate candidate."""
+"""Validate the bounded PIS-003 environment-evidence collection gate candidate."""
 
 from __future__ import annotations
 
@@ -14,83 +14,30 @@ if __package__ in {None, ""}:
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from scripts import (  # noqa: E402
-    production_identity_storage_pis_003_sd_pg_001_connection_evidence as harness,
-)
-from scripts import (  # noqa: E402
-    production_identity_storage_pis_003_sd_pg_001_connection_evidence_implementation_check,
+    production_identity_storage_pis_003_sd_pg_001_environment_execution_gate_check,
     review_docs,
 )
 
-__all__ = ["harness"]
-
-implementation = (
-    production_identity_storage_pis_003_sd_pg_001_connection_evidence_implementation_check
-)
+parent_gate = production_identity_storage_pis_003_sd_pg_001_environment_execution_gate_check
 
 ROOT = Path(__file__).resolve().parents[1]
-DOC_REL = "docs/codex/production-identity-storage-pis-003-sd-pg-001-environment-execution-gate.md"
-CONTRACT_REL = (
-    "docs/codex/production-identity-storage-pis-003-sd-pg-001-environment-execution-gate.json"
+DOC_REL = (
+    "docs/codex/production-identity-storage-pis-003-sd-pg-001-"
+    "environment-evidence-collection-gate.md"
 )
-DOC_SHA256 = "dd834a15025e6f859f8dfee1992883241cea584257b5abbde96dbeb390a3945a"
-CONTRACT_SHA256 = "65161e4d66fe34625813091859ec2adf979ed9c958ea3572727a6742cf89a07b"
-TARGET = "production-identity-storage-pis-003-sd-pg-001-environment-execution-gate-check"
-GATE_ID = "PRD-PROD-IAM-STORAGE-PIS-003-SD-PG-001-ENVIRONMENT-EXECUTION-GATE"
-BASELINE_COMMIT = "8da9ac630b191a36a2782e5febb45d739030cd48"
-PARENT_REVIEW_RECORD_COMMIT = "8da9ac630b191a36a2782e5febb45d739030cd48"
-REVIEWED_IMPLEMENTATION_COMMIT = "5d929d8e24e4f529cea08796e614fbf544d066bc"
-REVIEWED_GATE_COMMIT = "c1ed12cb98ce263a57cf37f17c6b45ff4fb8596f"
-REVIEW_RECORD_COMMIT = "71774c6161161d46bd2778c653179c9a9be44fac"
-
-EXPECTED_REVIEWED_PATH_HASHES = {
-    "Makefile": "8a36b5010ec980352c9347b1fe889e90419372b8e0ae489b7eca6bc8d012398b",
-    "README.md": "73d75dd4cf6b33bedb8f9efdcd62ce52c17469ed1797ed0ad67807d2e03767f6",
-    "docs/codex/post-rc-decision-register.md": (
-        "c794f804271043122aee783d4c7d1befcc21391bc35fb7262cdc0ad399061774"
-    ),
-    CONTRACT_REL: "31d72b46ab521efbb634d632ad83f5907dbdf0ecd852f1b223c84af4608d3923",
-    DOC_REL: "c0115deb144c23f1df5d758a37c588d64b40f7a7dc657ec7537473aec927c426",
-    "docs/codex/review-docs-index.md": (
-        "bd17bad1645f01d9d45251b84d2c2673f69683dc1790613496221d2b5fbe0590"
-    ),
-    "scripts/build_docs_site.py": (
-        "0bd69956abb8fe79142c2e6d2fffcdca8cb348094824dc72b89b8da5d5490666"
-    ),
-    (
-        "scripts/production_identity_storage_pis_003_sd_pg_001_"
-        "connection_evidence_implementation_check.py"
-    ): "f864605d79dc1d9693bc7ef18e6a9e94298171dcdd133081ddf69cdde9dabc71",
-    ("scripts/production_identity_storage_pis_003_sd_pg_001_environment_execution_gate_check.py"): (
-        "d922bb85973300190a00da8881848f90764e910c6d7ccdf9116eb8dedd8c36f0"
-    ),
-    "scripts/release_guardrails.py": (
-        "3c94253ece3ddc563cf31210a3fb8834abbcbbf1f1badf3696f707a2f28e5340"
-    ),
-    "scripts/review_docs.py": "6366ba140993dcc11bb18e50ad8a48231d3e338767a3eebcf6bebc295d796cbe",
-    "tests/test_release_readiness.py": (
-        "4a72c127edf1c9272fbbe8c84720e153abb1562408d4e6b5db21a2c531a78e21"
-    ),
-}
-EXPECTED_REVIEW_FINDINGS = {
-    "critical": 0,
-    "high": 0,
-    "medium": 0,
-    "low": 0,
-    "open": 0,
-}
-EXPECTED_VALIDATION_EVIDENCE = {
-    "focused_environment_gate_tests": 20,
-    "full_release_python_tests": 1740,
-    "full_release_ui_tests": 59,
-    "strict_mypy_source_files": 132,
-    "packet_redaction_files_scanned": 620,
-    "packet_redaction_findings": 0,
-    "full_release_check_passed": True,
-    "artifact_freshness_check_passed": True,
-    "exact_review_findings_zero": True,
-    "tool_count_unchanged": True,
-    "sol_ultra_used": False,
-}
+CONTRACT_REL = (
+    "docs/codex/production-identity-storage-pis-003-sd-pg-001-"
+    "environment-evidence-collection-gate.json"
+)
+DOC_SHA256 = "89f1cf416131f3dbd383952dd1ead76fed8f3873f9abe5f0ae6a52b30a144b97"
+CONTRACT_SHA256 = "1712b52b81cb9867215ae39541acd54c9ce3889a45b0e95c3b172f2535464b76"
+TARGET = (
+    "production-identity-storage-pis-003-sd-pg-001-"
+    "environment-evidence-collection-gate-check"
+)
+GATE_ID = "PRD-PROD-IAM-STORAGE-PIS-003-SD-PG-001-ENVIRONMENT-EVIDENCE-COLLECTION-GATE"
+PARENT_GATE_ID = "PRD-PROD-IAM-STORAGE-PIS-003-SD-PG-001-ENVIRONMENT-EXECUTION-GATE"
+BASELINE_COMMIT = "71774c6161161d46bd2778c653179c9a9be44fac"
 
 EXPECTED_PATHS = {
     "Makefile",
@@ -102,9 +49,12 @@ EXPECTED_PATHS = {
     "scripts/build_docs_site.py",
     (
         "scripts/production_identity_storage_pis_003_sd_pg_001_"
-        "connection_evidence_implementation_check.py"
+        "environment_evidence_collection_gate_check.py"
     ),
-    ("scripts/production_identity_storage_pis_003_sd_pg_001_environment_execution_gate_check.py"),
+    (
+        "scripts/production_identity_storage_pis_003_sd_pg_001_"
+        "environment_execution_gate_check.py"
+    ),
     "scripts/release_guardrails.py",
     "scripts/review_docs.py",
     "tests/test_release_readiness.py",
@@ -134,24 +84,29 @@ EXPECTED_PROTECTED_HASHES = {
     ),
     (
         "docs/codex/production-identity-storage-pis-003-sd-pg-001-"
-        "connection-evidence-implementation-authority.json"
-    ): "5397b004a40c7f0dd46a5812a0f826b68a0d4960a338f5ea086d297a7361e5f8",
+        "environment-execution-gate.json"
+    ): "65161e4d66fe34625813091859ec2adf979ed9c958ea3572727a6742cf89a07b",
     (
         "docs/codex/production-identity-storage-pis-003-sd-pg-001-"
-        "connection-evidence-implementation-record.md"
-    ): "f6a9f9f680c2e8f2c9189d1a7f72f7456c8b07501d7e4d6965cc24965c37c22f",
+        "environment-execution-gate.md"
+    ): "dd834a15025e6f859f8dfee1992883241cea584257b5abbde96dbeb390a3945a",
     "pyproject.toml": "8f260ab9cc8508cbe856258e86bc7960a7ee073156fe4c2981e0f6854e381627",
     "scripts/production_identity_storage_pis_003_sd_pg_001_connection_evidence.py": (
         "7137d469e7cf2713249de7f1a7b69e0311c8ec7873de1a6ec866b3e801ffda07"
     ),
+    (
+        "scripts/production_identity_storage_pis_003_sd_pg_001_"
+        "environment_execution_gate_check.py"
+    ): "2f374f7719a932b2b40b9240f350986fcd2ea7bc4a6640152efdf75036c17467",
     "tool-manifests.lock.json": (
         "3834a18a5b8169dd66b3d96d79d6e69d252ebae17a1a9453f93f8686db1edc77"
     ),
     "uv.lock": "a0ea98764d069193226a9debe837f37655ee707cb17dcdf6731b922883a4dafb",
 }
-EXPECTED_GATE_ENVIRONMENT_EVIDENCE_STATE = {
+EXPECTED_COLLECTION_STATE = {
     "target_selected": False,
     "target_label_recorded": False,
+    "intake_root_created": False,
     "external_trust_record_present": False,
     "rollback_receipt_present": False,
     "target_owner_quarantine_receipt_present": False,
@@ -179,45 +134,49 @@ EXPECTED_EXTERNAL_EVIDENCE = [
     "signed_execution_manifest_with_fifteen_minute_freshness_and_output_root",
     "named_external_discard_owner_available_for_post_connection_receipt",
 ]
-EXPECTED_EXECUTION_CONTRACT = {
-    "harness_location": (
-        "scripts/production_identity_storage_pis_003_sd_pg_001_connection_evidence.py"
-    ),
-    "harness_scope": "test_only_not_runtime_importable",
-    "activation_change_requires_separate_commit": True,
-    "activation_change_requires_exact_source_review": True,
-    "activation_change_requires_complete_environment_receipts": True,
-    "execution_authority_active_now": False,
-    "cli_run_mode_present_now": False,
-    "driver_import_after_preflight_only": True,
-    "dsn_source": "ITHILDIN_PIS3_TEST_DSN_environment_only_after_activation_gate",
-    "target_binding_key_source": (
-        "ITHILDIN_PIS3_TARGET_BINDING_KEY_environment_only_after_activation_gate"
-    ),
-    "positive_run_count": 1,
-    "positive_connection_attempt_budget": 2,
-    "negative_connection_attempt_budget": 1,
-    "transparent_retries_allowed": False,
-    "commit_allowed": False,
-    "outer_transaction_rollback_required": True,
-    "post_rollback_absence_check_required": True,
-    "final_discard_receipt_required": True,
-    "source_digest_revalidation_required": True,
-    "output_secret_scan_required": True,
-    "runtime_imports_allowed": False,
-    "repository_service_or_container_lifecycle_allowed": False,
-    "database_or_role_creation_allowed": False,
-    "target_activation_allowed": False,
-    "runtime_postgres_allowed": False,
-    "production_identity_allowed": False,
+EXPECTED_COLLECTION_CONTRACT = {
+    "scope": "external_evidence_intake_preparation_only",
+    "intake_root": "var/review-runs/pis-003-sd-pg-001-external-environment-evidence",
+    "intake_root_created_now": False,
+    "target_label_pattern": "^[a-z0-9][a-z0-9._-]{2,63}$",
+    "issuer_id_pattern": "^[a-z][a-z0-9._-]{2,63}$",
+    "run_id_pattern": "^pis3run_[0-9a-f]{32}$",
+    "sha256_pattern": "^sha256:[0-9a-f]{64}$",
+    "hmac_sha256_pattern": "^hmac-sha256:[0-9a-f]{64}$",
+    "trust_record_min_count": 1,
+    "trust_record_max_count": 3,
+    "preconnection_receipt_types": [
+        "preconnection_rollback_receipt",
+        "target_owner_quarantine_receipt",
+    ],
+    "final_discard_receipt_required_after_future_connection": True,
+    "explicit_file_inputs_only": True,
+    "ambient_environment_enumeration_allowed": False,
+    "repository_target_provisioning_allowed": False,
+    "host_credential_inspection_allowed": False,
+    "secret_material_allowed_in_evidence": False,
+    "dsn_or_binding_key_allowed_in_evidence": False,
+    "private_signing_key_custody_allowed": False,
+    "symlink_inputs_allowed": False,
+    "writable_receipts_allowed": False,
+    "repository_or_output_local_receipts_allowed": False,
+    "signature_verification_required": True,
+    "canonical_json_required": True,
+    "receipt_freshness_required": True,
+    "complete_set_required_before_activation_candidate": True,
+    "activation_candidate_preparation_allowed": False,
+    "test_harness_execution_allowed": False,
+    "arbitrary_host_control_allowed": False,
 }
 EXPECTED_POST_REVIEW_CEILING = {
     "external_target_selection_allowed": True,
     "external_environment_receipt_collection_allowed": True,
-    "activation_candidate_preparation_allowed": True,
+    "activation_candidate_preparation_allowed": False,
+    "host_credential_inspection_allowed": False,
     "test_harness_execution_allowed": False,
     "driver_load_allowed": False,
     "external_dsn_consumption_allowed": False,
+    "target_binding_key_consumption_allowed": False,
     "database_connections_allowed": False,
     "migration_execution_allowed": False,
     "postgres_service_allowed": False,
@@ -229,12 +188,13 @@ EXPECTED_POST_REVIEW_CEILING = {
     "uat_complete": False,
 }
 EXPECTED_AUTHORITY = {
-    "environment_execution_gate_prepared": True,
+    "environment_evidence_collection_gate_prepared": True,
     "exact_candidate_source_review_required": True,
-    "exact_candidate_source_review_complete": True,
+    "exact_candidate_source_review_complete": False,
     "external_target_selection_allowed": False,
     "external_environment_receipt_collection_allowed": False,
     "activation_candidate_preparation_allowed": False,
+    "host_credential_inspection_allowed": False,
     "test_harness_execution_allowed": False,
     "driver_load_allowed": False,
     "external_dsn_consumption_allowed": False,
@@ -253,6 +213,7 @@ EXPECTED_AUTHORITY = {
     "remote_admin_allowed": False,
     "backup_restore_runtime_allowed": False,
     "retention_enforcement_allowed": False,
+    "arbitrary_host_control_allowed": False,
     "new_power_classes_allowed": False,
     "public_security_product_positioning_allowed": False,
     "release_allowed": False,
@@ -261,33 +222,27 @@ EXPECTED_AUTHORITY = {
     "uat_required_now": False,
 }
 REQUIRED_PHRASES = [
-    "Status: environment-execution-gate exact-candidate review complete with zero findings",
+    "Status: environment-evidence-collection gate candidate prepared",
     f"Gate ID: `{GATE_ID}`.",
-    f"`{REVIEWED_IMPLEMENTATION_COMMIT}`.",
-    f"`{REVIEWED_GATE_COMMIT}`.",
-    f"Parent review-record commit: `{PARENT_REVIEW_RECORD_COMMIT}`.",
+    f"`{BASELINE_COMMIT}`.",
     "Current governed tool count: `24`.",
     f"make {TARGET}",
     CONTRACT_REL,
-    "Prose cannot broaden the closed contract.",
-    "`EXECUTION_AUTHORITY_ACTIVE` remains `false`",
-    "`environment_execution_ready` is `false`.",
-    "Docker socket access",
-    "one positive run with exactly two attempts",
-    "each negative network scenario in a separate signed run with exactly one attempt",
-    "`environment_execution_gate_prepared: true`",
-    "`exact_candidate_source_review_complete: true`",
-    (
-        "External target selection, receipt collection, and activation-candidate preparation "
-        "remain false"
-    ),
-    "`test_harness_execution_allowed: false`",
+    "Prose cannot broaden the contract.",
+    "No target is selected or provisioned.",
+    "No intake directory is created.",
+    "Ambient environment discovery",
+    "`external_target_selection_allowed: false`",
+    "`external_environment_receipt_collection_allowed: false`",
+    "`activation_candidate_preparation_allowed: false`",
     "`database_connections_allowed: false`",
     "`migration_execution_allowed: false`",
-    "`runtime_postgres_allowed: false`",
-    "`production_identity_allowed: false`",
+    "`arbitrary_host_control_allowed: false`",
     "`uat_complete: false`",
-    "`prepare_separate_pis_003_sd_pg_001_environment_evidence_collection_gate`",
+    (
+        "`obtain_independent_sol_xhigh_exact_candidate_review_for_pis_003_sd_pg_001_"
+        "environment_evidence_collection_gate`"
+    ),
 ]
 
 
@@ -303,7 +258,7 @@ def main() -> int:
 def validate_document(text: str) -> list[str]:
     normalized = " ".join(text.split())
     return [
-        f"PIS-003 environment execution gate document missing: {phrase}"
+        f"PIS-003 environment evidence collection gate document missing: {phrase}"
         for phrase in REQUIRED_PHRASES
         if " ".join(phrase.split()) not in normalized
     ]
@@ -314,84 +269,61 @@ def validate_contract(contract: dict[str, Any]) -> list[str]:
     expected_keys = {
         "schema_version",
         "gate_id",
-        "parent_implementation_id",
-        "reviewed_connection_evidence_candidate_commit",
+        "parent_gate_id",
         "parent_review_record_commit",
         "gate_baseline_commit",
-        "reviewed_candidate_commit",
         "gate_outcome",
-        "review_disposition",
-        "review_method",
-        "reviewed_candidate_path_hashes",
-        "review_findings",
-        "validation_evidence",
         "tool_count",
         "gate_candidate_path_inventory",
         "protected_hashes",
-        "gate_environment_evidence_state",
+        "collection_environment_state",
         "required_external_environment_evidence",
-        "execution_candidate_contract",
+        "collection_contract",
         "post_review_authority_ceiling",
         "authority",
         "next_required_action",
     }
     if set(contract) != expected_keys:
-        failures.append("PIS-003 environment execution gate keys are not closed")
+        failures.append("PIS-003 environment evidence collection gate keys are not closed")
     expected_scalars = {
         "schema_version": "1",
         "gate_id": GATE_ID,
-        "parent_implementation_id": (
-            "PRD-PROD-IAM-STORAGE-PIS-003-SD-PG-001-CONNECTION-EVIDENCE-IMPLEMENTATION"
-        ),
-        "reviewed_connection_evidence_candidate_commit": REVIEWED_IMPLEMENTATION_COMMIT,
-        "parent_review_record_commit": PARENT_REVIEW_RECORD_COMMIT,
+        "parent_gate_id": PARENT_GATE_ID,
+        "parent_review_record_commit": BASELINE_COMMIT,
         "gate_baseline_commit": BASELINE_COMMIT,
-        "reviewed_candidate_commit": REVIEWED_GATE_COMMIT,
         "gate_outcome": (
-            "environment_execution_gate_exact_review_complete_"
-            "external_environment_evidence_pending_execution_blocked"
+            "environment_evidence_collection_gate_prepared_exact_review_pending_"
+            "all_live_authority_false"
         ),
-        "review_disposition": (
-            "cleared_for_separate_environment_evidence_collection_gate_preparation_only"
-        ),
-        "review_method": "independent_read_only_gpt_5_6_sol_xhigh_no_ultra",
         "tool_count": 24,
         "next_required_action": (
-            "prepare_separate_pis_003_sd_pg_001_environment_evidence_collection_gate"
+            "obtain_independent_sol_xhigh_exact_candidate_review_for_pis_003_sd_pg_001_"
+            "environment_evidence_collection_gate"
         ),
     }
     for key, expected in expected_scalars.items():
         if contract.get(key) != expected:
-            failures.append(f"PIS-003 environment execution gate field {key} is not exact")
+            failures.append(
+                f"PIS-003 environment evidence collection gate field {key} is not exact"
+            )
     exact_objects = {
         "gate_candidate_path_inventory": sorted(EXPECTED_PATHS),
-        "reviewed_candidate_path_hashes": EXPECTED_REVIEWED_PATH_HASHES,
-        "review_findings": EXPECTED_REVIEW_FINDINGS,
-        "validation_evidence": EXPECTED_VALIDATION_EVIDENCE,
         "protected_hashes": EXPECTED_PROTECTED_HASHES,
-        "gate_environment_evidence_state": EXPECTED_GATE_ENVIRONMENT_EVIDENCE_STATE,
+        "collection_environment_state": EXPECTED_COLLECTION_STATE,
         "required_external_environment_evidence": EXPECTED_EXTERNAL_EVIDENCE,
-        "execution_candidate_contract": EXPECTED_EXECUTION_CONTRACT,
+        "collection_contract": EXPECTED_COLLECTION_CONTRACT,
         "post_review_authority_ceiling": EXPECTED_POST_REVIEW_CEILING,
         "authority": EXPECTED_AUTHORITY,
     }
     for key, expected in exact_objects.items():
         if contract.get(key) != expected:
-            failures.append(f"PIS-003 environment execution gate {key} is not exact")
-    for key in ("gate_environment_evidence_state", "post_review_authority_ceiling", "authority"):
+            failures.append(f"PIS-003 environment evidence collection gate {key} is not exact")
+    for key in ("collection_environment_state", "post_review_authority_ceiling", "authority"):
         value = contract.get(key)
         if not isinstance(value, dict) or any(type(item) is not bool for item in value.values()):
-            failures.append(f"PIS-003 environment execution gate {key} types are not closed")
-    findings = contract.get("review_findings")
-    if not isinstance(findings, dict) or any(type(item) is not int for item in findings.values()):
-        failures.append("PIS-003 environment execution gate review_findings types are not closed")
-    evidence = contract.get("validation_evidence")
-    if not isinstance(evidence, dict) or any(
-        type(item) not in {int, bool} for item in evidence.values()
-    ):
-        failures.append(
-            "PIS-003 environment execution gate validation_evidence types are not closed"
-        )
+            failures.append(
+                f"PIS-003 environment evidence collection gate {key} types are not closed"
+            )
     return failures
 
 
@@ -403,14 +335,14 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         doc_text = doc_bytes.decode("utf-8")
     except UnicodeDecodeError:
         doc_text = ""
-        failures.append("PIS-003 environment execution gate document is not UTF-8")
+        failures.append("PIS-003 environment evidence collection gate document is not UTF-8")
     failures.extend(validate_document(doc_text))
     doc_hash = hashlib.sha256(doc_bytes).hexdigest()
     contract_hash = hashlib.sha256(contract_bytes).hexdigest()
     if doc_hash != DOC_SHA256:
-        failures.append("PIS-003 environment execution gate document digest does not match")
+        failures.append("PIS-003 environment evidence collection gate document digest mismatch")
     if contract_hash != CONTRACT_SHA256:
-        failures.append("PIS-003 environment execution gate contract digest does not match")
+        failures.append("PIS-003 environment evidence collection gate contract digest mismatch")
 
     contract, load_failures = _load_contract(repo_root / CONTRACT_REL)
     contract_failures = validate_contract(contract)
@@ -419,74 +351,41 @@ def build_report(repo_root: Path) -> dict[str, Any]:
 
     baseline_exists = _commit_exists(repo_root, BASELINE_COMMIT)
     baseline_is_ancestor = _is_ancestor(repo_root, BASELINE_COMMIT, "HEAD")
-    reviewed_implementation_exists = _commit_exists(repo_root, REVIEWED_IMPLEMENTATION_COMMIT)
-    reviewed_implementation_is_ancestor = _is_ancestor(
-        repo_root, REVIEWED_IMPLEMENTATION_COMMIT, "HEAD"
-    )
-    reviewed_gate_exists = _commit_exists(repo_root, REVIEWED_GATE_COMMIT)
-    reviewed_gate_is_ancestor = _is_ancestor(repo_root, REVIEWED_GATE_COMMIT, "HEAD")
-    review_record_exists = _commit_exists(repo_root, REVIEW_RECORD_COMMIT)
-    review_record_is_ancestor = _is_ancestor(repo_root, REVIEW_RECORD_COMMIT, "HEAD")
     if not baseline_exists or not baseline_is_ancestor:
-        failures.append("PIS-003 environment execution gate baseline is invalid")
-    if not reviewed_implementation_exists or not reviewed_implementation_is_ancestor:
-        failures.append("PIS-003 reviewed connection implementation ancestry is invalid")
-    if not reviewed_gate_exists or not reviewed_gate_is_ancestor:
-        failures.append("PIS-003 reviewed environment execution gate ancestry is invalid")
-    if not review_record_exists or not review_record_is_ancestor:
-        failures.append("PIS-003 environment execution gate review record ancestry is invalid")
-
-    reviewed_candidate_path_hashes_match = all(
-        _sha256_at_commit(repo_root, REVIEWED_GATE_COMMIT, path) == digest
-        for path, digest in EXPECTED_REVIEWED_PATH_HASHES.items()
-    )
-    if not reviewed_candidate_path_hashes_match:
-        failures.append("PIS-003 reviewed environment execution gate path hashes changed")
+        failures.append("PIS-003 environment evidence collection gate baseline is invalid")
 
     candidate_paths = _candidate_paths(repo_root)
     candidate_inventory_exact = candidate_paths == EXPECTED_PATHS
     if not candidate_inventory_exact:
-        failures.append("PIS-003 environment execution gate candidate inventory is not exact")
+        failures.append("PIS-003 environment evidence collection gate inventory is not exact")
 
     protected_hashes_match = all(
         _sha256(repo_root / path) == digest for path, digest in EXPECTED_PROTECTED_HASHES.items()
     )
     if not protected_hashes_match:
-        failures.append("PIS-003 environment execution gate protected hashes changed")
+        failures.append("PIS-003 environment evidence collection gate protected hashes changed")
 
-    parent_report = implementation.build_report(repo_root)
-    parent_implementation_valid = bool(
+    parent_report = parent_gate.build_report(repo_root)
+    parent_gate_valid = bool(
         parent_report.get("valid")
-        and parent_report.get("reviewed_candidate_commit") == REVIEWED_IMPLEMENTATION_COMMIT
-        and parent_report.get("review_record_commit") == PARENT_REVIEW_RECORD_COMMIT
-        and parent_report.get("reviewed_candidate_path_hashes_match") is True
+        and parent_report.get("gate_id") == PARENT_GATE_ID
+        and parent_report.get("review_record_commit") == BASELINE_COMMIT
         and parent_report.get("exact_candidate_source_review_complete") is True
+        and parent_report.get("external_target_selection_allowed") is False
+        and parent_report.get("external_environment_receipt_collection_allowed") is False
+        and parent_report.get("activation_candidate_preparation_allowed") is False
         and parent_report.get("database_connections_allowed") is False
         and parent_report.get("migration_execution_allowed") is False
     )
-    if not parent_implementation_valid:
-        failures.append("PIS-003 reviewed connection implementation prerequisite is invalid")
-
-    harness_check = harness._render_check()
-    harness_remains_dormant = bool(
-        harness_check.get("valid") is True
-        and harness_check.get("execution_authority_active") is False
-        and harness_check.get("psycopg_imported") is False
-        and harness_check.get("dsn_environment_read") is False
-        and harness_check.get("engine_constructed") is False
-        and harness_check.get("database_connection_attempted") is False
-        and harness_check.get("migration_executed") is False
-        and "psycopg" not in sys.modules
-    )
-    if not harness_remains_dormant:
-        failures.append("PIS-003 connection harness is not dormant")
+    if not parent_gate_valid:
+        failures.append("PIS-003 reviewed environment execution gate prerequisite is invalid")
 
     tool_count = _tool_count(repo_root / "tool-manifests.lock.json")
     if tool_count != 24:
-        failures.append("PIS-003 environment execution gate tool count changed")
+        failures.append("PIS-003 environment evidence collection gate tool count changed")
     wiring_valid = _wiring_valid(repo_root)
     if not wiring_valid:
-        failures.append("PIS-003 environment execution gate wiring is incomplete")
+        failures.append("PIS-003 environment evidence collection gate wiring is incomplete")
 
     valid = not failures
     raw_authority = contract.get("authority")
@@ -505,16 +404,6 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "gate_baseline_commit": BASELINE_COMMIT,
         "baseline_exists": baseline_exists,
         "baseline_is_ancestor": baseline_is_ancestor,
-        "reviewed_implementation_commit": REVIEWED_IMPLEMENTATION_COMMIT,
-        "reviewed_implementation_exists": reviewed_implementation_exists,
-        "reviewed_implementation_is_ancestor": reviewed_implementation_is_ancestor,
-        "reviewed_candidate_commit": REVIEWED_GATE_COMMIT,
-        "reviewed_candidate_commit_exists": reviewed_gate_exists,
-        "reviewed_candidate_commit_is_ancestor": reviewed_gate_is_ancestor,
-        "reviewed_candidate_path_hashes_match": reviewed_candidate_path_hashes_match,
-        "review_record_commit": REVIEW_RECORD_COMMIT,
-        "review_record_commit_exists": review_record_exists,
-        "review_record_commit_is_ancestor": review_record_is_ancestor,
         "candidate_commit": _git_one(repo_root, "rev-parse", "HEAD"),
         "candidate_path_count": len(candidate_paths),
         "candidate_inventory_exact": candidate_inventory_exact,
@@ -522,8 +411,8 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "gate_contract_hash_matches": contract_hash == CONTRACT_SHA256,
         "contract_valid": not load_failures and not contract_failures,
         "protected_hashes_match": protected_hashes_match,
-        "parent_implementation_valid": parent_implementation_valid,
-        "harness_remains_dormant": harness_remains_dormant,
+        "parent_gate_valid": parent_gate_valid,
+        "collection_environment_ready": False,
         "environment_execution_ready": False,
         "psycopg_driver_loaded": "psycopg" in sys.modules,
         "database_connection_attempted": False,
@@ -544,16 +433,6 @@ def render_report(report: dict[str, Any]) -> str:
         "gate_baseline_commit",
         "baseline_exists",
         "baseline_is_ancestor",
-        "reviewed_implementation_commit",
-        "reviewed_implementation_exists",
-        "reviewed_implementation_is_ancestor",
-        "reviewed_candidate_commit",
-        "reviewed_candidate_commit_exists",
-        "reviewed_candidate_commit_is_ancestor",
-        "reviewed_candidate_path_hashes_match",
-        "review_record_commit",
-        "review_record_commit_exists",
-        "review_record_commit_is_ancestor",
         "candidate_commit",
         "candidate_path_count",
         "candidate_inventory_exact",
@@ -561,8 +440,8 @@ def render_report(report: dict[str, Any]) -> str:
         "gate_contract_hash_matches",
         "contract_valid",
         "protected_hashes_match",
-        "parent_implementation_valid",
-        "harness_remains_dormant",
+        "parent_gate_valid",
+        "collection_environment_ready",
         "environment_execution_ready",
         "psycopg_driver_loaded",
         "database_connection_attempted",
@@ -572,7 +451,7 @@ def render_report(report: dict[str, Any]) -> str:
         *EXPECTED_AUTHORITY,
         "next_required_action",
     ]
-    lines = ["Ithildin PIS-003 SD-PG-001 environment execution gate check"]
+    lines = ["Ithildin PIS-003 SD-PG-001 environment evidence collection gate check"]
     for field in fields:
         value = report[field]
         rendered = str(value).lower() if isinstance(value, bool) else str(value)
@@ -585,17 +464,24 @@ def render_report(report: dict[str, Any]) -> str:
 
 def _candidate_paths(repo_root: Path) -> set[str]:
     tracked = subprocess.run(
-        ["git", "diff", "--name-only", BASELINE_COMMIT, REVIEW_RECORD_COMMIT],
+        ["git", "diff", "--name-only", BASELINE_COMMIT],
         cwd=repo_root,
         check=False,
         capture_output=True,
         text=True,
     )
-    if tracked.returncode != 0:
+    untracked = subprocess.run(
+        ["git", "ls-files", "--others", "--exclude-standard"],
+        cwd=repo_root,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    if tracked.returncode != 0 or untracked.returncode != 0:
         return set()
     return {
         line.strip()
-        for line in tracked.stdout.splitlines()
+        for line in (tracked.stdout + "\n" + untracked.stdout).splitlines()
         if line.strip()
     }
 
@@ -616,8 +502,9 @@ def _wiring_valid(repo_root: Path) -> bool:
         and DOC_REL in review_docs.REVIEW_DOCS
         and DOC_REL in docs_site
         and TARGET in guardrails
-        and "Environment Execution Gate" in index
-        and "Current PIS-003 environment execution gate" in register
+        and "Environment Evidence Collection Gate" in index
+        and "Current PIS-003 environment evidence collection gate" in register
+        and "Exact-candidate review complete" in register
     )
 
 
@@ -625,9 +512,9 @@ def _load_contract(path: Path) -> tuple[dict[str, Any], list[str]]:
     try:
         payload = json.loads(path.read_text(encoding="utf-8"), object_pairs_hook=_closed_object)
     except (OSError, UnicodeError, json.JSONDecodeError, ValueError) as exc:
-        return {}, [f"PIS-003 environment execution gate cannot be loaded: {exc}"]
+        return {}, [f"PIS-003 environment evidence collection gate cannot be loaded: {exc}"]
     if not isinstance(payload, dict):
-        return {}, ["PIS-003 environment execution gate must be an object"]
+        return {}, ["PIS-003 environment evidence collection gate must be an object"]
     return payload, []
 
 
@@ -654,16 +541,6 @@ def _sha256(path: Path) -> str:
         return hashlib.sha256(path.read_bytes()).hexdigest()
     except OSError:
         return ""
-
-
-def _sha256_at_commit(repo_root: Path, commit: str, path: str) -> str:
-    result = subprocess.run(
-        ["git", "show", f"{commit}:{path}"],
-        cwd=repo_root,
-        check=False,
-        capture_output=True,
-    )
-    return hashlib.sha256(result.stdout).hexdigest() if result.returncode == 0 else ""
 
 
 def _read_bytes(path: Path) -> bytes:

@@ -481,10 +481,18 @@ Current selected capability: `not selected`.
   `production-identity-storage-pis-003-sd-pg-001-environment-execution-gate.md` records the separate
   twelve-path phase boundary for selecting one externally managed quarantined target and collecting
   its signed trust, rollback, ownership, native dependency, TLS, SBOM/license, source, manifest,
-  and discard-owner evidence. The candidate is pending exact-candidate review. No target or receipt
-  is selected, supplied to, or recorded by the gate, and all activation, driver, DSN, connection,
+  and discard-owner evidence. Exact-candidate review complete at `c1ed12c` with zero findings; the
+  review record is `71774c6`. No target or receipt is selected, supplied to, or recorded by the
+  gate, and all target-selection, receipt-collection, activation, driver, DSN, connection,
   migration, service/container, runtime PostgreSQL, production identity, release, promotion, and
   UAT authority remains false.
+- Current PIS-003 environment evidence collection gate:
+  `production-identity-storage-pis-003-sd-pg-001-environment-evidence-collection-gate.md` prepares a
+  closed, secret-free target-label and signed-receipt intake boundary. It names but does not create
+  the ignored intake root, protects the reviewed parent and runtime artifacts, and permits no live
+  target selection, receipt collection, activation preparation, credential inspection, driver or
+  DSN use, connection, migration, service/container lifecycle, runtime PostgreSQL, production
+  identity, release, promotion, or UAT before exact-candidate review.
 - Current warning language: Ithildin may discuss production identity and durable storage
   architecture, but the current runtime remains local-preview with local principal labels and SQLite.
 - Current architecture evidence:

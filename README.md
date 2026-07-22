@@ -871,6 +871,11 @@ checked with `make control-mapping-readiness`.
   receipt requirements, protected implementation hashes, and the source-review stop line while
   target selection, receipt collection, activation preparation, driver/DSN use, connections,
   migrations, services, runtime PostgreSQL, release, promotion, and UAT remain false.
+- `make production-identity-storage-pis-003-sd-pg-001-environment-evidence-collection-gate-check` -
+  validate the separate secret-free target-selection and signed-receipt collection boundary,
+  protected parent/runtime hashes, narrow post-review ceiling, and exact-review stop line while all
+  live target, collection, activation, driver/DSN, connection, migration, service, runtime,
+  release, promotion, and UAT authority remains false.
 - `make production-identity-storage-disposition-packet` - generate the focused architecture
   disposition packet asking whether ERG-006/ERG-007 may continue planning while production identity,
   runtime Postgres, migrations, retention enforcement, and custody claims remain blocked.
@@ -1990,6 +1995,16 @@ selects only the future external-environment evidence and one-run activation-can
 does not select a target, collect receipts, change the harness, or authorize driver/DSN use,
 connections, migrations, service/container lifecycle, runtime PostgreSQL, production identity,
 release, promotion, or UAT before exact-candidate review and a later activation gate.
+The reviewed gate is followed by the narrower collection-preparation boundary in
+[docs/codex/production-identity-storage-pis-003-sd-pg-001-environment-evidence-collection-gate.md](docs/codex/production-identity-storage-pis-003-sd-pg-001-environment-evidence-collection-gate.md),
+with its closed contract at
+[docs/codex/production-identity-storage-pis-003-sd-pg-001-environment-evidence-collection-gate.json](docs/codex/production-identity-storage-pis-003-sd-pg-001-environment-evidence-collection-gate.json).
+Validate it with
+`make production-identity-storage-pis-003-sd-pg-001-environment-evidence-collection-gate-check`.
+It names the future ignored intake root and closed secret-free evidence formats but does not create
+the root, select or provision a target, collect a receipt, inspect host credentials, consume a DSN
+or binding key, load a driver, connect, migrate, manage a service/container, prepare activation,
+release, promote, or complete UAT.
 Generate the production identity and storage disposition packet with
 `make production-identity-storage-disposition-packet`; it asks whether the current ERG-006/ERG-007
 architecture evidence is coherent enough to continue planning while keeping production identity,
