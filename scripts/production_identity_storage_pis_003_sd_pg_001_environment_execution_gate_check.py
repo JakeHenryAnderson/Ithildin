@@ -21,6 +21,8 @@ from scripts import (  # noqa: E402
     review_docs,
 )
 
+__all__ = ["harness"]
+
 implementation = (
     production_identity_storage_pis_003_sd_pg_001_connection_evidence_implementation_check
 )
