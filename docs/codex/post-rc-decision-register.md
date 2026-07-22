@@ -489,10 +489,19 @@ Current selected capability: `not selected`.
 - Current PIS-003 environment evidence collection gate:
   `production-identity-storage-pis-003-sd-pg-001-environment-evidence-collection-gate.md` prepares a
   closed, secret-free target-label and signed-receipt intake boundary. It names but does not create
-  the ignored intake root, protects the reviewed parent and runtime artifacts, and permits no live
-  target selection, receipt collection, activation preparation, credential inspection, driver or
-  DSN use, connection, migration, service/container lifecycle, runtime PostgreSQL, production
-  identity, release, promotion, or UAT before exact-candidate review.
+  the ignored intake root and protects the reviewed parent and runtime artifacts. Exact-candidate
+  review complete at `e33cca9` with zero findings; the review record is `31c5653`. No target or
+  receipt is selected or collected, and all live target selection, receipt collection, activation
+  preparation, credential inspection, driver or DSN use, connection, migration, service/container
+  lifecycle, runtime PostgreSQL, production identity, release, promotion, and UAT authority remains
+  false.
+- Current PIS-003 environment evidence collection authority record:
+  `production-identity-storage-pis-003-sd-pg-001-environment-evidence-collection-authority-record.md`
+  prepares a separate twelve-path exact-review boundary. Its candidate keeps both target selection
+  and signed secret-free receipt collection false; only its post-review ceiling contains those two
+  permissions. Activation preparation, ambient credential inspection, DSN or binding-key use,
+  driver loading, connections, migrations, PostgreSQL/service/container lifecycle, runtime
+  PostgreSQL, production identity, arbitrary host control, release, promotion, and UAT remain false.
 - Current warning language: Ithildin may discuss production identity and durable storage
   architecture, but the current runtime remains local-preview with local principal labels and SQLite.
 - Current architecture evidence:

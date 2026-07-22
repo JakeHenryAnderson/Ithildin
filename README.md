@@ -876,6 +876,11 @@ checked with `make control-mapping-readiness`.
   protected parent/runtime hashes, narrow post-review ceiling, and exact-review stop line while all
   live target, collection, activation, driver/DSN, connection, migration, service, runtime,
   release, promotion, and UAT authority remains false.
+- `make production-identity-storage-pis-003-sd-pg-001-environment-evidence-collection-authority-check`
+  - validate the separate two-permission authority-record candidate, historical parent binding,
+  protected hashes, and exact-review stop line while live target selection, receipt collection,
+  activation, credential/DSN use, connection, migration, service, runtime, release, promotion, and
+  UAT authority remains false.
 - `make production-identity-storage-disposition-packet` - generate the focused architecture
   disposition packet asking whether ERG-006/ERG-007 may continue planning while production identity,
   runtime Postgres, migrations, retention enforcement, and custody claims remain blocked.
@@ -2005,6 +2010,16 @@ It names the future ignored intake root and closed secret-free evidence formats 
 the root, select or provision a target, collect a receipt, inspect host credentials, consume a DSN
 or binding key, load a driver, connect, migrate, manage a service/container, prepare activation,
 release, promote, or complete UAT.
+The following separately reviewed authority boundary is
+[docs/codex/production-identity-storage-pis-003-sd-pg-001-environment-evidence-collection-authority-record.md](docs/codex/production-identity-storage-pis-003-sd-pg-001-environment-evidence-collection-authority-record.md),
+with its closed contract at
+[docs/codex/production-identity-storage-pis-003-sd-pg-001-environment-evidence-collection-authority.json](docs/codex/production-identity-storage-pis-003-sd-pg-001-environment-evidence-collection-authority.json).
+Validate it with
+`make production-identity-storage-pis-003-sd-pg-001-environment-evidence-collection-authority-check`.
+Its candidate keeps both collection permissions false pending exact Sol xhigh review. Its future
+ceiling contains only safe-label target selection and secret-free signed receipt collection; it
+does not authorize activation preparation or any driver, DSN, connection, migration, service,
+container, runtime, release, promotion, or UAT action.
 Generate the production identity and storage disposition packet with
 `make production-identity-storage-disposition-packet`; it asks whether the current ERG-006/ERG-007
 architecture evidence is coherent enough to continue planning while keeping production identity,

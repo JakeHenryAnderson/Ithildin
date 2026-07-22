@@ -208,6 +208,7 @@ from scripts import (
     production_identity_storage_pis_003_sd_pg_001_connection_evidence_gate_check,
     production_identity_storage_pis_003_sd_pg_001_connection_evidence_gate_internal_review_check,
     production_identity_storage_pis_003_sd_pg_001_connection_evidence_implementation_check,
+    production_identity_storage_pis_003_sd_pg_001_environment_evidence_collection_authority_check,
     production_identity_storage_pis_003_sd_pg_001_environment_evidence_collection_gate_check,
     production_identity_storage_pis_003_sd_pg_001_environment_execution_gate_check,
     production_identity_storage_pis_003_sd_pg_001_implementation_check,
@@ -11299,6 +11300,8 @@ def test_pis_003_connection_evidence_implementation_is_wired() -> None:
         "review_record_commit_is_ancestor",
         "review_record_commit_exists",
         "review_record_commit_is_ancestor",
+        "review_record_commit_exists",
+        "review_record_commit_is_ancestor",
         "candidate_inventory_exact",
         "implementation_document_hash_matches",
         "authority_contract_hash_matches",
@@ -11709,6 +11712,161 @@ def test_pis_003_environment_evidence_collection_gate_rejects_prerequisite_drift
         monkeypatch.setattr(validator, "_tool_count", lambda _path: 23)
 
     _assert_pis_003_environment_evidence_collection_gate_fails_closed(
+        validator.build_report(Path.cwd())
+    )
+
+
+def test_pis_003_environment_evidence_collection_authority_is_wired() -> None:
+    validator = (
+        production_identity_storage_pis_003_sd_pg_001_environment_evidence_collection_authority_check
+    )
+    report = validator.build_report(Path.cwd())
+    contract = json.loads(Path(validator.CONTRACT_REL).read_text(encoding="utf-8"))
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+
+    assert report["valid"] is True
+    assert report["authority_record_id"] == (
+        "PRD-PROD-IAM-STORAGE-PIS-003-SD-PG-001-"
+        "ENVIRONMENT-EVIDENCE-COLLECTION-AUTHORITY"
+    )
+    assert report["authority_outcome"] == (
+        "environment_evidence_collection_authority_record_prepared_"
+        "all_live_authority_false"
+    )
+    for field in (
+        "baseline_exists",
+        "baseline_is_ancestor",
+        "candidate_inventory_exact",
+        "authority_document_hash_matches",
+        "authority_contract_hash_matches",
+        "contract_valid",
+        "protected_hashes_match",
+        "parent_gate_valid",
+        "wiring_valid",
+    ):
+        assert report[field] is True
+    assert report["candidate_path_count"] == 12
+    assert report["target_selected"] is False
+    assert report["receipt_collection_started"] is False
+    assert report["intake_root_created"] is False
+    assert report["psycopg_driver_loaded"] is False
+    assert report["database_connection_attempted"] is False
+    assert report["online_migration_executed"] is False
+    assert report["tool_count"] == 24
+    for field, expected in validator.EXPECTED_AUTHORITY.items():
+        assert report[field] is expected
+    assert report["next_required_action"] == validator.NEXT_ACTION
+    assert validator.validate_contract(contract) == []
+    assert f"{validator.TARGET}:" in makefile
+    assert f"release-check: {validator.TARGET}" in makefile
+    assert f"make {validator.TARGET}" in readme
+    assert validator.DOC_REL in review_docs.REVIEW_DOCS
+    assert validator.TARGET in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+
+
+def test_pis_003_environment_evidence_collection_authority_contract_is_closed() -> None:
+    validator = (
+        production_identity_storage_pis_003_sd_pg_001_environment_evidence_collection_authority_check
+    )
+    source = Path(validator.CONTRACT_REL).read_text(encoding="utf-8")
+
+    contract = json.loads(source)
+    contract["authority"]["external_target_selection_allowed"] = True
+    assert any("authority is not exact" in item for item in validator.validate_contract(contract))
+
+    contract = json.loads(source)
+    contract["post_review_authority_ceiling"]["activation_candidate_preparation_allowed"] = True
+    assert any(
+        "post_review_authority_ceiling is not exact" in item
+        for item in validator.validate_contract(contract)
+    )
+
+    contract = json.loads(source)
+    contract["authority_candidate_path_inventory"].append("apps/api/src/unsafe.py")
+    assert any(
+        "authority_candidate_path_inventory is not exact" in item
+        for item in validator.validate_contract(contract)
+    )
+
+    contract = json.loads(source)
+    contract["parent_collection_gate_hashes"]["validator_sha256"] = "0" * 64
+    assert any(
+        "parent_collection_gate_hashes is not exact" in item
+        for item in validator.validate_contract(contract)
+    )
+
+
+def _assert_pis_003_environment_evidence_collection_authority_fails_closed(
+    report: dict[str, Any],
+) -> None:
+    validator = (
+        production_identity_storage_pis_003_sd_pg_001_environment_evidence_collection_authority_check
+    )
+    assert report["valid"] is False
+    assert report["authority_record_id"] == "invalid"
+    assert report["authority_outcome"] == "invalid"
+    for field, expected in validator.EXPECTED_AUTHORITY.items():
+        if expected:
+            assert report[field] is False
+    assert report["external_target_selection_allowed"] is False
+    assert report["external_environment_receipt_collection_allowed"] is False
+    assert report["activation_candidate_preparation_allowed"] is False
+    assert report["database_connections_allowed"] is False
+    assert report["migration_execution_allowed"] is False
+    assert report["runtime_postgres_allowed"] is False
+    assert report["release_allowed"] is False
+    assert report["next_required_action"] == "invalid_gate"
+
+
+@pytest.mark.parametrize("artifact", ["document", "contract"])
+def test_pis_003_environment_evidence_collection_authority_rejects_digest_drift(
+    monkeypatch: pytest.MonkeyPatch,
+    artifact: str,
+) -> None:
+    validator = (
+        production_identity_storage_pis_003_sd_pg_001_environment_evidence_collection_authority_check
+    )
+    original = validator._read_bytes
+    target = Path(
+        validator.DOC_REL if artifact == "document" else validator.CONTRACT_REL
+    ).resolve()
+
+    def mutated(path: Path) -> bytes:
+        data = original(path)
+        return data + b" " if path.resolve() == target else data
+
+    monkeypatch.setattr(validator, "_read_bytes", mutated)
+    _assert_pis_003_environment_evidence_collection_authority_fails_closed(
+        validator.build_report(Path.cwd())
+    )
+
+
+@pytest.mark.parametrize(
+    "failure_mode",
+    ["paths", "protected", "parent", "wiring", "tools"],
+)
+def test_pis_003_environment_evidence_collection_authority_rejects_prerequisite_drift(
+    monkeypatch: pytest.MonkeyPatch,
+    failure_mode: str,
+) -> None:
+    validator = (
+        production_identity_storage_pis_003_sd_pg_001_environment_evidence_collection_authority_check
+    )
+    if failure_mode == "paths":
+        monkeypatch.setattr(validator, "_candidate_paths", lambda _root: set())
+    elif failure_mode == "protected":
+        hashes = dict(validator.EXPECTED_PROTECTED_HASHES)
+        hashes["tool-manifests.lock.json"] = "0" * 64
+        monkeypatch.setattr(validator, "EXPECTED_PROTECTED_HASHES", hashes)
+    elif failure_mode == "parent":
+        monkeypatch.setattr(validator.parent_gate, "build_report", lambda _root: {"valid": False})
+    elif failure_mode == "wiring":
+        monkeypatch.setattr(validator, "_wiring_valid", lambda _root: False)
+    else:
+        monkeypatch.setattr(validator, "_tool_count", lambda _path: 23)
+
+    _assert_pis_003_environment_evidence_collection_authority_fails_closed(
         validator.build_report(Path.cwd())
     )
 
