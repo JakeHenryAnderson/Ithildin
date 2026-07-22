@@ -4,9 +4,47 @@
   "parent_gate_id": "PRD-PROD-IAM-STORAGE-PIS-003-SD-PG-001-ENVIRONMENT-EVIDENCE-COLLECTION-GATE",
   "parent_review_record_commit": "31c5653f04b1c7d20d2573cabfed2d0c677d6d4e",
   "authority_baseline_commit": "31c5653f04b1c7d20d2573cabfed2d0c677d6d4e",
-  "authority_outcome": "environment_evidence_collection_authority_record_prepared_all_live_authority_false",
-  "review_disposition": "pending_independent_exact_review_may_raise_only_external_target_selection_and_secret_free_receipt_collection",
-  "review_method": "independent_read_only_gpt_5_6_sol_xhigh_required_no_ultra",
+  "reviewed_candidate_commit": "35e3148b6573729958196ca962e36f1156c7ae25",
+  "authority_outcome": "environment_evidence_collection_authority_record_exact_review_complete_all_live_authority_false",
+  "review_disposition": "cleared_for_separate_two_permission_activation_candidate_preparation_only",
+  "review_method": "independent_read_only_gpt_5_6_sol_xhigh_no_ultra",
+  "reviewed_candidate_path_hashes": {
+    "Makefile": "73aa48c4265a073fcb7ba36b2683e710ea600a2f58fac9cff8caf014c47e019d",
+    "README.md": "2b4304b9b8e9eb49005b8a802405188b5b508255cc7b88b8dcf0c01d2cd39067",
+    "docs/codex/post-rc-decision-register.md": "ca9031e5c6753186cd119a5ce8a45a8c642b672abbe06a87f515a4e3fc4fa0dc",
+    "docs/codex/production-identity-storage-pis-003-sd-pg-001-environment-evidence-collection-authority-record.md": "92497e4b9815f3c65be677e6bca30e9007c4529ec5f78c202d9a31258307548f",
+    "docs/codex/production-identity-storage-pis-003-sd-pg-001-environment-evidence-collection-authority.json": "fa7d21680acd02a317ee7f45c3a17c586de7ab54fc1198b4d7f171d82ac694d7",
+    "docs/codex/review-docs-index.md": "bd151ef658f36938a9e97a9193474c4eb6c9c74d878d93fe160f5977c4e8d359",
+    "scripts/build_docs_site.py": "b8f77289eae2c327100c1d383e3b24af25de7feec27e5a251d3b7bfac728c476",
+    "scripts/production_identity_storage_pis_003_sd_pg_001_environment_evidence_collection_authority_check.py": "49cc8dbbaff290d76b62e7b8026509ac76c063855f8cf591d7dd264114a7161e",
+    "scripts/production_identity_storage_pis_003_sd_pg_001_environment_evidence_collection_gate_check.py": "98e021a52fe7668977ea6092cc07773abe231cabac20260239e67c75f71a090e",
+    "scripts/release_guardrails.py": "1e92599ec8f2ea27b24bac31f54551819c3abc8a7a8eb7c63ed328349ec8a2f5",
+    "scripts/review_docs.py": "196b231d942a0a9ac1e98a5be72e8a1e89fc5589f68e145949bc361f79d76ed6",
+    "tests/test_release_readiness.py": "8e88e2f076de6e9014520d0868de3054a7ac3e66afd52723df9bf7fe5e43ee6f"
+  },
+  "review_findings": {
+    "critical": 0,
+    "high": 0,
+    "medium": 0,
+    "low": 0,
+    "open": 0
+  },
+  "validation_evidence": {
+    "focused_environment_collection_tests": 19,
+    "focused_authority_review_tests": 9,
+    "docs_site_tests": 3,
+    "full_release_python_tests": 1760,
+    "full_release_ui_tests": 59,
+    "strict_mypy_source_files": 132,
+    "packet_redaction_files_scanned": 622,
+    "packet_redaction_findings": 0,
+    "full_release_check_passed": true,
+    "artifact_freshness_check_passed": true,
+    "agent_workflow_check_passed": true,
+    "exact_review_findings_zero": true,
+    "tool_count_unchanged": true,
+    "sol_ultra_used": false
+  },
   "tool_count": 24,
   "authority_candidate_path_inventory": [
     "Makefile",
@@ -103,7 +141,7 @@
   "authority": {
     "environment_evidence_collection_authority_record_prepared": true,
     "exact_candidate_source_review_required": true,
-    "exact_candidate_source_review_complete": false,
+    "exact_candidate_source_review_complete": true,
     "external_target_selection_allowed": false,
     "external_environment_receipt_collection_allowed": false,
     "activation_candidate_preparation_allowed": false,
@@ -134,5 +172,5 @@
     "uat_complete": false,
     "uat_required_now": false
   },
-  "next_required_action": "obtain_independent_read_only_gpt_5_6_sol_xhigh_exact_review_of_pis_003_sd_pg_001_environment_evidence_collection_authority_record"
+  "next_required_action": "prepare_separate_pis_003_sd_pg_001_environment_evidence_collection_authority_activation_candidate"
 }
