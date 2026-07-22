@@ -11536,12 +11536,15 @@ def test_pis_003_environment_evidence_collection_gate_is_wired() -> None:
         "PRD-PROD-IAM-STORAGE-PIS-003-SD-PG-001-ENVIRONMENT-EVIDENCE-COLLECTION-GATE"
     )
     assert report["gate_outcome"] == (
-        "environment_evidence_collection_gate_prepared_exact_review_pending_"
+        "environment_evidence_collection_gate_exact_review_complete_"
         "all_live_authority_false"
     )
     for field in (
         "baseline_exists",
         "baseline_is_ancestor",
+        "reviewed_candidate_commit_exists",
+        "reviewed_candidate_commit_is_ancestor",
+        "reviewed_candidate_path_hashes_match",
         "candidate_inventory_exact",
         "gate_document_hash_matches",
         "gate_contract_hash_matches",
@@ -11561,9 +11564,10 @@ def test_pis_003_environment_evidence_collection_gate_is_wired() -> None:
     for field, expected in validator.EXPECTED_AUTHORITY.items():
         assert report[field] is expected
     assert report["next_required_action"] == (
-        "obtain_independent_sol_xhigh_exact_candidate_review_for_pis_003_sd_pg_001_"
-        "environment_evidence_collection_gate"
+        "prepare_separate_pis_003_sd_pg_001_"
+        "environment_evidence_collection_authority_record"
     )
+    assert report["reviewed_candidate_commit"] == validator.REVIEWED_GATE_COMMIT
     assert validator.validate_contract(contract) == []
     assert f"{validator.TARGET}:" in makefile
     assert f"release-check: {validator.TARGET}" in makefile
@@ -11617,6 +11621,19 @@ def test_pis_003_environment_evidence_collection_gate_contract_is_closed() -> No
         for item in validator.validate_contract(contract)
     )
 
+    contract = json.loads(source)
+    contract["review_findings"]["low"] = 1
+    assert any(
+        "review_findings is not exact" in item for item in validator.validate_contract(contract)
+    )
+
+    contract = json.loads(source)
+    contract["validation_evidence"]["sol_ultra_used"] = True
+    assert any(
+        "validation_evidence is not exact" in item
+        for item in validator.validate_contract(contract)
+    )
+
 
 def _assert_pis_003_environment_evidence_collection_gate_fails_closed(
     report: dict[str, Any],
@@ -11665,7 +11682,7 @@ def test_pis_003_environment_evidence_collection_gate_rejects_digest_drift(
 
 @pytest.mark.parametrize(
     "failure_mode",
-    ["paths", "protected", "parent", "wiring", "tools"],
+    ["paths", "reviewed", "protected", "parent", "wiring", "tools"],
 )
 def test_pis_003_environment_evidence_collection_gate_rejects_prerequisite_drift(
     monkeypatch: pytest.MonkeyPatch,
@@ -11676,6 +11693,10 @@ def test_pis_003_environment_evidence_collection_gate_rejects_prerequisite_drift
     )
     if failure_mode == "paths":
         monkeypatch.setattr(validator, "_candidate_paths", lambda _root: set())
+    elif failure_mode == "reviewed":
+        hashes = dict(validator.EXPECTED_REVIEWED_PATH_HASHES)
+        hashes["Makefile"] = "0" * 64
+        monkeypatch.setattr(validator, "EXPECTED_REVIEWED_PATH_HASHES", hashes)
     elif failure_mode == "protected":
         hashes = dict(validator.EXPECTED_PROTECTED_HASHES)
         hashes["tool-manifests.lock.json"] = "0" * 64
