@@ -409,6 +409,7 @@ externally closed.
 - [Enterprise Next Review Ready Check](enterprise-next-review-ready-check.md)
 - [Enterprise Review Send Readiness](enterprise-review-send-readiness.md)
 - [Enterprise Current Checkpoint](enterprise-current-checkpoint.md)
+- [Enterprise Packet Readiness Reconciliation Internal Source Review](enterprise-packet-readiness-reconciliation-internal-source-review.md)
 - [Ithildin Command Center Boundary](ithildin-command-center-boundary.md)
 - [Enterprise Status Export](enterprise-status-export.md)
 - [Mission Control Enterprise Status Import Contract](mission-control-enterprise-status-import-contract.md)

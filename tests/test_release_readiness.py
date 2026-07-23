@@ -142,6 +142,7 @@ from scripts import (
     live_demo_status,
     low_implementer_delegation_packet,
     mcp_ingress_source_review_bundle,
+    mission_command_control_plane_poc_evidence_check,
     mission_control_display_decision_intake_check,
     mission_control_display_decision_record_skeleton_check,
     mission_control_display_disposition_closure_check,
@@ -3014,7 +3015,7 @@ def test_enterprise_current_checkpoint_rejects_stale_packet_prose(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setattr(
-        enterprise_current_checkpoint.mission_command_control_plane_poc_evidence_check,
+        mission_command_control_plane_poc_evidence_check,
         "build_report",
         lambda _repo_root: {"valid": True, "failures": [], "tool_count": 24},
     )
@@ -3038,6 +3039,41 @@ def test_enterprise_current_checkpoint_rejects_stale_packet_prose(
         enterprise_current_checkpoint.MCC_BLOCKED_PHRASES[0] in failure
         and "contradicts computed packet state" in failure
         for failure in report["failures"]
+    )
+
+
+def test_enterprise_packet_readiness_reconciliation_review_is_wired() -> None:
+    review_rel = (
+        "docs/codex/"
+        "enterprise-packet-readiness-reconciliation-internal-source-review.md"
+    )
+    review = Path(review_rel).read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(
+        encoding="utf-8"
+    )
+
+    for phrase in [
+        "Status: exact-candidate internal source review complete; no open findings.",
+        "Reviewed exact commit: `4bbc839dd8bfc8c324976f449a7016f4b159e231`.",
+        "Candidate baseline: `4b82f42b1062ddc6367453ec43fe7da3c22ac1a3`.",
+        "independent read-only GPT-5.6 Sol xhigh review",
+        "Sol Ultra was not used",
+        "Critical findings: `0`",
+        "High findings: `0`",
+        "Medium findings: `0`",
+        "Low findings: `0`",
+        "Current governed tool count: `24`",
+        "closure-review dispatch allowed",
+        "human UAT allowed",
+        "The next packet gate remains a separately bounded exact-candidate MCC-006",
+    ]:
+        assert phrase in review
+    assert review_rel in docs_site
+    assert review_rel in review_docs.REVIEW_DOCS
+    assert (
+        "Enterprise Packet Readiness Reconciliation Internal Source Review"
+        in review_index
     )
 
 

@@ -321,6 +321,7 @@ REVIEW_DOCS = [
     "docs/codex/enterprise-next-review-ready-check.md",
     "docs/codex/enterprise-review-send-readiness.md",
     "docs/codex/enterprise-current-checkpoint.md",
+    "docs/codex/enterprise-packet-readiness-reconciliation-internal-source-review.md",
     "docs/codex/ithildin-command-center-boundary.md",
     "docs/codex/governed-external-agent-hermes-poc-architecture.md",
     "docs/codex/governed-external-agent-hermes-poc-capability-proposal.md",
