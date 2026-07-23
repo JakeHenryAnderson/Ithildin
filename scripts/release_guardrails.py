@@ -156,9 +156,9 @@ REQUIRED_RELEASE_CHECK_FRAGMENTS = [
     "production-identity-storage-pis-003-sd-pg-001-connection-evidence-implementation-check",
     "production-identity-storage-pis-003-sd-pg-001-environment-execution-gate-check",
     "production-identity-storage-pis-003-sd-pg-001-environment-evidence-collection-gate-check",
-    # The release target switches this exact gate to the fail-closed descendant bridge; direct
-    # target invocation still reproduces the frozen 12-path validator.
-    "production-identity-storage-pis-003-sd-pg-001-environment-evidence-collection-authority-check",
+    # Descendants use a separately named fail-closed bridge; direct exact-target invocation still
+    # reproduces the frozen 12-path validator.
+    "production-identity-storage-pis-003-sd-pg-001-environment-evidence-collection-authority-descendant-check",
     "production-identity-storage-architecture-check",
     "production-identity-storage-disposition-packet-check",
     "production-identity-storage-disposition-closure-check",

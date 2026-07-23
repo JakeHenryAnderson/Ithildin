@@ -37,6 +37,10 @@ TARGET = (
     "production-identity-storage-pis-003-sd-pg-001-"
     "environment-evidence-collection-authority-check"
 )
+DESCENDANT_TARGET = (
+    "production-identity-storage-pis-003-sd-pg-001-"
+    "environment-evidence-collection-authority-descendant-check"
+)
 AUTHORITY_RECORD_ID = (
     "PRD-PROD-IAM-STORAGE-PIS-003-SD-PG-001-"
     "ENVIRONMENT-EVIDENCE-COLLECTION-AUTHORITY"
@@ -702,13 +706,15 @@ def _wiring_valid(repo_root: Path) -> bool:
     register = _read_text(repo_root / "docs/codex/post-rc-decision-register.md")
     return bool(
         f"{TARGET}:" in makefile
-        and f"release-check: {TARGET}" in makefile
+        and f"{DESCENDANT_TARGET}:" in makefile
+        and f"release-check: {DESCENDANT_TARGET}" in makefile
         and f"make {TARGET}" in readme
+        and f"make {DESCENDANT_TARGET}" in readme
         and DOC_REL in readme
         and CONTRACT_REL in readme
         and DOC_REL in review_docs.REVIEW_DOCS
         and DOC_REL in docs_site
-        and TARGET in guardrails
+        and DESCENDANT_TARGET in guardrails
         and "Environment Evidence Collection Authority Activation Review Record" in index
         and "Current PIS-003 environment evidence collection authority record" in register
         and "review complete at `e33cca9` with zero findings" in register

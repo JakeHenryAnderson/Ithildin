@@ -2019,7 +2019,8 @@ Validate it with
 `make production-identity-storage-pis-003-sd-pg-001-environment-evidence-collection-authority-check`.
 That target is exact-candidate evidence for the reviewed twelve-path authority commit; later
 descendants validate the frozen hashes and false authority ceilings through
-`make enterprise-operator-next-action`, and must not relabel the exact validator as green.
+`make production-identity-storage-pis-003-sd-pg-001-environment-evidence-collection-authority-descendant-check`,
+and must not relabel the exact validator as green.
 Its activation candidate `ec7af45` proposes only safe-label target selection and secret-free signed
 receipt collection. Independent Sol xhigh review found zero issues and is durably recorded, but
 operational collection action remains ineffective pending external operator inputs and a separate

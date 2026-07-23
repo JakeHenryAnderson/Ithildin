@@ -1033,6 +1033,7 @@ public-security-product-positioning-response-kit-check:
 .PHONY: production-identity-storage-pis-003-sd-pg-001-environment-evidence-collection-gate-check
 # The authority check validates the zero-finding activation review while collection action is false.
 .PHONY: production-identity-storage-pis-003-sd-pg-001-environment-evidence-collection-authority-check
+.PHONY: production-identity-storage-pis-003-sd-pg-001-environment-evidence-collection-authority-descendant-check
 
 production-identity-storage-architecture-decision-record-check:
 	uv run python scripts/production_identity_storage_architecture_decision_record_check.py
@@ -1093,11 +1094,10 @@ production-identity-storage-pis-003-sd-pg-001-environment-evidence-collection-ga
 	uv run --group pis3 python scripts/production_identity_storage_pis_003_sd_pg_001_environment_evidence_collection_gate_check.py
 
 production-identity-storage-pis-003-sd-pg-001-environment-evidence-collection-authority-check:
-	@if [ "$(PIS_003_AUTHORITY_DESCENDANT_CHECK)" = "1" ]; then \
-		uv run python scripts/enterprise_operator_next_action.py; \
-	else \
-		uv run --group pis3 python scripts/production_identity_storage_pis_003_sd_pg_001_environment_evidence_collection_authority_check.py; \
-	fi
+	uv run --group pis3 python scripts/production_identity_storage_pis_003_sd_pg_001_environment_evidence_collection_authority_check.py
+
+production-identity-storage-pis-003-sd-pg-001-environment-evidence-collection-authority-descendant-check:
+	uv run python scripts/enterprise_operator_next_action.py
 
 production-identity-storage-architecture-check:
 	uv run python scripts/production_identity_storage_architecture_check.py
@@ -2205,8 +2205,7 @@ release-check: production-identity-storage-pis-003-sd-pg-001-connection-evidence
 release-check: production-identity-storage-pis-003-sd-pg-001-connection-evidence-implementation-check
 release-check: production-identity-storage-pis-003-sd-pg-001-environment-execution-gate-check
 release-check: production-identity-storage-pis-003-sd-pg-001-environment-evidence-collection-gate-check
-release-check: PIS_003_AUTHORITY_DESCENDANT_CHECK=1
-release-check: production-identity-storage-pis-003-sd-pg-001-environment-evidence-collection-authority-check
+release-check: production-identity-storage-pis-003-sd-pg-001-environment-evidence-collection-authority-descendant-check
 release-check: production-identity-storage-response-dry-run
 release-check: production-identity-storage-external-review-bundle-check
 release-check: production-identity-storage-response-kit-check

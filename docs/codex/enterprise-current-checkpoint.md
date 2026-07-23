@@ -74,7 +74,7 @@ descendants it must fail only with the expected inventory mismatch; the canonica
 bridge validates every immutable binding and false authority ceiling instead:
 
 ```sh
-make enterprise-operator-next-action
+make production-identity-storage-pis-003-sd-pg-001-environment-evidence-collection-authority-descendant-check
 ```
 
 Run the authority target itself only when reproducing its exact twelve-path candidate. A nonzero

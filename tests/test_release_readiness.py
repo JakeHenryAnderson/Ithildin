@@ -9758,15 +9758,9 @@ def test_production_identity_storage_pis_003_entry_decision_is_wired() -> None:
     assert validator.validate_contract(contract) == []
     assert f"{validator.TARGET}:" in makefile
     assert f"release-check: {validator.TARGET}" in makefile
-    assert "release-check: PIS_003_AUTHORITY_DESCENDANT_CHECK=1" in makefile
-    assert "release-check: enterprise-operator-next-action" in makefile
     assert f"make {validator.TARGET}" in readme
     assert validator.DOC_REL in review_docs.REVIEW_DOCS
     assert validator.TARGET in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
-    assert (
-        "enterprise-operator-next-action"
-        in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
-    )
 
 
 def test_production_identity_storage_pis_003_entry_contract_is_closed() -> None:
@@ -11836,10 +11830,25 @@ def test_pis_003_environment_evidence_collection_authority_is_wired() -> None:
     )
     assert validator.validate_contract(contract) == []
     assert f"{validator.TARGET}:" in makefile
-    assert f"release-check: {validator.TARGET}" in makefile
+    assert f"{validator.DESCENDANT_TARGET}:" in makefile
+    assert f"release-check: {validator.TARGET}\n" not in makefile
+    assert f"release-check: {validator.DESCENDANT_TARGET}" in makefile
+    exact_recipe = makefile.partition(f"{validator.TARGET}:")[2].partition("\n\n")[0]
+    descendant_recipe = makefile.partition(f"{validator.DESCENDANT_TARGET}:")[2].partition(
+        "\n\n"
+    )[0]
+    validator_script = validator.__name__.split(".")[-1] + ".py"
+    assert validator_script in exact_recipe
+    assert "enterprise_operator_next_action.py" not in exact_recipe
+    assert "enterprise_operator_next_action.py" in descendant_recipe
+    assert validator_script not in descendant_recipe
     assert f"make {validator.TARGET}" in readme
+    assert f"make {validator.DESCENDANT_TARGET}" in readme
     assert validator.DOC_REL in review_docs.REVIEW_DOCS
-    assert validator.TARGET in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    assert validator.TARGET not in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    assert validator.DESCENDANT_TARGET in (
+        release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
 
 
 def test_pis_003_environment_evidence_collection_authority_contract_is_closed() -> None:
