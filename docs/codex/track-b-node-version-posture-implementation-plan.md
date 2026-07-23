@@ -50,4 +50,3 @@ Run focused store/API/UI tests first, then lint, typecheck, UI build/tests, deci
 Stop if implementation requires Node self-update, package transfer, service-manager or process
 control, automatic rollback, fleet rollout, runner lifecycle control, remote transport, a new
 governed tool, or a new dependency.
-

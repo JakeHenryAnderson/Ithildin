@@ -48,4 +48,3 @@ rollback only; it does not become software rollback.
 The project-owner authorization for the continuing goal starts this bounded capability sprint. It
 does not rewrite or close historical external-review findings, enterprise lanes, release approval,
 or UAT acceptance. Tests and generated evidence prove only the local-preview behavior they observe.
-

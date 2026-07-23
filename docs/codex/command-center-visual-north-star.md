@@ -75,4 +75,3 @@ Every primary destination follows this order:
 - `candidates/01-attention-dashboard.png` — exception-first summary treatment.
 - `candidates/02-mission-workbench.png` — mission lifecycle and context treatment.
 - `candidates/03-exception-queue-detail.png` — selected global template.
-

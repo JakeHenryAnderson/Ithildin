@@ -57,4 +57,3 @@ the maintenance action.
 This architecture adds no self-update endpoint, package registry, downloader, installer, command
 execution, service control, group rollout, or runner lifecycle authority. The governed tool count
 remains `24`.
-
