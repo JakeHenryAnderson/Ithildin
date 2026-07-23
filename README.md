@@ -125,6 +125,10 @@ The synthetic compliance mapping template compatibility corpus is
 and is checked with `make compliance-mapping-template-compatibility-check`; it validates only a
 closed non-regulatory template shape, safe evidence fields, unsupported/not-applicable rows, and
 false-assurance rejections while keeping all runtime and claim authority false.
+Its exact-candidate review is recorded in
+[docs/codex/compliance-mapping-template-compatibility-fixtures-internal-source-review.md](docs/codex/compliance-mapping-template-compatibility-fixtures-internal-source-review.md);
+the reviewed candidate is cleared only for the static synthetic corpus and does not authorize
+runtime mapping, a real framework claim, release, promotion, or UAT.
 The incident reconstruction guide is
 [docs/codex/incident-reconstruction-guide.md](docs/codex/incident-reconstruction-guide.md) and is
 checked with `make incident-reconstruction-check`; it explains how to reconstruct mediated actions
@@ -2144,6 +2148,9 @@ The static `CMT-001` synthetic template corpus is
 and is checked with `make compliance-mapping-template-compatibility-check`; it freezes only
 non-regulatory schema mechanics and keeps real-framework selection, runtime mapping, legal
 conclusions, compliance claims, release, promotion, and UAT blocked.
+The independent review disposition is in
+[docs/codex/compliance-mapping-template-compatibility-fixtures-internal-source-review.md](docs/codex/compliance-mapping-template-compatibility-fixtures-internal-source-review.md)
+and binds the GO result to exact candidate `62f7a50cc76f539a8f30573b1d537df8ec33a7f8`.
 Generate the compliance mapping disposition packet with
 `make compliance-mapping-disposition-packet`; it asks whether the current ERG-009 architecture
 evidence is coherent enough to continue planning while runtime compliance mapping, legal advice,

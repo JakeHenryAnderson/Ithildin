@@ -3271,7 +3271,6 @@ def test_enterprise_packet_readiness_reconciliation_review_is_wired() -> None:
     review_index = Path("docs/codex/review-docs-index.md").read_text(
         encoding="utf-8"
     )
-
     for phrase in [
         "Status: exact-candidate internal source review complete; no open findings.",
         "Reviewed exact commit: `4bbc839dd8bfc8c324976f449a7016f4b159e231`.",
@@ -34717,6 +34716,10 @@ def test_compliance_mapping_template_compatibility_is_wired() -> None:
     review_index = Path("docs/codex/review-docs-index.md").read_text(
         encoding="utf-8"
     )
+    review_record = Path(
+        "docs/codex/"
+        "compliance-mapping-template-compatibility-fixtures-internal-source-review.md"
+    ).read_text(encoding="utf-8")
     release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
 
     assert report["valid"] is True, report
@@ -34758,6 +34761,20 @@ def test_compliance_mapping_template_compatibility_is_wired() -> None:
         "Compliance Mapping Template Compatibility Fixtures"
         in review_index
     )
+    review_record_rel = (
+        "docs/codex/"
+        "compliance-mapping-template-compatibility-fixtures-internal-source-review.md"
+    )
+    assert review_record_rel in readme
+    assert review_record_rel in docs_site
+    assert review_record_rel in review_docs.REVIEW_DOCS
+    assert (
+        "Compliance Mapping Template Compatibility Fixtures Internal Source Review"
+        in review_index
+    )
+    assert "62f7a50cc76f539a8f30573b1d537df8ec33a7f8" in review_record
+    assert "| `62f7a50cc76f539a8f30573b1d537df8ec33a7f8` | `GO` | 0 | 0 | 0 | 0 |" in review_record
+    assert "`ERG-009` remains `planning_only`" in review_record
     assert "compliance-mapping-template-compatibility-check" in (
         release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
     )
