@@ -358,7 +358,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "latest_recorded_review_candidate_packet_path": review_history.get(
             "packet_relative_path"
         ),
-        "latest_recorded_review_candidate_packet_sha256": review_history.get(
+        "latest_recorded_review_candidate_release_check_sha256": review_history.get(
             "packet_release_check_sha256"
         ),
         "latest_recorded_review_candidate_packet_ready": historical_packet_record_ready,
@@ -419,8 +419,8 @@ def render_report(report: dict[str, Any]) -> str:
         f"{report['latest_recorded_review_candidate_commit']}",
         "latest_recorded_review_candidate_packet_path: "
         f"{report['latest_recorded_review_candidate_packet_path']}",
-        "latest_recorded_review_candidate_packet_sha256: "
-        f"{report['latest_recorded_review_candidate_packet_sha256']}",
+        "latest_recorded_review_candidate_release_check_sha256: "
+        f"{report['latest_recorded_review_candidate_release_check_sha256']}",
         "latest_recorded_review_candidate_packet_ready: "
         f"{str(report['latest_recorded_review_candidate_packet_ready']).lower()}",
         "latest_recorded_review_candidate_packet_local_present: "

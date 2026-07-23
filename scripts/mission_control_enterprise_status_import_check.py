@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 from pathlib import Path
 from typing import Any
@@ -75,6 +76,10 @@ REQUIRED_DOC_PHRASES = [
     "current_source",
     "latest_recorded",
     "Historical packet evidence must not be converted into current-source readiness",
+    "current_source.candidate_commit",
+    "latest_recorded.candidate_commit",
+    "release_check_sha256",
+    "not a digest of the immutable packet directory",
     "handoff artifact labels",
     "must not use it to execute work",
     "must not use it to poll Ithildin",
@@ -151,6 +156,18 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         latest_recorded = {}
     if latest_recorded.get("packet_record_ready") is not True:
         failures.append("latest recorded historical packet record is not ready")
+    current_candidate_commit = current_source.get("candidate_commit")
+    historical_candidate_commit = latest_recorded.get("candidate_commit")
+    if (
+        isinstance(current_candidate_commit, str)
+        and isinstance(historical_candidate_commit, str)
+        and re.fullmatch(r"[0-9a-f]{40}", current_candidate_commit)
+        and re.fullmatch(r"[0-9a-f]{40}", historical_candidate_commit)
+        and current_candidate_commit == historical_candidate_commit
+    ):
+        failures.append(
+            "current and historical review candidate identities are collapsed"
+        )
     if current_source.get("packet_ready") is True and (
         current_source.get("mcc_006_valid") is not True
         or current_source.get("immutable_packet_valid") is not True

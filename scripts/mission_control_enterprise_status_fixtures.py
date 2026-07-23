@@ -6,6 +6,7 @@ import argparse
 import copy
 import hashlib
 import json
+import re
 import shutil
 import sys
 from collections.abc import Callable, Mapping
@@ -468,6 +469,19 @@ def _validate_for_display_import(payload: Mapping[str, Any]) -> list[str]:
             reasons.append("latest_recorded_review_state_must_be_object")
         elif latest_recorded.get("packet_record_ready") is not True:
             reasons.append("latest_recorded_packet_record_must_be_ready")
+        if isinstance(current_source, Mapping) and isinstance(latest_recorded, Mapping):
+            current_candidate_commit = current_source.get("candidate_commit")
+            historical_candidate_commit = latest_recorded.get("candidate_commit")
+            if (
+                isinstance(current_candidate_commit, str)
+                and isinstance(historical_candidate_commit, str)
+                and re.fullmatch(r"[0-9a-f]{40}", current_candidate_commit)
+                and re.fullmatch(r"[0-9a-f]{40}", historical_candidate_commit)
+                and current_candidate_commit == historical_candidate_commit
+            ):
+                reasons.append(
+                    "current_and_historical_candidate_commits_must_differ"
+                )
         if isinstance(current_source, Mapping) and current_source.get("packet_ready") is True:
             if (
                 current_source.get("mcc_006_valid") is not True

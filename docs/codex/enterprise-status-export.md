@@ -36,7 +36,8 @@ response/closure counts, progress bands, review-lane status, generated packet pa
 enterprise review send quickstart, send package, send-session record, and blocked authority flags.
 It carries `current_source` and `latest_recorded` review-candidate state as distinct display-only
 objects. Historical packet evidence cannot set current-source readiness, closure-review dispatch,
-or human UAT to true.
+or human UAT to true. The historical `release_check_sha256` field identifies the packet-local
+`release-check.txt` transcript only; it is not a digest of the immutable packet directory.
 For the current PIS-003 external-input wait, the display export exposes an empty send set, empty
 `action_commands`, empty `next_after_send_commands`, and zero handoff-ready packets. It displays the
 reviewed authority record and contract only as handoff evidence. Mission Control does not execute

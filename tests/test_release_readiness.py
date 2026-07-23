@@ -2845,6 +2845,9 @@ def test_enterprise_current_checkpoint_is_wired() -> None:
     assert report["latest_recorded_review_candidate_commit"] == (
         "af593edddbca1b9a429a104d0894546708fac277"
     )
+    assert report["latest_recorded_review_candidate_release_check_sha256"] == (
+        "c30d6646695bf8f1e861cbe7813134747e8d36c9f70f2d9ae83188854ae63926"
+    )
     assert report["latest_recorded_review_candidate_packet_ready"] is True
     assert report["latest_recorded_review_candidate_packet_local_valid"] is (
         report["latest_recorded_review_candidate_packet_local_present"]
@@ -3522,6 +3525,9 @@ def test_enterprise_status_export_is_wired(tmp_path: Path) -> None:
     assert review_candidate_state["latest_recorded"]["candidate_commit"] == (
         "af593edddbca1b9a429a104d0894546708fac277"
     )
+    assert review_candidate_state["latest_recorded"]["release_check_sha256"] == (
+        "c30d6646695bf8f1e861cbe7813134747e8d36c9f70f2d9ae83188854ae63926"
+    )
     assert review_candidate_state["latest_recorded"]["packet_record_ready"] is True
     assert review_candidate_state["sol_ultra_user_approval_obtained"] is False
     assert review_candidate_state["closure_findings_dispositioned"] is False
@@ -3570,6 +3576,9 @@ def test_enterprise_status_export_is_wired(tmp_path: Path) -> None:
         "current_source",
         "latest_recorded",
         "Historical packet evidence cannot set current-source readiness",
+        "release_check_sha256",
+        "release-check.txt",
+        "not a digest of the immutable packet directory",
         "does not approve Mission Control runtime behavior",
         "does not approve live VM/container inspection",
         "does not approve sandbox orchestration",
@@ -3590,6 +3599,8 @@ def test_enterprise_status_export_is_wired(tmp_path: Path) -> None:
         "environment-evidence-collection-authority.json",
         "## Review Candidate State",
         "Latest durably recorded historical candidate",
+        "release_check_sha256: "
+        "`c30d6646695bf8f1e861cbe7813134747e8d36c9f70f2d9ae83188854ae63926`",
         "closure_review_dispatch_allowed: `false`",
         "human_uat_allowed: `false`",
         "## Packet Paths",
@@ -3610,6 +3621,8 @@ def test_enterprise_status_export_is_wired(tmp_path: Path) -> None:
         '"review_candidate_state": {',
         '"current_source": {',
         '"latest_recorded": {',
+        '"release_check_sha256": '
+        '"c30d6646695bf8f1e861cbe7813134747e8d36c9f70f2d9ae83188854ae63926"',
         '"closure_review_dispatch_allowed": false',
         '"human_uat_allowed": false',
         '"label": "production_identity_storage_pis_003_environment_evidence_authority_record"',
@@ -3721,6 +3734,10 @@ def test_mission_control_enterprise_status_import_contract_is_wired() -> None:
         "current_source",
         "latest_recorded",
         "Historical packet evidence must not be converted into current-source readiness",
+        "current_source.candidate_commit",
+        "latest_recorded.candidate_commit",
+        "release_check_sha256",
+        "not a digest of the immutable packet directory",
         "next_after_send_commands",
         "send package/send-session record",
         "must not treat the package as review evidence",
@@ -3748,6 +3765,36 @@ def test_mission_control_enterprise_status_import_contract_is_wired() -> None:
         release_guardrails.REQUIRED_REVIEW_CANDIDATE_STEPS
     )
     assert "mission-control-enterprise-status-import-check" in export_doc
+
+
+def test_mission_control_enterprise_status_import_rejects_collapsed_candidate_identities(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    export = json.loads(
+        json.dumps(enterprise_status_export.build_report(Path.cwd()))
+    )
+    review_candidate_state = export["review_candidate_state"]
+    review_candidate_state["current_source"]["candidate_commit"] = (
+        review_candidate_state["latest_recorded"]["candidate_commit"]
+    )
+    monkeypatch.setattr(
+        enterprise_status_export,
+        "build_report",
+        lambda _repo_root: export,
+    )
+    cached_defaults = (
+        mission_control_enterprise_status_import_check.build_report.__kwdefaults__
+    )
+    assert cached_defaults is not None
+    original_build_report = cached_defaults["_original"]
+
+    report = original_build_report(Path.cwd())
+
+    assert report["valid"] is False
+    assert (
+        "current and historical review candidate identities are collapsed"
+        in report["failures"]
+    )
 
 
 def test_mission_control_enterprise_status_fixtures_are_wired(tmp_path: Path) -> None:
@@ -3897,6 +3944,17 @@ def test_mission_control_enterprise_status_fixtures_are_wired(tmp_path: Path) ->
     assert "current_source_packet_ready_requires_current_evidence" in (
         mission_control_enterprise_status_fixtures._validate_for_display_import(
             collapsed_history
+        )
+    )
+    collapsed_candidate_identity = json.loads(json.dumps(valid_payload))
+    collapsed_candidate_identity["review_candidate_state"]["current_source"][
+        "candidate_commit"
+    ] = collapsed_candidate_identity["review_candidate_state"]["latest_recorded"][
+        "candidate_commit"
+    ]
+    assert "current_and_historical_candidate_commits_must_differ" in (
+        mission_control_enterprise_status_fixtures._validate_for_display_import(
+            collapsed_candidate_identity
         )
     )
     actionable_history = json.loads(json.dumps(valid_payload))

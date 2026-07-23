@@ -43,6 +43,8 @@ REQUIRED_DOC_PHRASES = [
     "safe action commands",
     "send package",
     "send-session record",
+    "release_check_sha256",
+    "not a digest of the immutable packet directory",
     "does not approve Mission Control runtime behavior",
     "does not approve live VM/container inspection",
     "does not approve sandbox orchestration",
@@ -230,8 +232,8 @@ def build_report(repo_root: Path) -> dict[str, Any]:
             "immutable_packet_path": current.get(
                 "latest_recorded_review_candidate_packet_path"
             ),
-            "immutable_packet_sha256": current.get(
-                "latest_recorded_review_candidate_packet_sha256"
+            "release_check_sha256": current.get(
+                "latest_recorded_review_candidate_release_check_sha256"
             ),
             "packet_record_ready": current.get(
                 "latest_recorded_review_candidate_packet_ready"
@@ -451,7 +453,7 @@ Latest durably recorded historical candidate:
 
 - candidate_commit: `{latest_recorded["candidate_commit"]}`
 - immutable_packet_path: `{latest_recorded["immutable_packet_path"]}`
-- immutable_packet_sha256: `{latest_recorded["immutable_packet_sha256"]}`
+- release_check_sha256: `{latest_recorded["release_check_sha256"]}`
 - packet_record_ready: `{str(latest_recorded["packet_record_ready"]).lower()}`
 - packet_locally_present: `{str(latest_recorded["packet_locally_present"]).lower()}`
 - packet_locally_valid: `{str(latest_recorded["packet_locally_valid"]).lower()}`

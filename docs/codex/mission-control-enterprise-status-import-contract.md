@@ -58,6 +58,11 @@ runtime payloads.
 Historical packet evidence must not be converted into current-source readiness. A ready
 `latest_recorded` packet record cannot set `current_source.packet_ready`, closure-review dispatch,
 finding closure, Sol Ultra approval, or human UAT to true.
+The importer must reject a payload whose full `current_source.candidate_commit` and
+`latest_recorded.candidate_commit` identities are equal; collapsing those identities would falsely
+present historical review evidence as current-source evidence. The historical
+`latest_recorded.release_check_sha256` value is the digest of packet-local `release-check.txt`,
+not a digest of the immutable packet directory.
 
 The `handoff_artifacts` field is display-only. Mission Control may render labels and relative
 paths as copyable text, but must not execute commands, open host paths with elevated authority,
