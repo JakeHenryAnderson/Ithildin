@@ -467,6 +467,40 @@ def _validate_for_display_import(payload: Mapping[str, Any]) -> list[str]:
         reasons.append("action_commands_must_be_safe_list")
     elif any(command not in ALLOWED_ACTION_COMMANDS for command in action_commands):
         reasons.append("unsupported_action_command")
+    if external_input_wait and action_commands != []:
+        reasons.append("external_input_wait_action_commands_must_be_empty")
+
+    next_after_send_commands = payload.get("next_after_send_commands")
+    if not isinstance(next_after_send_commands, list):
+        reasons.append("next_after_send_commands_must_be_safe_list")
+    elif any(
+        command not in ALLOWED_ACTION_COMMANDS for command in next_after_send_commands
+    ):
+        reasons.append("unsupported_next_after_send_command")
+    if external_input_wait and next_after_send_commands != []:
+        reasons.append("external_input_wait_next_after_send_commands_must_be_empty")
+
+    recommended_send_set = payload.get("recommended_send_set")
+    if not isinstance(recommended_send_set, list) or any(
+        not isinstance(gap, str) for gap in recommended_send_set
+    ):
+        reasons.append("recommended_send_set_must_be_list")
+    if external_input_wait and recommended_send_set != []:
+        reasons.append("external_input_wait_recommended_send_set_must_be_empty")
+
+    if external_input_wait and payload.get("packet_handoff_ready_count") != 0:
+        reasons.append("external_input_wait_packet_handoff_ready_count_must_be_zero")
+    review_lanes = payload.get("review_lanes")
+    if external_input_wait:
+        if not isinstance(review_lanes, list):
+            reasons.append("external_input_wait_review_lanes_must_be_non_actionable")
+        elif any(
+            not isinstance(lane, Mapping)
+            or lane.get("packet_handoff_ready") is not False
+            or lane.get("recommended_to_send_now") is not False
+            for lane in review_lanes
+        ):
+            reasons.append("external_input_wait_review_lanes_must_be_non_actionable")
     handoff_artifacts = payload.get("handoff_artifacts")
     if not isinstance(handoff_artifacts, list) or not handoff_artifacts:
         reasons.append("handoff_artifacts_must_be_safe_list")

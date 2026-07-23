@@ -155,6 +155,36 @@ PIS_003_EXTERNAL_INPUT_ACTION = (
 PIS_003_DESCENDANT_INVENTORY_FAILURE = (
     "PIS-003 environment evidence collection authority inventory is not exact"
 )
+PIS_003_REQUIRED_FALSE_AUTHORITY_FIELDS = (
+    "operational_collection_action_effective",
+    "activation_candidate_preparation_allowed",
+    "host_credential_inspection_allowed",
+    "test_harness_execution_allowed",
+    "driver_load_allowed",
+    "external_dsn_consumption_allowed",
+    "target_binding_key_consumption_allowed",
+    "database_connections_allowed",
+    "migration_execution_allowed",
+    "postgres_service_allowed",
+    "container_lifecycle_allowed",
+    "runtime_behavior_changes_allowed",
+    "public_api_changes_allowed",
+    "current_sqlite_schema_changes_allowed",
+    "audit_ordering_changes_allowed",
+    "runtime_postgres_allowed",
+    "production_identity_allowed",
+    "enterprise_rbac_allowed",
+    "remote_admin_allowed",
+    "backup_restore_runtime_allowed",
+    "retention_enforcement_allowed",
+    "arbitrary_host_control_allowed",
+    "new_power_classes_allowed",
+    "public_security_product_positioning_allowed",
+    "release_allowed",
+    "production_promotion_allowed",
+    "uat_complete",
+    "uat_required_now",
+)
 
 PIS_ARCHITECTURE_REVIEW_COMMANDS = [
     "make production-identity-storage-architecture-check",
@@ -1113,6 +1143,10 @@ def _pis_003_collection_activation_review_recorded(repo_root: Path) -> bool:
         and report.get("parent_gate_valid") is True
         and report.get("wiring_valid") is True
         and all(report.get(field) is False for field in required_false_fields)
+        and all(
+            report.get(field) is False
+            for field in PIS_003_REQUIRED_FALSE_AUTHORITY_FIELDS
+        )
     )
 
 

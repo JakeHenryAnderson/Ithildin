@@ -3287,7 +3287,10 @@ def test_mission_control_enterprise_status_fixtures_are_wired(tmp_path: Path) ->
     negative_reasons = {
         case["id"]: case["expected_reasons"] for case in summary["negative_cases"]
     }
-    assert negative_reasons["MC-STATUS-NEG-011"] == ["unsupported_action_command"]
+    assert negative_reasons["MC-STATUS-NEG-011"] == [
+        "external_input_wait_action_commands_must_be_empty",
+        "unsupported_action_command",
+    ]
     assert negative_reasons["MC-STATUS-NEG-012"] == ["unsafe_handoff_artifact"]
     assert valid_payload["artifact_type"] == "ithildin.enterprise_status_export"
     assert valid_payload["status"] == "display_only"
@@ -3295,12 +3298,58 @@ def test_mission_control_enterprise_status_fixtures_are_wired(tmp_path: Path) ->
         enterprise_operator_next_action.PIS_003_EXTERNAL_INPUT_ACTION
     )
     assert valid_payload["action_commands"] == []
+    assert valid_payload["next_after_send_commands"] == []
+    assert valid_payload["recommended_send_set"] == []
+    assert valid_payload["packet_handoff_ready_count"] == 0
+    assert all(
+        lane["packet_handoff_ready"] is False
+        and lane["recommended_to_send_now"] is False
+        for lane in valid_payload["review_lanes"]
+    )
     non_wait_payload = dict(valid_payload)
     non_wait_payload["next_action"] = "different_action"
     assert (
         "action_commands_must_be_safe_list"
         in mission_control_enterprise_status_fixtures._validate_for_display_import(
             non_wait_payload
+        )
+    )
+    external_wait_tampers = [
+        (
+            "action_commands",
+            ["make release-check"],
+            "external_input_wait_action_commands_must_be_empty",
+        ),
+        (
+            "next_after_send_commands",
+            ["rm -rf /tmp/example"],
+            "external_input_wait_next_after_send_commands_must_be_empty",
+        ),
+        (
+            "recommended_send_set",
+            ["ERG-006", "ERG-007"],
+            "external_input_wait_recommended_send_set_must_be_empty",
+        ),
+        (
+            "packet_handoff_ready_count",
+            1,
+            "external_input_wait_packet_handoff_ready_count_must_be_zero",
+        ),
+    ]
+    for key, value, expected_reason in external_wait_tampers:
+        tampered = json.loads(json.dumps(valid_payload))
+        tampered[key] = value
+        assert expected_reason in (
+            mission_control_enterprise_status_fixtures._validate_for_display_import(
+                tampered
+            )
+        )
+    actionable_lane = json.loads(json.dumps(valid_payload))
+    actionable_lane["review_lanes"][0]["packet_handoff_ready"] = True
+    actionable_lane["review_lanes"][0]["recommended_to_send_now"] = True
+    assert "external_input_wait_review_lanes_must_be_non_actionable" in (
+        mission_control_enterprise_status_fixtures._validate_for_display_import(
+            actionable_lane
         )
     )
     assert valid_payload["mission_control_runtime_allowed"] is False
@@ -6697,6 +6746,30 @@ def test_enterprise_operator_next_action_rejects_authority_ceiling_drift(
     assert report["next_after_send_commands"] == []
     assert report["recommended_send_set"] == []
     assert report["recommended_next_enterprise_review"] == "blocked"
+
+
+def test_enterprise_operator_next_action_rejects_each_false_authority_ceiling(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    authority = (
+        production_identity_storage_pis_003_sd_pg_001_environment_evidence_collection_authority_check
+    )
+    baseline = authority.build_report(Path.cwd())
+    for field in enterprise_operator_next_action.PIS_003_REQUIRED_FALSE_AUTHORITY_FIELDS:
+        tampered = dict(baseline)
+        tampered["failures"] = [
+            enterprise_operator_next_action.PIS_003_DESCENDANT_INVENTORY_FAILURE
+        ]
+        tampered["valid"] = False
+        tampered[field] = True
+        monkeypatch.setattr(authority, "build_report", lambda _root, value=tampered: value)
+
+        assert (
+            enterprise_operator_next_action._pis_003_collection_activation_review_recorded(
+                Path.cwd()
+            )
+            is False
+        ), field
 
 
 def test_enterprise_operator_next_action_erg005_disposition_marker_fails_closed(

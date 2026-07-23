@@ -70,8 +70,11 @@ The negative fixtures must be rejected or quarantined:
 - unsafe handoff artifact paths outside ignored review artifact roots.
 
 The current valid fixture has an empty `action_commands` list because it represents the exact
-PIS-003 external-input wait. Empty commands are rejected for any other next action. Historical
-nonempty fixtures may display only these checked action commands:
+PIS-003 external-input wait. In that state, `next_after_send_commands` and
+`recommended_send_set` must also be empty, `packet_handoff_ready_count` must be zero, and every
+review lane must keep both `packet_handoff_ready` and `recommended_to_send_now` false. Any
+cross-field contradiction is rejected. Empty action commands are rejected for any other next
+action. Historical nonempty fixtures may display only these checked action commands:
 
 - `make release-check`;
 - `make review-candidate`;

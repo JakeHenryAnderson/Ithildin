@@ -141,8 +141,9 @@ the current route after the recorded dispositions. In that fallback state, the o
 
 ## If Responses Arrive
 
-The current PIS-003 entry-decision preparation route does not require a new reviewer response. If a contradictory or
-new response later arrives for the historical `ERG-006`/`ERG-007` architecture-review route,
+The current PIS-003 external-input wait route does not require a new reviewer response. If a
+contradictory or new response later arrives for the historical `ERG-006`/`ERG-007`
+architecture-review route,
 preserve the production identity/storage response kit, paste the response only into that lane's
 raw-response file, and run the lane-specific dry-run before any committed triage:
 
@@ -163,7 +164,7 @@ make enterprise-response-intake-refresh
 
 Then follow the lane-specific response kit, dry-run, closure gate, response-application record, and
 playbook. This is contradiction handling for historical review evidence, not the active PIS-003
-entry-decision preparation route.
+external-input wait route.
 
 Historical fallback lanes remain available only when the operator next-action command reports an
 earlier route:

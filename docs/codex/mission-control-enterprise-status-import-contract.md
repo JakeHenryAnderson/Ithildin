@@ -62,6 +62,12 @@ The `action_commands` and `next_after_send_commands` fields are display-only cop
 human operator. Mission Control must not convert either field into executable controls, background
 jobs, polling behavior, reviewer-response normalization, or lane-closure authority.
 
+For the exact PIS-003 external-input wait action, the importer must also require empty
+`action_commands`, `next_after_send_commands`, and `recommended_send_set`; a zero
+`packet_handoff_ready_count`; and false `packet_handoff_ready` and `recommended_to_send_now` values
+for every review lane. A payload that mixes the wait action with actionable send or handoff state
+must be rejected rather than displayed as a partially trusted status.
+
 The `packet_paths.enterprise_review_send_package` and
 `packet_paths.enterprise_review_send_session_record` fields are display-only pointers. Mission
 Control may show them as operator guidance, but must not treat the package as review evidence or the
