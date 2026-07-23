@@ -1660,11 +1660,14 @@ def test_v1_rc_roadmap_is_wired(tmp_path: Path) -> None:
     assert "compose_demo_ready" in rendered_trial_record
     assert "docker_daemon_status" in rendered_trial_record
     assert operator_trial_record_report["enterprise_review_state"]["next_action"] == (
-        "prepare_pis_003_entry_decision_record"
+        enterprise_operator_next_action.PIS_003_EXTERNAL_INPUT_ACTION
     )
     assert operator_trial_record_report["enterprise_review_state"][
         "recommended_send_set"
-    ] == ["ERG-006", "ERG-007"]
+    ] == []
+    assert operator_trial_record_report["enterprise_review_state"][
+        "recommended_next_enterprise_review"
+    ] == "external_operator_input_required"
     assert (
         operator_trial_record_report["enterprise_review_state"]["candidate_response_count"]
         == 0
@@ -11773,12 +11776,17 @@ def test_pis_003_environment_evidence_collection_authority_is_wired() -> None:
     makefile = Path("Makefile").read_text(encoding="utf-8")
     readme = Path("README.md").read_text(encoding="utf-8")
 
-    assert report["valid"] is True
-    assert report["authority_record_id"] == (
+    assert report["valid"] is False
+    assert report["failures"] == [
+        enterprise_operator_next_action.PIS_003_DESCENDANT_INVENTORY_FAILURE
+    ]
+    assert report["authority_record_id"] == "invalid"
+    assert report["authority_outcome"] == "invalid"
+    assert contract["authority_record_id"] == (
         "PRD-PROD-IAM-STORAGE-PIS-003-SD-PG-001-"
         "ENVIRONMENT-EVIDENCE-COLLECTION-AUTHORITY"
     )
-    assert report["authority_outcome"] == (
+    assert contract["authority_outcome"] == (
         "two_permission_activation_candidate_exact_review_complete_zero_findings_no_actions"
     )
     for field in (
@@ -11790,7 +11798,6 @@ def test_pis_003_environment_evidence_collection_authority_is_wired() -> None:
         "activation_reviewed_candidate_commit_exists",
         "activation_reviewed_candidate_commit_is_ancestor",
         "activation_reviewed_candidate_path_hashes_match",
-        "candidate_inventory_exact",
         "authority_document_hash_matches",
         "authority_contract_hash_matches",
         "contract_valid",
@@ -11799,21 +11806,24 @@ def test_pis_003_environment_evidence_collection_authority_is_wired() -> None:
         "wiring_valid",
     ):
         assert report[field] is True
-    assert report["candidate_path_count"] == 12
+    assert report["candidate_inventory_exact"] is False
+    assert report["candidate_path_count"] > 12
     assert report["target_selected"] is False
     assert report["receipt_collection_started"] is False
     assert report["intake_root_created"] is False
     assert report["psycopg_driver_loaded"] is False
     assert report["database_connection_attempted"] is False
     assert report["online_migration_executed"] is False
-    assert report["external_target_selection_allowed"] is True
-    assert report["external_environment_receipt_collection_allowed"] is True
+    assert report["external_target_selection_allowed"] is False
+    assert report["external_environment_receipt_collection_allowed"] is False
     assert report["operational_collection_action_effective"] is False
-    assert report["exact_candidate_source_review_complete"] is True
+    assert report["exact_candidate_source_review_complete"] is False
     assert report["tool_count"] == 24
-    for field, expected in validator.EXPECTED_AUTHORITY.items():
-        assert report[field] is expected
-    assert report["next_required_action"] == validator.NEXT_ACTION
+    for field in validator.EXPECTED_AUTHORITY:
+        assert report[field] is False
+    assert contract["authority"] == validator.EXPECTED_AUTHORITY
+    assert contract["next_required_action"] == validator.NEXT_ACTION
+    assert report["next_required_action"] == "invalid_gate"
     assert report["reviewed_candidate_commit"] == validator.REVIEWED_AUTHORITY_COMMIT
     assert report["activation_reviewed_candidate_commit"] == (
         validator.REVIEWED_ACTIVATION_COMMIT
