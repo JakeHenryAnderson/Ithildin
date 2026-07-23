@@ -22,9 +22,7 @@ from scripts import (
     review_docs,
     v1_progress_assessment,
 )
-from scripts.review_candidate_packet_validation import (
-    immutable_packet_valid as _immutable_packet_valid,
-)
+from scripts.review_candidate_packet_validation import immutable_packet_valid
 
 ROOT = Path(__file__).resolve().parents[1]
 DOC_REL = "docs/codex/enterprise-current-checkpoint.md"
@@ -459,6 +457,12 @@ def _read(path: Path) -> str:
         return path.read_text(encoding="utf-8")
     except FileNotFoundError:
         return ""
+
+
+def _immutable_packet_valid(packet_path: Path, candidate_commit: str) -> bool:
+    """Retain the checkpoint-local validator name for existing callers and tests."""
+
+    return immutable_packet_valid(packet_path, candidate_commit)
 
 
 if __name__ == "__main__":
