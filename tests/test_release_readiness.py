@@ -2711,10 +2711,8 @@ def test_enterprise_current_checkpoint_is_wired() -> None:
     )
     assert report["response_present_count"] == 0
     assert report["closure_ready_count"] == 0
-    assert report["review_candidate_prerequisite_mcc_006_valid"] is False
-    assert report["review_candidate_blocker"] == (
-        "missing_or_invalid_exact_candidate_mcc_006_live_evidence"
-    )
+    assert report["review_candidate_prerequisite_mcc_006_valid"] is True
+    assert report["review_candidate_blocker"] == "missing_or_invalid_immutable_review_packet"
     assert report["immutable_review_packet_present"] is False
     assert report["immutable_review_packet_valid"] is False
     assert report["review_candidate_packet_ready"] is False
@@ -2734,8 +2732,8 @@ def test_enterprise_current_checkpoint_is_wired() -> None:
         "Current governed tool count: `24`",
         "Current selected capability: `not selected`",
         "make enterprise-current-checkpoint",
-        "`make review-candidate` is blocked at its required MCC-006 live-evidence precondition",
-        "No valid immutable current-candidate review packet exists",
+        "The MCC-006 precondition is valid, but the immutable current-candidate review packet is "
+        "absent or invalid",
         "Command Center closure-review dispatch and `CC-PILOT-107` UAT remain blocked",
         "make mission-command-control-plane-poc-check",
         "make mission-command-control-plane-poc",
@@ -3011,7 +3009,7 @@ def test_enterprise_current_checkpoint_validates_immutable_packet(
     )
 
 
-def test_enterprise_current_checkpoint_rejects_stale_packet_prose(
+def test_enterprise_current_checkpoint_accepts_packet_blocked_prose(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setattr(
@@ -3025,21 +3023,13 @@ def test_enterprise_current_checkpoint_rejects_stale_packet_prose(
     original_build_report = cached_defaults["_original"]
     report = original_build_report(Path.cwd())
 
-    assert report["valid"] is False, report
+    assert report["valid"] is True, report
     assert report["review_candidate_prerequisite_mcc_006_valid"] is True
     assert report["immutable_review_packet_valid"] is False
     assert report["review_candidate_blocker"] == (
         "missing_or_invalid_immutable_review_packet"
     )
-    assert any(
-        enterprise_current_checkpoint.PACKET_BLOCKED_PHRASES[0] in failure
-        for failure in report["failures"]
-    )
-    assert any(
-        enterprise_current_checkpoint.MCC_BLOCKED_PHRASES[0] in failure
-        and "contradicts computed packet state" in failure
-        for failure in report["failures"]
-    )
+    assert report["failures"] == []
 
 
 def test_enterprise_packet_readiness_reconciliation_review_is_wired() -> None:

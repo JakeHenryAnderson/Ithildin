@@ -18,10 +18,8 @@ close enterprise lanes, approve runtime behavior, or approve public/security-pro
 
 ## Current Interpretation
 
-- The exact `c671d50` release transcript passed, but `make review-candidate` is blocked at its
-  required MCC-006 live-evidence precondition.
-- No valid immutable current-candidate review packet exists. The mutable release transcript is not
-  a substitute for packet-local evidence.
+- The MCC-006 precondition is valid, but the immutable current-candidate review packet is absent or
+  invalid. The failed mutable release transcript is not a substitute for packet-local evidence.
 - Command Center closure-review dispatch and `CC-PILOT-107` UAT remain blocked. Sol Ultra approval
   has not been obtained and no closure review has been dispatched.
 - The current reviewed local-preview boundary remains the governed MCP/tool gateway with 24 tools.
