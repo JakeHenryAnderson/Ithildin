@@ -40798,6 +40798,7 @@ def test_command_center_pre_uat_remediation_contract_is_wired() -> None:
     docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
     normalized_handoff = " ".join(handoff.split())
     normalized_closure = " ".join(closure.split())
+    normalized_dispatch_record = " ".join(dispatch_record.split())
     normalized_dispatch_review = " ".join(dispatch_review.split())
 
     for path in [
@@ -40848,15 +40849,17 @@ def test_command_center_pre_uat_remediation_contract_is_wired() -> None:
     ]:
         assert phrase in normalized_closure
     for phrase in [
-        "closure-review dispatch not prepared",
-        "mission-command-control-plane-poc-check",
-        "No immutable packet was created",
+        "closure-review dispatch not authorized",
+        "af593edddbca1b9a429a104d0894546708fac277",
+        "ithildin-v0.2-review-packet-af593edddbca/release-check.txt",
+        "c30d6646695bf8f1e861cbe7813134747e8d36c9f70f2d9ae83188854ae63926",
+        "The packet is now a valid reviewer locator",
         "Sol Ultra user approval has not been obtained",
         "`closure_review_dispatch_allowed`",
         "`human_uat_allowed`",
         "must still wait for the user's prior approval to use Sol Ultra",
     ]:
-        assert phrase in dispatch_record
+        assert phrase in normalized_dispatch_record
     for phrase in [
         "approved_as_durable_non_dispatch_record_only",
         "a9056788010f96c94833d35b1d5623c744a2b923",
