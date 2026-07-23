@@ -168,6 +168,7 @@ REQUIRED_RELEASE_CHECK_FRAGMENTS = [
     "production-identity-storage-response-kit-check",
     "production-identity-storage-external-response-intake-check",
     "siem-export-adapter-architecture-check",
+    "siem-export-adapter-compatibility-check",
     "siem-export-adapter-disposition-packet-check",
     "siem-export-adapter-disposition-closure-check",
     "siem-export-adapter-response-dry-run",

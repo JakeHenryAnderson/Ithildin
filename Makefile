@@ -1136,6 +1136,10 @@ production-identity-storage-external-review-bundle-check:
 siem-export-adapter-architecture-check:
 	uv run python scripts/siem_export_adapter_architecture_check.py
 
+.PHONY: siem-export-adapter-compatibility-check
+siem-export-adapter-compatibility-check:
+	uv run python scripts/siem_export_adapter_compatibility_check.py
+
 siem-export-adapter-disposition-packet:
 	uv run python scripts/siem_export_adapter_disposition_packet.py
 
@@ -2217,6 +2221,7 @@ release-check: production-identity-storage-external-review-bundle-check
 release-check: production-identity-storage-response-kit-check
 
 release-check: siem-export-adapter-disposition-closure-check
+release-check: siem-export-adapter-compatibility-check
 release-check: siem-export-adapter-response-dry-run
 release-check: siem-export-adapter-external-review-bundle-check
 release-check: siem-export-adapter-response-kit-check

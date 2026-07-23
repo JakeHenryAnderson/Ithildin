@@ -1,0 +1,124 @@
+{
+  "base_bundle": "tests/fixtures/siem_export_adapter/valid-bundle-v1.json",
+  "cases": [
+    {
+      "expected_accept": true,
+      "expected_reasons": [],
+      "id": "SEA-COMP-001",
+      "label": "valid_v1",
+      "mutation": "none"
+    },
+    {
+      "expected_accept": false,
+      "expected_reasons": [
+        "duplicate_json_member"
+      ],
+      "id": "SEA-COMP-002",
+      "label": "duplicate_json_member",
+      "mutation": "duplicate_json_member"
+    },
+    {
+      "expected_accept": false,
+      "expected_reasons": [
+        "unknown_bundle_field"
+      ],
+      "id": "SEA-COMP-003",
+      "label": "unknown_bundle_field",
+      "mutation": "unknown_bundle_field"
+    },
+    {
+      "expected_accept": false,
+      "expected_reasons": [
+        "unsupported_manifest_schema"
+      ],
+      "id": "SEA-COMP-004",
+      "label": "unsupported_manifest_schema",
+      "mutation": "unsupported_manifest_schema"
+    },
+    {
+      "expected_accept": false,
+      "expected_reasons": [
+        "forbidden_event_field"
+      ],
+      "id": "SEA-COMP-005",
+      "label": "unsafe_event_field",
+      "mutation": "unsafe_event_field"
+    },
+    {
+      "expected_accept": false,
+      "expected_reasons": [
+        "cross_activation_range"
+      ],
+      "id": "SEA-COMP-006",
+      "label": "cross_activation_range",
+      "mutation": "cross_activation_range"
+    },
+    {
+      "expected_accept": false,
+      "expected_reasons": [
+        "partial_bundle"
+      ],
+      "id": "SEA-COMP-007",
+      "label": "missing_signature",
+      "mutation": "missing_signature"
+    },
+    {
+      "expected_accept": false,
+      "expected_reasons": [
+        "signature_manifest_digest_mismatch"
+      ],
+      "id": "SEA-COMP-008",
+      "label": "signature_reference_mismatch",
+      "mutation": "signature_reference_mismatch"
+    },
+    {
+      "expected_accept": false,
+      "expected_reasons": [
+        "unsupported_event_schema"
+      ],
+      "id": "SEA-COMP-009",
+      "label": "unsupported_event_schema",
+      "mutation": "unsupported_event_schema"
+    },
+    {
+      "expected_accept": false,
+      "expected_reasons": [
+        "events_digest_mismatch"
+      ],
+      "id": "SEA-COMP-010",
+      "label": "events_digest_mismatch",
+      "mutation": "events_digest_mismatch"
+    },
+    {
+      "expected_accept": false,
+      "expected_reasons": [
+        "non_contiguous_source_sequence"
+      ],
+      "id": "SEA-COMP-011",
+      "label": "source_sequence_gap",
+      "mutation": "source_sequence_gap"
+    },
+    {
+      "expected_accept": false,
+      "expected_reasons": [
+        "non_finite_number"
+      ],
+      "id": "SEA-COMP-012",
+      "label": "non_finite_number",
+      "mutation": "non_finite_number"
+    },
+    {
+      "expected_accept": false,
+      "expected_reasons": [
+        "unknown_event_attribute"
+      ],
+      "id": "SEA-COMP-013",
+      "label": "unknown_event_attribute",
+      "mutation": "unknown_event_attribute"
+    }
+  ],
+  "corpus_type": "ithildin.siem_export_adapter.compatibility_fixtures",
+  "schema_version": "1",
+  "status": "static_planning_only",
+  "tool_count": 24
+}

@@ -1,0 +1,44 @@
+{
+  "events_ndjson": "{\"action\":\"audit.verify\",\"attributes\":{\"chain_valid\":true,\"verification_scope\":\"requested_range\"},\"category\":\"audit_verification\",\"correlation\":{\"request_id\":\"req_1111111111111111\"},\"deployment_epoch\":\"dep_1111111111111111\",\"event_id\":\"evt_1111111111111111\",\"occurred_at\":\"2026-07-23T12:00:00Z\",\"outcome\":\"success\",\"recorded_at\":\"2026-07-23T12:00:00Z\",\"redaction\":{\"categories\":[],\"mapper_version\":\"mapper-1\",\"omitted_field_count\":0,\"policy_version\":\"redaction-1\"},\"schema\":\"ithildin.security_event.v1\",\"severity\":\"info\",\"source_event_hash\":\"1111111111111111111111111111111111111111111111111111111111111111\",\"source_sequence\":41}\n",
+  "manifest": {
+    "activation_segments": {
+      "mapper": {
+        "first_sequence": 1,
+        "last_sequence": 100,
+        "version": "mapper-1"
+      },
+      "redaction": {
+        "first_sequence": 1,
+        "last_sequence": 100,
+        "version": "redaction-1"
+      }
+    },
+    "created_at": "2026-07-23T12:01:00Z",
+    "deployment_epoch": "dep_1111111111111111",
+    "event_count": 1,
+    "event_schema": "ithildin.security_event.v1",
+    "events_sha256": "9a5012f9bdeb179b5ade6271bbc1e1213e7a20d40b6bf89677dead815eda2aa8",
+    "mapper_version": "mapper-1",
+    "omission_count": 0,
+    "profile": "operator_retrieved_offline_signed_bundle",
+    "range": {
+      "first_sequence": 41,
+      "head_source_hash": "1111111111111111111111111111111111111111111111111111111111111111",
+      "last_sequence": 41,
+      "prior_source_hash": "0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    "redaction_policy_version": "redaction-1",
+    "schema": "ithildin.security_export_manifest.v1",
+    "signing_key_epoch": 1,
+    "signing_key_id": "key_1111111111111111",
+    "source_export_sha256": "2222222222222222222222222222222222222222222222222222222222222222"
+  },
+  "signature": {
+    "algorithm": "ed25519",
+    "key_epoch": 1,
+    "key_id": "key_1111111111111111",
+    "manifest_sha256": "2a5b81bc3fe3e451f63f181c42ba42da76beefb89613da6287fe8f3f8270c083",
+    "schema": "ithildin.security_export_signature.v1",
+    "signature_b64": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=="
+  }
+}

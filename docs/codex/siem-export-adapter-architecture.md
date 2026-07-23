@@ -227,6 +227,27 @@ rejection, every allowed and rejected old-reader/new-writer and new-reader/old-w
 mapper determinism, sensitive-field injection, partial ranges, replay, crash/lost-response
 re-request behavior, signing-key mismatch, and tampered manifest/event/signature combinations.
 
+### SEA-001 Offline Compatibility Corpus
+
+The static [SIEM export adapter compatibility fixtures](siem-export-adapter-compatibility-fixtures.md)
+freeze the first accepted version-1 bundle and twelve rejected compatibility cases. Run:
+
+```sh
+make siem-export-adapter-compatibility-check
+```
+
+The corpus covers duplicate members, unknown fields and major versions, forbidden event material,
+activation-segment crossings, partial bundles, signature-reference mismatch, exact event-byte
+binding, source-sequence drift, non-finite numbers, and unregistered category attributes. Negative
+variants are materialized in memory from one committed canonical bundle and produce safe reason
+labels only.
+
+This is `SEA-001` static design evidence, not an export generator, mapper implementation, signature
+verifier, destination adapter, runtime API, delivery receipt, custody claim, or authorization for
+`SEA-002`. `PRD-SIEM-EXPORT-001` remains `no_go`, `ERG-008` remains `planning_only`, and every
+runtime, delivery, credential, signing-key, queue, custody, compliance, and new-power flag remains
+false.
+
 ### Candidate Work-Package Order
 
 No item below is authorized for runtime implementation by this packet:

@@ -11,7 +11,11 @@ from typing import Any
 if __package__ in {None, ""}:
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from scripts import review_docs, siem_evidence_design_check
+from scripts import (
+    review_docs,
+    siem_evidence_design_check,
+    siem_export_adapter_compatibility_check,
+)
 
 ROOT = Path(__file__).resolve().parents[1]
 DOC = ROOT / "docs/codex/siem-export-adapter-architecture.md"
@@ -47,6 +51,9 @@ REQUIRED_PHRASES = [
     "There is no `delivered`, `accepted_by_siem`, or `in_custody` state",
     "Trust, Key Custody, And Verification",
     "Compatibility Contract",
+    "SEA-001 Offline Compatibility Corpus",
+    "siem-export-adapter-compatibility-fixtures.md",
+    "make siem-export-adapter-compatibility-check",
     "Candidate Work-Package Order",
     "`SEA-001`",
     "`SEA-005`",
@@ -141,6 +148,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     )
     release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
     evidence_design_report = siem_evidence_design_check.build_report(repo_root)
+    compatibility_report = siem_export_adapter_compatibility_check.build_report(repo_root)
 
     text = ""
     contract: dict[str, Any] = {}
@@ -242,6 +250,10 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         f"SIEM-shaped evidence design: {failure}"
         for failure in evidence_design_report["failures"]
     )
+    failures.extend(
+        f"SIEM compatibility fixtures: {failure}"
+        for failure in compatibility_report["failures"]
+    )
 
     if doc_rel not in review_docs.REVIEW_DOCS:
         failures.append("SIEM export adapter architecture doc is missing from review docs")
@@ -278,6 +290,8 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "adapter_profile": contract.get("adapter_profile"),
         "event_schema": contract.get("event_schema"),
         "ordered_work_packages": contract.get("ordered_work_packages", []),
+        "compatibility_fixture_count": compatibility_report.get("case_count"),
+        "compatibility_fixtures_valid": compatibility_report.get("valid"),
         "runtime_changes_allowed": False,
         "siem_adapter_allowed": False,
         "hosted_telemetry_allowed": False,
@@ -299,6 +313,9 @@ def render_report(report: dict[str, Any]) -> str:
         f"candidate_profile_specified: {str(report['candidate_profile_specified']).lower()}",
         f"adapter_profile: {report['adapter_profile']}",
         f"event_schema: {report['event_schema']}",
+        f"compatibility_fixture_count: {report['compatibility_fixture_count']}",
+        "compatibility_fixtures_valid: "
+        f"{str(report['compatibility_fixtures_valid']).lower()}",
         f"runtime_changes_allowed: {str(report['runtime_changes_allowed']).lower()}",
         f"siem_adapter_allowed: {str(report['siem_adapter_allowed']).lower()}",
         f"hosted_telemetry_allowed: {str(report['hosted_telemetry_allowed']).lower()}",
