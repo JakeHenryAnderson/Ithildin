@@ -42,8 +42,10 @@ package runner to resolve dependencies.
 Child processes receive a closed environment assembled by the harness. Git provenance queries use
 a system-path executable, disable system/global configuration, hooks, fsmonitor, the untracked
 cache, optional locks, terminal prompts, and non-file protocols, and exclude ambient `GIT_*`
-overrides. Gateway and focused-test children carry only a fixed system `PATH`, proxy-denial and
-Python-isolation settings, and explicit `ITHILDIN_*` settings. The Gateway:
+overrides. Clean-tree checks force discovery of all nonignored untracked files even when
+repository-local status configuration requests otherwise. Gateway and focused-test children carry
+only a fixed system `PATH`, proxy-denial and Python-isolation settings, and explicit `ITHILDIN_*`
+settings. The Gateway:
 
 - runs from the ignored evidence root, where repository `.env` input is absent;
 - forces the `sqlite` storage backend and an empty PostgreSQL DSN;

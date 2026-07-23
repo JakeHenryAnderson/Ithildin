@@ -118,6 +118,17 @@ def test_git_provenance_ignores_ambient_repository_and_config_overrides(
     )
 
 
+def test_git_status_forces_all_untracked_files_despite_local_config(tmp_path: Path) -> None:
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    poc._git_output(repo, "init")
+    poc._git_output(repo, "config", "status.showUntrackedFiles", "no")
+    (repo / "untracked-package.py").write_text("AMBIENT = True\n", encoding="utf-8")
+
+    assert poc._git_output(repo, "status", "--short") == ""
+    assert poc._git_status(repo) == "?? untracked-package.py"
+
+
 def test_gateway_startup_timeout_reaps_child(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -358,6 +369,7 @@ def test_poc_contract_and_candidate_gate_are_wired() -> None:
     assert "_DenyRedirectHandler()" in poc_source
     assert "GIT_CONFIG_NOSYSTEM" in poc_source
     assert "core.fsmonitor=false" in poc_source
+    assert '"--untracked-files=all"' in poc_source
     assert '"uvicorn"' in poc_source
     assert '"pytest"' in poc_source
     assert "sys.executable" in poc_source

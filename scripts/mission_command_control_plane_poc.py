@@ -129,7 +129,7 @@ def _require_clean_candidate() -> None:
     top_level = Path(_git_output(ROOT, "rev-parse", "--show-toplevel")).resolve()
     if top_level != ROOT:
         raise SystemExit("MCC-006 POC repository identity is not the expected checkout")
-    status = _git_output(ROOT, "status", "--short")
+    status = _git_status(ROOT)
     if status.strip():
         raise SystemExit("MCC-006 POC requires a clean exact candidate")
 
@@ -803,6 +803,10 @@ def _git_output(repo_root: Path, *arguments: str) -> str:
         text=True,
         check=True,
     ).stdout.strip()
+
+
+def _git_status(repo_root: Path) -> str:
+    return _git_output(repo_root, "status", "--short", "--untracked-files=all")
 
 
 @contextmanager

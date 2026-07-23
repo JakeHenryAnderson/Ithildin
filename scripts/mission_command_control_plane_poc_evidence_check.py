@@ -17,6 +17,7 @@ try:
         DEFAULT_EVIDENCE_ROOT,
         RUNNER_OUTPUT_SENTINEL,
         _git_output,
+        _git_status,
     )
 except ModuleNotFoundError:
     from mission_command_control_plane_poc import (  # type: ignore[import-not-found,no-redef]
@@ -24,6 +25,7 @@ except ModuleNotFoundError:
         DEFAULT_EVIDENCE_ROOT,
         RUNNER_OUTPUT_SENTINEL,
         _git_output,
+        _git_status,
     )
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -69,7 +71,7 @@ def build_report(repo_root: Path, evidence_root: Path = DEFAULT_EVIDENCE_ROOT) -
             if name not in {"database", "audit", "focused_transcript"}
         }
         current_commit = _git(repo_root, "rev-parse", "HEAD")
-        current_dirty = bool(_git(repo_root, "status", "--short"))
+        current_dirty = bool(_git_status(repo_root))
         candidate = documents["candidate"]
         node_ready = documents["node_ready"]
         response_loss = documents["response_loss"]
