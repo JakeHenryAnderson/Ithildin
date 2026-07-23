@@ -18,8 +18,12 @@ close enterprise lanes, approve runtime behavior, or approve public/security-pro
 
 ## Current Interpretation
 
-- The MCC-006 precondition is valid, but the immutable current-candidate review packet is absent or
-  invalid. The failed mutable release transcript is not a substitute for packet-local evidence.
+- The current source candidate and the latest durably reviewed historical candidate are reported
+  separately. Current-source MCC-006 and immutable-packet fields are computed at read time; they
+  are not copied into this document as a static claim.
+- The latest durable record binds exact candidate
+  `af593edddbca1b9a429a104d0894546708fac277` to its immutable packet locator and zero-finding
+  Sol xhigh record review. A historical packet record does not make that packet current for HEAD.
 - Command Center closure-review dispatch and `CC-PILOT-107` UAT remain blocked. Sol Ultra approval
   has not been obtained and no closure review has been dispatched.
 - The current reviewed local-preview boundary remains the governed MCP/tool gateway with 24 tools.
@@ -61,13 +65,15 @@ only PIS-001 threat-model, non-goal, dependency-evaluation, exact-contract, and 
 remote administration, runtime Postgres, migrations, production Node transport, or new governed
 tool powers.
 
-The local review-packet route is a separate dependency. When
-`make mission-command-control-plane-poc-check` reports missing or invalid exact-candidate evidence,
-`make review-candidate` stops before packet generation. The reproduction command,
-`make mission-command-control-plane-poc`, starts a real loopback Gateway and writes isolated ignored
-SQLite, JSONL, signing-key, and Node state. It must run only in a separately bounded live-evidence
-lane; this checkpoint does not authorize or perform it. Even valid MCC-006 evidence and an exact
-immutable packet would not authorize closure-review dispatch or human UAT.
+The local current-source review-packet route is a separate dependency. Run
+`make command-center-closure-review-history-check` to validate the immutable historical lineage
+without representing it as evidence for HEAD. When `make mission-command-control-plane-poc-check`
+reports missing or invalid exact-candidate evidence for HEAD, `make review-candidate` stops before
+packet generation. The reproduction command, `make mission-command-control-plane-poc`, starts a
+real loopback Gateway and writes isolated ignored SQLite, JSONL, signing-key, and Node state. It
+must run only in a separately bounded live-evidence lane; this checkpoint does not authorize or
+perform it. Even valid current-source MCC-006 evidence and an exact immutable packet would not
+authorize closure-review dispatch or human UAT.
 
 The durable non-dispatch evidence is:
 
@@ -76,10 +82,10 @@ docs/codex/command-center-sol-ultra-closure-review-dispatch-record.md
 docs/codex/command-center-sol-ultra-closure-review-dispatch-record-internal-source-review.md
 ```
 
-The first record binds the green exact release evidence and failed review-packet precondition. The
-second records a zero-finding independent Sol xhigh review of that non-dispatch record. Neither
-record substitutes for Sol Ultra closure review, creates an immutable candidate packet, or opens
-human UAT.
+The first record binds the green exact packet evidence. The second preserves both the historical
+blocked-record review and the zero-finding independent Sol xhigh review of the packet-ready
+non-dispatch record. Neither record substitutes for Sol Ultra closure review, makes the historical
+packet current for a later source commit, or opens human UAT.
 
 ## Recommended Next Actions
 

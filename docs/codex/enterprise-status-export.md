@@ -23,6 +23,7 @@ fixtures, artifact hashes, and safe rejection expectations.
 The export composes existing checked reports instead of creating a new source of truth:
 
 - `make enterprise-current-checkpoint`
+- `make command-center-closure-review-history-check`
 - `make enterprise-operator-next-action`
 - `make enterprise-progress-model`
 - `make enterprise-review-send-readiness`
@@ -33,6 +34,9 @@ enterprise send set, current next action, safe action commands when a state has 
 breadcrumbs under `next_after_send_commands`, display-only handoff artifact pointers,
 response/closure counts, progress bands, review-lane status, generated packet paths including the
 enterprise review send quickstart, send package, send-session record, and blocked authority flags.
+It carries `current_source` and `latest_recorded` review-candidate state as distinct display-only
+objects. Historical packet evidence cannot set current-source readiness, closure-review dispatch,
+or human UAT to true.
 For the current PIS-003 external-input wait, the display export exposes an empty send set, empty
 `action_commands`, empty `next_after_send_commands`, and zero handoff-ready packets. It displays the
 reviewed authority record and contract only as handoff evidence. Mission Control does not execute

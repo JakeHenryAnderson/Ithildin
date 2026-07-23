@@ -13,6 +13,7 @@ NODE_RELEASE_BUNDLE ?= var/node-release-artifact/node-release-$(NODE_RELEASE_VER
 .PHONY: mission-control-enterprise-status-fixtures mission-control-enterprise-status-fixtures-check
 .PHONY: mission-control-enterprise-status-acceptance-matrix-check
 .PHONY: mission-control-enterprise-status-reference-validator
+.PHONY: command-center-closure-review-history-check
 .PHONY: enterprise-current-checkpoint enterprise-progress-model enterprise-status-export enterprise-status-export-check technical-mvp-ticket-map technical-mvp-execution-board roadmap-status technical-mvp-operator-trial-readiness development-efficiency-status live-demo-environment-diagnostics
 .PHONY: dev-check capability-check evidence-check docs-check quick-check readiness-check smart-check smart-handoff-check progress-check validation-decision validation-decision-run validation-plan validation-recommendation validation-timing artifact-freshness-check status-now release-check-profile release-check-slice release-check-impact release-check-transcript-summary packet-check-recursion-guard
 .PHONY: hermes-governance-poc-plan-check mission-command-control-plane-plan-check track-b-node-decision-check track-b-node-configuration-decision-check track-b-node-governed-access-decision-check track-b-node-manual-rollback-decision-check track-b-node-configuration-trust-rotation-decision-check track-b-node-version-posture-decision-check track-b-node-identity-key-rotation-decision-check track-b-node-service-lifecycle-decision-check track-b-node-release-artifact-decision-check track-b-node-evidence-check track-b-node-configuration-evidence-check track-b-node-governed-access-evidence-check track-b-node-configuration-trust-rotation-evidence-check track-b-node-version-posture-evidence-check track-b-node-identity-key-rotation-evidence-check track-b-node-service-lifecycle-evidence-check track-b-node-release-artifact-evidence-check node-configuration-keygen node-configuration-signing-status node-service-image node-service-compose-check node-release-image node-release-artifact-keygen node-release-artifact-sign node-release-artifact-verify
@@ -714,6 +715,9 @@ enterprise-next-review-ready-check:
 
 enterprise-review-send-readiness:
 	uv run python scripts/enterprise_review_send_readiness.py
+
+command-center-closure-review-history-check:
+	uv run python scripts/command_center_closure_review_history_check.py
 
 enterprise-current-checkpoint:
 	uv run python scripts/enterprise_current_checkpoint.py
@@ -1999,6 +2003,7 @@ review-candidate:
 	$(MAKE) sandbox-vm-static-preflight-response-kit
 	$(MAKE) enterprise-next-review-handoff
 	$(MAKE) enterprise-review-send-readiness
+	$(MAKE) command-center-closure-review-history-check
 	$(MAKE) enterprise-current-checkpoint
 	$(MAKE) enterprise-dependency-ladder
 	$(MAKE) enterprise-transition-map
@@ -2169,6 +2174,7 @@ release-check: enterprise-review-send-receipt-validate
 release-check: enterprise-review-send-receipt-dry-run
 release-check: enterprise-review-send-preflight-lightweight-check
 release-check: technical-mvp-execution-board
+release-check: command-center-closure-review-history-check
 release-check: enterprise-north-star-roadmap
 release-check: enterprise-operator-next-action
 release-check: mission-control-display-response-dry-run

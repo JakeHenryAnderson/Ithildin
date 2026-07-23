@@ -46,6 +46,7 @@ A future Mission Control importer may display only these status fields:
   safe action commands, and post-send receipt/response breadcrumbs from
   `next_after_send_commands`;
 - display-only handoff artifact labels and relative artifact paths;
+- `current_source` and `latest_recorded` review-candidate state as separate display-only groups;
 - progress bands, review lane labels/statuses, packet path labels, send package/send-session record
   pointers, and packet handoff readiness;
 - blocked-authority flags and safe warning chips.
@@ -53,6 +54,10 @@ A future Mission Control importer may display only these status fields:
 The importer must not display prompts, file contents, diffs, response bodies, raw host secrets,
 tokens, private keys, environment values, raw stack traces, arbitrary JSON subtrees, or unreviewed
 runtime payloads.
+
+Historical packet evidence must not be converted into current-source readiness. A ready
+`latest_recorded` packet record cannot set `current_source.packet_ready`, closure-review dispatch,
+finding closure, Sol Ultra approval, or human UAT to true.
 
 The `handoff_artifacts` field is display-only. Mission Control may render labels and relative
 paths as copyable text, but must not execute commands, open host paths with elevated authority,

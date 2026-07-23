@@ -41,6 +41,9 @@ REQUIRED_DOC_PHRASES = [
     "make release-check",
     "make review-candidate",
     "Command Center closure-review dispatch and `CC-PILOT-107` UAT remain blocked",
+    "Current-source review readiness and durable historical review evidence are separate state "
+    "groups.",
+    "Historical packet evidence cannot satisfy the current-source gate.",
     "make enterprise-review-send-refresh",
     "make handoff-dry-run",
     "make enterprise-send-now",
@@ -61,16 +64,10 @@ REQUIRED_DOC_PHRASES = [
     "When To Ask For External Roadmap Review",
 ]
 
-MCC_BLOCKED_PHRASES = [
+FORBIDDEN_STATIC_PACKET_STATE_PHRASES = [
     "`make review-candidate` remains blocked until exact-candidate MCC-006 live evidence passes",
     "the current immutable RC review packet is not valid",
-]
-
-PACKET_BLOCKED_PHRASES = [
     "MCC-006 evidence is valid, but the current immutable RC review packet is absent or invalid",
-]
-
-PACKET_READY_PHRASES = [
     "The current immutable RC review packet is valid for the exact source candidate",
 ]
 
@@ -232,29 +229,16 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
     review_candidate_body = makefile.partition("review-candidate:")[2].partition("\n\n")[0]
 
-    mcc_poc_valid = current_checkpoint.get("review_candidate_prerequisite_mcc_006_valid") is True
-    immutable_packet_valid = current_checkpoint.get("immutable_review_packet_valid") is True
-    if not mcc_poc_valid:
-        required_packet_phrases = MCC_BLOCKED_PHRASES
-    elif not immutable_packet_valid:
-        required_packet_phrases = PACKET_BLOCKED_PHRASES
-    else:
-        required_packet_phrases = PACKET_READY_PHRASES
-
     if not doc:
         failures.append("enterprise north-star roadmap doc is missing")
     normalized_doc = " ".join(doc.split())
-    for phrase in [*REQUIRED_DOC_PHRASES, *required_packet_phrases]:
+    for phrase in REQUIRED_DOC_PHRASES:
         if phrase not in normalized_doc:
             failures.append(f"enterprise north-star roadmap doc is missing phrase: {phrase}")
-    for phrase in [
-        *MCC_BLOCKED_PHRASES,
-        *PACKET_BLOCKED_PHRASES,
-        *PACKET_READY_PHRASES,
-    ]:
-        if phrase not in required_packet_phrases and phrase in normalized_doc:
+    for phrase in FORBIDDEN_STATIC_PACKET_STATE_PHRASES:
+        if phrase in normalized_doc:
             failures.append(
-                "enterprise north-star roadmap contradicts computed packet state: "
+                "enterprise north-star roadmap contains a static current-candidate packet claim: "
                 f"{phrase}"
             )
     for doc_rel in CANONICAL_DOCS:
@@ -310,6 +294,36 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "response_present_count": response_status.get("response_present_count"),
         "closure_ready_count": response_status.get("closure_ready_count"),
         "phase_count": len(PHASE_ROWS),
+        "current_source_candidate_commit": current_checkpoint.get(
+            "current_source_candidate_commit"
+        ),
+        "current_source_mcc_006_valid": current_checkpoint.get(
+            "current_source_mcc_006_valid"
+        ),
+        "current_source_immutable_packet_present": current_checkpoint.get(
+            "current_source_immutable_packet_present"
+        ),
+        "current_source_immutable_packet_valid": current_checkpoint.get(
+            "current_source_immutable_packet_valid"
+        ),
+        "current_source_review_candidate_packet_ready": current_checkpoint.get(
+            "current_source_review_candidate_packet_ready"
+        ),
+        "latest_recorded_review_candidate_commit": current_checkpoint.get(
+            "latest_recorded_review_candidate_commit"
+        ),
+        "latest_recorded_review_candidate_packet_path": current_checkpoint.get(
+            "latest_recorded_review_candidate_packet_path"
+        ),
+        "latest_recorded_review_candidate_packet_ready": current_checkpoint.get(
+            "latest_recorded_review_candidate_packet_ready"
+        ),
+        "latest_recorded_review_candidate_packet_local_present": current_checkpoint.get(
+            "latest_recorded_review_candidate_packet_local_present"
+        ),
+        "latest_recorded_review_candidate_packet_local_valid": current_checkpoint.get(
+            "latest_recorded_review_candidate_packet_local_valid"
+        ),
         "review_candidate_prerequisite_mcc_006_valid": current_checkpoint.get(
             "review_candidate_prerequisite_mcc_006_valid"
         ),
@@ -348,6 +362,24 @@ def render_report(report: dict[str, Any]) -> str:
         f"response_present_count: {report.get('response_present_count', 'unknown')}",
         f"closure_ready_count: {report.get('closure_ready_count', 'unknown')}",
         f"phase_count: {report['phase_count']}",
+        f"current_source_candidate_commit: {report['current_source_candidate_commit']}",
+        f"current_source_mcc_006_valid: {str(report['current_source_mcc_006_valid']).lower()}",
+        "current_source_immutable_packet_present: "
+        f"{str(report['current_source_immutable_packet_present']).lower()}",
+        "current_source_immutable_packet_valid: "
+        f"{str(report['current_source_immutable_packet_valid']).lower()}",
+        "current_source_review_candidate_packet_ready: "
+        f"{str(report['current_source_review_candidate_packet_ready']).lower()}",
+        "latest_recorded_review_candidate_commit: "
+        f"{report['latest_recorded_review_candidate_commit']}",
+        "latest_recorded_review_candidate_packet_path: "
+        f"{report['latest_recorded_review_candidate_packet_path']}",
+        "latest_recorded_review_candidate_packet_ready: "
+        f"{str(report['latest_recorded_review_candidate_packet_ready']).lower()}",
+        "latest_recorded_review_candidate_packet_local_present: "
+        f"{str(report['latest_recorded_review_candidate_packet_local_present']).lower()}",
+        "latest_recorded_review_candidate_packet_local_valid: "
+        f"{str(report['latest_recorded_review_candidate_packet_local_valid']).lower()}",
         "review_candidate_prerequisite_mcc_006_valid: "
         f"{str(report['review_candidate_prerequisite_mcc_006_valid']).lower()}",
         f"review_candidate_blocker: {report.get('review_candidate_blocker') or ''}",

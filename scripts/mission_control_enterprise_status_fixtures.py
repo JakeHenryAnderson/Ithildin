@@ -42,6 +42,10 @@ BOUNDARY_FLAGS = {
     "compliance_automation_allowed": False,
     "public_security_product_positioning_allowed": False,
     "new_power_classes_allowed": False,
+    "sol_ultra_user_approval_obtained": False,
+    "closure_findings_dispositioned": False,
+    "closure_review_dispatch_allowed": False,
+    "human_uat_allowed": False,
 }
 
 FORBIDDEN_PAYLOAD_KEYS = {
@@ -451,6 +455,33 @@ def _validate_for_display_import(payload: Mapping[str, Any]) -> list[str]:
     ]:
         if payload.get(key) is not False:
             reasons.append(f"{key}_must_be_false")
+
+    review_candidate_state = payload.get("review_candidate_state")
+    if not isinstance(review_candidate_state, Mapping):
+        reasons.append("review_candidate_state_must_be_display_only_object")
+    else:
+        current_source = review_candidate_state.get("current_source")
+        latest_recorded = review_candidate_state.get("latest_recorded")
+        if not isinstance(current_source, Mapping):
+            reasons.append("current_source_review_state_must_be_object")
+        if not isinstance(latest_recorded, Mapping):
+            reasons.append("latest_recorded_review_state_must_be_object")
+        elif latest_recorded.get("packet_record_ready") is not True:
+            reasons.append("latest_recorded_packet_record_must_be_ready")
+        if isinstance(current_source, Mapping) and current_source.get("packet_ready") is True:
+            if (
+                current_source.get("mcc_006_valid") is not True
+                or current_source.get("immutable_packet_valid") is not True
+            ):
+                reasons.append("current_source_packet_ready_requires_current_evidence")
+        for key in [
+            "sol_ultra_user_approval_obtained",
+            "closure_findings_dispositioned",
+            "closure_review_dispatch_allowed",
+            "human_uat_allowed",
+        ]:
+            if review_candidate_state.get(key) is not False:
+                reasons.append(f"{key}_must_be_false")
 
     if (
         payload.get("closure_ready_count") not in {0, None}

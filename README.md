@@ -670,8 +670,12 @@ checked with `make control-mapping-readiness`.
 - `make enterprise-review-send-readiness` - summarize which enterprise external-review packets are
   mechanically ready for operator handoff while keeping implementation approval, runtime behavior,
   and lane closure blocked.
+- `make command-center-closure-review-history-check` - validate the immutable historical
+  candidate, packet locator, non-dispatch disposition, and independent source-review lineage
+  without treating them as evidence for the current source commit.
 - `make enterprise-current-checkpoint` - validate the top-level enterprise checkpoint across v1.0
-  RC status, current send set, response status, and blocked runtime boundaries.
+  RC status, current-versus-historical candidate state, response status, and blocked runtime
+  boundaries.
 - `make enterprise-status-export` - write an ignored display-only JSON/Markdown status export for
   operator dashboards and Mission Control display/import experiments without approving runtime
   behavior.
@@ -1672,9 +1676,9 @@ enterprise review lanes while keeping implementation approval, runtime behavior,
 separate.
 The enterprise current checkpoint is
 [docs/codex/enterprise-current-checkpoint.md](docs/codex/enterprise-current-checkpoint.md),
-checked with `make enterprise-current-checkpoint`; it gives the compact current operator truth:
-v1.0 RC artifacts are ready to regenerate, `ERG-003`/`ERG-002` are the send set, no normalized
-responses are present, and runtime expansion remains blocked.
+checked with `make enterprise-current-checkpoint`; it gives compact operator truth while keeping
+the current source candidate separate from the latest durably reviewed historical candidate. No
+normalized responses are present, and runtime expansion remains blocked.
 The enterprise status export is
 [docs/codex/enterprise-status-export.md](docs/codex/enterprise-status-export.md), generated with
 `make enterprise-status-export` and checked with `make enterprise-status-export-check`; it writes a

@@ -35,6 +35,7 @@ ALLOWED_IMPORT_FIELDS = [
     "closure_ready_count",
     "enterprise_gap_count",
     "progress_bands",
+    "review_candidate_state",
     "review_lanes",
     "packet_paths",
 ]
@@ -55,6 +56,10 @@ BOUNDARY_FLAGS = {
     "compliance_automation_allowed": False,
     "public_security_product_positioning_allowed": False,
     "new_power_classes_allowed": False,
+    "sol_ultra_user_approval_obtained": False,
+    "closure_findings_dispositioned": False,
+    "closure_review_dispatch_allowed": False,
+    "human_uat_allowed": False,
 }
 
 REQUIRED_DOC_PHRASES = [
@@ -67,6 +72,9 @@ REQUIRED_DOC_PHRASES = [
     "does not approve Mission Control enterprise status importer implementation",
     "Mission Control may display this artifact as non-authoritative status",
     "safe action commands",
+    "current_source",
+    "latest_recorded",
+    "Historical packet evidence must not be converted into current-source readiness",
     "handoff artifact labels",
     "must not use it to execute work",
     "must not use it to poll Ithildin",
@@ -129,6 +137,33 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         failures.append("enterprise status import expects no normalized responses yet")
     if export.get("closure_ready_count") != 0:
         failures.append("enterprise status import expects no closure-ready lanes yet")
+    review_candidate_state = export.get("review_candidate_state")
+    if not isinstance(review_candidate_state, dict):
+        failures.append("enterprise status export review_candidate_state is missing")
+        review_candidate_state = {}
+    current_source = review_candidate_state.get("current_source")
+    latest_recorded = review_candidate_state.get("latest_recorded")
+    if not isinstance(current_source, dict):
+        failures.append("current_source review-candidate state is missing")
+        current_source = {}
+    if not isinstance(latest_recorded, dict):
+        failures.append("latest_recorded review-candidate state is missing")
+        latest_recorded = {}
+    if latest_recorded.get("packet_record_ready") is not True:
+        failures.append("latest recorded historical packet record is not ready")
+    if current_source.get("packet_ready") is True and (
+        current_source.get("mcc_006_valid") is not True
+        or current_source.get("immutable_packet_valid") is not True
+    ):
+        failures.append("current-source packet readiness is not supported by current evidence")
+    for key in [
+        "sol_ultra_user_approval_obtained",
+        "closure_findings_dispositioned",
+        "closure_review_dispatch_allowed",
+        "human_uat_allowed",
+    ]:
+        if review_candidate_state.get(key) is not False:
+            failures.append(f"review-candidate state authority drifted: {key}")
 
     export_forbidden_true = [
         "runtime_changes_allowed",
@@ -197,6 +232,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         ),
         "response_present_count": export.get("response_present_count"),
         "closure_ready_count": export.get("closure_ready_count"),
+        "review_candidate_state": review_candidate_state,
         **BOUNDARY_FLAGS,
     }
 

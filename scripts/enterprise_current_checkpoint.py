@@ -3,9 +3,7 @@
 from __future__ import annotations
 
 import argparse
-import hashlib
 import json
-import re
 import subprocess
 import sys
 from pathlib import Path
@@ -15,14 +13,17 @@ if __package__ in {None, ""}:
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from scripts import (
+    command_center_closure_review_history_check,
     enterprise_operator_next_action,
     enterprise_response_status_board,
     enterprise_review_send_readiness,
     mission_command_control_plane_poc_evidence_check,
     next_capability_readiness,
-    packet_redaction_scan,
     review_docs,
     v1_progress_assessment,
+)
+from scripts.review_candidate_packet_validation import (
+    immutable_packet_valid as _immutable_packet_valid,
 )
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -53,6 +54,10 @@ REQUIRED_PHRASES = [
     "Current selected capability: `not selected`",
     "make enterprise-current-checkpoint",
     "Command Center closure-review dispatch and `CC-PILOT-107` UAT remain blocked",
+    "The current source candidate and the latest durably reviewed historical candidate are "
+    "reported separately",
+    "A historical packet record does not make that packet current for HEAD",
+    command_center_closure_review_history_check.TARGET,
     "Capability expansion remains blocked",
     "Runtime changes remain blocked",
     "Public/security-product positioning remains blocked",
@@ -68,17 +73,11 @@ REQUIRED_PHRASES = [
     "What This Checkpoint Does Not Approve",
 ]
 
-MCC_BLOCKED_PHRASES = [
+FORBIDDEN_STATIC_PACKET_STATE_PHRASES = [
     "`make review-candidate` is blocked at its required MCC-006 live-evidence precondition",
     "No valid immutable current-candidate review packet exists",
-]
-
-PACKET_BLOCKED_PHRASES = [
     "The MCC-006 precondition is valid, but the immutable current-candidate review packet is "
     "absent or invalid",
-]
-
-PACKET_READY_PHRASES = [
     "The current immutable review packet is valid for the exact source candidate",
 ]
 
@@ -145,6 +144,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     response_status = enterprise_response_status_board.build_report(repo_root)
     capability = next_capability_readiness.build_report(repo_root)
     mcc_poc = mission_command_control_plane_poc_evidence_check.build_report(repo_root)
+    review_history = command_center_closure_review_history_check.build_report(repo_root)
     current_commit = subprocess.run(
         ["git", "rev-parse", "HEAD"],
         cwd=repo_root,
@@ -168,13 +168,15 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         review_candidate_blocker: str | None = (
             "missing_or_invalid_exact_candidate_mcc_006_live_evidence"
         )
-        required_packet_phrases = MCC_BLOCKED_PHRASES
     elif not immutable_packet_valid:
         review_candidate_blocker = "missing_or_invalid_immutable_review_packet"
-        required_packet_phrases = PACKET_BLOCKED_PHRASES
     else:
         review_candidate_blocker = None
-        required_packet_phrases = PACKET_READY_PHRASES
+
+    historical_candidate_commit = str(review_history.get("candidate_commit") or "")
+    historical_packet_local_present = review_history.get("packet_locally_present") is True
+    historical_packet_local_valid = review_history.get("packet_locally_valid") is True
+    historical_packet_record_ready = review_history.get("valid") is True
 
     failures.extend(f"v1-progress-assessment: {failure}" for failure in progress["failures"])
     if not pis_mode:
@@ -190,6 +192,10 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     failures.extend(
         f"enterprise-operator-next-action: {failure}"
         for failure in operator_next_action["failures"]
+    )
+    failures.extend(
+        f"command-center-closure-review-history: {failure}"
+        for failure in review_history["failures"]
     )
 
     doc_path = repo_root / DOC_REL
@@ -217,6 +223,8 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         failures.append(
             "current immutable review packet exists without valid exact-candidate MCC-006 evidence"
         )
+    if historical_packet_local_present and not historical_packet_local_valid:
+        failures.append("recorded historical review packet is locally present but invalid")
     next_action = operator_next_action.get("next_action")
     post_disposition_mode = next_action == POST_DISPOSITION_ACTION
     descriptor_only_mode = next_action == DESCRIPTOR_ONLY_PLANNING_ACTION
@@ -279,17 +287,13 @@ def build_report(repo_root: Path) -> dict[str, Any]:
             failures.append(f"response-status boundary flag drifted: {key}")
 
     normalized_doc = " ".join(doc.split())
-    for phrase in [*REQUIRED_PHRASES, *required_packet_phrases]:
+    for phrase in REQUIRED_PHRASES:
         if phrase not in normalized_doc:
             failures.append(f"enterprise checkpoint doc is missing phrase: {phrase}")
-    for phrase in [
-        *MCC_BLOCKED_PHRASES,
-        *PACKET_BLOCKED_PHRASES,
-        *PACKET_READY_PHRASES,
-    ]:
-        if phrase not in required_packet_phrases and phrase in normalized_doc:
+    for phrase in FORBIDDEN_STATIC_PACKET_STATE_PHRASES:
+        if phrase in normalized_doc:
             failures.append(
-                "enterprise checkpoint doc contradicts computed packet state: "
+                "enterprise checkpoint doc contains a static current-candidate packet claim: "
                 f"{phrase}"
             )
     for phrase in BLOCKED_PHRASES:
@@ -338,12 +342,37 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "operator_next_action_doc": operator_next_action.get("next_action_doc"),
         "response_present_count": response_status.get("response_present_count"),
         "closure_ready_count": response_status.get("closure_ready_count"),
+        "current_source_candidate_commit": current_commit,
+        "current_source_mcc_006_valid": mcc_poc_valid,
+        "current_source_immutable_packet_path": (
+            immutable_packet_path.relative_to(repo_root).as_posix()
+        ),
+        "current_source_immutable_packet_present": immutable_packet_present,
+        "current_source_immutable_packet_valid": immutable_packet_valid,
+        "current_source_review_candidate_packet_ready": review_candidate_packet_ready,
         "review_candidate_prerequisite_mcc_006_valid": mcc_poc_valid,
         "review_candidate_blocker": review_candidate_blocker,
         "immutable_review_packet_path": immutable_packet_path.relative_to(repo_root).as_posix(),
         "immutable_review_packet_present": immutable_packet_present,
         "immutable_review_packet_valid": immutable_packet_valid,
         "review_candidate_packet_ready": review_candidate_packet_ready,
+        "latest_recorded_review_candidate_commit": historical_candidate_commit,
+        "latest_recorded_review_candidate_packet_path": review_history.get(
+            "packet_relative_path"
+        ),
+        "latest_recorded_review_candidate_packet_sha256": review_history.get(
+            "packet_release_check_sha256"
+        ),
+        "latest_recorded_review_candidate_packet_ready": historical_packet_record_ready,
+        "latest_recorded_review_candidate_packet_local_present": (
+            historical_packet_local_present
+        ),
+        "latest_recorded_review_candidate_packet_local_valid": historical_packet_local_valid,
+        "latest_recorded_review_candidate_record_review_findings": review_history.get(
+            "record_review_findings"
+        ),
+        "sol_ultra_user_approval_obtained": False,
+        "closure_findings_dispositioned": False,
         "closure_review_dispatch_allowed": False,
         "human_uat_allowed": False,
         **boundary_flags,
@@ -372,6 +401,14 @@ def render_report(report: dict[str, Any]) -> str:
         ],
         f"response_present_count: {report.get('response_present_count', 'unknown')}",
         f"closure_ready_count: {report.get('closure_ready_count', 'unknown')}",
+        f"current_source_candidate_commit: {report['current_source_candidate_commit']}",
+        f"current_source_mcc_006_valid: {str(report['current_source_mcc_006_valid']).lower()}",
+        "current_source_immutable_packet_present: "
+        f"{str(report['current_source_immutable_packet_present']).lower()}",
+        "current_source_immutable_packet_valid: "
+        f"{str(report['current_source_immutable_packet_valid']).lower()}",
+        "current_source_review_candidate_packet_ready: "
+        f"{str(report['current_source_review_candidate_packet_ready']).lower()}",
         "review_candidate_prerequisite_mcc_006_valid: "
         f"{str(report['review_candidate_prerequisite_mcc_006_valid']).lower()}",
         f"review_candidate_blocker: {report.get('review_candidate_blocker') or ''}",
@@ -380,6 +417,22 @@ def render_report(report: dict[str, Any]) -> str:
         f"{str(report['immutable_review_packet_present']).lower()}",
         f"immutable_review_packet_valid: {str(report['immutable_review_packet_valid']).lower()}",
         f"review_candidate_packet_ready: {str(report['review_candidate_packet_ready']).lower()}",
+        "latest_recorded_review_candidate_commit: "
+        f"{report['latest_recorded_review_candidate_commit']}",
+        "latest_recorded_review_candidate_packet_path: "
+        f"{report['latest_recorded_review_candidate_packet_path']}",
+        "latest_recorded_review_candidate_packet_sha256: "
+        f"{report['latest_recorded_review_candidate_packet_sha256']}",
+        "latest_recorded_review_candidate_packet_ready: "
+        f"{str(report['latest_recorded_review_candidate_packet_ready']).lower()}",
+        "latest_recorded_review_candidate_packet_local_present: "
+        f"{str(report['latest_recorded_review_candidate_packet_local_present']).lower()}",
+        "latest_recorded_review_candidate_packet_local_valid: "
+        f"{str(report['latest_recorded_review_candidate_packet_local_valid']).lower()}",
+        "sol_ultra_user_approval_obtained: "
+        f"{str(report['sol_ultra_user_approval_obtained']).lower()}",
+        "closure_findings_dispositioned: "
+        f"{str(report['closure_findings_dispositioned']).lower()}",
         "closure_review_dispatch_allowed: "
         f"{str(report['closure_review_dispatch_allowed']).lower()}",
         f"human_uat_allowed: {str(report['human_uat_allowed']).lower()}",
@@ -406,179 +459,6 @@ def _read(path: Path) -> str:
         return path.read_text(encoding="utf-8")
     except FileNotFoundError:
         return ""
-
-
-def _immutable_packet_valid(packet_path: Path, current_commit: str) -> bool:
-    required_paths = {
-        "artifact-hashes.json",
-        "git-summary.txt",
-        "packet-redaction-scan.txt",
-        "release-check.txt",
-    }
-    try:
-        packet_absolute = packet_path.absolute()
-        packet_resolved = packet_path.resolve(strict=True)
-    except OSError:
-        return False
-    if (
-        not packet_path.is_dir()
-        or packet_path.is_symlink()
-        or packet_resolved != packet_absolute
-        or packet_path.name != f"ithildin-v0.2-review-packet-{current_commit[:12]}"
-        or not all(
-            packet_path.joinpath(relative).is_file()
-            and not packet_path.joinpath(relative).is_symlink()
-            for relative in required_paths
-        )
-    ):
-        return False
-
-    try:
-        git_summary = packet_path.joinpath("git-summary.txt").read_text(encoding="utf-8")
-        release_check = packet_path.joinpath("release-check.txt").read_text(encoding="utf-8")
-        redaction_scan = packet_path.joinpath("packet-redaction-scan.txt").read_text(
-            encoding="utf-8"
-        )
-        artifact_hashes = json.loads(
-            packet_path.joinpath("artifact-hashes.json").read_text(encoding="utf-8")
-        )
-    except (OSError, UnicodeDecodeError, json.JSONDecodeError):
-        return False
-
-    git_summary_lines = git_summary.splitlines()
-    git_summary_commit_lines = [
-        line.strip()
-        for line in git_summary_lines
-        if line.strip().startswith("commit=")
-    ]
-    git_summary_dirty_lines = [
-        line.strip()
-        for line in git_summary_lines
-        if line.strip().startswith("dirty=")
-    ]
-    release_lines = release_check.splitlines()
-    if (
-        len(release_lines) < 9
-        or release_lines[:4]
-        != ["$ make release-check", "returncode=0", "", "## stdout"]
-        or release_lines.count("## stdout") != 1
-        or release_lines.count("## stderr") != 1
-        or not release_check.endswith("\n\n")
-    ):
-        return False
-    stderr_index = release_lines.index("## stderr")
-    if stderr_index < 6 or release_lines[stderr_index - 1] != "":
-        return False
-    release_stdout_lines = release_lines[4:stderr_index]
-    while release_stdout_lines and not release_stdout_lines[-1].strip():
-        release_stdout_lines.pop()
-    release_stderr_lines = release_lines[stderr_index + 1 :]
-    release_commit_lines = [
-        line.strip()
-        for line in release_stdout_lines
-        if line.strip().startswith("git_commit=")
-    ]
-    release_dirty_lines = [
-        line.strip()
-        for line in release_stdout_lines
-        if line.strip().startswith("git_dirty=")
-    ]
-    release_stdout_returncodes = [
-        line.strip()
-        for line in release_stdout_lines
-        if line.strip().startswith("returncode=")
-    ]
-    if (
-        git_summary_commit_lines != [f"commit={current_commit}"]
-        or git_summary_dirty_lines != ["dirty=false"]
-        or not release_stdout_lines
-        or release_stdout_lines[0] != "$ make release-check"
-        or release_commit_lines != [f"git_commit={current_commit}"]
-        or release_dirty_lines != ["git_dirty=false"]
-        or release_stdout_returncodes != ["returncode=0"]
-        or release_stdout_lines[-1] != "returncode=0"
-        or release_stderr_lines != [""]
-        or "findings: `0`" not in redaction_scan
-        or "Packet redaction scan passed." not in redaction_scan
-        or not isinstance(artifact_hashes, list)
-    ):
-        return False
-
-    manifest_paths: set[str] = set()
-    for item in artifact_hashes:
-        if not isinstance(item, dict):
-            return False
-        relative = item.get("path")
-        expected_sha256 = item.get("sha256")
-        expected_bytes = item.get("bytes")
-        if (
-            not isinstance(relative, str)
-            or not isinstance(expected_sha256, str)
-            or type(expected_bytes) is not int
-        ):
-            return False
-        relative_path = Path(relative)
-        if (
-            relative in manifest_paths
-            or not relative_path.parts
-            or relative_path.is_absolute()
-            or ".." in relative_path.parts
-            or relative_path.as_posix() != relative
-            or relative == "artifact-hashes.json"
-        ):
-            return False
-        artifact_path = packet_path / relative_path
-        try:
-            artifact_resolved = artifact_path.resolve(strict=True)
-        except OSError:
-            return False
-        if (
-            not artifact_path.is_file()
-            or artifact_path.is_symlink()
-            or artifact_resolved != artifact_path.absolute()
-            or not artifact_resolved.is_relative_to(packet_resolved)
-        ):
-            return False
-        try:
-            content = artifact_path.read_bytes()
-        except OSError:
-            return False
-        if len(content) != expected_bytes:
-            return False
-        if f"sha256:{hashlib.sha256(content).hexdigest()}" != expected_sha256:
-            return False
-        manifest_paths.add(relative)
-
-    disk_paths: set[str] = set()
-    for path in packet_path.rglob("*"):
-        if path.is_symlink():
-            return False
-        if path.is_file():
-            disk_paths.add(path.relative_to(packet_path).as_posix())
-        elif not path.is_dir():
-            return False
-    if manifest_paths | {"artifact-hashes.json"} != disk_paths:
-        return False
-    if not required_paths.difference({"artifact-hashes.json"}).issubset(manifest_paths):
-        return False
-
-    roots_match = re.search(r"(?m)^roots: `1`$", redaction_scan) is not None
-    scanned_match = re.search(r"(?m)^scanned_files: `(\d+)`$", redaction_scan)
-    if (
-        not roots_match
-        or scanned_match is None
-        or int(scanned_match.group(1)) != len(disk_paths) - 2
-    ):
-        return False
-    try:
-        current_redaction = packet_redaction_scan.scan_packet_paths([packet_path])
-    except packet_redaction_scan.PacketRedactionScanError:
-        return False
-    return (
-        not current_redaction.findings
-        and current_redaction.scanned_files == len(disk_paths)
-        and current_redaction.roots == [packet_resolved.as_posix()]
-    )
 
 
 if __name__ == "__main__":

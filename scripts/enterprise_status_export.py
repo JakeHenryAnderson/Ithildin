@@ -136,6 +136,12 @@ def build_report(repo_root: Path) -> dict[str, Any]:
 
     if current.get("tool_count") != 24:
         failures.append("current checkpoint tool count is not 24")
+    if current.get("latest_recorded_review_candidate_packet_ready") is not True:
+        failures.append("latest recorded review-candidate packet history is not valid")
+    if current.get("closure_review_dispatch_allowed") is not False:
+        failures.append("current checkpoint allows closure-review dispatch")
+    if current.get("human_uat_allowed") is not False:
+        failures.append("current checkpoint allows human UAT")
     if progress.get("tool_count") != 24:
         failures.append("progress model tool count is not 24")
     if send.get("recommended_now") != ["ERG-003", "ERG-002"]:
@@ -207,6 +213,41 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         }
         for row in send["rows"]
     ]
+    review_candidate_state = {
+        "current_source": {
+            "candidate_commit": current.get("current_source_candidate_commit"),
+            "mcc_006_valid": current.get("current_source_mcc_006_valid"),
+            "immutable_packet_path": current.get("current_source_immutable_packet_path"),
+            "immutable_packet_present": current.get(
+                "current_source_immutable_packet_present"
+            ),
+            "immutable_packet_valid": current.get("current_source_immutable_packet_valid"),
+            "packet_ready": current.get("current_source_review_candidate_packet_ready"),
+            "blocker": current.get("review_candidate_blocker"),
+        },
+        "latest_recorded": {
+            "candidate_commit": current.get("latest_recorded_review_candidate_commit"),
+            "immutable_packet_path": current.get(
+                "latest_recorded_review_candidate_packet_path"
+            ),
+            "immutable_packet_sha256": current.get(
+                "latest_recorded_review_candidate_packet_sha256"
+            ),
+            "packet_record_ready": current.get(
+                "latest_recorded_review_candidate_packet_ready"
+            ),
+            "packet_locally_present": current.get(
+                "latest_recorded_review_candidate_packet_local_present"
+            ),
+            "packet_locally_valid": current.get(
+                "latest_recorded_review_candidate_packet_local_valid"
+            ),
+        },
+        "sol_ultra_user_approval_obtained": False,
+        "closure_findings_dispositioned": False,
+        "closure_review_dispatch_allowed": False,
+        "human_uat_allowed": False,
+    }
 
     return {
         "schema_version": "1",
@@ -230,6 +271,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "closure_ready_count": responses.get("closure_ready_count"),
         "enterprise_gap_count": progress.get("enterprise_gap_count"),
         "progress_bands": progress.get("progress_bands"),
+        "review_candidate_state": review_candidate_state,
         "lane_count": send.get("lane_count"),
         "packet_handoff_ready_count": sum(1 for row in rows if row["packet_handoff_ready"] is True),
         "review_lanes": rows,
@@ -291,6 +333,16 @@ def render_report(report: dict[str, Any]) -> str:
         f"response_present_count: {report['response_present_count']}",
         f"closure_ready_count: {report['closure_ready_count']}",
         f"enterprise_gap_count: {report['enterprise_gap_count']}",
+        "current_source_review_candidate_packet_ready: "
+        f"{str(report['review_candidate_state']['current_source']['packet_ready']).lower()}",
+        "latest_recorded_review_candidate_commit: "
+        f"{report['review_candidate_state']['latest_recorded']['candidate_commit']}",
+        "latest_recorded_review_candidate_packet_ready: "
+        f"{str(report['review_candidate_state']['latest_recorded']['packet_record_ready']).lower()}",
+        "closure_review_dispatch_allowed: "
+        f"{str(report['review_candidate_state']['closure_review_dispatch_allowed']).lower()}",
+        "human_uat_allowed: "
+        f"{str(report['review_candidate_state']['human_uat_allowed']).lower()}",
         "progress_bands:",
     ]
     lines.extend(f"- {name}: {band}" for name, band in report["progress_bands"].items())
@@ -347,6 +399,12 @@ def render_markdown(report: dict[str, Any]) -> str:
     packet_path_lines = "\n".join(
         f"- `{label}`: `{path}`" for label, path in report["packet_paths"].items()
     )
+    review_candidate_state = report["review_candidate_state"]
+    current_source = review_candidate_state["current_source"]
+    latest_recorded = review_candidate_state["latest_recorded"]
+    closure_dispatch = str(
+        review_candidate_state["closure_review_dispatch_allowed"]
+    ).lower()
     return f"""# Enterprise Status Export
 
 Status: generated display-only enterprise status export.
@@ -376,6 +434,33 @@ runtime behavior, and not an enterprise lane closure record.
 - response_present_count: `{report["response_present_count"]}`
 - closure_ready_count: `{report["closure_ready_count"]}`
 - enterprise_gap_count: `{report["enterprise_gap_count"]}`
+
+## Review Candidate State
+
+Current source candidate:
+
+- candidate_commit: `{current_source["candidate_commit"]}`
+- mcc_006_valid: `{str(current_source["mcc_006_valid"]).lower()}`
+- immutable_packet_path: `{current_source["immutable_packet_path"]}`
+- immutable_packet_present: `{str(current_source["immutable_packet_present"]).lower()}`
+- immutable_packet_valid: `{str(current_source["immutable_packet_valid"]).lower()}`
+- packet_ready: `{str(current_source["packet_ready"]).lower()}`
+- blocker: `{current_source["blocker"] or ""}`
+
+Latest durably recorded historical candidate:
+
+- candidate_commit: `{latest_recorded["candidate_commit"]}`
+- immutable_packet_path: `{latest_recorded["immutable_packet_path"]}`
+- immutable_packet_sha256: `{latest_recorded["immutable_packet_sha256"]}`
+- packet_record_ready: `{str(latest_recorded["packet_record_ready"]).lower()}`
+- packet_locally_present: `{str(latest_recorded["packet_locally_present"]).lower()}`
+- packet_locally_valid: `{str(latest_recorded["packet_locally_valid"]).lower()}`
+- sol_ultra_user_approval_obtained:
+  `{str(review_candidate_state["sol_ultra_user_approval_obtained"]).lower()}`
+- closure_findings_dispositioned:
+  `{str(review_candidate_state["closure_findings_dispositioned"]).lower()}`
+- closure_review_dispatch_allowed: `{closure_dispatch}`
+- human_uat_allowed: `{str(review_candidate_state["human_uat_allowed"]).lower()}`
 
 ## Progress Bands
 

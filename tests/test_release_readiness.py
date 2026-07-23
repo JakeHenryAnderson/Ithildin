@@ -32,6 +32,7 @@ from scripts import (
     capability_decision_report,
     capability_expansion_gate,
     closure_matrix_evidence_sync,
+    command_center_closure_review_history_check,
     compliance_mapping_architecture_check,
     compliance_mapping_disposition_closure_check,
     compliance_mapping_disposition_packet,
@@ -2684,6 +2685,113 @@ def test_enterprise_review_send_readiness_is_wired() -> None:
     )
 
 
+def test_command_center_closure_review_history_is_wired() -> None:
+    report = command_center_closure_review_history_check.build_report(Path.cwd())
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+    review_candidate_body = makefile.partition("review-candidate:")[2].partition(
+        "\n\n"
+    )[0]
+
+    assert report["valid"] is True, report
+    assert report["candidate_commit"] == "af593edddbca1b9a429a104d0894546708fac277"
+    assert report["disposition_commit"] == "4be6f330bf22a27ac7ba580f0f3d22bff9684ae5"
+    assert report["source_review_commit"] == "4edc9a6c963c357269d8e78df14f2e3a363f8664"
+    assert report["packet_release_check_sha256"] == (
+        "c30d6646695bf8f1e861cbe7813134747e8d36c9f70f2d9ae83188854ae63926"
+    )
+    assert report["packet_release_check_bytes"] == 289_384
+    assert report["packet_evidence_recorded"] is True
+    assert report["packet_locally_valid"] is report["packet_locally_present"]
+    assert report["tool_count"] == 24
+    for key in command_center_closure_review_history_check.AUTHORITY:
+        assert report[key] is False
+    assert "command-center-closure-review-history-check:" in makefile
+    assert (
+        "command-center-closure-review-history-check" in release_check_body
+        or "release-check: command-center-closure-review-history-check" in makefile
+    )
+    assert "$(MAKE) command-center-closure-review-history-check" in review_candidate_body
+    assert "make command-center-closure-review-history-check" in readme
+    assert "command-center-closure-review-history-check" in (
+        release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+    assert "$(MAKE) command-center-closure-review-history-check" in (
+        release_guardrails.REQUIRED_REVIEW_CANDIDATE_STEPS
+    )
+
+
+def test_command_center_closure_review_history_rejects_current_record_drift(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    original = command_center_closure_review_history_check._file_sha256
+    disposition_path = Path.cwd() / command_center_closure_review_history_check.DISPOSITION_REL
+
+    def drifted(path: Path) -> str:
+        if path == disposition_path:
+            return "0" * 64
+        return original(path)
+
+    monkeypatch.setattr(
+        command_center_closure_review_history_check,
+        "_file_sha256",
+        drifted,
+    )
+    report = command_center_closure_review_history_check.build_report(Path.cwd())
+
+    assert report["valid"] is False
+    assert "current disposition record differs" in " ".join(report["failures"])
+
+
+def test_command_center_closure_review_history_rejects_invalid_local_packet(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    invalid_packet = tmp_path / "ithildin-v0.2-review-packet-af593edddbca"
+    invalid_packet.mkdir()
+    monkeypatch.setattr(
+        command_center_closure_review_history_check,
+        "PACKET_REL",
+        invalid_packet.as_posix(),
+    )
+    monkeypatch.setattr(
+        command_center_closure_review_history_check,
+        "immutable_packet_valid",
+        lambda _path, _commit: False,
+    )
+
+    report = command_center_closure_review_history_check.build_report(Path.cwd())
+
+    assert report["valid"] is False
+    assert report["packet_locally_present"] is True
+    assert report["packet_locally_valid"] is False
+    assert "locally present but invalid" in " ".join(report["failures"])
+
+
+def test_command_center_closure_review_history_rejects_parent_or_authority_drift(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        command_center_closure_review_history_check,
+        "_parent",
+        lambda _repo_root, _commit: "0" * 40,
+    )
+    monkeypatch.setitem(
+        command_center_closure_review_history_check.AUTHORITY,
+        "closure_review_dispatch_allowed",
+        True,
+    )
+
+    report = command_center_closure_review_history_check.build_report(Path.cwd())
+
+    assert report["valid"] is False
+    assert report["closure_review_dispatch_allowed"] is True
+    failures = " ".join(report["failures"])
+    assert "direct child" in failures
+    assert "authority must remain false" in failures
+
+
 def test_enterprise_current_checkpoint_is_wired() -> None:
     report = enterprise_current_checkpoint.build_report(Path.cwd())
     doc = Path("docs/codex/enterprise-current-checkpoint.md").read_text(
@@ -2717,11 +2825,32 @@ def test_enterprise_current_checkpoint_is_wired() -> None:
     )
     assert report["response_present_count"] == 0
     assert report["closure_ready_count"] == 0
-    assert report["review_candidate_prerequisite_mcc_006_valid"] is True
-    assert report["review_candidate_blocker"] == "missing_or_invalid_immutable_review_packet"
+    assert report["current_source_candidate_commit"] == subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+    assert report["current_source_mcc_006_valid"] is False
+    assert report["current_source_immutable_packet_present"] is False
+    assert report["current_source_immutable_packet_valid"] is False
+    assert report["current_source_review_candidate_packet_ready"] is False
+    assert report["review_candidate_prerequisite_mcc_006_valid"] is False
+    assert report["review_candidate_blocker"] == (
+        "missing_or_invalid_exact_candidate_mcc_006_live_evidence"
+    )
     assert report["immutable_review_packet_present"] is False
     assert report["immutable_review_packet_valid"] is False
     assert report["review_candidate_packet_ready"] is False
+    assert report["latest_recorded_review_candidate_commit"] == (
+        "af593edddbca1b9a429a104d0894546708fac277"
+    )
+    assert report["latest_recorded_review_candidate_packet_ready"] is True
+    assert report["latest_recorded_review_candidate_packet_local_valid"] is (
+        report["latest_recorded_review_candidate_packet_local_present"]
+    )
+    assert report["sol_ultra_user_approval_obtained"] is False
+    assert report["closure_findings_dispositioned"] is False
     assert report["closure_review_dispatch_allowed"] is False
     assert report["human_uat_allowed"] is False
     assert report["runtime_changes_allowed"] is False
@@ -2738,8 +2867,10 @@ def test_enterprise_current_checkpoint_is_wired() -> None:
         "Current governed tool count: `24`",
         "Current selected capability: `not selected`",
         "make enterprise-current-checkpoint",
-        "The MCC-006 precondition is valid, but the immutable current-candidate review packet is "
-        "absent or invalid",
+        "The current source candidate and the latest durably reviewed historical candidate are "
+        "reported separately",
+        "A historical packet record does not make that packet current for HEAD",
+        "make command-center-closure-review-history-check",
         "Command Center closure-review dispatch and `CC-PILOT-107` UAT remain blocked",
         "make mission-command-control-plane-poc-check",
         "make mission-command-control-plane-poc",
@@ -3054,7 +3185,7 @@ def test_enterprise_current_checkpoint_rejects_mcc_blocked_prose_after_live_evid
             return (
                 document
                 + "\n"
-                + enterprise_current_checkpoint.MCC_BLOCKED_PHRASES[0]
+                + enterprise_current_checkpoint.FORBIDDEN_STATIC_PACKET_STATE_PHRASES[0]
                 + "\n"
             )
         return document
@@ -3067,11 +3198,22 @@ def test_enterprise_current_checkpoint_rejects_mcc_blocked_prose_after_live_evid
     report = original_build_report(Path.cwd())
 
     assert report["valid"] is False
+    assert report["current_source_mcc_006_valid"] is True
+    assert report["current_source_immutable_packet_present"] is False
+    assert report["current_source_immutable_packet_valid"] is False
+    assert report["current_source_review_candidate_packet_ready"] is False
+    assert report["latest_recorded_review_candidate_commit"] == (
+        "af593edddbca1b9a429a104d0894546708fac277"
+    )
+    assert report["latest_recorded_review_candidate_packet_ready"] is True
+    assert report["latest_recorded_review_candidate_packet_local_valid"] is (
+        report["latest_recorded_review_candidate_packet_local_present"]
+    )
     assert report["review_candidate_prerequisite_mcc_006_valid"] is True
     assert report["review_candidate_blocker"] == "missing_or_invalid_immutable_review_packet"
     assert any(
-        enterprise_current_checkpoint.MCC_BLOCKED_PHRASES[0] in failure
-        and "contradicts computed packet state" in failure
+        enterprise_current_checkpoint.FORBIDDEN_STATIC_PACKET_STATE_PHRASES[0] in failure
+        and "static current-candidate packet claim" in failure
         for failure in report["failures"]
     )
 
@@ -3375,6 +3517,16 @@ def test_enterprise_status_export_is_wired(tmp_path: Path) -> None:
     assert report["enterprise_gap_count"] == 10
     assert report["lane_count"] == 8
     assert report["packet_handoff_ready_count"] == 0
+    review_candidate_state = report["review_candidate_state"]
+    assert review_candidate_state["current_source"]["packet_ready"] is False
+    assert review_candidate_state["latest_recorded"]["candidate_commit"] == (
+        "af593edddbca1b9a429a104d0894546708fac277"
+    )
+    assert review_candidate_state["latest_recorded"]["packet_record_ready"] is True
+    assert review_candidate_state["sol_ultra_user_approval_obtained"] is False
+    assert review_candidate_state["closure_findings_dispositioned"] is False
+    assert review_candidate_state["closure_review_dispatch_allowed"] is False
+    assert review_candidate_state["human_uat_allowed"] is False
     assert report["runtime_changes_allowed"] is False
     assert report["mission_control_runtime_allowed"] is False
     assert report["live_vm_inspection_allowed"] is False
@@ -3415,6 +3567,9 @@ def test_enterprise_status_export_is_wired(tmp_path: Path) -> None:
         "send package",
         "send-session record",
         "display-only handoff artifact",
+        "current_source",
+        "latest_recorded",
+        "Historical packet evidence cannot set current-source readiness",
         "does not approve Mission Control runtime behavior",
         "does not approve live VM/container inspection",
         "does not approve sandbox orchestration",
@@ -3433,6 +3588,10 @@ def test_enterprise_status_export_is_wired(tmp_path: Path) -> None:
         "handoff_artifacts:",
         "environment-evidence-collection-authority-record.md",
         "environment-evidence-collection-authority.json",
+        "## Review Candidate State",
+        "Latest durably recorded historical candidate",
+        "closure_review_dispatch_allowed: `false`",
+        "human_uat_allowed: `false`",
         "## Packet Paths",
         "`enterprise_review_send_package`: `var/review-packets/v3/enterprise-review-send-package`",
         "`enterprise_review_send_session_record`: "
@@ -3448,6 +3607,11 @@ def test_enterprise_status_export_is_wired(tmp_path: Path) -> None:
         '"tool_count": 24',
         f'"next_action": "{enterprise_operator_next_action.PIS_003_EXTERNAL_INPUT_ACTION}"',
         '"handoff_artifacts": [',
+        '"review_candidate_state": {',
+        '"current_source": {',
+        '"latest_recorded": {',
+        '"closure_review_dispatch_allowed": false',
+        '"human_uat_allowed": false',
         '"label": "production_identity_storage_pis_003_environment_evidence_authority_record"',
         '"label": "production_identity_storage_pis_003_environment_evidence_authority_contract"',
         '"enterprise_review_send_quickstart": '
@@ -3518,6 +3682,7 @@ def test_mission_control_enterprise_status_import_contract_is_wired() -> None:
     assert "next_after_send_commands" in report["allowed_import_fields"]
     assert "handoff_artifacts" in report["allowed_import_fields"]
     assert "operator_next_action_doc" in report["allowed_import_fields"]
+    assert "review_candidate_state" in report["allowed_import_fields"]
     assert report["response_present_count"] == 0
     assert report["closure_ready_count"] == 0
     assert report["runtime_changes_allowed"] is False
@@ -3535,6 +3700,12 @@ def test_mission_control_enterprise_status_import_contract_is_wired() -> None:
     assert report["compliance_automation_allowed"] is False
     assert report["public_security_product_positioning_allowed"] is False
     assert report["new_power_classes_allowed"] is False
+    assert report["sol_ultra_user_approval_obtained"] is False
+    assert report["closure_findings_dispositioned"] is False
+    assert report["closure_review_dispatch_allowed"] is False
+    assert report["human_uat_allowed"] is False
+    assert report["review_candidate_state"]["current_source"]["packet_ready"] is False
+    assert report["review_candidate_state"]["latest_recorded"]["packet_record_ready"] is True
     assert "review_lanes" in report["allowed_import_fields"]
     assert "packet_paths" in report["allowed_import_fields"]
     for phrase in [
@@ -3547,6 +3718,9 @@ def test_mission_control_enterprise_status_import_contract_is_wired() -> None:
         "does not approve Mission Control enterprise status importer implementation",
         "Mission Control may display this artifact as non-authoritative status",
         "safe action commands",
+        "current_source",
+        "latest_recorded",
+        "Historical packet evidence must not be converted into current-source readiness",
         "next_after_send_commands",
         "send package/send-session record",
         "must not treat the package as review evidence",
@@ -3661,6 +3835,11 @@ def test_mission_control_enterprise_status_fixtures_are_wired(tmp_path: Path) ->
     assert valid_payload["next_after_send_commands"] == []
     assert valid_payload["recommended_send_set"] == []
     assert valid_payload["packet_handoff_ready_count"] == 0
+    assert valid_payload["review_candidate_state"]["current_source"]["packet_ready"] is False
+    assert (
+        valid_payload["review_candidate_state"]["latest_recorded"]["packet_record_ready"]
+        is True
+    )
     assert all(
         lane["packet_handoff_ready"] is False
         and lane["recommended_to_send_now"] is False
@@ -3710,6 +3889,21 @@ def test_mission_control_enterprise_status_fixtures_are_wired(tmp_path: Path) ->
     assert "external_input_wait_review_lanes_must_be_non_actionable" in (
         mission_control_enterprise_status_fixtures._validate_for_display_import(
             actionable_lane
+        )
+    )
+    collapsed_history = json.loads(json.dumps(valid_payload))
+    collapsed_history["review_candidate_state"]["current_source"]["packet_ready"] = True
+    collapsed_history["review_candidate_state"]["current_source"]["mcc_006_valid"] = False
+    assert "current_source_packet_ready_requires_current_evidence" in (
+        mission_control_enterprise_status_fixtures._validate_for_display_import(
+            collapsed_history
+        )
+    )
+    actionable_history = json.loads(json.dumps(valid_payload))
+    actionable_history["review_candidate_state"]["closure_review_dispatch_allowed"] = True
+    assert "closure_review_dispatch_allowed_must_be_false" in (
+        mission_control_enterprise_status_fixtures._validate_for_display_import(
+            actionable_history
         )
     )
     assert valid_payload["mission_control_runtime_allowed"] is False
@@ -6833,8 +7027,21 @@ def test_enterprise_north_star_roadmap_is_wired() -> None:
     assert report["response_present_count"] == 0
     assert report["closure_ready_count"] == 0
     assert report["phase_count"] == 6
-    assert report["review_candidate_prerequisite_mcc_006_valid"] is True
-    assert report["review_candidate_blocker"] == "missing_or_invalid_immutable_review_packet"
+    assert report["current_source_mcc_006_valid"] is False
+    assert report["current_source_immutable_packet_present"] is False
+    assert report["current_source_immutable_packet_valid"] is False
+    assert report["current_source_review_candidate_packet_ready"] is False
+    assert report["latest_recorded_review_candidate_commit"] == (
+        "af593edddbca1b9a429a104d0894546708fac277"
+    )
+    assert report["latest_recorded_review_candidate_packet_ready"] is True
+    assert report["latest_recorded_review_candidate_packet_local_valid"] is (
+        report["latest_recorded_review_candidate_packet_local_present"]
+    )
+    assert report["review_candidate_prerequisite_mcc_006_valid"] is False
+    assert report["review_candidate_blocker"] == (
+        "missing_or_invalid_exact_candidate_mcc_006_live_evidence"
+    )
     assert report["immutable_review_packet_present"] is False
     assert report["immutable_review_packet_valid"] is False
     assert report["review_candidate_packet_ready"] is False
@@ -6862,8 +7069,10 @@ def test_enterprise_north_star_roadmap_is_wired() -> None:
         "erg_002_mission_control_display",
         "erg_004_live_sandbox_vm_poc",
         "enterprise_architecture_lanes",
-        "MCC-006 evidence is valid, but the current immutable RC review packet is absent or "
-        "invalid",
+        "Current-source review readiness and durable historical review evidence are separate "
+        "state groups",
+        "Historical packet evidence cannot satisfy the current-source gate",
+        "make command-center-closure-review-history-check",
         "Command Center closure-review dispatch and `CC-PILOT-107` UAT remain blocked",
         "make mission-command-control-plane-poc-check",
         "make mission-command-control-plane-poc",
@@ -6923,7 +7132,7 @@ def test_enterprise_north_star_roadmap_rejects_mcc_blocked_prose_after_live_evid
             return (
                 document
                 + "\n"
-                + enterprise_north_star_roadmap.MCC_BLOCKED_PHRASES[0]
+                + enterprise_north_star_roadmap.FORBIDDEN_STATIC_PACKET_STATE_PHRASES[0]
                 + "\n"
             )
         return document
@@ -6940,8 +7149,8 @@ def test_enterprise_north_star_roadmap_rejects_mcc_blocked_prose_after_live_evid
     assert report["review_candidate_prerequisite_mcc_006_valid"] is True
     assert report["review_candidate_blocker"] == "missing_or_invalid_immutable_review_packet"
     assert any(
-        enterprise_north_star_roadmap.MCC_BLOCKED_PHRASES[0] in failure
-        and "contradicts computed packet state" in failure
+        enterprise_north_star_roadmap.FORBIDDEN_STATIC_PACKET_STATE_PHRASES[0] in failure
+        and "static current-candidate packet claim" in failure
         for failure in report["failures"]
     )
 
