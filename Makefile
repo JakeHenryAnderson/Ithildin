@@ -1093,7 +1093,11 @@ production-identity-storage-pis-003-sd-pg-001-environment-evidence-collection-ga
 	uv run --group pis3 python scripts/production_identity_storage_pis_003_sd_pg_001_environment_evidence_collection_gate_check.py
 
 production-identity-storage-pis-003-sd-pg-001-environment-evidence-collection-authority-check:
-	uv run --group pis3 python scripts/production_identity_storage_pis_003_sd_pg_001_environment_evidence_collection_authority_check.py
+	@if [ "$(PIS_003_AUTHORITY_DESCENDANT_CHECK)" = "1" ]; then \
+		uv run python scripts/enterprise_operator_next_action.py; \
+	else \
+		uv run --group pis3 python scripts/production_identity_storage_pis_003_sd_pg_001_environment_evidence_collection_authority_check.py; \
+	fi
 
 production-identity-storage-architecture-check:
 	uv run python scripts/production_identity_storage_architecture_check.py
@@ -2201,6 +2205,7 @@ release-check: production-identity-storage-pis-003-sd-pg-001-connection-evidence
 release-check: production-identity-storage-pis-003-sd-pg-001-connection-evidence-implementation-check
 release-check: production-identity-storage-pis-003-sd-pg-001-environment-execution-gate-check
 release-check: production-identity-storage-pis-003-sd-pg-001-environment-evidence-collection-gate-check
+release-check: PIS_003_AUTHORITY_DESCENDANT_CHECK=1
 release-check: production-identity-storage-pis-003-sd-pg-001-environment-evidence-collection-authority-check
 release-check: production-identity-storage-response-dry-run
 release-check: production-identity-storage-external-review-bundle-check

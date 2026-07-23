@@ -69,11 +69,16 @@ The current enterprise dependency is:
 1. An external operator must identify the intended target and provide the signed environment
    receipts required by the reviewed contract. This checkpoint does not authorize collecting them.
 
-Revalidate only the frozen authority evidence with:
+The exact authority validator remains frozen to its reviewed twelve-path candidate. On later
+descendants it must fail only with the expected inventory mismatch; the canonical fail-closed
+bridge validates every immutable binding and false authority ceiling instead:
 
 ```sh
-make production-identity-storage-pis-003-sd-pg-001-environment-evidence-collection-authority-check
+make enterprise-operator-next-action
 ```
+
+Run the authority target itself only when reproducing its exact twelve-path candidate. A nonzero
+result on this descendant is expected and must not be relabeled as exact-green evidence.
 
 The active reviewed prerequisites are:
 

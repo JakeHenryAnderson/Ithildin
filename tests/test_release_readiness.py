@@ -9758,9 +9758,15 @@ def test_production_identity_storage_pis_003_entry_decision_is_wired() -> None:
     assert validator.validate_contract(contract) == []
     assert f"{validator.TARGET}:" in makefile
     assert f"release-check: {validator.TARGET}" in makefile
+    assert "release-check: PIS_003_AUTHORITY_DESCENDANT_CHECK=1" in makefile
+    assert "release-check: enterprise-operator-next-action" in makefile
     assert f"make {validator.TARGET}" in readme
     assert validator.DOC_REL in review_docs.REVIEW_DOCS
     assert validator.TARGET in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    assert (
+        "enterprise-operator-next-action"
+        in release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
 
 
 def test_production_identity_storage_pis_003_entry_contract_is_closed() -> None:
