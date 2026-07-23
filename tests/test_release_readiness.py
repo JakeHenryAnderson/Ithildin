@@ -33697,6 +33697,17 @@ def test_siem_export_adapter_compatibility_fixtures_are_wired() -> None:
     assert "make siem-export-adapter-compatibility-check" in readme
     assert siem_export_adapter_compatibility_check.DOC_REL in readme
     assert siem_export_adapter_compatibility_check.DOC_REL in docs_site
+    review_doc = (
+        "docs/codex/"
+        "siem-export-adapter-compatibility-fixtures-internal-source-review.md"
+    )
+    assert review_doc in readme
+    assert review_doc in docs_site
+    assert review_doc in review_docs.REVIEW_DOCS
+    assert (
+        "SIEM Export Adapter Compatibility Fixtures Internal Source Review"
+        in review_index
+    )
     assert (
         siem_export_adapter_compatibility_check.DOC_REL
         in review_docs.REVIEW_DOCS

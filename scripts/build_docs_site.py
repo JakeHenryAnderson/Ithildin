@@ -170,6 +170,7 @@ DEFAULT_DOCS = [
     "docs/codex/incident-reconstruction-guide.md",
     "docs/codex/siem-export-adapter-architecture.md",
     "docs/codex/siem-export-adapter-compatibility-fixtures.md",
+    "docs/codex/siem-export-adapter-compatibility-fixtures-internal-source-review.md",
     "docs/codex/compliance-mapping-architecture.md",
     "docs/codex/compliance-mapping-disposition-packet.md",
     "docs/codex/compliance-mapping-external-response-intake.md",
