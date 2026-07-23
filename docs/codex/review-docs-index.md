@@ -118,6 +118,7 @@ externally closed.
 - [Command Center Sol Ultra Closure Review Handoff](command-center-sol-ultra-closure-review-handoff.md)
 - [Command Center Sol Ultra Closure Review Dispatch Record](command-center-sol-ultra-closure-review-dispatch-record.md)
 - [Command Center Closure Review Dispatch Record Internal Source Review](command-center-sol-ultra-closure-review-dispatch-record-internal-source-review.md)
+- [Command Center Review Candidate History Separation Internal Source Review](command-center-review-candidate-history-separation-internal-source-review.md)
 - [Ithildin Command Center Boundary](ithildin-command-center-boundary.md)
 
 ## Threat and Boundary

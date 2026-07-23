@@ -2792,6 +2792,44 @@ def test_command_center_closure_review_history_rejects_parent_or_authority_drift
     assert "authority must remain false" in failures
 
 
+def test_command_center_review_candidate_history_separation_review_is_routed() -> None:
+    review_path = (
+        "docs/codex/"
+        "command-center-review-candidate-history-separation-internal-source-review.md"
+    )
+    review = Path(review_path).read_text(encoding="utf-8")
+    normalized_review = " ".join(review.split())
+    readme = Path("README.md").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+
+    assert review_path in readme
+    assert review_path in docs_site
+    assert review_path in review_docs.REVIEW_DOCS
+    assert (
+        "Command Center Review Candidate History Separation Internal Source Review"
+        in review_index
+    )
+    for phrase in [
+        "Status: exact-candidate source review complete; no open findings.",
+        "approved_current_and_historical_evidence_separation_only",
+        "9a0f5b23e94ab92696985c7d47cb99efd1f5eb52",
+        "ce52c5aee74ea3ee708ff3c4cd0311cec572bee0",
+        "independent read-only GPT-5.6 Sol xhigh review",
+        "Sol Ultra was not used",
+        "Critical findings: `0`",
+        "High findings: `0`",
+        "Medium findings: `0`",
+        "Low findings: `0`",
+        "Current governed tool count: `24`",
+        "release_check_sha256",
+        "never a digest of the immutable packet directory",
+        "reject equal full current and historical candidate commit identities",
+        "All execution and UAT gates remain blocked",
+    ]:
+        assert phrase in normalized_review
+
+
 def test_enterprise_current_checkpoint_is_wired() -> None:
     report = enterprise_current_checkpoint.build_report(Path.cwd())
     doc = Path("docs/codex/enterprise-current-checkpoint.md").read_text(

@@ -408,6 +408,9 @@ checked with `make control-mapping-readiness`.
 - [docs/codex/command-center-sol-ultra-closure-review-dispatch-record-internal-source-review.md](docs/codex/command-center-sol-ultra-closure-review-dispatch-record-internal-source-review.md) -
   zero-finding Sol xhigh exact-candidate review approving only the accuracy of the durable
   non-dispatch record.
+- [docs/codex/command-center-review-candidate-history-separation-internal-source-review.md](docs/codex/command-center-review-candidate-history-separation-internal-source-review.md) -
+  zero-finding Sol xhigh exact-candidate review of the fail-closed current-versus-historical review
+  evidence separation.
 - [docs/codex/governed-external-agent-hermes-poc-architecture.md](docs/codex/governed-external-agent-hermes-poc-architecture.md) - trust zones, pinned Hermes image, claim ladder, and current 24-tool topology.
 - [docs/codex/governed-external-agent-hermes-poc-capability-proposal.md](docs/codex/governed-external-agent-hermes-poc-capability-proposal.md) - allowed compatibility evidence versus blocked runtime expansion.
 - [docs/codex/governed-external-agent-hermes-poc-implementation-plan.md](docs/codex/governed-external-agent-hermes-poc-implementation-plan.md) - ordered fixture, MCP, negative-case, soak, and Command Center milestones.
