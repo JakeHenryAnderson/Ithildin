@@ -37,6 +37,7 @@ externally closed.
 - [MCC-006 POC Evidence Contract](mission-command-control-plane-poc-evidence-contract.md)
 - [Authorization Record](mission-command-control-plane-authorization-record.md)
 - [MCC-007 Fixed Hermes Runner-Bridge Candidate Evaluation](mission-command-runner-bridge-candidate-evaluation.md)
+- [MCC-007 Fixed Hermes Runner-Bridge Candidate Evaluation Internal Source Review](mission-command-runner-bridge-candidate-evaluation-internal-source-review.md)
 
 ## Track B Node Signed Configuration
 
