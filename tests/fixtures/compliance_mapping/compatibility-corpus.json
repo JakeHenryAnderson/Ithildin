@@ -21,7 +21,10 @@
     {"expected_accept": false, "expected_reasons": ["prohibited_claim_text", "unsupported_evidence_support_statement"], "id": "CMT-COMP-018", "label": "prohibited_claim_text", "mutation": "prohibited_claim_text"},
     {"expected_accept": false, "expected_reasons": ["non_finite_number"], "id": "CMT-COMP-019", "label": "overflowing_json_number", "mutation": "overflowing_json_number"},
     {"expected_accept": false, "expected_reasons": ["invalid_unicode"], "id": "CMT-COMP-020", "label": "invalid_unicode", "mutation": "invalid_unicode"},
-    {"expected_accept": false, "expected_reasons": ["unknown_row_field"], "id": "CMT-COMP-021", "label": "unknown_row_field", "mutation": "unknown_row_field"}
+    {"expected_accept": false, "expected_reasons": ["unknown_row_field"], "id": "CMT-COMP-021", "label": "unknown_row_field", "mutation": "unknown_row_field"},
+    {"expected_accept": false, "expected_reasons": ["invalid_evidence_limitation"], "id": "CMT-COMP-022", "label": "arbitrary_limitation_value", "mutation": "arbitrary_limitation_value"},
+    {"expected_accept": false, "expected_reasons": ["evidence_source_support_mismatch"], "id": "CMT-COMP-023", "label": "evidence_source_support_mismatch", "mutation": "evidence_source_support_mismatch"},
+    {"expected_accept": false, "expected_reasons": ["unsafe_verification_reference"], "id": "CMT-COMP-024", "label": "verification_reference_mismatch", "mutation": "verification_reference_mismatch"}
   ],
   "corpus_type": "ithildin.compliance_mapping_template.compatibility_fixtures",
   "schema_version": "1",

@@ -34720,19 +34720,19 @@ def test_compliance_mapping_template_compatibility_is_wired() -> None:
     release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
 
     assert report["valid"] is True, report
-    assert report["case_count"] == 21
+    assert report["case_count"] == 24
     assert report["accepted_case_count"] == 3
-    assert report["rejected_case_count"] == 18
+    assert report["rejected_case_count"] == 21
     assert report["safe_reason_labels_only"] is True
     assert report["tool_count"] == 24
     assert report["corpus_sha256"] == (
-        "d49fbf2b301930598ce4ff0ad6dd73a16c6d749a32b5e413e999862d35560808"
+        "46a8ff8292fa0ba7cabacc53675db57da1da3d616cb74e9606b418ccfadb20ca"
     )
     assert report["base_template_sha256"] == (
         "8ad83afb9626fb99c93a69e32b1d2542a334b42cc0c2c73728255b80cef20c1a"
     )
     assert [item["id"] for item in report["case_results"]] == [
-        f"CMT-COMP-{number:03d}" for number in range(1, 22)
+        f"CMT-COMP-{number:03d}" for number in range(1, 25)
     ]
     for key in compliance_mapping_template_compatibility_check.AUTHORITY_FLAGS:
         assert report[key] is False
@@ -34787,6 +34787,31 @@ def test_compliance_mapping_template_rejects_sensitive_field_without_echo() -> N
     assert "access_token" not in " ".join(reasons)
 
 
+def test_compliance_mapping_template_rejects_arbitrary_limitation_without_echo(
+) -> None:
+    base_path = Path(
+        compliance_mapping_template_compatibility_check.BASE_TEMPLATE_REL
+    )
+    base_raw = base_path.read_text(encoding="utf-8")
+    base_document = (
+        compliance_mapping_template_compatibility_check._parse_json_object(base_raw)
+    )
+    materialized = compliance_mapping_template_compatibility_check._materialize_case(
+        base_raw,
+        base_document,
+        "arbitrary_limitation_value",
+    )
+
+    reasons = (
+        compliance_mapping_template_compatibility_check.validate_template_text(
+            materialized
+        )
+    )
+
+    assert reasons == ["invalid_evidence_limitation"]
+    assert "access_token" not in " ".join(reasons)
+
+
 @pytest.mark.parametrize(
     ("mutation", "expected"),
     [
@@ -34797,6 +34822,12 @@ def test_compliance_mapping_template_rejects_sensitive_field_without_echo() -> N
         ("prohibited_claim_text", [
             "prohibited_claim_text",
             "unsupported_evidence_support_statement",
+        ]),
+        ("evidence_source_support_mismatch", [
+            "evidence_source_support_mismatch",
+        ]),
+        ("verification_reference_mismatch", [
+            "unsafe_verification_reference",
         ]),
     ],
 )

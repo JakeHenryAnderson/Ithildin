@@ -9,6 +9,7 @@ import json
 import math
 import re
 import sys
+import unicodedata
 from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
@@ -25,7 +26,7 @@ ARCHITECTURE_REL = "docs/codex/compliance-mapping-architecture.md"
 FIXTURE_DIR_REL = "tests/fixtures/compliance_mapping"
 CORPUS_REL = f"{FIXTURE_DIR_REL}/compatibility-corpus.json"
 BASE_TEMPLATE_REL = f"{FIXTURE_DIR_REL}/valid-template-v1.json"
-CORPUS_SHA256 = "d49fbf2b301930598ce4ff0ad6dd73a16c6d749a32b5e413e999862d35560808"
+CORPUS_SHA256 = "46a8ff8292fa0ba7cabacc53675db57da1da3d616cb74e9606b418ccfadb20ca"
 BASE_TEMPLATE_SHA256 = (
     "8ad83afb9626fb99c93a69e32b1d2542a334b42cc0c2c73728255b80cef20c1a"
 )
@@ -95,6 +96,13 @@ EVIDENCE_FIELDS = {
     "review_packet_hashes": {"artifact_id", "sha256"},
     "none": set(),
 }
+EVIDENCE_SUPPORT_BY_SOURCE = {
+    "policy_decision_evidence": "mediated_policy_decision_recorded",
+    "approval_lifecycle_evidence": "mediated_approval_lifecycle_recorded",
+    "denied_action_evidence": "mediated_denial_recorded",
+    "review_packet_hashes": "review_packet_digest_recorded",
+    "none": "no_supporting_statement",
+}
 OPERATOR_INPUTS = {"confirm_scope_and_evidence_sufficiency", "none"}
 EVIDENCE_SUPPORT_STATEMENTS = {
     "mediated_policy_decision_recorded",
@@ -123,13 +131,15 @@ CONSOLE_BY_STATUS = {
     "unsupported": "show_unsupported_reason",
     "not_applicable": "show_not_applicable_reason",
 }
-VERIFICATION_COMMANDS = {
-    "make control-mapping-design-check",
-    "make incident-reconstruction-check",
-}
-VERIFICATION_POINTERS = {
-    "docs/codex/control-mapping-design.md",
-    "docs/codex/incident-reconstruction-guide.md",
+VERIFICATION_REFERENCES = {
+    (
+        "make control-mapping-design-check",
+        "docs/codex/control-mapping-design.md",
+    ),
+    (
+        "make incident-reconstruction-check",
+        "docs/codex/incident-reconstruction-guide.md",
+    ),
 }
 ACCEPTED_RISK_REFS = {f"AR-{number:03d}" for number in range(1, 11)}
 
@@ -284,6 +294,27 @@ EXPECTED_CASES = [
         "expected_accept": False,
         "expected_reasons": ["unknown_row_field"],
     },
+    {
+        "id": "CMT-COMP-022",
+        "label": "arbitrary_limitation_value",
+        "mutation": "arbitrary_limitation_value",
+        "expected_accept": False,
+        "expected_reasons": ["invalid_evidence_limitation"],
+    },
+    {
+        "id": "CMT-COMP-023",
+        "label": "evidence_source_support_mismatch",
+        "mutation": "evidence_source_support_mismatch",
+        "expected_accept": False,
+        "expected_reasons": ["evidence_source_support_mismatch"],
+    },
+    {
+        "id": "CMT-COMP-024",
+        "label": "verification_reference_mismatch",
+        "mutation": "verification_reference_mismatch",
+        "expected_accept": False,
+        "expected_reasons": ["unsafe_verification_reference"],
+    },
 ]
 
 REQUIRED_DOC_PHRASES = [
@@ -296,7 +327,7 @@ REQUIRED_DOC_PHRASES = [
     "never written",
     "synthetic, non-regulatory",
     "CMT-COMP-001",
-    "CMT-COMP-021",
+    "CMT-COMP-024",
     "reports only the safe reason label",
     "does not close `ERG-009`",
     "does not authorize new power classes",
@@ -651,14 +682,23 @@ def _validate_row_values(row: Mapping[str, Any], reasons: set[str]) -> None:
         reasons.add("invalid_operator_input")
     if row.get("evidence_supports") not in EVIDENCE_SUPPORT_STATEMENTS:
         reasons.add("unsupported_evidence_support_statement")
+    elif (
+        isinstance(source, str)
+        and source in EVIDENCE_SUPPORT_BY_SOURCE
+        and row.get("evidence_supports") != EVIDENCE_SUPPORT_BY_SOURCE[source]
+    ):
+        reasons.add("evidence_source_support_mismatch")
     limitations = row.get("evidence_does_not_prove")
-    if (
-        not isinstance(limitations, list)
-        or any(not isinstance(item, str) for item in limitations)
-        or not REQUIRED_LIMITATIONS.issubset(set(limitations))
-        or len(limitations) != len(set(limitations))
+    if not isinstance(limitations, list) or any(
+        not isinstance(item, str) for item in limitations
     ):
         reasons.add("missing_evidence_limitation")
+    elif not REQUIRED_LIMITATIONS.issubset(set(limitations)):
+        reasons.add("missing_evidence_limitation")
+    elif set(limitations) != REQUIRED_LIMITATIONS or len(limitations) != len(
+        REQUIRED_LIMITATIONS
+    ):
+        reasons.add("invalid_evidence_limitation")
     if row.get("freshness") != "at_review_time":
         reasons.add("invalid_freshness")
     if row.get("review_cadence") != "each_mapping_review":
@@ -676,8 +716,11 @@ def _validate_row_values(row: Mapping[str, Any], reasons: set[str]) -> None:
     if (
         not isinstance(verification, dict)
         or set(verification) != VERIFICATION_KEYS
-        or verification.get("command") not in VERIFICATION_COMMANDS
-        or verification.get("packet_pointer") not in VERIFICATION_POINTERS
+        or (
+            verification.get("command"),
+            verification.get("packet_pointer"),
+        )
+        not in VERIFICATION_REFERENCES
     ):
         reasons.add("unsafe_verification_reference")
 
@@ -760,13 +803,23 @@ def _materialize_case(
     elif mutation == "duplicate_control_reference":
         rows[1]["control_reference"] = rows[0]["control_reference"]
     elif mutation == "prohibited_claim_text":
-        rows[0]["evidence_supports"] = "hipaa compliant"
+        rows[0]["evidence_supports"] = "Ｈ.Ｉ.Ｐ.Ａ.Ａ satisfied"
     elif mutation == "overflowing_json_number":
         return _dump_json(document).replace('"version": "1"', '"version": 1e999', 1)
     elif mutation == "invalid_unicode":
         document["template_id"] = "\ud800"
     elif mutation == "unknown_row_field":
         rows[0]["details"] = {}
+    elif mutation == "arbitrary_limitation_value":
+        rows[0]["evidence_does_not_prove"].append("access_token")
+    elif mutation == "evidence_source_support_mismatch":
+        rows[0]["evidence_source"] = "denied_action_evidence"
+        rows[0]["safe_evidence_fields"] = ["reason_code", "risk_class", "tool_id"]
+    elif mutation == "verification_reference_mismatch":
+        rows[0]["verification"] = {
+            "command": "make incident-reconstruction-check",
+            "packet_pointer": "docs/codex/control-mapping-design.md",
+        }
     else:
         raise ValueError(f"unknown template mutation: {mutation}")
     return _dump_json(document)
@@ -835,8 +888,23 @@ def _contains_forbidden_key(values: list[str]) -> bool:
 
 def _contains_prohibited_claim(value: Any) -> bool:
     if isinstance(value, str):
-        normalized = re.sub(r"[^a-z0-9]+", " ", value.casefold())
-        return bool(_PROHIBITED_CLAIM.search(normalized))
+        normalized = unicodedata.normalize("NFKC", value).casefold()
+        spaced = re.sub(r"[^a-z0-9]+", " ", normalized)
+        compact = re.sub(r"[^a-z0-9]+", "", normalized)
+        return bool(_PROHIBITED_CLAIM.search(spaced)) or any(
+            claim in compact
+            for claim in (
+                "hipaa",
+                "glba",
+                "sox",
+                "gdpr",
+                "nist",
+                "soc2",
+                "compliant",
+                "certified",
+                "certification",
+            )
+        )
     if isinstance(value, dict):
         return any(_contains_prohibited_claim(item) for item in value.values())
     if isinstance(value, list):

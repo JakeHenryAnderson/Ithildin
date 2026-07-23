@@ -37,7 +37,7 @@ flags remain false.
 ## Corpus
 
 `CMT-COMP-001` through `CMT-COMP-003` are accepted examples covering supported, unsupported, and
-not-applicable rows. `CMT-COMP-004` through `CMT-COMP-021` reject:
+not-applicable rows. `CMT-COMP-004` through `CMT-COMP-024` reject:
 
 - `duplicate_json_member`;
 - `unknown_template_field` and `unknown_row_field`;
@@ -54,7 +54,10 @@ not-applicable rows. `CMT-COMP-004` through `CMT-COMP-021` reject:
 - duplicate mapping IDs and control references;
 - `prohibited_claim_text`;
 - `non_finite_number`; and
-- `invalid_unicode`.
+- `invalid_unicode`;
+- arbitrary or sensitive limitation values;
+- evidence-source/support mismatches; and
+- verification command/pointer cross-pairs.
 
 The checker reports only the safe reason label. It never includes rejected keys or values in its
 report.
