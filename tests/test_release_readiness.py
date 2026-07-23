@@ -6901,7 +6901,7 @@ def test_enterprise_north_star_roadmap_rejects_mcc_blocked_prose_after_live_evid
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setattr(
-        enterprise_north_star_roadmap.enterprise_current_checkpoint,
+        enterprise_current_checkpoint,
         "build_report",
         lambda _repo_root: {
             "valid": True,
