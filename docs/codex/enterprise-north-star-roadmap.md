@@ -35,10 +35,9 @@ next. The canonical source documents remain:
 
 Ithildin is a v1.0 local-preview RC candidate, not a production enterprise product. The current
 implemented surface is the local governed MCP/tool gateway, local review console, Agent Run and
-evidence surfaces, demo/handoff packets, and bounded local-preview tools. The latest local-preview
-release transcript passed on exact candidate `c671d50`, but the current immutable RC review packet
-is not valid: `make review-candidate` remains blocked until exact-candidate MCC-006 live evidence
-passes.
+evidence surfaces, demo/handoff packets, and bounded local-preview tools. MCC-006 evidence is
+valid, but the current immutable RC review packet is absent or invalid. A mutable release
+transcript is not a substitute for packet-local exact-candidate evidence.
 
 Command Center closure-review dispatch and `CC-PILOT-107` UAT remain blocked. The durable
 non-dispatch record has a zero-finding Sol xhigh review, but no Sol Ultra approval, Sol Ultra
@@ -76,9 +75,8 @@ The historical enterprise handoff set is:
    make release-check
    ```
 
-2. Keep `make review-candidate` blocked while
-   `make mission-command-control-plane-poc-check` reports missing exact-candidate evidence. In a
-   separately bounded live-evidence lane, the required packet sequence is:
+2. Keep packet generation gated on exact-candidate MCC-006 evidence. In a separately bounded
+   live-evidence lane, the required packet sequence is:
 
    ```sh
    make mission-command-control-plane-poc

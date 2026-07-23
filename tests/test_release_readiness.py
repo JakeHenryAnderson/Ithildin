@@ -6827,10 +6827,8 @@ def test_enterprise_north_star_roadmap_is_wired() -> None:
     assert report["response_present_count"] == 0
     assert report["closure_ready_count"] == 0
     assert report["phase_count"] == 6
-    assert report["review_candidate_prerequisite_mcc_006_valid"] is False
-    assert report["review_candidate_blocker"] == (
-        "missing_or_invalid_exact_candidate_mcc_006_live_evidence"
-    )
+    assert report["review_candidate_prerequisite_mcc_006_valid"] is True
+    assert report["review_candidate_blocker"] == "missing_or_invalid_immutable_review_packet"
     assert report["immutable_review_packet_present"] is False
     assert report["immutable_review_packet_valid"] is False
     assert report["review_candidate_packet_ready"] is False
@@ -6858,9 +6856,8 @@ def test_enterprise_north_star_roadmap_is_wired() -> None:
         "erg_002_mission_control_display",
         "erg_004_live_sandbox_vm_poc",
         "enterprise_architecture_lanes",
-        "`make review-candidate` remains blocked until exact-candidate MCC-006 "
-        "live evidence passes",
-        "the current immutable RC review packet is not valid",
+        "MCC-006 evidence is valid, but the current immutable RC review packet is absent or "
+        "invalid",
         "Command Center closure-review dispatch and `CC-PILOT-107` UAT remain blocked",
         "make mission-command-control-plane-poc-check",
         "make mission-command-control-plane-poc",
@@ -6891,6 +6888,55 @@ def test_enterprise_north_star_roadmap_is_wired() -> None:
     )
     assert "$(MAKE) enterprise-north-star-roadmap" in (
         release_guardrails.REQUIRED_REVIEW_CANDIDATE_STEPS
+    )
+
+
+def test_enterprise_north_star_roadmap_rejects_mcc_blocked_prose_after_live_evidence(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        enterprise_north_star_roadmap.enterprise_current_checkpoint,
+        "build_report",
+        lambda _repo_root: {
+            "valid": True,
+            "failures": [],
+            "review_candidate_prerequisite_mcc_006_valid": True,
+            "review_candidate_blocker": "missing_or_invalid_immutable_review_packet",
+            "immutable_review_packet_present": False,
+            "immutable_review_packet_valid": False,
+            "review_candidate_packet_ready": False,
+            "closure_review_dispatch_allowed": False,
+            "human_uat_allowed": False,
+        },
+    )
+    original_read = enterprise_north_star_roadmap._read
+
+    def read_with_stale_mcc_prose(path: Path) -> str:
+        document = original_read(path)
+        if path.name == "enterprise-north-star-roadmap.md":
+            return (
+                document
+                + "\n"
+                + enterprise_north_star_roadmap.MCC_BLOCKED_PHRASES[0]
+                + "\n"
+            )
+        return document
+
+    monkeypatch.setattr(
+        enterprise_north_star_roadmap,
+        "_read",
+        read_with_stale_mcc_prose,
+    )
+
+    report = enterprise_north_star_roadmap.build_report(Path.cwd())
+
+    assert report["valid"] is False
+    assert report["review_candidate_prerequisite_mcc_006_valid"] is True
+    assert report["review_candidate_blocker"] == "missing_or_invalid_immutable_review_packet"
+    assert any(
+        enterprise_north_star_roadmap.MCC_BLOCKED_PHRASES[0] in failure
+        and "contradicts computed packet state" in failure
+        for failure in report["failures"]
     )
 
 
