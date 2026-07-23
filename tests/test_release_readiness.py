@@ -3032,6 +3032,44 @@ def test_enterprise_current_checkpoint_accepts_packet_blocked_prose(
     assert report["failures"] == []
 
 
+def test_enterprise_current_checkpoint_rejects_mcc_blocked_prose_after_live_evidence(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        mission_command_control_plane_poc_evidence_check,
+        "build_report",
+        lambda _repo_root: {"valid": True, "failures": [], "tool_count": 24},
+    )
+    original_read = enterprise_current_checkpoint._read
+
+    def read_with_stale_mcc_prose(path: Path) -> str:
+        document = original_read(path)
+        if path.name == "enterprise-current-checkpoint.md":
+            return (
+                document
+                + "\n"
+                + enterprise_current_checkpoint.MCC_BLOCKED_PHRASES[0]
+                + "\n"
+            )
+        return document
+
+    monkeypatch.setattr(enterprise_current_checkpoint, "_read", read_with_stale_mcc_prose)
+    cached_defaults = enterprise_current_checkpoint.build_report.__kwdefaults__
+    assert cached_defaults is not None
+    original_build_report = cached_defaults["_original"]
+
+    report = original_build_report(Path.cwd())
+
+    assert report["valid"] is False
+    assert report["review_candidate_prerequisite_mcc_006_valid"] is True
+    assert report["review_candidate_blocker"] == "missing_or_invalid_immutable_review_packet"
+    assert any(
+        enterprise_current_checkpoint.MCC_BLOCKED_PHRASES[0] in failure
+        and "contradicts computed packet state" in failure
+        for failure in report["failures"]
+    )
+
+
 def test_enterprise_packet_readiness_reconciliation_review_is_wired() -> None:
     review_rel = (
         "docs/codex/"
