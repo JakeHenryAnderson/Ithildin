@@ -15,7 +15,7 @@ from typing import Any
 if __package__ in {None, ""}:
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from scripts import enterprise_status_export, review_docs
+from scripts import enterprise_operator_next_action, enterprise_status_export, review_docs
 
 ROOT = Path(__file__).resolve().parents[1]
 DOC_REL = "docs/codex/mission-control-enterprise-status-fixtures.md"
@@ -115,8 +115,7 @@ ALLOWED_ACTION_COMMANDS = {
     "make trusted-host-promotion-negative-transcripts",
     "make trusted-host-promotion-runtime-source-review-bundle-check",
     "make production-identity-storage-pis-002-continuation-decision-check",
-    "make production-identity-storage-pis-002-sandbox-descriptor-repository-"
-    "internal-review-check",
+    "make production-identity-storage-pis-002-sandbox-descriptor-repository-internal-review-check",
     "make production-identity-storage-pis-001-planning-gate-check",
     "make production-identity-storage-architecture-decision-record-check",
     "make production-identity-storage-architecture-check",
@@ -169,8 +168,7 @@ def build_fixture_pack(repo_root: Path, output_dir: Path) -> Path:
     seed_reasons = _validate_for_display_import(seed)
     if seed_reasons:
         raise MissionControlEnterpriseStatusFixtureError(
-            "positive enterprise status payload failed validation: "
-            + ", ".join(seed_reasons)
+            "positive enterprise status payload failed validation: " + ", ".join(seed_reasons)
         )
 
     cases = _negative_case_payloads(seed)
@@ -349,9 +347,7 @@ def build_check_report(repo_root: Path) -> dict[str, Any]:
         "negative_case_count": summary.get("negative_case_count"),
         "negative_fixture_files": len(negative_hashes),
         "tool_count": 24,
-        "artifact_hashes_match_files": _artifact_hashes_match_files(
-            output_dir, hash_manifest
-        ),
+        "artifact_hashes_match_files": _artifact_hashes_match_files(output_dir, hash_manifest),
         **BOUNDARY_FLAGS,
     }
 
@@ -456,12 +452,18 @@ def _validate_for_display_import(payload: Mapping[str, Any]) -> list[str]:
         if payload.get(key) is not False:
             reasons.append(f"{key}_must_be_false")
 
-    if payload.get("closure_ready_count") not in {0, None} and payload.get(
-        "response_present_count"
-    ) == 0:
+    if (
+        payload.get("closure_ready_count") not in {0, None}
+        and payload.get("response_present_count") == 0
+    ):
         reasons.append("closure_claim_requires_normalized_response")
     action_commands = payload.get("action_commands")
-    if not isinstance(action_commands, list) or not action_commands:
+    external_input_wait = payload.get("next_action") == (
+        enterprise_operator_next_action.PIS_003_EXTERNAL_INPUT_ACTION
+    )
+    if not isinstance(action_commands, list):
+        reasons.append("action_commands_must_be_safe_list")
+    elif not action_commands and not external_input_wait:
         reasons.append("action_commands_must_be_safe_list")
     elif any(command not in ALLOWED_ACTION_COMMANDS for command in action_commands):
         reasons.append("unsupported_action_command")

@@ -29,14 +29,18 @@ close enterprise lanes, approve runtime behavior, or approve public/security-pro
 - `ERG-005`: staging-only trusted-host promotion runtime source findings are dispositioned for the
   bounded local-preview slice; ERG-005, placement authority, broader promotion, release, and UAT
   remain blocked.
-- Planning marker: the `ERG-006`/`ERG-007` architecture review and disposition, the cleared PIS-001
-  planning review, the bounded PIS-002 repository seam, its cleared PIS-002 exact-candidate review,
-  and the continuation decision are recorded; the separate PIS-003 entry decision record is next.
+- Planning marker: the `ERG-006`/`ERG-007` architecture review and disposition, PIS-001 and PIS-002
+  lineage, the PIS-003 vertical slice, and the cleared PIS-003 environment-evidence authority
+  activation review are recorded; external target identity and signed environment receipts are now
+  required before any separate operational collection-action authority can be prepared.
 - The descriptor-only runtime slice has both an internal source review and a high-effort internal
   proxy disposition with no findings. That is not external review and does not approve live
   VM/container runtime behavior.
 
-Validate the reviewed PIS-002 continuation prerequisite surface with:
+The canonical next action is
+`await_external_operator_target_and_signed_receipt_inputs_before_separate_collection_action_authority`.
+It carries no action commands and no review send set. The historical prerequisite surface can still
+be validated with:
 
 ```sh
 make production-identity-storage-pis-002-continuation-decision-check
@@ -48,8 +52,8 @@ make tool-surface-invariant-gate
 The accepted ERG-005 response closes only its two tracked runtime source findings. The exact
 ERG-006/ERG-007 architecture review fixed five medium findings and recorded a decision permitting
 only PIS-001 threat-model, non-goal, dependency-evaluation, exact-contract, and negative-test
-  planning; PIS-002 then proved one dependency-free repository seam and ended at its reviewed
-  continuation decision. It does not approve dependency changes, PIS-003 implementation,
+  planning; PIS-002 then proved one dependency-free repository seam and PIS-003 advanced through a
+  reviewed but non-operational environment-evidence authority activation. It does not approve
   production identity, enterprise RBAC,
 remote administration, runtime Postgres, migrations, production Node transport, or new governed
 tool powers.
@@ -58,28 +62,24 @@ tool powers.
 
 The historical ERG-005 and dual-send artifacts remain below for lineage and response-intake
 fallback. They are not the active post-disposition route while
-`make enterprise-operator-next-action` reports
-`prepare_pis_003_entry_decision_record`.
+`make enterprise-operator-next-action` reports the external-input wait above.
 
-The current enterprise planning scope is:
+The current enterprise dependency is:
 
-1. `PIS-003 entry decision`: evaluate the exact dependency, transaction, dialect,
-   schema/migration, isolated test-service, import-verification, rollback, and failure-evidence
-   contract without changing dependencies or runtime behavior.
+1. An external operator must identify the intended target and provide the signed environment
+   receipts required by the reviewed contract. This checkpoint does not authorize collecting them.
 
-Execute and validate this planning scope with:
+Revalidate only the frozen authority evidence with:
 
 ```sh
-make production-identity-storage-pis-002-continuation-decision-check
-make production-identity-storage-pis-002-sandbox-descriptor-repository-internal-review-check
+make production-identity-storage-pis-003-sd-pg-001-environment-evidence-collection-authority-check
 ```
 
 The active reviewed prerequisites are:
 
 ```sh
-docs/codex/production-identity-storage-pis-002-continuation-decision-record.md
-docs/codex/production-identity-storage-pis-002-continuation-decision.json
-docs/codex/production-identity-storage-pis-002-sandbox-descriptor-repository-internal-source-review.md
+docs/codex/production-identity-storage-pis-003-sd-pg-001-environment-evidence-collection-authority-record.md
+docs/codex/production-identity-storage-pis-003-sd-pg-001-environment-evidence-collection-authority.json
 ```
 
 The bounded implementation-planning checkpoint for the next ERG-005 slice is:

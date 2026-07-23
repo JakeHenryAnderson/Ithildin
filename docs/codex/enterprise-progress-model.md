@@ -11,8 +11,8 @@ compliance claim, or permission to add runtime powers.
 
 - Governed tool count: `24`.
 - Current selected capability: `not selected`.
-- Recommended next enterprise review: `ERG-006/ERG-007`.
-- Recommended send set: `ERG-006`, `ERG-007`.
+- Recommended next enterprise review: `external_operator_input_required`.
+- Recommended send set: none while external input is pending.
 - Technical MVP state: `operator_trial_observed`.
 - Enterprise send package ready: `true`.
 - Enterprise response evidence present: `0`.
@@ -89,15 +89,16 @@ behavior can be added.
 
 ## Current Best Next Action
 
-The best next action is preparation of the separate PIS-003 entry decision record under the
-valid PIS-002 continuation decision. Evaluate the exact dependency, transaction, dialect,
-schema/migration, import, rollback, and failure-evidence contract. This does not approve PIS-003 implementation,
-dependencies, production identity, runtime Postgres, schema migrations, hosted control-plane
-behavior, live VM runtime, local model invocation, sandbox orchestration, or broader enterprise
-claims.
+The best next action is to wait for external target identity and signed environment receipts before
+a separate operational collection-action authority decision. The canonical state is
+`await_external_operator_target_and_signed_receipt_inputs_before_separate_collection_action_authority`.
+There is no current review send set and no repository action command. This does not approve PIS-003
+implementation, dependency changes, production identity, runtime Postgres, schema migrations,
+hosted control-plane behavior, live VM runtime, local model invocation, sandbox orchestration, or
+broader enterprise claims.
 
-Validate the current prerequisite with `make production-identity-storage-pis-002-continuation-decision-check`
-and `make production-identity-storage-pis-002-sandbox-descriptor-repository-internal-review-check`.
+The reviewed authority record and contract are the current handoff evidence. Revalidation is status
+evidence only and does not authorize target selection or receipt collection.
 
 ```sh
 make production-identity-storage-pis-001-internal-review-check

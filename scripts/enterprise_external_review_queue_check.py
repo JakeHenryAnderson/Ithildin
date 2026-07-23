@@ -11,7 +11,7 @@ from typing import Any
 if __package__ in {None, ""}:
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from scripts import review_docs
+from scripts import enterprise_operator_next_action, review_docs
 
 ROOT = Path(__file__).resolve().parents[1]
 DOC_REL = "docs/codex/enterprise-external-review-queue.md"
@@ -47,13 +47,13 @@ REQUIRED_PHRASES = [
     "Current selected capability: `not selected`.",
     "make enterprise-external-review-queue-check",
     "Active Route Versus Historical Queue",
-    "Current active route: preparation of the `PIS-003` entry decision record after the valid "
-    "`PIS-002` continuation decision; `ERG-006`/`ERG-007` remain planning-only scope.",
+    "Current active route: external target and signed-receipt input wait; no review send is "
+    "active.",
     "make enterprise-active-route-clarity",
     "Historical Review Queue",
     "Dependency Order",
     "Historical recommended review: `ERG-003` static sandbox/VM preflight disposition.",
-    "`prepare_pis_003_entry_decision_record`",
+    f"`{enterprise_operator_next_action.PIS_003_EXTERNAL_INPUT_ACTION}`",
     "Runtime allowed",
     "public/security-product positioning remains a no-go lane",
 ]
@@ -102,21 +102,13 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     makefile = (repo_root / "Makefile").read_text(encoding="utf-8")
     readme = (repo_root / "README.md").read_text(encoding="utf-8")
     docs_site = (repo_root / "scripts/build_docs_site.py").read_text(encoding="utf-8")
-    review_index = (repo_root / "docs/codex/review-docs-index.md").read_text(
-        encoding="utf-8"
-    )
-    runway = (repo_root / "docs/codex/enterprise-readiness-runway.md").read_text(
-        encoding="utf-8"
-    )
+    review_index = (repo_root / "docs/codex/review-docs-index.md").read_text(encoding="utf-8")
+    runway = (repo_root / "docs/codex/enterprise-readiness-runway.md").read_text(encoding="utf-8")
     matrix = (repo_root / "docs/codex/enterprise-readiness-gap-matrix.md").read_text(
         encoding="utf-8"
     )
-    register = (repo_root / "docs/codex/post-rc-decision-register.md").read_text(
-        encoding="utf-8"
-    )
-    release_guardrails = (repo_root / "scripts/release_guardrails.py").read_text(
-        encoding="utf-8"
-    )
+    register = (repo_root / "docs/codex/post-rc-decision-register.md").read_text(encoding="utf-8")
+    release_guardrails = (repo_root / "scripts/release_guardrails.py").read_text(encoding="utf-8")
     release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
 
     if not doc_path.exists():
@@ -203,10 +195,10 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "tool_count": 24,
         "selected_capability": "not selected",
         "queue_row_count": 8,
-        "active_route": "ERG-006/ERG-007",
-        "recommended_next_review": "ERG-006/ERG-007",
+        "active_route": "external_operator_input_wait",
+        "recommended_next_review": "external_operator_input_required",
         "historical_recommended_review": "ERG-003",
-        "expected_action": "prepare_pis_003_entry_decision_record",
+        "expected_action": enterprise_operator_next_action.PIS_003_EXTERNAL_INPUT_ACTION,
         "runtime_changes_allowed": False,
         "mission_control_runtime_allowed": False,
         "sandbox_orchestration_allowed": False,

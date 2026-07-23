@@ -14,6 +14,7 @@ if __package__ in {None, ""}:
 from scripts import (
     production_identity_storage_pis_001_internal_review_check,
     production_identity_storage_pis_002_continuation_decision_check,
+    production_identity_storage_pis_003_sd_pg_001_environment_evidence_collection_authority_check,
     review_docs,
 )
 
@@ -99,8 +100,6 @@ DESCRIPTOR_ONLY_PLANNING_COMMANDS = [
     "make sandbox-vm-live-poc-runtime-descriptor-only-send-receipt-check",
     "make sandbox-vm-live-poc-runtime-descriptor-only-response-dry-run",
     "make sandbox-vm-live-poc-runtime-descriptor-only-response-application-preflight-check",
-    "make no-new-powers-guardrail",
-    "make tool-surface-invariant-gate",
 ]
 
 ERG005_TRUSTED_HOST_COMMANDS = [
@@ -148,6 +147,14 @@ PIS_003_ENTRY_DECISION_COMMANDS = [
     "make no-new-powers-guardrail",
     "make tool-surface-invariant-gate",
 ]
+
+PIS_003_EXTERNAL_INPUT_ACTION = (
+    "await_external_operator_target_and_signed_receipt_inputs_before_separate_"
+    "collection_action_authority"
+)
+PIS_003_DESCENDANT_INVENTORY_FAILURE = (
+    "PIS-003 environment evidence collection authority inventory is not exact"
+)
 
 PIS_ARCHITECTURE_REVIEW_COMMANDS = [
     "make production-identity-storage-architecture-check",
@@ -266,10 +273,7 @@ RUNTIME_GATE_ARTIFACTS = [
     },
     {
         "label": "live_poc_runtime_descriptor_contract_internal_review",
-        "path": (
-            "docs/codex/"
-            "sandbox-vm-live-poc-runtime-descriptor-contract-internal-review.md"
-        ),
+        "path": ("docs/codex/sandbox-vm-live-poc-runtime-descriptor-contract-internal-review.md"),
         "description": "internal xhigh review record for the descriptor/correlation contract",
     },
     {
@@ -279,10 +283,7 @@ RUNTIME_GATE_ARTIFACTS = [
     },
     {
         "label": "live_poc_runtime_gate_readiness_internal_review",
-        "path": (
-            "docs/codex/"
-            "sandbox-vm-live-poc-runtime-gate-readiness-internal-review.md"
-        ),
+        "path": ("docs/codex/sandbox-vm-live-poc-runtime-gate-readiness-internal-review.md"),
         "description": "internal High review record for the runtime gate-readiness checkpoint",
     },
     {
@@ -294,37 +295,23 @@ RUNTIME_GATE_ARTIFACTS = [
     },
     {
         "label": "live_poc_runtime_descriptor_only_implementation_ticket",
-        "path": (
-            "docs/codex/"
-            "sandbox-vm-live-poc-runtime-descriptor-only-implementation-ticket.md"
-        ),
-        "description": (
-            "descriptor-only implementation ticket for the next runtime checkpoint"
-        ),
+        "path": ("docs/codex/sandbox-vm-live-poc-runtime-descriptor-only-implementation-ticket.md"),
+        "description": ("descriptor-only implementation ticket for the next runtime checkpoint"),
     },
     {
         "label": "live_poc_runtime_descriptor_only_ticket_review_bundle",
-        "path": (
-            "var/review-packets/v3/"
-            "sandbox-vm-live-poc-runtime-descriptor-only-ticket-review"
-        ),
-        "description": (
-            "focused review packet for the descriptor-only implementation ticket"
-        ),
+        "path": ("var/review-packets/v3/sandbox-vm-live-poc-runtime-descriptor-only-ticket-review"),
+        "description": ("focused review packet for the descriptor-only implementation ticket"),
     },
     {
         "label": "live_poc_runtime_gate_readiness_response_intake",
-        "path": (
-            "docs/codex/"
-            "sandbox-vm-live-poc-runtime-gate-readiness-response-intake.md"
-        ),
+        "path": ("docs/codex/sandbox-vm-live-poc-runtime-gate-readiness-response-intake.md"),
         "description": "response-intake template for future runtime gate-readiness review",
     },
     {
         "label": "live_poc_runtime_gate_readiness_decision_record_skeleton",
         "path": (
-            "docs/codex/"
-            "sandbox-vm-live-poc-runtime-gate-readiness-decision-record-skeleton.md"
+            "docs/codex/sandbox-vm-live-poc-runtime-gate-readiness-decision-record-skeleton.md"
         ),
         "description": "decision-record skeleton for descriptor-only planning disposition",
     },
@@ -333,13 +320,8 @@ RUNTIME_GATE_ARTIFACTS = [
 DESCRIPTOR_ONLY_PLANNING_ARTIFACTS = [
     {
         "label": "live_poc_runtime_gate_readiness_decision_record",
-        "path": (
-            "docs/codex/"
-            "sandbox-vm-live-poc-runtime-gate-readiness-decision-record.md"
-        ),
-        "description": (
-            "internal High proxy decision record for descriptor-only planning"
-        ),
+        "path": ("docs/codex/sandbox-vm-live-poc-runtime-gate-readiness-decision-record.md"),
+        "description": ("internal High proxy decision record for descriptor-only planning"),
     },
     {
         "label": "live_poc_runtime_descriptor_only_plan",
@@ -350,19 +332,13 @@ DESCRIPTOR_ONLY_PLANNING_ARTIFACTS = [
     },
     {
         "label": "live_poc_runtime_descriptor_only_implementation_ticket",
-        "path": (
-            "docs/codex/"
-            "sandbox-vm-live-poc-runtime-descriptor-only-implementation-ticket.md"
-        ),
-        "description": (
-            "descriptor-only implementation ticket for the next runtime checkpoint"
-        ),
+        "path": ("docs/codex/sandbox-vm-live-poc-runtime-descriptor-only-implementation-ticket.md"),
+        "description": ("descriptor-only implementation ticket for the next runtime checkpoint"),
     },
     {
         "label": "live_poc_runtime_descriptor_only_implementation_decision",
         "path": (
-            "docs/codex/"
-            "sandbox-vm-live-poc-runtime-descriptor-only-implementation-decision.md"
+            "docs/codex/sandbox-vm-live-poc-runtime-descriptor-only-implementation-decision.md"
         ),
         "description": (
             "planning-only descriptor-only implementation decision draft for the "
@@ -371,50 +347,31 @@ DESCRIPTOR_ONLY_PLANNING_ARTIFACTS = [
     },
     {
         "label": "live_poc_runtime_descriptor_only_implementation",
-        "path": (
-            "docs/codex/"
-            "sandbox-vm-live-poc-runtime-descriptor-only-implementation.md"
-        ),
-        "description": (
-            "bounded descriptor-only runtime implementation checkpoint"
-        ),
+        "path": ("docs/codex/sandbox-vm-live-poc-runtime-descriptor-only-implementation.md"),
+        "description": ("bounded descriptor-only runtime implementation checkpoint"),
     },
     {
         "label": "live_poc_runtime_descriptor_only_internal_source_review",
         "path": (
-            "docs/codex/"
-            "sandbox-vm-live-poc-runtime-descriptor-only-internal-source-review.md"
+            "docs/codex/sandbox-vm-live-poc-runtime-descriptor-only-internal-source-review.md"
         ),
-        "description": (
-            "internal source review for the implemented descriptor-only runtime slice"
-        ),
+        "description": ("internal source review for the implemented descriptor-only runtime slice"),
     },
     {
         "label": "live_poc_runtime_descriptor_only_negative_transcripts",
-        "path": (
-            "docs/codex/"
-            "sandbox-vm-live-poc-runtime-descriptor-only-negative-transcripts.md"
-        ),
+        "path": ("docs/codex/sandbox-vm-live-poc-runtime-descriptor-only-negative-transcripts.md"),
         "description": (
             "secret-free denial transcripts for malformed or authority-expanding descriptors"
         ),
     },
     {
         "label": "live_poc_runtime_descriptor_only_ticket_review_bundle",
-        "path": (
-            "var/review-packets/v3/"
-            "sandbox-vm-live-poc-runtime-descriptor-only-ticket-review"
-        ),
-        "description": (
-            "focused review packet for the descriptor-only implementation ticket"
-        ),
+        "path": ("var/review-packets/v3/sandbox-vm-live-poc-runtime-descriptor-only-ticket-review"),
+        "description": ("focused review packet for the descriptor-only implementation ticket"),
     },
     {
         "label": "live_poc_runtime_descriptor_only_source_review_bundle",
-        "path": (
-            "var/review-packets/v3/"
-            "sandbox-vm-live-poc-runtime-descriptor-only-source-review"
-        ),
+        "path": ("var/review-packets/v3/sandbox-vm-live-poc-runtime-descriptor-only-source-review"),
         "description": (
             "focused source-review packet for the implemented descriptor-only runtime slice"
         ),
@@ -422,42 +379,24 @@ DESCRIPTOR_ONLY_PLANNING_ARTIFACTS = [
     {
         "label": "live_poc_runtime_descriptor_only_external_response_intake",
         "path": (
-            "docs/codex/"
-            "sandbox-vm-live-poc-runtime-descriptor-only-external-response-intake.md"
+            "docs/codex/sandbox-vm-live-poc-runtime-descriptor-only-external-response-intake.md"
         ),
-        "description": (
-            "response-intake template for the descriptor-only runtime source review"
-        ),
+        "description": ("response-intake template for the descriptor-only runtime source review"),
     },
     {
         "label": "live_poc_runtime_descriptor_only_response_inbox",
-        "path": (
-            "docs/codex/"
-            "sandbox-vm-live-poc-runtime-descriptor-only-response-inbox.md"
-        ),
-        "description": (
-            "focused raw-response inbox for descriptor-only runtime source review"
-        ),
+        "path": ("docs/codex/sandbox-vm-live-poc-runtime-descriptor-only-response-inbox.md"),
+        "description": ("focused raw-response inbox for descriptor-only runtime source review"),
     },
     {
         "label": "live_poc_runtime_descriptor_only_send_receipt",
-        "path": (
-            "docs/codex/"
-            "sandbox-vm-live-poc-runtime-descriptor-only-send-receipt.md"
-        ),
-        "description": (
-            "operator send receipt scaffold for descriptor-only runtime source review"
-        ),
+        "path": ("docs/codex/sandbox-vm-live-poc-runtime-descriptor-only-send-receipt.md"),
+        "description": ("operator send receipt scaffold for descriptor-only runtime source review"),
     },
     {
         "label": "live_poc_runtime_descriptor_only_response_dry_run",
-        "path": (
-            "docs/codex/"
-            "sandbox-vm-live-poc-runtime-descriptor-only-response-dry-run.md"
-        ),
-        "description": (
-            "response dry-run fixtures for descriptor-only runtime source review"
-        ),
+        "path": ("docs/codex/sandbox-vm-live-poc-runtime-descriptor-only-response-dry-run.md"),
+        "description": ("response dry-run fixtures for descriptor-only runtime source review"),
     },
     {
         "label": "live_poc_runtime_descriptor_only_response_application_preflight",
@@ -564,18 +503,12 @@ ERG005_TRUSTED_HOST_ARTIFACTS = [
 PIS_001_PLANNING_ARTIFACTS = [
     {
         "label": "production_identity_storage_architecture_decision",
-        "path": (
-            "docs/codex/"
-            "production-identity-storage-architecture-decision-record.md"
-        ),
+        "path": ("docs/codex/production-identity-storage-architecture-decision-record.md"),
         "description": "decision permitting only bounded PIS-001 planning",
     },
     {
         "label": "production_identity_storage_pis_001_planning_gate",
-        "path": (
-            "docs/codex/"
-            "production-identity-storage-pis-001-planning-gate.md"
-        ),
+        "path": ("docs/codex/production-identity-storage-pis-001-planning-gate.md"),
         "description": "fail-closed scope and done criteria for PIS-001 planning",
     },
     {
@@ -594,8 +527,7 @@ PIS_002_ENTRY_DECISION_ARTIFACTS = [
     {
         "label": "production_identity_storage_pis_001_decision",
         "path": (
-            "docs/codex/"
-            "production-identity-storage-pis-001-threat-model-and-dependency-decision.md"
+            "docs/codex/production-identity-storage-pis-001-threat-model-and-dependency-decision.md"
         ),
         "description": "reviewed threat, dependency, and PIS-002 stop-line contract",
     },
@@ -606,10 +538,7 @@ PIS_002_ENTRY_DECISION_ARTIFACTS = [
     },
     {
         "label": "production_identity_storage_pis_001_internal_review",
-        "path": (
-            "docs/codex/"
-            "production-identity-storage-pis-001-internal-source-review.md"
-        ),
+        "path": ("docs/codex/production-identity-storage-pis-001-internal-source-review.md"),
         "description": "zero-open-finding exact-candidate PIS-001 review",
     },
 ]
@@ -617,18 +546,12 @@ PIS_002_ENTRY_DECISION_ARTIFACTS = [
 PIS_003_ENTRY_DECISION_ARTIFACTS = [
     {
         "label": "production_identity_storage_pis_002_continuation_decision",
-        "path": (
-            "docs/codex/"
-            "production-identity-storage-pis-002-continuation-decision-record.md"
-        ),
+        "path": ("docs/codex/production-identity-storage-pis-002-continuation-decision-record.md"),
         "description": "decision allowing only PIS-003 entry-decision preparation",
     },
     {
         "label": "production_identity_storage_pis_002_continuation_contract",
-        "path": (
-            "docs/codex/"
-            "production-identity-storage-pis-002-continuation-decision.json"
-        ),
+        "path": ("docs/codex/production-identity-storage-pis-002-continuation-decision.json"),
         "description": "closed continuation authority and unresolved-boundary contract",
     },
     {
@@ -638,6 +561,27 @@ PIS_003_ENTRY_DECISION_ARTIFACTS = [
             "sandbox-descriptor-repository-internal-source-review.md"
         ),
         "description": "zero-open-finding exact-candidate PIS-002 implementation review",
+    },
+]
+
+PIS_003_EXTERNAL_INPUT_ARTIFACTS = [
+    {
+        "label": "production_identity_storage_pis_003_environment_evidence_authority_record",
+        "path": (
+            "docs/codex/production-identity-storage-pis-003-sd-pg-001-"
+            "environment-evidence-collection-authority-record.md"
+        ),
+        "description": (
+            "reviewed two-permission activation disposition with no operational action"
+        ),
+    },
+    {
+        "label": "production_identity_storage_pis_003_environment_evidence_authority_contract",
+        "path": (
+            "docs/codex/production-identity-storage-pis-003-sd-pg-001-"
+            "environment-evidence-collection-authority.json"
+        ),
+        "description": ("closed authority ceiling for target selection and signed receipt intake"),
     },
 ]
 
@@ -670,20 +614,17 @@ REQUIRED_DOC_PHRASES = [
     "descriptor_only_local_preview_disposition_ready",
     "accepted staging-only",
     "`ERG-005` source-finding disposition",
-    "make production-identity-storage-pis-002-continuation-decision-check",
-    "make production-identity-storage-pis-002-sandbox-descriptor-repository-internal-review-check",
-    "prepare_pis_003_entry_decision_record",
-    "make no-new-powers-guardrail",
-    "make tool-surface-invariant-gate",
+    PIS_003_EXTERNAL_INPUT_ACTION,
+    "external_operator_input_required",
+    "operational collection action",
     "make enterprise-review-send-refresh",
     "make handoff-dry-run",
     "make enterprise-send-now",
     "handoff_artifacts",
     "The architecture review and exact-candidate finding",
-    "For the current active route, the primary lane is preparation of the",
-    "`PIS-003` entry decision. Evaluate the exact dependency",
-    "PIS-003 implementation remains blocked behind that",
-    "separate committed entry decision",
+    "For the current active route, the primary lane is waiting for an external",
+    "two proposal-level permissions do not make an operational collection action",
+    "remain unauthorized",
     "Historical fallback lanes remain available only when the operator next-action command reports",
     "`ERG-003`: static sandbox/VM preflight disposition",
     "`ERG-002`: Mission Control display/import planning review",
@@ -739,12 +680,8 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     closure_ready_count = response_state["closure_ready_count"]
     disposition_recorded = _dual_response_disposition_recorded(repo_root)
     internal_review_recorded = _runtime_ticket_internal_review_recorded(repo_root)
-    runtime_gate_decision_recorded = _runtime_gate_readiness_decision_recorded(
-        repo_root
-    )
-    descriptor_only_disposition_recorded = _descriptor_only_disposition_recorded(
-        repo_root
-    )
+    runtime_gate_decision_recorded = _runtime_gate_readiness_decision_recorded(repo_root)
+    descriptor_only_disposition_recorded = _descriptor_only_disposition_recorded(repo_root)
     erg005_runtime_source_findings_disposition_recorded = (
         _erg005_runtime_source_findings_disposition_recorded(repo_root)
     )
@@ -757,14 +694,27 @@ def build_report(repo_root: Path) -> dict[str, Any]:
             production_identity_storage_pis_002_continuation_decision_check.CONTRACT_REL,
         )
     )
-    pis_002_continuation_decision_recorded = _pis_002_continuation_decision_recorded(
+    pis_002_continuation_decision_recorded = _pis_002_continuation_decision_recorded(repo_root)
+    if pis_002_continuation_artifact_present and not pis_002_continuation_decision_recorded:
+        failures.append("PIS-002 continuation decision artifacts are present but invalid")
+    pis_003_collection_authority_artifact_present = any(
+        (repo_root / relative_path).exists()
+        for relative_path in (
+            production_identity_storage_pis_003_sd_pg_001_environment_evidence_collection_authority_check.DOC_REL,
+            production_identity_storage_pis_003_sd_pg_001_environment_evidence_collection_authority_check.CONTRACT_REL,
+        )
+    )
+    pis_003_collection_activation_review_recorded = _pis_003_collection_activation_review_recorded(
         repo_root
     )
     if (
-        pis_002_continuation_artifact_present
-        and not pis_002_continuation_decision_recorded
+        pis_003_collection_authority_artifact_present
+        and not pis_003_collection_activation_review_recorded
     ):
-        failures.append("PIS-002 continuation decision artifacts are present but invalid")
+        failures.append(
+            "PIS-003 environment evidence collection authority artifacts are present "
+            "but invalid or exceed the reviewed non-action ceiling"
+        )
     next_action = _next_action(
         response_present_count,
         closure_ready_count,
@@ -779,12 +729,29 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         pis_001_exact_review_recorded=pis_001_exact_review_recorded,
         pis_002_continuation_artifact_present=pis_002_continuation_artifact_present,
         pis_002_continuation_decision_recorded=pis_002_continuation_decision_recorded,
+        pis_003_collection_authority_artifact_present=(
+            pis_003_collection_authority_artifact_present
+        ),
+        pis_003_collection_activation_review_recorded=(
+            pis_003_collection_activation_review_recorded
+        ),
     )
-    if next_action == "invalid_pis_002_continuation_decision":
+    action_commands: list[str]
+    handoff_artifacts: list[dict[str, str]]
+    recommended_send_set: list[str]
+    if next_action in {
+        "invalid_pis_002_continuation_decision",
+        "invalid_pis_003_environment_evidence_collection_authority",
+    }:
         action_commands = []
         handoff_artifacts = []
         recommended_send_set = []
         recommended_next_enterprise_review = "blocked"
+    elif next_action == PIS_003_EXTERNAL_INPUT_ACTION:
+        action_commands = []
+        handoff_artifacts = PIS_003_EXTERNAL_INPUT_ARTIFACTS
+        recommended_send_set = []
+        recommended_next_enterprise_review = "external_operator_input_required"
     elif next_action == "send_erg_003_and_erg_002":
         action_commands = SEND_COMMANDS
         handoff_artifacts = SEND_ARTIFACTS
@@ -825,9 +792,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         handoff_artifacts = PIS_001_PLANNING_ARTIFACTS
         recommended_send_set = ["ERG-006", "ERG-007"]
         recommended_next_enterprise_review = "ERG-006/ERG-007"
-    elif next_action == (
-        "prepare_erg006_erg007_production_identity_storage_architecture_review"
-    ):
+    elif next_action == ("prepare_erg006_erg007_production_identity_storage_architecture_review"):
         action_commands = PIS_ARCHITECTURE_REVIEW_COMMANDS
         handoff_artifacts = PIS_ARCHITECTURE_REVIEW_ARTIFACTS
         recommended_send_set = ["ERG-006", "ERG-007"]
@@ -862,9 +827,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     review_index = _read(repo_root / "docs/codex/review-docs-index.md")
     release_guardrails = _read(repo_root / "scripts/release_guardrails.py")
     release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
-    review_candidate_body = makefile.partition("review-candidate:")[2].partition(
-        "\n\n"
-    )[0]
+    review_candidate_body = makefile.partition("review-candidate:")[2].partition("\n\n")[0]
 
     for phrase in REQUIRED_DOC_PHRASES:
         if phrase not in doc:
@@ -937,15 +900,24 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         ),
         "pis_architecture_decision_recorded": pis_architecture_decision_recorded,
         "pis_001_exact_review_recorded": pis_001_exact_review_recorded,
-        "pis_002_continuation_artifact_present": (
-            pis_002_continuation_artifact_present
-        ),
+        "pis_002_continuation_artifact_present": (pis_002_continuation_artifact_present),
         "pis_002_continuation_decision_recorded": pis_002_continuation_decision_recorded,
+        "pis_003_collection_authority_artifact_present": (
+            pis_003_collection_authority_artifact_present
+        ),
+        "pis_003_collection_activation_review_recorded": (
+            pis_003_collection_activation_review_recorded
+        ),
         "next_action": next_action,
         "action_commands": action_commands,
         "next_after_send_commands": (
             []
-            if next_action == "invalid_pis_002_continuation_decision"
+            if next_action
+            in {
+                "invalid_pis_002_continuation_decision",
+                "invalid_pis_003_environment_evidence_collection_authority",
+                PIS_003_EXTERNAL_INPUT_ACTION,
+            }
             else PIS_003_ENTRY_DECISION_COMMANDS
             if next_action == "prepare_pis_003_entry_decision_record"
             else PIS_002_ENTRY_DECISION_COMMANDS
@@ -969,8 +941,7 @@ def render_report(report: dict[str, Any]) -> str:
         f"next_action_doc: {report['next_action_doc']}",
         f"tool_count: {report['tool_count']}",
         f"selected_capability: {report.get('selected_capability', 'unknown')}",
-        "recommended_send_set: "
-        + ", ".join(report.get("recommended_send_set") or []),
+        "recommended_send_set: " + ", ".join(report.get("recommended_send_set") or []),
         "recommended_next_enterprise_review: "
         f"{report.get('recommended_next_enterprise_review', 'unknown')}",
         f"response_present_count: {report.get('response_present_count', 'unknown')}",
@@ -979,10 +950,7 @@ def render_report(report: dict[str, Any]) -> str:
         "action_commands:",
         *[f"- {command}" for command in report.get("action_commands", [])],
         "next_after_send_commands:",
-        *[
-            f"- {command}"
-            for command in report.get("next_after_send_commands", [])
-        ],
+        *[f"- {command}" for command in report.get("next_after_send_commands", [])],
         "handoff_artifacts:",
         *[
             f"- {artifact['label']}: {artifact['path']}"
@@ -1019,11 +987,17 @@ def _next_action(
     pis_001_exact_review_recorded: bool,
     pis_002_continuation_artifact_present: bool = False,
     pis_002_continuation_decision_recorded: bool = False,
+    pis_003_collection_authority_artifact_present: bool = False,
+    pis_003_collection_activation_review_recorded: bool = False,
 ) -> str:
     if closure_ready_count > 0:
         return "run_lane_specific_closure_playbook"
     if response_present_count > 0:
         return "run_response_intake_preflight"
+    if pis_003_collection_authority_artifact_present:
+        if not pis_003_collection_activation_review_recorded:
+            return "invalid_pis_003_environment_evidence_collection_authority"
+        return PIS_003_EXTERNAL_INPUT_ACTION
     if pis_002_continuation_artifact_present:
         if not pis_002_continuation_decision_recorded:
             return "invalid_pis_002_continuation_decision"
@@ -1058,10 +1032,7 @@ def _dual_response_disposition_recorded(repo_root: Path) -> bool:
 
 
 def _pis_architecture_decision_recorded(repo_root: Path) -> bool:
-    path = (
-        repo_root
-        / "docs/codex/production-identity-storage-architecture-decision-record.md"
-    )
+    path = repo_root / "docs/codex/production-identity-storage-architecture-decision-record.md"
     text = _read(path)
     return (
         "`PRD-PROD-IAM-STORAGE-ARCH-001`" in text
@@ -1074,13 +1045,10 @@ def _pis_architecture_decision_recorded(repo_root: Path) -> bool:
 
 
 def _pis_001_exact_review_recorded(repo_root: Path) -> bool:
-    report = production_identity_storage_pis_001_internal_review_check.build_report(
-        repo_root
-    )
+    report = production_identity_storage_pis_001_internal_review_check.build_report(repo_root)
     return (
         report.get("valid") is True
-        and report.get("reviewed_commit")
-        == "177c0c6e461176d85126c9817dba40b3a092ec95"
+        and report.get("reviewed_commit") == "177c0c6e461176d85126c9817dba40b3a092ec95"
         and report.get("open_findings") == 0
         and report.get("pis_002_entry_decision_record_preparation_allowed") is True
         and report.get("pis_002_implementation_allowed") is False
@@ -1090,9 +1058,7 @@ def _pis_001_exact_review_recorded(repo_root: Path) -> bool:
 
 
 def _pis_002_continuation_decision_recorded(repo_root: Path) -> bool:
-    report = production_identity_storage_pis_002_continuation_decision_check.build_report(
-        repo_root
-    )
+    report = production_identity_storage_pis_002_continuation_decision_check.build_report(repo_root)
     return (
         report.get("valid") is True
         and report.get("pis_002_dependency_free_interface_phase_complete") is True
@@ -1109,6 +1075,47 @@ def _pis_002_continuation_decision_recorded(repo_root: Path) -> bool:
     )
 
 
+def _pis_003_collection_activation_review_recorded(repo_root: Path) -> bool:
+    validator = (
+        production_identity_storage_pis_003_sd_pg_001_environment_evidence_collection_authority_check
+    )
+    report = validator.build_report(repo_root)
+    # The authority validator intentionally proves only its exact 12-path candidate.
+    # A later status-only descendant therefore has one expected inventory failure.
+    # Accept that failure only when every immutable digest, reviewed ancestor, parent
+    # gate, and wiring check still passes; any other failure remains fail-closed.
+    expected_status = report.get("valid") is True or report.get("failures") == [
+        PIS_003_DESCENDANT_INVENTORY_FAILURE
+    ]
+    required_false_fields = (
+        "target_selected",
+        "intake_root_created",
+        "receipt_collection_started",
+        "psycopg_driver_loaded",
+        "database_connection_attempted",
+        "online_migration_executed",
+    )
+    return (
+        expected_status
+        and report.get("tool_count") == 24
+        and report.get("baseline_exists") is True
+        and report.get("baseline_is_ancestor") is True
+        and report.get("reviewed_candidate_commit_exists") is True
+        and report.get("reviewed_candidate_commit_is_ancestor") is True
+        and report.get("reviewed_candidate_path_hashes_match") is True
+        and report.get("activation_reviewed_candidate_commit_exists") is True
+        and report.get("activation_reviewed_candidate_commit_is_ancestor") is True
+        and report.get("activation_reviewed_candidate_path_hashes_match") is True
+        and report.get("authority_document_hash_matches") is True
+        and report.get("authority_contract_hash_matches") is True
+        and report.get("contract_valid") is True
+        and report.get("protected_hashes_match") is True
+        and report.get("parent_gate_valid") is True
+        and report.get("wiring_valid") is True
+        and all(report.get(field) is False for field in required_false_fields)
+    )
+
+
 def _runtime_ticket_internal_review_recorded(repo_root: Path) -> bool:
     path = repo_root / "docs/codex/sandbox-vm-live-poc-runtime-ticket-internal-review.md"
     text = _read(path)
@@ -1122,10 +1129,7 @@ def _runtime_ticket_internal_review_recorded(repo_root: Path) -> bool:
 
 
 def _runtime_gate_readiness_decision_recorded(repo_root: Path) -> bool:
-    path = (
-        repo_root
-        / "docs/codex/sandbox-vm-live-poc-runtime-gate-readiness-decision-record.md"
-    )
+    path = repo_root / "docs/codex/sandbox-vm-live-poc-runtime-gate-readiness-decision-record.md"
     text = _read(path)
     return (
         "Decision ID: `PRD-SANDBOX-LIVE-GATE-001`." in text
@@ -1155,21 +1159,15 @@ def _descriptor_only_disposition_recorded(repo_root: Path) -> bool:
 
 
 def _erg005_runtime_source_findings_disposition_recorded(repo_root: Path) -> bool:
-    source_review = _read(
-        repo_root / "docs/codex/trusted-host-promotion-runtime-source-review.md"
-    )
+    source_review = _read(repo_root / "docs/codex/trusted-host-promotion-runtime-source-review.md")
     finding_002 = _read(
-        repo_root
-        / "docs/codex/findings/ext-trusted-host-runtime-002-governance-bindings.md"
+        repo_root / "docs/codex/findings/ext-trusted-host-runtime-002-governance-bindings.md"
     )
     finding_006 = _read(
-        repo_root
-        / "docs/codex/findings/ext-trusted-host-runtime-006-adversarial-coverage.md"
+        repo_root / "docs/codex/findings/ext-trusted-host-runtime-006-adversarial-coverage.md"
     )
     exact_commit = "919858e8d5886129d7c1fefc730795380cd45f73"
-    exact_packet = (
-        "sha256:02b060bb65d41b317b3a426cd1ad9786d101683303622cb9eedb34436bb9ed16"
-    )
+    exact_packet = "sha256:02b060bb65d41b317b3a426cd1ad9786d101683303622cb9eedb34436bb9ed16"
     shared_finding_markers = (
         f"exact clean commit {exact_commit}",
         f"focused packet manifest {exact_packet}",

@@ -57,10 +57,10 @@ REQUIRED_PHRASES = [
     "Blocked current claims",
     "post-RC decision record",
     "Mission Control outside execution, policy, approval, audit authority",
-    "Current active route: preparation of the `PIS-003` entry decision record after the valid "
-    "`PIS-002` continuation decision; `ERG-006`/`ERG-007` remain planning-only scope.",
+    "Current active route: wait for external target identity and signed environment receipts "
+    "before a separate collection-action authority decision.",
     "Historical/fallback route: `ERG-003` static sandbox/VM preflight",
-    "prepare_pis_003_entry_decision_record",
+    enterprise_operator_next_action.PIS_003_EXTERNAL_INPUT_ACTION,
 ]
 
 REQUIRED_BLOCKED_PHRASES = [
@@ -107,12 +107,8 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     makefile = (repo_root / "Makefile").read_text(encoding="utf-8")
     readme = (repo_root / "README.md").read_text(encoding="utf-8")
     docs_site = (repo_root / "scripts/build_docs_site.py").read_text(encoding="utf-8")
-    runway = (repo_root / "docs/codex/enterprise-readiness-runway.md").read_text(
-        encoding="utf-8"
-    )
-    register = (repo_root / "docs/codex/post-rc-decision-register.md").read_text(
-        encoding="utf-8"
-    )
+    runway = (repo_root / "docs/codex/enterprise-readiness-runway.md").read_text(encoding="utf-8")
+    register = (repo_root / "docs/codex/post-rc-decision-register.md").read_text(encoding="utf-8")
     release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
 
     text = ""
@@ -130,14 +126,12 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         for phrase in REQUIRED_BLOCKED_PHRASES:
             if phrase not in text:
                 failures.append(
-                    "enterprise-readiness gap matrix is missing blocked phrase: "
-                    f"{phrase}"
+                    f"enterprise-readiness gap matrix is missing blocked phrase: {phrase}"
                 )
         for phrase in FORBIDDEN_PHRASES:
             if phrase.lower() in lowered:
                 failures.append(
-                    "enterprise-readiness gap matrix contains forbidden phrase: "
-                    f"{phrase}"
+                    f"enterprise-readiness gap matrix contains forbidden phrase: {phrase}"
                 )
 
     failures.extend(_active_route_failures(operator_next))
@@ -194,11 +188,9 @@ def render_report(report: dict[str, Any]) -> str:
         f"selected_capability: {report['selected_capability']}",
         f"active_route_source: {report['active_route_source']}",
         "active_send_set: " + ", ".join(report["active_send_set"]),
-        "recommended_next_enterprise_review: "
-        f"{report['recommended_next_enterprise_review']}",
+        f"recommended_next_enterprise_review: {report['recommended_next_enterprise_review']}",
         f"next_action: {report['next_action']}",
-        "historical_fallback_route: "
-        + ", ".join(report["historical_fallback_route"]),
+        "historical_fallback_route: " + ", ".join(report["historical_fallback_route"]),
         f"runtime_changes_allowed: {str(report['runtime_changes_allowed']).lower()}",
         "mission_control_runtime_allowed: "
         f"{str(report['mission_control_runtime_allowed']).lower()}",
@@ -221,14 +213,17 @@ def _active_route_failures(operator_next: dict[str, Any]) -> list[str]:
     ]
     if operator_next.get("valid") is not True:
         failures.append("enterprise operator next action is not valid")
-    if operator_next.get("recommended_send_set") != ["ERG-006", "ERG-007"]:
-        failures.append("active enterprise send set is not ERG-006/ERG-007")
-    if operator_next.get("recommended_next_enterprise_review") != "ERG-006/ERG-007":
-        failures.append("active enterprise review is not ERG-006/ERG-007")
-    if operator_next.get("next_action") != "prepare_pis_003_entry_decision_record":
-        failures.append(
-            "active enterprise action is not PIS-003 entry-decision preparation"
-        )
+    if operator_next.get("recommended_send_set") != []:
+        failures.append("external-input wait must not expose an active enterprise send set")
+    if (
+        operator_next.get("recommended_next_enterprise_review")
+        != "external_operator_input_required"
+    ):
+        failures.append("active enterprise route is not waiting for external operator input")
+    if operator_next.get("next_action") != (
+        enterprise_operator_next_action.PIS_003_EXTERNAL_INPUT_ACTION
+    ):
+        failures.append("active enterprise action is not the PIS-003 external-input wait")
     return failures
 
 

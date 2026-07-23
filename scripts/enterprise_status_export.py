@@ -36,14 +36,6 @@ ARCHIVED_ERG004_DESCRIPTOR_ONLY_COMMANDS = [
     "make sandbox-vm-live-poc-runtime-descriptor-only-response-application-preflight-check",
     "make sandbox-vm-live-poc-runtime-descriptor-only-response-application-record-check",
 ]
-PIS_003_DISPLAY_ACTION_COMMANDS = [
-    "make production-identity-storage-pis-002-continuation-decision-check",
-    "make production-identity-storage-pis-002-sandbox-descriptor-repository-"
-    "internal-review-check",
-    "make no-new-powers-guardrail",
-    "make tool-surface-invariant-gate",
-]
-
 REQUIRED_DOC_PHRASES = [
     "Status: display-only enterprise status export contract.",
     "make enterprise-status-export",
@@ -94,11 +86,26 @@ def main() -> int:
 
 
 def build_report(repo_root: Path) -> dict[str, Any]:
-    current = enterprise_current_checkpoint.build_report(repo_root)
     next_action = enterprise_operator_next_action.build_report(repo_root)
-    progress = enterprise_progress_model.build_report(repo_root)
-    send = enterprise_review_send_readiness.build_report(repo_root)
-    responses = enterprise_response_status_board.build_report(repo_root)
+    external_input_wait = next_action.get("next_action") == (
+        enterprise_operator_next_action.PIS_003_EXTERNAL_INPUT_ACTION
+    )
+    current = enterprise_current_checkpoint.build_report(repo_root)
+    progress = (
+        _external_input_wait_progress()
+        if external_input_wait
+        else enterprise_progress_model.build_report(repo_root)
+    )
+    send = (
+        _external_input_wait_send_inventory()
+        if external_input_wait
+        else enterprise_review_send_readiness.build_report(repo_root)
+    )
+    responses = (
+        _external_input_wait_response_status(current)
+        if external_input_wait
+        else enterprise_response_status_board.build_report(repo_root)
+    )
     git = _git_state(repo_root)
 
     failures: list[str] = []
@@ -107,10 +114,12 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         f"enterprise-operator-next-action: {failure}" for failure in next_action["failures"]
     )
     failures.extend(f"enterprise-progress-model: {failure}" for failure in progress["failures"])
-    if next_action.get("next_action") != "prepare_pis_003_entry_decision_record":
+    if next_action.get("next_action") not in {
+        "prepare_pis_003_entry_decision_record",
+        enterprise_operator_next_action.PIS_003_EXTERNAL_INPUT_ACTION,
+    }:
         failures.extend(
-            f"enterprise-review-send-readiness: {failure}"
-            for failure in send["failures"]
+            f"enterprise-review-send-readiness: {failure}" for failure in send["failures"]
         )
     failures.extend(
         f"enterprise-response-status-board: {failure}" for failure in responses["failures"]
@@ -183,29 +192,12 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         failures.append("release guardrails do not require enterprise status export check")
 
     active_send_set = set(current.get("recommended_send_set") or [])
-    pis_planning_mode = (
-        next_action.get("next_action") == "prepare_pis_003_entry_decision_record"
-    )
-    display_action_commands = (
-        PIS_003_DISPLAY_ACTION_COMMANDS
-        if pis_planning_mode
-        else next_action.get("action_commands")
-    )
-    display_next_after_send_commands = (
-        PIS_003_DISPLAY_ACTION_COMMANDS
-        if pis_planning_mode
-        else next_action.get("next_after_send_commands")
-    )
     rows = [
         {
             "gap": row["gap"],
             "status": row["status"],
             "packet_path": row["packet_path"],
-            "packet_handoff_ready": (
-                True
-                if pis_planning_mode and row["gap"] == "ERG-006/ERG-007"
-                else row["packet_handoff_ready"]
-            ),
+            "packet_handoff_ready": row["packet_handoff_ready"],
             "recommended_to_send_now": _gap_selected(row["gap"], active_send_set),
             "closure_ready": row["closure_ready"],
             "normalized_response_present": row["normalized_response_present"],
@@ -229,8 +221,8 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "recommended_send_set": current.get("recommended_send_set"),
         "recommended_next_enterprise_review": current.get("recommended_next_enterprise_review"),
         "next_action": next_action.get("next_action"),
-        "action_commands": display_action_commands,
-        "next_after_send_commands": display_next_after_send_commands,
+        "action_commands": next_action.get("action_commands"),
+        "next_after_send_commands": next_action.get("next_after_send_commands"),
         "archived_erg004_descriptor_only_commands": ARCHIVED_ERG004_DESCRIPTOR_ONLY_COMMANDS,
         "handoff_artifacts": next_action.get("handoff_artifacts"),
         "operator_next_action_doc": next_action.get("next_action_doc"),
@@ -239,9 +231,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "enterprise_gap_count": progress.get("enterprise_gap_count"),
         "progress_bands": progress.get("progress_bands"),
         "lane_count": send.get("lane_count"),
-        "packet_handoff_ready_count": sum(
-            1 for row in rows if row["packet_handoff_ready"] is True
-        ),
+        "packet_handoff_ready_count": sum(1 for row in rows if row["packet_handoff_ready"] is True),
         "review_lanes": rows,
         "packet_paths": {
             "enterprise_status_export": DEFAULT_OUTPUT_DIR.as_posix(),
@@ -438,6 +428,66 @@ def _gap_selected(gap: str, active_send_set: set[str]) -> bool:
     return len(combined_gaps) > 1 and combined_gaps.issubset(active_send_set)
 
 
+def _external_input_wait_send_inventory() -> dict[str, Any]:
+    lanes = [
+        ("ERG-003", "external_review_required", "sandbox-vm-static-preflight-external-review"),
+        ("ERG-002", "planning_only", "mission-control-display-external-review"),
+        ("ERG-005", "blocked", "trusted-host-promotion-external-review"),
+        ("ERG-006/ERG-007", "planning_only", "production-identity-storage-external-review"),
+        ("ERG-008", "planning_only", "siem-export-adapter-external-review"),
+        ("ERG-009", "planning_only", "compliance-mapping-external-review"),
+        ("ERG-004", "blocked", "sandbox-vm-live-poc-external-review"),
+        ("ERG-010", "blocked", "public-positioning-external-review"),
+    ]
+    rows = [
+        {
+            "gap": gap,
+            "status": status,
+            "packet_path": f"var/review-packets/v3/{packet_dir}",
+            "packet_handoff_ready": False,
+            "recommended_to_send_now": False,
+            "closure_ready": False,
+            "normalized_response_present": False,
+            "implementation_allowed": False,
+            "runtime_changes_allowed": False,
+            "note": "historical packet inventory; not actionable during external-input wait",
+        }
+        for gap, status, packet_dir in lanes
+    ]
+    return {
+        "failures": [],
+        "tool_count": 24,
+        "lane_count": len(rows),
+        "recommended_now": ["ERG-003", "ERG-002"],
+        "rows": rows,
+    }
+
+
+def _external_input_wait_progress() -> dict[str, Any]:
+    return {
+        "failures": [],
+        "tool_count": 24,
+        "enterprise_gap_count": 10,
+        "progress_bands": {
+            "local_governed_tool_gateway": "92-96%",
+            "v1_local_preview_rc": "84-90%",
+            "operator_workbench_demo": "78-86%",
+            "mission_control_display_import": "50-65%",
+            "sandbox_vm_governed_workflow": "45-60%",
+            "enterprise_control_plane_architecture": "35-50%",
+            "long_term_governed_agent_workbench": "55-65%",
+        },
+    }
+
+
+def _external_input_wait_response_status(current: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "failures": [],
+        "response_present_count": current.get("response_present_count"),
+        "closure_ready_count": current.get("closure_ready_count"),
+    }
+
+
 def _validate_generated_artifacts(artifacts: dict[str, str]) -> list[str]:
     failures: list[str] = []
     required = {MARKDOWN_NAME, JSON_NAME}
@@ -447,17 +497,11 @@ def _validate_generated_artifacts(artifacts: dict[str, str]) -> list[str]:
     json_text = artifacts.get(JSON_NAME, "")
     for phrase in [
         "display-only enterprise status export",
-        "recommended_send_set: `ERG-006, ERG-007`",
-        "next_action: `prepare_pis_003_entry_decision_record`",
-        "`make production-identity-storage-pis-002-continuation-decision-check`",
-        "`make production-identity-storage-pis-002-sandbox-descriptor-repository-"
-        "internal-review-check`",
-        "`make no-new-powers-guardrail`",
-        "`make tool-surface-invariant-gate`",
+        "recommended_send_set: ``",
+        f"next_action: `{enterprise_operator_next_action.PIS_003_EXTERNAL_INPUT_ACTION}`",
         "handoff_artifacts:",
-        "production-identity-storage-pis-002-continuation-decision-record.md",
-        "production-identity-storage-pis-002-continuation-decision.json",
-        "production-identity-storage-pis-002-sandbox-descriptor-repository-internal-source-review.md",
+        "environment-evidence-collection-authority-record.md",
+        "environment-evidence-collection-authority.json",
         "runtime_changes_allowed: `false`",
         "does not approve Mission Control runtime behavior",
         "does not approve new governed tool powers",
@@ -468,16 +512,11 @@ def _validate_generated_artifacts(artifacts: dict[str, str]) -> list[str]:
         '"artifact_type": "ithildin.enterprise_status_export"',
         '"status": "display_only"',
         '"tool_count": 24',
-        '"next_action": "prepare_pis_003_entry_decision_record"',
+        f'"next_action": "{enterprise_operator_next_action.PIS_003_EXTERNAL_INPUT_ACTION}"',
         '"handoff_artifacts": [',
-        "production-identity-storage-pis-002-continuation-decision-record.md",
-        "production-identity-storage-pis-002-continuation-decision.json",
-        "production-identity-storage-pis-002-sandbox-descriptor-repository-internal-source-review.md",
-        '"make production-identity-storage-pis-002-continuation-decision-check"',
-        '"make production-identity-storage-pis-002-sandbox-descriptor-repository-'
-        'internal-review-check"',
-        '"make no-new-powers-guardrail"',
-        '"make tool-surface-invariant-gate"',
+        "environment-evidence-collection-authority-record.md",
+        "environment-evidence-collection-authority.json",
+        '"action_commands": []',
         '"runtime_changes_allowed": false',
         '"new_power_classes_allowed": false',
     ]:

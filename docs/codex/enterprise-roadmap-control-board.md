@@ -9,7 +9,7 @@ implementation plan, source review, response intake, closure evidence, and expli
 
 Current governed tool count: `24`
 Current selected capability: `not selected`
-Current send set: `ERG-006`, `ERG-007`
+Current send set: none while external input is pending
 Current response count: `0`
 Current closure-ready count: `0`
 Active resume checkpoint: `ENT-001`
@@ -25,7 +25,8 @@ properties today.
 
 ## Current Resume Scope
 
-The current resumed goal is limited to post-`ENT-001` PIS-003 entry-decision record preparation:
+The current resumed goal is limited to the post-`ENT-001` external-input wait: receive target
+identity and signed receipts before any separate operational collection-action authority decision.
 use the valid PIS-002 continuation decision to evaluate the exact dependency, transaction, dialect,
 schema/migration, import, rollback, and failure-evidence contract. Dependency changes, PIS-003 implementation, production identity,
 enterprise RBAC, remote administration,

@@ -63,13 +63,13 @@ Blocked current claims, written without product-marketing claim phrases:
 
 ## Next Enterprise Action
 
-Current active route: preparation of the `PIS-003` entry decision record after the valid `PIS-002` continuation decision; `ERG-006`/`ERG-007` remain planning-only scope.
+Current active route: wait for external target identity and signed environment receipts before a separate collection-action authority decision.
 
 Current expected action:
-`prepare_pis_003_entry_decision_record`.
+`await_external_operator_target_and_signed_receipt_inputs_before_separate_collection_action_authority`.
 
-The operator should prepare the separate PIS-003 entry decision record under the valid PIS-002
-continuation contract. PIS-003 implementation and all dependency/runtime authority remain false.
+The repository has no current review send set or action command. PIS-003 implementation and all
+dependency/runtime authority remain false.
 The accepted ERG-005 source-finding disposition and exact ERG-006/ERG-007 architecture review are
 committed, but their broader enterprise gaps remain planning-only or blocked. The new route does
 not approve dependency changes, PIS-003 implementation, production identity, enterprise RBAC, remote

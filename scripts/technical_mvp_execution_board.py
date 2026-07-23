@@ -11,17 +11,16 @@ from typing import Any
 if __package__ in {None, ""}:
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from scripts import review_docs, status_now  # noqa: E402
+from scripts import enterprise_operator_next_action, review_docs, status_now  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[1]
 TECHNICAL_DOC = "docs/codex/technical-mvp-execution-board.md"
 ENTERPRISE_DOC = "docs/codex/enterprise-roadmap-control-board.md"
 BATCH_DOC = "docs/codex/batch-validation-strategy.md"
 SEND_MANIFEST_JSON = Path(
-    "var/review-packets/v3/enterprise-review-send-manifest/"
-    "enterprise-review-send-manifest.json"
+    "var/review-packets/v3/enterprise-review-send-manifest/enterprise-review-send-manifest.json"
 )
-POST_DISPOSITION_ACTION = "prepare_pis_003_entry_decision_record"
+POST_DISPOSITION_ACTION = enterprise_operator_next_action.PIS_003_EXTERNAL_INPUT_ACTION
 
 REQUIRED_DOCS = [TECHNICAL_DOC, ENTERPRISE_DOC, BATCH_DOC]
 TECHNICAL_IDS = [f"MVP-{index:03d}" for index in range(1, 11)]
@@ -44,11 +43,9 @@ REQUIRED_PHRASES = {
         "Current selected capability: `not selected`",
         "Latest implemented tool: `sandbox.artifact.write_text`",
         "Technical MVP state: `operator_trial_observed`",
-        "Current enterprise next action: "
-        "`prepare_pis_003_entry_decision_record`",
+        f"Current enterprise next action: `{POST_DISPOSITION_ACTION}`",
         "Active resume checkpoint: `ENT-001`",
-        "The paused umbrella goal resumes through preparation of the separate `PIS-003` "
-        "entry decision",
+        "The paused umbrella goal now waits for external target identity and signed receipts",
         "Development Validation Ladder",
         "Stop Conditions",
         "no sandbox orchestration",
@@ -58,12 +55,11 @@ REQUIRED_PHRASES = {
         "Status: checked enterprise roadmap control board for the v1.0 enterprise-grade target.",
         "Current governed tool count: `24`",
         "Current selected capability: `not selected`",
-        "Current send set: `ERG-006`, `ERG-007`",
+        "Current send set: none while external input is pending",
         "Current response count: `0`",
         "Current closure-ready count: `0`",
         "Active resume checkpoint: `ENT-001`",
-        "The current resumed goal is limited to post-`ENT-001` PIS-003 entry-decision record "
-        "preparation",
+        "The current resumed goal is limited to the post-`ENT-001` external-input wait",
         "Enterprise Target Definition",
         "Non-Negotiable Gates",
         "No new governed power class",
@@ -113,7 +109,11 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
 
     status = status_now.build_report(repo_root)
-    current_send_set = status.get("recommended_send_set") or _current_send_set(repo_root)
+    current_send_set = (
+        status["recommended_send_set"]
+        if "recommended_send_set" in status
+        else _current_send_set(repo_root)
+    )
 
     if status.get("valid") is not True:
         failures.append("status-now is not valid")
@@ -151,15 +151,13 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     if status.get("technical_mvp_state") != "operator_trial_observed":
         failures.append("technical MVP state is not operator_trial_observed")
     if status.get("enterprise_next_action") != POST_DISPOSITION_ACTION:
-        failures.append(
-            "enterprise next action is not bounded PIS-001 planning"
-        )
+        failures.append("enterprise next action is not the PIS-003 external-input wait")
     if status.get("response_present_count") != 0:
         failures.append("response evidence is present; response intake flow should take over")
     if status.get("closure_ready_count") != 0:
         failures.append("closure-ready lanes are present; closure flow should take over")
-    if current_send_set != ["ERG-006", "ERG-007"]:
-        failures.append("current send set is not ERG-006/ERG-007")
+    if current_send_set != []:
+        failures.append("external-input wait must not expose a current send set")
 
     if "technical-mvp-execution-board:" not in makefile:
         failures.append("Make target is missing: technical-mvp-execution-board")
@@ -235,8 +233,7 @@ def render_report(report: dict[str, Any]) -> str:
         f"enterprise_milestone_count: {report['enterprise_milestone_count']}",
         "current_send_set: " + ", ".join(report.get("current_send_set") or []),
         f"runtime_changes_allowed: {str(report['runtime_changes_allowed']).lower()}",
-        "capability_expansion_allowed: "
-        f"{str(report['capability_expansion_allowed']).lower()}",
+        f"capability_expansion_allowed: {str(report['capability_expansion_allowed']).lower()}",
         "public_security_product_positioning_allowed: "
         f"{str(report['public_security_product_positioning_allowed']).lower()}",
         f"new_power_classes_allowed: {str(report['new_power_classes_allowed']).lower()}",

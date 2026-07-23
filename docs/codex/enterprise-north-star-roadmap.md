@@ -38,7 +38,7 @@ implemented surface is the local governed MCP/tool gateway, local review console
 evidence surfaces, demo/handoff packets, and bounded local-preview tools. The latest local-preview
 RC packet is generated through `make review-candidate`.
 
-Active enterprise route: preparation of the `PIS-003` entry decision record after the valid `PIS-002` continuation decision; `ERG-006`/`ERG-007` remain planning-only scope.
+Active enterprise route: external target and signed-receipt input wait; no review send is active.
 
 Historical dual-send route: `ERG-003` then `ERG-002`.
 
@@ -78,15 +78,9 @@ The historical enterprise handoff set is:
    make enterprise-active-route-clarity
    ```
 
-3. Prepare the separate PIS-003 entry decision named by `make enterprise-operator-next-action`
-   using the valid PIS-002 continuation decision:
-
-   ```sh
-   make production-identity-storage-pis-002-continuation-decision-check
-   make production-identity-storage-pis-002-sandbox-descriptor-repository-internal-review-check
-   make no-new-powers-guardrail
-   make tool-surface-invariant-gate
-   ```
+3. Wait for external target identity and signed environment receipts before any separate
+   operational collection-action authority decision. No repository action or review send is
+   current in this state.
 
 4. If revisiting the historical dual-send path, use `make enterprise-review-send-refresh`,
    `make handoff-dry-run`, and `make enterprise-send-now` only as the legacy ERG-003/ERG-002 packet

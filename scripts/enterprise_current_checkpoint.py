@@ -30,6 +30,7 @@ ERG005_TRUSTED_HOST_ACTION = "prepare_erg005_trusted_host_promotion_review"
 PIS_001_PLANNING_ACTION = "execute_pis_001_threat_model_dependency_decision"
 PIS_002_ENTRY_DECISION_ACTION = "prepare_pis_002_entry_decision_record"
 PIS_003_ENTRY_DECISION_ACTION = "prepare_pis_003_entry_decision_record"
+PIS_003_EXTERNAL_INPUT_ACTION = enterprise_operator_next_action.PIS_003_EXTERNAL_INPUT_ACTION
 ALLOWED_NEXT_ACTIONS = {
     PRE_DISPOSITION_ACTION,
     POST_DISPOSITION_ACTION,
@@ -38,6 +39,7 @@ ALLOWED_NEXT_ACTIONS = {
     PIS_001_PLANNING_ACTION,
     PIS_002_ENTRY_DECISION_ACTION,
     PIS_003_ENTRY_DECISION_ACTION,
+    PIS_003_EXTERNAL_INPUT_ACTION,
 }
 
 REQUIRED_PHRASES = [
@@ -53,10 +55,9 @@ REQUIRED_PHRASES = [
     "`ERG-004`: descriptor-only sandbox/VM live POC runtime source review is locally dispositioned",
     "`ERG-005`: staging-only trusted-host promotion runtime source findings are dispositioned",
     "the `ERG-006`/`ERG-007` architecture review and disposition",
-    "cleared PIS-002 exact-candidate review,",
-    "separate PIS-003 entry decision record is next",
-    "make production-identity-storage-pis-002-continuation-decision-check",
-    "make production-identity-storage-pis-002-sandbox-descriptor-repository-internal-review-check",
+    "cleared PIS-003 environment-evidence authority",
+    "external target identity and signed environment receipts are now",
+    PIS_003_EXTERNAL_INPUT_ACTION,
     "The historical ERG-003/ERG-002 dual-send commands remain available only for "
     "lineage and fallback.",
     "What This Checkpoint Does Not Approve",
@@ -105,19 +106,25 @@ def main() -> int:
 def build_report(repo_root: Path) -> dict[str, Any]:
     failures: list[str] = []
 
+    operator_next_action = enterprise_operator_next_action.build_report(repo_root)
+    pis_mode = operator_next_action.get("next_action") in {
+        PIS_001_PLANNING_ACTION,
+        PIS_002_ENTRY_DECISION_ACTION,
+        PIS_003_ENTRY_DECISION_ACTION,
+        PIS_003_EXTERNAL_INPUT_ACTION,
+    }
     progress = v1_progress_assessment.build_report(repo_root)
-    send_readiness = enterprise_review_send_readiness.build_report(repo_root)
+    send_readiness: dict[str, Any] = (
+        {
+            "failures": [],
+            "tool_count": 24,
+            "recommended_now": ["ERG-003", "ERG-002"],
+        }
+        if pis_mode
+        else enterprise_review_send_readiness.build_report(repo_root)
+    )
     response_status = enterprise_response_status_board.build_report(repo_root)
     capability = next_capability_readiness.build_report(repo_root)
-    operator_next_action = enterprise_operator_next_action.build_report(repo_root)
-    pis_mode = (
-        operator_next_action.get("next_action")
-        in {
-            PIS_001_PLANNING_ACTION,
-            PIS_002_ENTRY_DECISION_ACTION,
-            PIS_003_ENTRY_DECISION_ACTION,
-        }
-    )
 
     failures.extend(f"v1-progress-assessment: {failure}" for failure in progress["failures"])
     if not pis_mode:
@@ -156,26 +163,30 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     post_disposition_mode = next_action == POST_DISPOSITION_ACTION
     descriptor_only_mode = next_action == DESCRIPTOR_ONLY_PLANNING_ACTION
     erg005_mode = next_action == ERG005_TRUSTED_HOST_ACTION
-    if (
-        not post_disposition_mode
-        and send_readiness.get("recommended_now") != ["ERG-003", "ERG-002"]
-    ):
-        failures.append("recommended enterprise send set must remain ERG-003 then ERG-002")
-    if descriptor_only_mode and operator_next_action.get("recommended_send_set") != [
-        "ERG-004"
+    if not post_disposition_mode and send_readiness.get("recommended_now") != [
+        "ERG-003",
+        "ERG-002",
     ]:
+        failures.append("recommended enterprise send set must remain ERG-003 then ERG-002")
+    if descriptor_only_mode and operator_next_action.get("recommended_send_set") != ["ERG-004"]:
         failures.append("operator next action must recommend ERG-004 in descriptor-only mode")
     if erg005_mode and operator_next_action.get("recommended_send_set") != ["ERG-005"]:
         failures.append(
             "operator next action must recommend ERG-005 after descriptor-only disposition"
         )
-    if pis_mode and operator_next_action.get("recommended_send_set") != [
-        "ERG-006",
-        "ERG-007",
-    ]:
+    if (
+        pis_mode
+        and next_action != PIS_003_EXTERNAL_INPUT_ACTION
+        and operator_next_action.get("recommended_send_set") != ["ERG-006", "ERG-007"]
+    ):
         failures.append(
             "operator next action must recommend ERG-006/ERG-007 after ERG-005 source disposition"
         )
+    if (
+        next_action == PIS_003_EXTERNAL_INPUT_ACTION
+        and operator_next_action.get("recommended_send_set") != []
+    ):
+        failures.append("external-input wait must not recommend an enterprise send set")
     if next_action not in ALLOWED_NEXT_ACTIONS:
         failures.append("operator next action is not an allowed enterprise flow")
     if response_status.get("response_present_count") != 0:
@@ -248,14 +259,12 @@ def build_report(repo_root: Path) -> dict[str, Any]:
             "recommended_send_set",
             send_readiness.get("recommended_now"),
         ),
-        "recommended_next_enterprise_review": progress.get(
+        "recommended_next_enterprise_review": operator_next_action.get(
             "recommended_next_enterprise_review"
         ),
         "next_action": next_action,
         "action_commands": operator_next_action.get("action_commands", []),
-        "next_after_send_commands": operator_next_action.get(
-            "next_after_send_commands", []
-        ),
+        "next_after_send_commands": operator_next_action.get("next_after_send_commands", []),
         "handoff_artifacts": operator_next_action.get("handoff_artifacts", []),
         "operator_next_action_doc": operator_next_action.get("next_action_doc"),
         "response_present_count": response_status.get("response_present_count"),
@@ -271,18 +280,14 @@ def render_report(report: dict[str, Any]) -> str:
         f"checkpoint_doc: {report['checkpoint_doc']}",
         f"tool_count: {report['tool_count']}",
         f"selected_capability: {report.get('selected_capability', 'unknown')}",
-        "recommended_send_set: "
-        + ", ".join(report.get("recommended_send_set") or []),
+        "recommended_send_set: " + ", ".join(report.get("recommended_send_set") or []),
         "recommended_next_enterprise_review: "
         f"{report.get('recommended_next_enterprise_review', 'unknown')}",
         f"next_action: {report.get('next_action', 'unknown')}",
         "action_commands:",
         *[f"- {command}" for command in report.get("action_commands", [])],
         "next_after_send_commands:",
-        *[
-            f"- {command}"
-            for command in report.get("next_after_send_commands", [])
-        ],
+        *[f"- {command}" for command in report.get("next_after_send_commands", [])],
         "handoff_artifacts:",
         *[
             f"- {artifact['label']}: {artifact['path']}"

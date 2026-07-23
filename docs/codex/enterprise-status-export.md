@@ -29,14 +29,14 @@ The export composes existing checked reports instead of creating a new source of
 - `make enterprise-response-status-board`
 
 The export includes current commit/dirty state, tool count, selected capability state, recommended
-enterprise send set, current next action, safe action commands, post-send receipt/response
+enterprise send set, current next action, safe action commands when a state has any, post-send receipt/response
 breadcrumbs under `next_after_send_commands`, display-only handoff artifact pointers,
 response/closure counts, progress bands, review-lane status, generated packet paths including the
 enterprise review send quickstart, send package, send-session record, and blocked authority flags.
-For PIS-003 entry-decision preparation, the display export exposes only the validated PIS-002
-continuation, no-new-powers, and tool-invariant commands. The authoritative reviewed prerequisite
-commands remain in `make enterprise-operator-next-action`; Mission Control does not execute either
-set.
+For the current PIS-003 external-input wait, the display export exposes an empty send set, empty
+`action_commands`, empty `next_after_send_commands`, and zero handoff-ready packets. It displays the
+reviewed authority record and contract only as handoff evidence. Mission Control does not execute
+commands or convert the two proposal permissions into operational collection authority.
 
 ## Output Artifacts
 

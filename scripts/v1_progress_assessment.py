@@ -26,6 +26,7 @@ DOC_PATH = ROOT / "docs/codex/v1.0-progress-assessment.md"
 POST_DISPOSITION_MODE = "post_disposition_next_review"
 PIS_002_ENTRY_DECISION_MODE = "pis_002_entry_decision_preparation"
 PIS_003_ENTRY_DECISION_MODE = "pis_003_entry_decision_preparation"
+PIS_003_EXTERNAL_INPUT_MODE = "pis_003_external_operator_input_wait"
 
 REQUIRED_PHRASES = [
     "Status: conservative progress-assessment snapshot",
@@ -36,7 +37,7 @@ REQUIRED_PHRASES = [
     "Runtime changes: blocked",
     "Public/security-product positioning: blocked",
     "Enterprise readiness gap count: `10`",
-    "Recommended next enterprise work: prepare the separate `PIS-003` entry decision record",
+    "Recommended next enterprise work: wait for external target identity and signed receipts",
     "Historical/fallback review route: `ERG-003` and `ERG-002`",
     "Core governed local tool gateway | `92-96%`",
     "v1.0 local-preview RC foundation | `84-90%`",
@@ -108,16 +109,13 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     failures.extend(f"enterprise-gap-matrix: {failure}" for failure in gap_matrix["failures"])
     failures.extend(f"next-capability: {failure}" for failure in capability["failures"])
     failures.extend(
-        f"v1-operator-trial-observed: {failure}"
-        for failure in observed_trial["failures"]
+        f"v1-operator-trial-observed: {failure}" for failure in observed_trial["failures"]
     )
     failures.extend(
-        f"enterprise-review-send-preflight: {failure}"
-        for failure in enterprise_send["failures"]
+        f"enterprise-review-send-preflight: {failure}" for failure in enterprise_send["failures"]
     )
     failures.extend(
-        f"enterprise-operator-next-action: {failure}"
-        for failure in operator_next["failures"]
+        f"enterprise-operator-next-action: {failure}" for failure in operator_next["failures"]
     )
 
     doc_rel = DOC_PATH.relative_to(ROOT).as_posix()
@@ -125,9 +123,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     makefile = (repo_root / "Makefile").read_text(encoding="utf-8")
     readme = (repo_root / "README.md").read_text(encoding="utf-8")
     docs_site = (repo_root / "scripts/build_docs_site.py").read_text(encoding="utf-8")
-    review_index = (repo_root / "docs/codex/review-docs-index.md").read_text(
-        encoding="utf-8"
-    )
+    review_index = (repo_root / "docs/codex/review-docs-index.md").read_text(encoding="utf-8")
     release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
 
     if status.get("tool_count") != 24:
@@ -155,28 +151,27 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         POST_DISPOSITION_MODE,
         PIS_002_ENTRY_DECISION_MODE,
         PIS_003_ENTRY_DECISION_MODE,
+        PIS_003_EXTERNAL_INPUT_MODE,
     }
     if enterprise_send.get("valid") is not True:
         failures.append("enterprise send preflight is not valid")
-    if operator_next.get("recommended_send_set") != ["ERG-006", "ERG-007"]:
-        failures.append(
-            "operator next action does not identify ERG-006/ERG-007 as the active send set"
-        )
-    if operator_next.get("recommended_next_enterprise_review") != "ERG-006/ERG-007":
-        failures.append(
-            "operator next action does not identify ERG-006/ERG-007 as the next review"
-        )
-    if operator_next.get("next_action") != "prepare_pis_003_entry_decision_record":
-        failures.append("operator next action is not PIS-003 entry-decision preparation")
+    if operator_next.get("recommended_send_set") != []:
+        failures.append("external-input wait must not expose an active send set")
+    if (
+        operator_next.get("recommended_next_enterprise_review")
+        != "external_operator_input_required"
+    ):
+        failures.append("operator next action is not waiting for external operator input")
+    if operator_next.get("next_action") != (
+        enterprise_operator_next_action.PIS_003_EXTERNAL_INPUT_ACTION
+    ):
+        failures.append("operator next action is not the PIS-003 external-input wait")
     if (
         not post_disposition_mode
         and enterprise_send.get("artifact_commits_match_current") is not True
     ):
         failures.append("enterprise send artifacts do not match the current commit")
-    if (
-        not post_disposition_mode
-        and enterprise_send.get("artifact_hashes_match_files") is not True
-    ):
+    if not post_disposition_mode and enterprise_send.get("artifact_hashes_match_files") is not True:
         failures.append("enterprise send artifact hashes do not match files")
 
     if not doc_path.exists():
@@ -190,14 +185,10 @@ def build_report(repo_root: Path) -> dict[str, Any]:
                 failures.append(f"v1.0 progress assessment is missing phrase: {phrase}")
         for phrase in BLOCKED_PHRASES:
             if phrase not in text:
-                failures.append(
-                    f"v1.0 progress assessment is missing blocked phrase: {phrase}"
-                )
+                failures.append(f"v1.0 progress assessment is missing blocked phrase: {phrase}")
         for phrase in FORBIDDEN_PHRASES:
             if phrase.lower() in lowered:
-                failures.append(
-                    f"v1.0 progress assessment contains forbidden phrase: {phrase}"
-                )
+                failures.append(f"v1.0 progress assessment contains forbidden phrase: {phrase}")
 
     if "v1-progress-assessment:" not in makefile:
         failures.append("Make target is missing: v1-progress-assessment")
@@ -223,9 +214,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "latest_implemented_tool": status.get("latest_implemented_tool"),
         "selected_capability": capability.get("next_candidate"),
         "technical_mvp_state": (
-            "operator_trial_observed"
-            if operator_trial_observed
-            else "ready_for_operator_trial"
+            "operator_trial_observed" if operator_trial_observed else "ready_for_operator_trial"
         ),
         "operator_trial_observed": operator_trial_observed,
         "enterprise_send_ready": enterprise_send.get("valid"),
@@ -233,9 +222,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "enterprise_send_artifact_commits_match_current": enterprise_send.get(
             "artifact_commits_match_current"
         ),
-        "enterprise_send_artifact_payloads_clean": enterprise_send.get(
-            "artifact_payloads_clean"
-        ),
+        "enterprise_send_artifact_payloads_clean": enterprise_send.get("artifact_payloads_clean"),
         "enterprise_send_artifact_hashes_match_files": enterprise_send.get(
             "artifact_hashes_match_files"
         ),
@@ -277,8 +264,7 @@ def render_report(report: dict[str, Any]) -> str:
         "enterprise_send_artifacts:",
         "- commits_match_current: "
         f"{str(report['enterprise_send_artifact_commits_match_current']).lower()}",
-        "- payloads_clean: "
-        f"{str(report['enterprise_send_artifact_payloads_clean']).lower()}",
+        f"- payloads_clean: {str(report['enterprise_send_artifact_payloads_clean']).lower()}",
         "- hashes_match_files: "
         f"{str(report['enterprise_send_artifact_hashes_match_files']).lower()}",
         f"enterprise_gap_count: {report.get('enterprise_gap_count', 'unknown')}",
@@ -287,16 +273,13 @@ def render_report(report: dict[str, Any]) -> str:
         f"enterprise_next_action: {report['enterprise_next_action']}",
         "historical_fallback_review_route: "
         + ", ".join(report["historical_fallback_review_route"]),
-        "capability_expansion_allowed: "
-        f"{str(report['capability_expansion_allowed']).lower()}",
+        f"capability_expansion_allowed: {str(report['capability_expansion_allowed']).lower()}",
         f"runtime_changes_allowed: {str(report['runtime_changes_allowed']).lower()}",
         "public_security_product_positioning_allowed: "
         f"{str(report['public_security_product_positioning_allowed']).lower()}",
         "progress_bands:",
     ]
-    lines.extend(
-        f"- {name}: {band}" for name, band in report["progress_bands"].items()
-    )
+    lines.extend(f"- {name}: {band}" for name, band in report["progress_bands"].items())
     if report["failures"]:
         lines.append("failures:")
         lines.extend(f"- {failure}" for failure in report["failures"])

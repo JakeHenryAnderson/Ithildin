@@ -16,10 +16,13 @@ make enterprise-review-send-refresh
 ```
 
 This preflight now serves two modes. For a historical send route, it gives the operator one final
-checked answer before sending a review packet. In the current post-disposition route, it validates
-the `ERG-006`/`ERG-007` gap scope and the valid PIS-002 continuation decision; no new review send is
-required. It checks the operator next-action and response state without treating stale historical
-send artifacts as active authority. Current action: `prepare_pis_003_entry_decision_record`.
+checked answer before sending a review packet. In the current post-disposition route, external
+target identity and signed environment receipts are required and there is no current review send
+set. It checks the operator next-action and response state without treating stale historical send
+artifacts as active authority. Current action:
+`await_external_operator_target_and_signed_receipt_inputs_before_separate_collection_action_authority`.
+The current external target identity and signed environment receipts must come from the external
+operator. This preflight does not authorize environment evidence collection action.
 
 ## Covered Components
 
@@ -52,9 +55,9 @@ payloads were produced for the current commit and were not generated from a
 dirty tree. When the worktree is dirty during development, that freshness check
 is deferred until the next clean run.
 
-In the current PIS-003 entry-decision preparation mode it expects:
+In the current PIS-003 external-input wait mode it expects:
 
-- current gap scope: `ERG-006`/`ERG-007`;
+- no current review send set;
 - current response-present count: `0`;
 - current closure-ready count: `0`;
 - active continuation decision:
@@ -65,11 +68,10 @@ In the current PIS-003 entry-decision preparation mode it expects:
 
 ## Operator Use
 
-The current PIS-003 entry-decision preparation sequence is:
+The current route is intentionally commandless. The preflight itself may be rerun as a read-only
+status check:
 
 ```sh
-make production-identity-storage-pis-002-continuation-decision-check
-make production-identity-storage-pis-002-sandbox-descriptor-repository-internal-review-check
 make enterprise-review-send-preflight
 ```
 
@@ -99,7 +101,8 @@ production identity/storage dry run and closure gate accept a real reviewer resp
 
 ## Boundary
 
-This preflight is read-only orchestration over existing checks. It does not
+This preflight is read-only orchestration over existing checks. It does not authorize environment
+evidence collection action, and it does not
 send packets, does not record external review, does not normalize responses,
 does not write response files beyond the existing ignored generated artifacts,
 does not close `ERG-006` or `ERG-007`, and does not approve runtime behavior,

@@ -71,8 +71,12 @@ def main() -> int:
 
 
 def build_report(repo_root: Path) -> dict[str, Any]:
-    freshness = artifact_freshness_check.build_report(repo_root)
     next_action = enterprise_operator_next_action.build_report(repo_root)
+    if next_action.get("next_action") == (
+        enterprise_operator_next_action.PIS_003_EXTERNAL_INPUT_ACTION
+    ):
+        return _build_external_input_wait_report(repo_root, next_action)
+    freshness = artifact_freshness_check.build_report(repo_root)
     if next_action.get("recommended_send_set") == ["ERG-004"]:
         return _build_erg004_report(repo_root, freshness, next_action)
     if next_action.get("recommended_send_set") == ["ERG-005"]:
@@ -125,6 +129,42 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "compliance_automation_allowed": False,
         "public_security_product_positioning_allowed": False,
         "new_power_classes_allowed": False,
+    }
+
+
+def _build_external_input_wait_report(
+    repo_root: Path, next_action: dict[str, Any]
+) -> dict[str, Any]:
+    return {
+        "schema_version": "1",
+        "valid": next_action.get("valid") is True,
+        "failures": list(next_action.get("failures", [])),
+        "commit": _git(repo_root, ["rev-parse", "HEAD"]),
+        "dirty": bool(_git(repo_root, ["status", "--short"])),
+        "tool_count": 24,
+        "selected_capability": "not selected",
+        "current_send_set": [],
+        "recommended_gaps": [],
+        "upload_staging_path": "historical_not_actionable",
+        "response_inbox_path": "external_operator_input_required",
+        "send_now_artifact_path": DEFAULT_OUTPUT_DIR.as_posix(),
+        "lane_count": 0,
+        "batch_count": 0,
+        "lanes": [],
+        "next_after_send": [],
+        "records_external_review": False,
+        "normalizes_responses": False,
+        "writes_response_files": False,
+        "closes_erg_003": False,
+        "closes_erg_002": False,
+        "closes_erg_004": False,
+        "runtime_changes_allowed": False,
+        "mission_control_runtime_allowed": False,
+        "live_vm_inspection_allowed": False,
+        "sandbox_orchestration_allowed": False,
+        "new_power_classes_allowed": False,
+        "send_action_effective": False,
+        "next_action": next_action.get("next_action"),
     }
 
 

@@ -112,6 +112,7 @@ ALLOWED_ENTERPRISE_NEXT_ACTIONS = {
     "execute_pis_001_threat_model_dependency_decision",
     "prepare_pis_002_entry_decision_record",
     "prepare_pis_003_entry_decision_record",
+    enterprise_operator_next_action.PIS_003_EXTERNAL_INPUT_ACTION,
 }
 
 

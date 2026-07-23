@@ -19,14 +19,12 @@ from scripts import (  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[1]
 SEND_MANIFEST_JSON = Path(
-    "var/review-packets/v3/enterprise-review-send-manifest/"
-    "enterprise-review-send-manifest.json"
+    "var/review-packets/v3/enterprise-review-send-manifest/enterprise-review-send-manifest.json"
 )
 UPLOAD_STAGING_DIR = "var/review-packets/v3/enterprise-review-upload-staging"
 DUAL_RESPONSE_INBOX_DIR = "var/review-runs/enterprise-dual-response-inbox"
 SEND_RECEIPT_COPY = (
-    "var/review-runs/enterprise-review-send-receipts/"
-    "enterprise-review-send-receipt-copy.json"
+    "var/review-runs/enterprise-review-send-receipts/enterprise-review-send-receipt-copy.json"
 )
 ERG004_SOURCE_REVIEW_DIR = (
     "var/review-packets/v3/sandbox-vm-live-poc-runtime-descriptor-only-source-review"
@@ -39,15 +37,9 @@ ERG004_RAW_RESPONSE = (
     "RAW_RESPONSE_ERG-004-DESCRIPTOR-ONLY.md"
 )
 ENTERPRISE_SEND_NOW_DIR = "var/review-packets/v3/enterprise-send-now"
-TRUSTED_HOST_EXTERNAL_REVIEW_DIR = (
-    "var/review-packets/v3/trusted-host-promotion-external-review"
-)
-TRUSTED_HOST_RESPONSE_KIT_DIR = (
-    "var/review-packets/v3/trusted-host-promotion-response-kit"
-)
-PIS_EXTERNAL_REVIEW_DIR = (
-    "var/review-packets/v3/production-identity-storage-external-review"
-)
+TRUSTED_HOST_EXTERNAL_REVIEW_DIR = "var/review-packets/v3/trusted-host-promotion-external-review"
+TRUSTED_HOST_RESPONSE_KIT_DIR = "var/review-packets/v3/trusted-host-promotion-response-kit"
+PIS_EXTERNAL_REVIEW_DIR = "var/review-packets/v3/production-identity-storage-external-review"
 PIS_RESPONSE_KIT_DIR = "var/review-packets/v3/production-identity-storage-response-kit"
 
 
@@ -71,10 +63,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     next_commands = _recommended_next_commands(validation, freshness, enterprise_next)
     return {
         "schema_version": "1",
-        "valid": (
-            validation.get("valid") is True
-            and enterprise_next.get("valid") is True
-        ),
+        "valid": (validation.get("valid") is True and enterprise_next.get("valid") is True),
         "commit": freshness.get("commit"),
         "dirty": freshness.get("dirty"),
         "tool_count": freshness.get("tool_count"),
@@ -117,8 +106,7 @@ def render_report(report: dict[str, Any]) -> str:
         f"response_present_count: {report['response_present_count']}",
         f"closure_ready_count: {report['closure_ready_count']}",
         f"validation_mode: {report['validation_mode']}",
-        "validation_categories: "
-        + (", ".join(report["validation_categories"]) or "none"),
+        "validation_categories: " + (", ".join(report["validation_categories"]) or "none"),
         f"artifact_freshness_valid: {str(report['artifact_freshness_valid']).lower()}",
         "recommended_next_commands:",
     ]
@@ -148,8 +136,11 @@ def _recommended_next_commands(
 ) -> list[str]:
     if (
         enterprise_next.get("valid") is False
-        or enterprise_next.get("next_action")
-        == "invalid_pis_002_continuation_decision"
+        or enterprise_next.get("next_action") == "invalid_pis_002_continuation_decision"
+    ):
+        return []
+    if enterprise_next.get("next_action") == (
+        enterprise_operator_next_action.PIS_003_EXTERNAL_INPUT_ACTION
     ):
         return []
     if validation.get("git_dirty"):
@@ -161,7 +152,7 @@ def _recommended_next_commands(
             "make handoff-dry-run",
             "make enterprise-send-now",
             "make enterprise-review-send-receipt-copy after the human send step",
-            "make enterprise-review-send-receipt-fill ARGS=\"...\" after the human send step",
+            'make enterprise-review-send-receipt-fill ARGS="..." after the human send step',
             "make enterprise-review-send-receipt-validate RECEIPT=path/to/copied-receipt.json",
             "make enterprise-response-waiting-room after reviewer responses arrive",
             "make enterprise-response-now after reviewer responses arrive",
@@ -264,9 +255,7 @@ def _latest_implemented_tool(repo_root: Path) -> str:
 
 
 def _selected_capability(repo_root: Path) -> str:
-    text = (repo_root / "docs/codex/next-capability-readiness.md").read_text(
-        encoding="utf-8"
-    )
+    text = (repo_root / "docs/codex/next-capability-readiness.md").read_text(encoding="utf-8")
     for line in text.splitlines():
         if line.startswith("- Selected candidate:"):
             return line.removeprefix("- Selected candidate:").strip(" .`")
@@ -284,6 +273,10 @@ def _send_manifest_count(repo_root: Path, key: str) -> int:
 
 def _handoff_paths(repo_root: Path, enterprise_next: dict[str, Any]) -> dict[str, str]:
     if enterprise_next.get("valid") is False:
+        return {}
+    if enterprise_next.get("next_action") == (
+        enterprise_operator_next_action.PIS_003_EXTERNAL_INPUT_ACTION
+    ):
         return {}
     if enterprise_next.get("recommended_send_set") == ["ERG-004"]:
         return {

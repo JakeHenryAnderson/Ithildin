@@ -27,23 +27,22 @@ If the dual-response disposition record, runtime-ticket internal review, runtime
 decision record, descriptor-only local-development disposition, and accepted staging-only
 `ERG-005` source-finding disposition are present, and the production identity/storage architecture
 decision, exact-candidate PIS-001 internal review, bounded PIS-002 repository seam, its zero-finding
-review, and the valid PIS-002 continuation decision are recorded, the next allowed operator action
-is preparation of the separate PIS-003 entry decision record:
+review, the valid PIS-002 continuation decision, and the reviewed PIS-003 environment-evidence
+authority activation are recorded, the repository has no further executable operator action. The
+next state is an external-input wait:
 
-Computed next action: `prepare_pis_003_entry_decision_record`.
+Computed next action:
+`await_external_operator_target_and_signed_receipt_inputs_before_separate_collection_action_authority`.
 
-```sh
-make production-identity-storage-pis-002-continuation-decision-check
-make production-identity-storage-pis-002-sandbox-descriptor-repository-internal-review-check
-make no-new-powers-guardrail
-make tool-surface-invariant-gate
-```
+`action_commands`, `next_after_send_commands`, and `recommended_send_set` are empty in this state.
+`recommended_next_enterprise_review` is `external_operator_input_required`. This is intentional:
+validation commands must not be represented as authority to select a target, collect receipts, load
+a driver, consume a DSN or binding key, connect, migrate, or manage a service/container.
 
 Primary production identity/storage handoff artifacts:
 
-- `docs/codex/production-identity-storage-pis-002-continuation-decision-record.md`
-- `docs/codex/production-identity-storage-pis-002-continuation-decision.json`
-- `docs/codex/production-identity-storage-pis-002-sandbox-descriptor-repository-internal-source-review.md`
+- `docs/codex/production-identity-storage-pis-003-sd-pg-001-environment-evidence-collection-authority-record.md`
+- `docs/codex/production-identity-storage-pis-003-sd-pg-001-environment-evidence-collection-authority.json`
 
 The descriptor-only ERG-004 implementation is now a bounded operator-attested descriptor-record
 slice with `descriptor_only_local_preview_disposition_ready` recorded for continued local
@@ -51,17 +50,16 @@ development. That does not close ERG-004 for broader claims. ERG-005 now has an 
 staging-only, single-artifact runtime slice with negative transcripts, internal source review, a
 local proxy disposition, and an independently accepted source-finding disposition. Broad
 trusted-host promotion remains blocked. The architecture review and exact-candidate finding
-disposition are recorded. For the current active route, the primary lane is preparation of the
-`PIS-003` entry decision. Evaluate the exact dependency, dialect, transaction, schema/migration,
-isolated test-service, import-verification, rollback, and failure-evidence contract without changing
-dependencies or runtime behavior. It does not authorize PIS-003 implementation, SQLAlchemy,
-Psycopg, Alembic, OIDC, enterprise RBAC, remote administration, Postgres, migrations, production
-Node transport, or new governed tool powers. PIS-003 implementation remains blocked behind that
-separate committed entry decision.
+disposition are recorded. For the current active route, the primary lane is waiting for an external
+operator to provide the target identity and signed environment receipts required by the reviewed
+authority record. The two proposal-level permissions do not make an operational collection action
+effective. PIS-003 implementation, SQLAlchemy, Psycopg, Alembic, OIDC, enterprise RBAC, remote
+administration, Postgres, migrations, production Node transport, and new governed tool powers
+remain unauthorized.
 
 `make enterprise-review-send-preflight` remains a historical review-send contract and a generic
-state check in this route; it is not the instruction source for PIS-003 entry-decision preparation.
-The commands and reviewed artifacts above are authoritative for the current planning step.
+state check in this route; it reports no current send set. The reviewed artifacts above are the
+authoritative handoff evidence for the external-input wait.
 
 The implemented staging-only `ERG-005` trusted-host promotion runtime remains historical bounded
 evidence; it is neither the active review route nor authorization for production host promotion.

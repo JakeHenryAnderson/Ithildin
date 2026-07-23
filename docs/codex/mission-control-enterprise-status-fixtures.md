@@ -69,7 +69,9 @@ The negative fixtures must be rejected or quarantined:
 - unsafe action commands outside the checked Ithildin operator refresh helpers;
 - unsafe handoff artifact paths outside ignored review artifact roots.
 
-The valid fixture may display only these checked action commands:
+The current valid fixture has an empty `action_commands` list because it represents the exact
+PIS-003 external-input wait. Empty commands are rejected for any other next action. Historical
+nonempty fixtures may display only these checked action commands:
 
 - `make release-check`;
 - `make review-candidate`;

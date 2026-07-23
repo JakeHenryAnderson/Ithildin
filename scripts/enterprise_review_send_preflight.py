@@ -34,6 +34,7 @@ PIS_SEND_SET = ["ERG-006", "ERG-007"]
 PIS_ACTION = "execute_pis_001_threat_model_dependency_decision"
 PIS_002_ENTRY_DECISION_ACTION = "prepare_pis_002_entry_decision_record"
 PIS_003_ENTRY_DECISION_ACTION = "prepare_pis_003_entry_decision_record"
+PIS_003_EXTERNAL_INPUT_ACTION = enterprise_operator_next_action.PIS_003_EXTERNAL_INPUT_ACTION
 ALLOWED_ACTIONS = {
     EXPECTED_ACTION,
     POST_DISPOSITION_ACTION,
@@ -42,6 +43,7 @@ ALLOWED_ACTIONS = {
     PIS_ACTION,
     PIS_002_ENTRY_DECISION_ACTION,
     PIS_003_ENTRY_DECISION_ACTION,
+    PIS_003_EXTERNAL_INPUT_ACTION,
 }
 BOUNDARY_FLAGS = {
     "records_external_review": False,
@@ -150,6 +152,18 @@ PIS_003_ENTRY_DECISION_DOC_PHRASES = [
     "does not normalize responses",
     "does not close `ERG-006` or `ERG-007`",
 ]
+
+PIS_003_EXTERNAL_INPUT_DOC_PHRASES = [
+    "Status: checked final operator preflight for the current enterprise review send.",
+    "make enterprise-review-send-preflight",
+    "external target identity and signed environment receipts",
+    "no current review send set",
+    PIS_003_EXTERNAL_INPUT_ACTION,
+    "does not record external review",
+    "does not normalize responses",
+    "does not authorize environment evidence collection action",
+]
+
 
 class ArtifactSpec(TypedDict):
     output_dir: str
@@ -288,6 +302,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         PIS_ACTION,
         PIS_002_ENTRY_DECISION_ACTION,
         PIS_003_ENTRY_DECISION_ACTION,
+        PIS_003_EXTERNAL_INPUT_ACTION,
     }
     dual_response: dict[str, Any] = {}
     handoff_consistency: dict[str, Any] = {}
@@ -313,6 +328,8 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         PIS_003_ENTRY_DECISION_ACTION,
     }:
         active_send_set = PIS_SEND_SET
+    elif next_action == PIS_003_EXTERNAL_INPUT_ACTION:
+        active_send_set = []
     elif next_action == ERG005_ACTION:
         active_send_set = ERG005_SEND_SET
     elif post_disposition_mode:
@@ -350,13 +367,10 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     for name, artifact_report in artifact_reports.items():
         if not artifact_report["valid"]:
             failures.append(f"{name} generated artifacts are not ready")
-            failures.extend(
-                f"{name}: {failure}" for failure in artifact_report["failures"]
-            )
+            failures.extend(f"{name}: {failure}" for failure in artifact_report["failures"])
 
     component_outputs = {
-        name: artifact_report["output_dir"]
-        for name, artifact_report in artifact_reports.items()
+        name: artifact_report["output_dir"] for name, artifact_report in artifact_reports.items()
     }
 
     doc = _read(repo_root / DOC_REL)
@@ -366,11 +380,11 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     review_index = _read(repo_root / "docs/codex/review-docs-index.md")
     release_guardrails = _read(repo_root / "scripts/release_guardrails.py")
     release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
-    review_candidate_body = makefile.partition("review-candidate:")[2].partition(
-        "\n\n"
-    )[0]
+    review_candidate_body = makefile.partition("review-candidate:")[2].partition("\n\n")[0]
 
-    if next_action == PIS_003_ENTRY_DECISION_ACTION:
+    if next_action == PIS_003_EXTERNAL_INPUT_ACTION:
+        required_doc_phrases = PIS_003_EXTERNAL_INPUT_DOC_PHRASES
+    elif next_action == PIS_003_ENTRY_DECISION_ACTION:
         required_doc_phrases = PIS_003_ENTRY_DECISION_DOC_PHRASES
     elif next_action == PIS_002_ENTRY_DECISION_ACTION:
         required_doc_phrases = PIS_002_ENTRY_DECISION_DOC_PHRASES
@@ -411,7 +425,9 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "current_send_set": active_send_set,
         "expected_action": next_action,
         "preflight_mode": (
-            "pis_003_entry_decision_preparation"
+            "pis_003_external_operator_input_wait"
+            if next_action == PIS_003_EXTERNAL_INPUT_ACTION
+            else "pis_003_entry_decision_preparation"
             if next_action == PIS_003_ENTRY_DECISION_ACTION
             else "pis_002_entry_decision_preparation"
             if next_action == PIS_002_ENTRY_DECISION_ACTION
@@ -453,10 +469,8 @@ def render_report(report: dict[str, Any]) -> str:
         f"expected_action: {report['expected_action']}",
         f"current_commit: {report['current_commit']}",
         f"current_dirty: {str(report['current_dirty']).lower()}",
-        "artifact_hashes_match_files: "
-        f"{str(report['artifact_hashes_match_files']).lower()}",
-        "artifact_commits_match_current: "
-        f"{str(report['artifact_commits_match_current']).lower()}",
+        f"artifact_hashes_match_files: {str(report['artifact_hashes_match_files']).lower()}",
+        f"artifact_commits_match_current: {str(report['artifact_commits_match_current']).lower()}",
         f"artifact_payloads_clean: {str(report['artifact_payloads_clean']).lower()}",
         f"response_present_count: {report['response_present_count']}",
         f"closure_ready_count: {report['closure_ready_count']}",
@@ -536,15 +550,12 @@ def _artifact_report(
     missing_hash_entries = sorted(set(required_files) - hashed_paths)
     if missing_hash_entries:
         failures.append(
-            "artifact hash manifest is missing entries: "
-            + ", ".join(missing_hash_entries)
+            "artifact hash manifest is missing entries: " + ", ".join(missing_hash_entries)
         )
     if hash_file in hashed_paths:
         failures.append("artifact hash manifest must not hash itself")
 
-    artifact_hashes_match_files = _artifact_hashes_match_files(
-        absolute_output_dir, hash_manifest
-    )
+    artifact_hashes_match_files = _artifact_hashes_match_files(absolute_output_dir, hash_manifest)
     if not artifact_hashes_match_files:
         failures.append("artifact hashes do not match generated files")
 

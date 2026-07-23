@@ -27,9 +27,9 @@ DOC_REL = "docs/codex/enterprise-active-route-clarity.md"
 DOC_TITLE = "Enterprise Active Route Clarity"
 TARGET = "enterprise-active-route-clarity"
 ACTIVE_SEND_SET = ["ERG-005"]
-NEXT_SEND_SET = ["ERG-006", "ERG-007"]
+NEXT_SEND_SET: list[str] = []
 HISTORICAL_SEND_SET = ["ERG-003", "ERG-002"]
-EXPECTED_ACTION = "prepare_pis_003_entry_decision_record"
+EXPECTED_ACTION = enterprise_operator_next_action.PIS_003_EXTERNAL_INPUT_ACTION
 
 REQUIRED_DOC_PHRASES = [
     "Status: checked active-route clarification for the current enterprise planning path.",
@@ -37,19 +37,17 @@ REQUIRED_DOC_PHRASES = [
     "Current selected capability: `not selected`.",
     "make enterprise-active-route-clarity",
     "The completed source-finding disposition route is `ERG-005`.",
-    "Current expected action: "
-    "`prepare_pis_003_entry_decision_record`.",
+    f"Current expected action: `{EXPECTED_ACTION}`.",
     "docs/codex/production-identity-storage-architecture-decision-record.md",
-    "Current active gap scope: `ERG-006`, `ERG-007`; no new review send is required.",
+    "Current active send set: none; external operator input is required.",
     "docs/codex/production-identity-storage-pis-002-continuation-decision-record.md",
-    "Current PIS-003 posture: entry-decision record preparation only; implementation remains "
-    "blocked.",
+    "Current PIS-003 posture: external-input wait; implementation remains blocked.",
     "EXT-LIVE-DESC-###",
     "EXT-PROD-IAM-STORAGE-###",
     "Older ERG-003/ERG-002 generated packet surfaces remain in the repository for provenance",
     "Historical dual-send route: `ERG-003`, then `ERG-002`.",
     "completed local-development disposition artifacts preserve the `ERG-004` descriptor-only lane",
-    "active operator checkpoint artifacts now point to PIS-003 entry-decision record preparation",
+    "active operator checkpoint artifacts now point to the PIS-003 external-input wait",
     "What This Does Not Approve",
 ]
 
@@ -77,13 +75,66 @@ BLOCKED_PHRASES = [
 def build_report(repo_root: Path) -> dict[str, Any]:
     failures: list[str] = []
 
-    preflight = enterprise_review_send_preflight.build_report(repo_root)
-    checkpoint = enterprise_current_checkpoint.build_report(repo_root)
     operator_next = enterprise_operator_next_action.build_report(repo_root)
-    technical_board = technical_mvp_execution_board.build_report(repo_root)
-    historical_readiness = enterprise_review_send_readiness.build_report(repo_root)
-    progress_assessment = v1_progress_assessment.build_report(repo_root)
-    gap_matrix = enterprise_readiness_gap_matrix_check.build_report(repo_root)
+    external_input_wait = operator_next.get("next_action") == EXPECTED_ACTION
+    if external_input_wait:
+        preflight = {
+            "valid": operator_next.get("valid") is True,
+            "failures": list(operator_next.get("failures", [])),
+            "current_send_set": operator_next.get("recommended_send_set"),
+            "expected_action": operator_next.get("next_action"),
+        }
+        checkpoint = {
+            "valid": operator_next.get("valid") is True,
+            "failures": list(operator_next.get("failures", [])),
+            "recommended_send_set": operator_next.get("recommended_send_set"),
+            "recommended_next_enterprise_review": operator_next.get(
+                "recommended_next_enterprise_review"
+            ),
+            "next_action": operator_next.get("next_action"),
+        }
+    else:
+        preflight = enterprise_review_send_preflight.build_report(repo_root)
+        checkpoint = enterprise_current_checkpoint.build_report(repo_root)
+    technical_board = (
+        {
+            "valid": True,
+            "failures": [],
+            "current_send_set": checkpoint.get("recommended_send_set"),
+            "enterprise_next_action": checkpoint.get("next_action"),
+        }
+        if external_input_wait
+        else technical_mvp_execution_board.build_report(repo_root)
+    )
+    historical_readiness = (
+        {"recommended_now": HISTORICAL_SEND_SET}
+        if external_input_wait
+        else enterprise_review_send_readiness.build_report(repo_root)
+    )
+    progress_assessment = (
+        {
+            "valid": True,
+            "failures": [],
+            "recommended_send_set": checkpoint.get("recommended_send_set"),
+            "recommended_next_enterprise_review": checkpoint.get(
+                "recommended_next_enterprise_review"
+            ),
+        }
+        if external_input_wait
+        else v1_progress_assessment.build_report(repo_root)
+    )
+    gap_matrix = (
+        {
+            "valid": operator_next.get("valid") is True,
+            "failures": list(operator_next.get("failures", [])),
+            "active_send_set": operator_next.get("recommended_send_set"),
+            "recommended_next_enterprise_review": operator_next.get(
+                "recommended_next_enterprise_review"
+            ),
+        }
+        if external_input_wait
+        else enterprise_readiness_gap_matrix_check.build_report(repo_root)
+    )
 
     for label, report in [
         ("enterprise-review-send-preflight", preflight),
@@ -95,40 +146,48 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     ]:
         if report.get("valid") is not True:
             failures.append(f"{label} is not valid")
-            failures.extend(f"{label}: {failure}" for failure in report.get("failures", []))
+            report_failures = report.get("failures", [])
+            if isinstance(report_failures, list):
+                failures.extend(f"{label}: {failure}" for failure in report_failures)
 
     if preflight.get("current_send_set") != NEXT_SEND_SET:
-        failures.append("preflight current send set is not ERG-006/ERG-007")
+        failures.append("preflight must expose no current send set")
     if preflight.get("expected_action") != EXPECTED_ACTION:
-        failures.append("preflight expected action is not PIS-003 entry-decision preparation")
+        failures.append("preflight expected action is not the PIS-003 external-input wait")
     if checkpoint.get("recommended_send_set") != NEXT_SEND_SET:
-        failures.append("current checkpoint recommended send set is not ERG-006/ERG-007")
-    if checkpoint.get("recommended_next_enterprise_review") != "ERG-006/ERG-007":
-        failures.append("current checkpoint next enterprise review is not ERG-006/ERG-007")
+        failures.append("current checkpoint must expose no recommended send set")
+    if checkpoint.get("recommended_next_enterprise_review") != "external_operator_input_required":
+        failures.append("current checkpoint is not waiting for external operator input")
     if checkpoint.get("next_action") != EXPECTED_ACTION:
-        failures.append("current checkpoint next action is not PIS-003 entry-decision preparation")
+        failures.append("current checkpoint next action is not the PIS-003 external-input wait")
     if operator_next.get("recommended_send_set") != NEXT_SEND_SET:
-        failures.append("operator next-action send set is not ERG-006/ERG-007")
-    if operator_next.get("recommended_next_enterprise_review") != "ERG-006/ERG-007":
-        failures.append("operator next-action enterprise review is not ERG-006/ERG-007")
+        failures.append("operator next-action must expose no send set")
+    if (
+        operator_next.get("recommended_next_enterprise_review")
+        != "external_operator_input_required"
+    ):
+        failures.append("operator next-action is not waiting for external input")
     if operator_next.get("next_action") != EXPECTED_ACTION:
-        failures.append("operator next-action is not PIS-003 entry-decision preparation")
+        failures.append("operator next-action is not the PIS-003 external-input wait")
     if technical_board.get("current_send_set") != NEXT_SEND_SET:
-        failures.append("technical MVP execution board current send set is not ERG-006/ERG-007")
+        failures.append("technical MVP execution board must expose no current send set")
     if technical_board.get("enterprise_next_action") != EXPECTED_ACTION:
         failures.append(
-            "technical MVP execution board next action is not PIS-003 entry-decision preparation"
+            "technical MVP execution board next action is not the PIS-003 external-input wait"
         )
     if historical_readiness.get("recommended_now") != HISTORICAL_SEND_SET:
         failures.append("historical dual-send readiness no longer records ERG-003/ERG-002 lineage")
     if progress_assessment.get("recommended_send_set") != NEXT_SEND_SET:
-        failures.append("v1 progress assessment active send set is not ERG-006/ERG-007")
-    if progress_assessment.get("recommended_next_enterprise_review") != "ERG-006/ERG-007":
-        failures.append("v1 progress assessment next review is not ERG-006/ERG-007")
+        failures.append("v1 progress assessment must expose no active send set")
+    if (
+        progress_assessment.get("recommended_next_enterprise_review")
+        != "external_operator_input_required"
+    ):
+        failures.append("v1 progress assessment is not waiting for external input")
     if gap_matrix.get("active_send_set") != NEXT_SEND_SET:
-        failures.append("enterprise gap matrix active send set is not ERG-006/ERG-007")
-    if gap_matrix.get("recommended_next_enterprise_review") != "ERG-006/ERG-007":
-        failures.append("enterprise gap matrix next review is not ERG-006/ERG-007")
+        failures.append("enterprise gap matrix must expose no active send set")
+    if gap_matrix.get("recommended_next_enterprise_review") != "external_operator_input_required":
+        failures.append("enterprise gap matrix is not waiting for external input")
 
     boundary_flags = {
         "runtime_changes_allowed": False,

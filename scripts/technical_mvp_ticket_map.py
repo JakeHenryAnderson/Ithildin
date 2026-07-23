@@ -27,6 +27,7 @@ ALLOWED_NEXT_ENTERPRISE_REVIEWS = {
     "ERG-004",
     "ERG-005",
     "ERG-006/ERG-007",
+    "external_operator_input_required",
 }
 ALLOWED_NEXT_ACTIONS = {
     "send_erg_003_and_erg_002",
@@ -36,6 +37,7 @@ ALLOWED_NEXT_ACTIONS = {
     "execute_pis_001_threat_model_dependency_decision",
     "prepare_pis_002_entry_decision_record",
     "prepare_pis_003_entry_decision_record",
+    enterprise_operator_next_action.PIS_003_EXTERNAL_INPUT_ACTION,
 }
 
 REQUIRED_PHRASES = [

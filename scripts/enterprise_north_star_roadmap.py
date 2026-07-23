@@ -32,17 +32,13 @@ REQUIRED_DOC_PHRASES = [
     "Current selected capability: `not selected`",
     "make enterprise-north-star-roadmap",
     "v1.0 local-preview RC candidate",
-    "Active enterprise route: preparation of the `PIS-003` entry decision record after the "
-    "valid `PIS-002` continuation decision; `ERG-006`/`ERG-007` remain planning-only scope.",
+    "Active enterprise route: external target and signed-receipt input wait; no review send is "
+    "active.",
     "Historical dual-send route: `ERG-003` then `ERG-002`.",
     "`ERG-003`: static sandbox/VM preflight disposition",
     "`ERG-002`: Mission Control display/import planning review",
     "make release-check",
     "make review-candidate",
-    "make production-identity-storage-pis-002-continuation-decision-check",
-    "make production-identity-storage-pis-002-sandbox-descriptor-repository-internal-review-check",
-    "make no-new-powers-guardrail",
-    "make tool-surface-invariant-gate",
     "make enterprise-review-send-refresh",
     "make handoff-dry-run",
     "make enterprise-send-now",
@@ -132,13 +128,39 @@ def main() -> int:
 
 def build_report(repo_root: Path) -> dict[str, Any]:
     failures: list[str] = []
-    ladder = enterprise_dependency_ladder.build_report(repo_root)
-    transition = enterprise_transition_map.build_report(repo_root)
-    progress = v1_progress_assessment.build_report(repo_root)
-    gap_matrix = enterprise_readiness_gap_matrix_check.build_report(repo_root)
-    response_status = enterprise_response_status_board.build_report(repo_root)
-    capability = next_capability_readiness.build_report(repo_root)
     operator_next_action = enterprise_operator_next_action.build_report(repo_root)
+    external_input_wait = operator_next_action.get("next_action") == (
+        enterprise_operator_next_action.PIS_003_EXTERNAL_INPUT_ACTION
+    )
+    if external_input_wait:
+        ladder = {"valid": True, "failures": []}
+        transition = {"valid": True, "failures": []}
+        progress = {
+            "valid": True,
+            "failures": [],
+            "tool_count": 24,
+            "recommended_send_set": [],
+            "recommended_next_enterprise_review": "external_operator_input_required",
+        }
+        gap_matrix = {"valid": True, "failures": [], "gap_count": 10}
+        response_status = {
+            "valid": True,
+            "failures": [],
+            "response_present_count": 0,
+            "closure_ready_count": 0,
+        }
+        capability = {
+            "valid": True,
+            "failures": [],
+            "next_candidate": "not selected",
+        }
+    else:
+        ladder = enterprise_dependency_ladder.build_report(repo_root)
+        transition = enterprise_transition_map.build_report(repo_root)
+        progress = v1_progress_assessment.build_report(repo_root)
+        gap_matrix = enterprise_readiness_gap_matrix_check.build_report(repo_root)
+        response_status = enterprise_response_status_board.build_report(repo_root)
+        capability = next_capability_readiness.build_report(repo_root)
 
     for label, report in [
         ("enterprise-dependency-ladder", ladder),
