@@ -8,9 +8,12 @@ import binascii
 import copy
 import hashlib
 import json
+import math
 import re
 import sys
+from collections import Counter
 from collections.abc import Mapping
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -26,9 +29,9 @@ ARCHITECTURE_REL = "docs/codex/siem-export-adapter-architecture.md"
 FIXTURE_DIR_REL = "tests/fixtures/siem_export_adapter"
 CORPUS_REL = f"{FIXTURE_DIR_REL}/compatibility-corpus.json"
 BASE_BUNDLE_REL = f"{FIXTURE_DIR_REL}/valid-bundle-v1.json"
-CORPUS_SHA256 = "87a0e2eb9bfbad2b90b8812ea1c11fa159718dd1ffbbd909ec6f11a9579a7fc3"
+CORPUS_SHA256 = "39a31416c80f727f1b049216ecbe6b6517bd6d0ab18ece596f74b065626d222c"
 BASE_BUNDLE_SHA256 = (
-    "f4931b5391638d604d4b3e3213bf4ef0c83040b10b807195bef73350d455e326"
+    "ea2c0fa28afaa4e0aefbd343383bf15121f1638f9dd505fe6ee94a294a5601c5"
 )
 
 BUNDLE_KEYS = {"manifest", "events_ndjson", "signature"}
@@ -40,6 +43,8 @@ MANIFEST_KEYS = {
     "source_export_sha256",
     "event_count",
     "omission_count",
+    "omission_categories",
+    "omissions",
     "events_sha256",
     "event_schema",
     "mapper_version",
@@ -57,6 +62,8 @@ RANGE_KEYS = {
 }
 ACTIVATION_KEYS = {"mapper", "redaction"}
 ACTIVATION_SEGMENT_KEYS = {"version", "first_sequence", "last_sequence"}
+OMISSION_KEYS = {"source_sequence", "source_event_hash", "category"}
+OMISSION_CATEGORIES = {"not_exportable"}
 EVENT_KEYS = {
     "schema",
     "event_id",
@@ -73,6 +80,7 @@ EVENT_KEYS = {
     "redaction",
     "attributes",
 }
+EVENT_REQUIRED_KEYS = EVENT_KEYS - {"attributes"}
 CORRELATION_KEYS = {
     "principal_id",
     "request_id",
@@ -120,6 +128,8 @@ CATEGORY_ATTRIBUTES = {
     "diagnostics": {"diagnostic_code"},
     "sandbox_workspace_posture": {"posture"},
 }
+ATTRIBUTE_SAFE_LABEL = re.compile(r"[a-z][a-z0-9_.-]{1,63}")
+TOOL_NAME = re.compile(r"[a-z][a-z0-9_]*(?:\.[a-z][a-z0-9_]*)+")
 FORBIDDEN_EVENT_KEYS = {
     "prompt",
     "raw_prompt",
@@ -255,6 +265,62 @@ EXPECTED_CASES = [
         "expected_accept": False,
         "expected_reasons": ["unknown_event_attribute"],
     },
+    {
+        "id": "SEA-COMP-014",
+        "label": "nested_sensitive_attribute",
+        "mutation": "nested_sensitive_attribute",
+        "expected_accept": False,
+        "expected_reasons": ["forbidden_event_field", "invalid_event_attribute"],
+    },
+    {
+        "id": "SEA-COMP-015",
+        "label": "omission_count_mismatch",
+        "mutation": "omission_count_mismatch",
+        "expected_accept": False,
+        "expected_reasons": ["omission_count_mismatch", "source_range_count_mismatch"],
+    },
+    {
+        "id": "SEA-COMP-016",
+        "label": "range_head_hash_mismatch",
+        "mutation": "range_head_hash_mismatch",
+        "expected_accept": False,
+        "expected_reasons": ["range_head_hash_mismatch"],
+    },
+    {
+        "id": "SEA-COMP-017",
+        "label": "duplicate_event_identity",
+        "mutation": "duplicate_event_identity",
+        "expected_accept": False,
+        "expected_reasons": ["duplicate_event_identity"],
+    },
+    {
+        "id": "SEA-COMP-018",
+        "label": "invalid_calendar_timestamp",
+        "mutation": "invalid_calendar_timestamp",
+        "expected_accept": False,
+        "expected_reasons": ["invalid_event_shape"],
+    },
+    {
+        "id": "SEA-COMP-019",
+        "label": "optional_attributes_absent",
+        "mutation": "optional_attributes_absent",
+        "expected_accept": True,
+        "expected_reasons": [],
+    },
+    {
+        "id": "SEA-COMP-020",
+        "label": "overflowing_json_number",
+        "mutation": "overflowing_json_number",
+        "expected_accept": False,
+        "expected_reasons": ["non_finite_number"],
+    },
+    {
+        "id": "SEA-COMP-021",
+        "label": "valid_omission_receipt",
+        "mutation": "valid_omission_receipt",
+        "expected_accept": True,
+        "expected_reasons": [],
+    },
 ]
 
 REQUIRED_DOC_PHRASES = [
@@ -267,12 +333,20 @@ REQUIRED_DOC_PHRASES = [
     "never written",
     "does not claim that the fixture carries a valid Ed25519 signature",
     "SEA-COMP-001",
-    "SEA-COMP-013",
+    "SEA-COMP-021",
     "duplicate_json_member",
     "cross_activation_range",
     "signature_manifest_digest_mismatch",
     "non_finite_number",
     "unknown_event_attribute",
+    "nested_sensitive_attribute",
+    "omission_count_mismatch",
+    "range_head_hash_mismatch",
+    "duplicate_event_identity",
+    "invalid_calendar_timestamp",
+    "optional_attributes_absent",
+    "overflowing_json_number",
+    "valid_omission_receipt",
     "reports only the safe reason label",
     "does not change `PRD-SIEM-EXPORT-001` from `no_go`",
     "does not close `ERG-008`",
@@ -544,7 +618,7 @@ def _validate_bundle(document: dict[str, Any]) -> list[str]:
         reasons.append("invalid_manifest_shape")
     if not _exact_positive_int(manifest.get("signing_key_epoch")):
         reasons.append("invalid_manifest_shape")
-    if not _TIMESTAMP.fullmatch(str(manifest.get("created_at", ""))):
+    if not _valid_timestamp(manifest.get("created_at")):
         reasons.append("invalid_manifest_shape")
     for key in ["source_export_sha256", "events_sha256"]:
         if not _HEX64.fullmatch(str(manifest.get(key, ""))):
@@ -569,6 +643,60 @@ def _validate_bundle(document: dict[str, Any]) -> list[str]:
     for key in ["prior_source_hash", "head_source_hash"]:
         if not _HEX64.fullmatch(str(source_range.get(key, ""))):
             reasons.append("invalid_manifest_shape")
+
+    omission_count = manifest.get("omission_count")
+    omission_categories = manifest.get("omission_categories")
+    omissions = manifest.get("omissions")
+    if not isinstance(omission_categories, dict) or any(
+        not isinstance(key, str)
+        or key not in OMISSION_CATEGORIES
+        or not _exact_positive_int(value)
+        for key, value in omission_categories.items()
+    ):
+        reasons.append("invalid_manifest_shape")
+        omission_categories = {}
+    if not isinstance(omissions, list):
+        reasons.append("invalid_manifest_shape")
+        omissions = []
+
+    omission_sequences: list[int] = []
+    omission_hashes: dict[int, str] = {}
+    actual_omission_categories: Counter[str] = Counter()
+    for omission in omissions:
+        if not isinstance(omission, dict) or set(omission) != OMISSION_KEYS:
+            reasons.append("invalid_manifest_shape")
+            continue
+        sequence = omission.get("source_sequence")
+        event_hash = omission.get("source_event_hash")
+        category = omission.get("category")
+        if (
+            not _exact_positive_int(sequence)
+            or not isinstance(event_hash, str)
+            or not _HEX64.fullmatch(event_hash)
+            or not isinstance(category, str)
+            or category not in OMISSION_CATEGORIES
+        ):
+            reasons.append("invalid_manifest_shape")
+            continue
+        assert type(sequence) is int
+        omission_sequences.append(sequence)
+        omission_hashes[sequence] = event_hash
+        actual_omission_categories[category] += 1
+    if (
+        omission_sequences != sorted(omission_sequences)
+        or len(omission_sequences) != len(set(omission_sequences))
+    ):
+        reasons.append("invalid_omission_sequence")
+    if (
+        type(omission_count) is int
+        and omission_count >= 0
+        and (
+            omission_count != len(omissions)
+            or omission_count != sum(omission_categories.values())
+            or dict(actual_omission_categories) != omission_categories
+        )
+    ):
+        reasons.append("omission_count_mismatch")
 
     activation = manifest.get("activation_segments")
     if not isinstance(activation, dict) or set(activation) != ACTIVATION_KEYS:
@@ -621,11 +749,24 @@ def _validate_bundle(document: dict[str, Any]) -> list[str]:
         reasons.append("event_count_mismatch")
 
     sequences: list[int] = []
+    event_hashes: dict[int, str] = {}
+    event_identities: list[tuple[str, str]] = []
     for event in events:
         reasons.extend(_validate_event(event, manifest))
         sequence = event.get("source_sequence")
         if type(sequence) is int and sequence > 0:
             sequences.append(sequence)
+            source_event_hash = event.get("source_event_hash")
+            if _HEX64.fullmatch(str(source_event_hash or "")):
+                event_hashes[sequence] = str(source_event_hash)
+        deployment_epoch = event.get("deployment_epoch")
+        event_id = event.get("event_id")
+        if isinstance(deployment_epoch, str) and isinstance(event_id, str):
+            event_identities.append((deployment_epoch, event_id))
+    if len(event_identities) != len(set(event_identities)):
+        reasons.append("duplicate_event_identity")
+    if sequences != sorted(sequences) or len(sequences) != len(set(sequences)):
+        reasons.append("non_contiguous_source_sequence")
     if (
         not event_parse_failed
         and type(first_sequence) is int
@@ -633,9 +774,29 @@ def _validate_bundle(document: dict[str, Any]) -> list[str]:
         and type(last_sequence) is int
         and last_sequence > 0
     ):
-        expected_sequences = list(range(first_sequence, last_sequence + 1))
-        if sequences != expected_sequences:
+        range_size = last_sequence - first_sequence + 1
+        all_sequences = sequences + omission_sequences
+        if (
+            first_sequence > last_sequence
+            or type(manifest.get("event_count")) is not int
+            or type(omission_count) is not int
+            or range_size
+            != int(manifest.get("event_count", -1)) + int(omission_count or 0)
+        ):
+            reasons.append("source_range_count_mismatch")
+        range_coverage_invalid = (
+            len(all_sequences) != len(set(all_sequences))
+            or any(
+                sequence < first_sequence or sequence > last_sequence
+                for sequence in all_sequences
+            )
+            or len(all_sequences) != range_size
+        )
+        if range_coverage_invalid:
             reasons.append("non_contiguous_source_sequence")
+        head_hash = event_hashes.get(last_sequence) or omission_hashes.get(last_sequence)
+        if not range_coverage_invalid and head_hash != source_range.get("head_source_hash"):
+            reasons.append("range_head_hash_mismatch")
 
     if signature:
         if set(signature) - SIGNATURE_KEYS:
@@ -695,7 +856,7 @@ def _validate_event(event: dict[str, Any], manifest: Mapping[str, Any]) -> list[
     unexpected_event_keys = set(event) - EVENT_KEYS - FORBIDDEN_EVENT_KEYS
     if unexpected_event_keys:
         reasons.append("unknown_event_field")
-    if EVENT_KEYS - set(event):
+    if EVENT_REQUIRED_KEYS - set(event):
         reasons.append("invalid_event_shape")
     if event.get("schema") != "ithildin.security_event.v1":
         reasons.append("unsupported_event_schema")
@@ -713,9 +874,12 @@ def _validate_event(event: dict[str, Any], manifest: Mapping[str, Any]) -> list[
         reasons.append("invalid_event_shape")
     if event.get("severity") not in SEVERITIES:
         reasons.append("invalid_event_shape")
-    for key in ["occurred_at", "recorded_at"]:
-        if not _TIMESTAMP.fullmatch(str(event.get(key, ""))):
-            reasons.append("invalid_event_shape")
+    occurred_at = _parse_timestamp(event.get("occurred_at"))
+    recorded_at = _parse_timestamp(event.get("recorded_at"))
+    if occurred_at is None or recorded_at is None:
+        reasons.append("invalid_event_shape")
+    elif recorded_at < occurred_at:
+        reasons.append("invalid_event_shape")
     if event.get("deployment_epoch") != manifest.get("deployment_epoch"):
         reasons.append("deployment_epoch_mismatch")
     if not _exact_positive_int(event.get("source_sequence")):
@@ -753,6 +917,8 @@ def _validate_event(event: dict[str, Any], manifest: Mapping[str, Any]) -> list[
             reasons.append("invalid_event_shape")
 
     attributes = event.get("attributes")
+    if "attributes" not in event:
+        return reasons
     if not isinstance(attributes, dict):
         reasons.append("invalid_event_shape")
     elif isinstance(category, str) and category in CATEGORY_ATTRIBUTES:
@@ -763,7 +929,11 @@ def _validate_event(event: dict[str, Any], manifest: Mapping[str, Any]) -> list[
         )
         if unknown_attributes:
             reasons.append("unknown_event_attribute")
-        reasons.extend(_validate_category_attributes(category, attributes))
+        if (
+            not unknown_attributes
+            and not (set(attributes) & FORBIDDEN_EVENT_KEYS)
+        ):
+            reasons.extend(_validate_category_attributes(category, attributes))
     return reasons
 
 
@@ -771,15 +941,56 @@ def _validate_category_attributes(
     category: str,
     attributes: Mapping[str, Any],
 ) -> list[str]:
+    if set(attributes) != CATEGORY_ATTRIBUTES[category]:
+        return ["invalid_event_attribute"]
     if category == "audit_verification":
-        if not {"verification_scope", "chain_valid"} <= set(attributes):
-            return ["invalid_event_shape"]
         if attributes.get("verification_scope") not in {
             "requested_range",
             "full_chain",
         } or not isinstance(attributes.get("chain_valid"), bool):
-            return ["invalid_event_shape"]
-    return []
+            return ["invalid_event_attribute"]
+        return []
+    if category == "policy_decision":
+        decision = attributes.get("decision")
+        return (
+            []
+            if isinstance(decision, str)
+            and decision in {"allow", "deny", "require_approval"}
+            and _safe_label(attributes.get("reason_code"))
+            else ["invalid_event_attribute"]
+        )
+    if category in {
+        "run_lifecycle",
+        "approval_lifecycle",
+        "sandbox_workspace_posture",
+    }:
+        key = "posture" if category == "sandbox_workspace_posture" else "state"
+        return [] if _safe_label(attributes.get(key)) else ["invalid_event_attribute"]
+    if category == "tool_lifecycle":
+        return (
+            []
+            if isinstance(attributes.get("tool_name"), str)
+            and TOOL_NAME.fullmatch(str(attributes["tool_name"]))
+            and _safe_label(attributes.get("state"))
+            else ["invalid_event_attribute"]
+        )
+    if category in {"executor_result", "diagnostics"}:
+        key = "result_code" if category == "executor_result" else "diagnostic_code"
+        return [] if _safe_label(attributes.get(key)) else ["invalid_event_attribute"]
+    if category == "signed_export":
+        return (
+            []
+            if attributes.get("export_profile")
+            == "operator_retrieved_offline_signed_bundle"
+            else ["invalid_event_attribute"]
+        )
+    if category == "redaction_summary":
+        return (
+            []
+            if _exact_nonnegative_int(attributes.get("category_count"))
+            else ["invalid_event_attribute"]
+        )
+    return ["invalid_event_attribute"]
 
 
 def _materialize_case(
@@ -838,6 +1049,70 @@ def _materialize_case(
         events = _fixture_events(document)
         events[0]["attributes"]["unregistered_detail"] = "blocked"
         _replace_events_and_rebind(document, events)
+    elif mutation == "nested_sensitive_attribute":
+        events = _fixture_events(document)
+        events[0]["category"] = "policy_decision"
+        events[0]["attributes"] = {
+            "decision": {"access_token": "must-not-echo"},
+            "reason_code": "policy_match",
+        }
+        _replace_events_and_rebind(document, events)
+    elif mutation == "omission_count_mismatch":
+        document["manifest"]["omission_count"] = 1
+        _rebind_signature(document)
+    elif mutation == "range_head_hash_mismatch":
+        document["manifest"]["range"]["head_source_hash"] = "f" * 64
+        _rebind_signature(document)
+    elif mutation == "duplicate_event_identity":
+        events = _fixture_events(document)
+        duplicate = copy.deepcopy(events[0])
+        duplicate["source_sequence"] = 42
+        duplicate["source_event_hash"] = "2" * 64
+        events.append(duplicate)
+        document["manifest"]["event_count"] = 2
+        document["manifest"]["range"]["last_sequence"] = 42
+        document["manifest"]["range"]["head_source_hash"] = "2" * 64
+        _replace_events_and_rebind(document, events)
+    elif mutation == "invalid_calendar_timestamp":
+        events = _fixture_events(document)
+        events[0]["occurred_at"] = "2026-02-31T12:00:00Z"
+        _replace_events_and_rebind(document, events)
+    elif mutation == "optional_attributes_absent":
+        events = _fixture_events(document)
+        events[0].pop("attributes")
+        _replace_events_and_rebind(document, events)
+    elif mutation == "overflowing_json_number":
+        events_raw = str(document["events_ndjson"]).replace(
+            '"source_sequence":41',
+            '"source_sequence":1e1000000',
+        )
+        document["events_ndjson"] = events_raw
+        document["manifest"]["events_sha256"] = hashlib.sha256(
+            events_raw.encode("utf-8")
+        ).hexdigest()
+        _rebind_signature(document)
+    elif mutation == "valid_omission_receipt":
+        events = _fixture_events(document)
+        last_event = copy.deepcopy(events[0])
+        last_event["event_id"] = "evt_2222222222222222"
+        last_event["source_sequence"] = 43
+        last_event["source_event_hash"] = "3" * 64
+        last_event["occurred_at"] = "2026-07-23T12:00:02Z"
+        last_event["recorded_at"] = "2026-07-23T12:00:02Z"
+        events.append(last_event)
+        document["manifest"]["event_count"] = 2
+        document["manifest"]["omission_count"] = 1
+        document["manifest"]["omission_categories"] = {"not_exportable": 1}
+        document["manifest"]["omissions"] = [
+            {
+                "category": "not_exportable",
+                "source_event_hash": "2" * 64,
+                "source_sequence": 42,
+            }
+        ]
+        document["manifest"]["range"]["last_sequence"] = 43
+        document["manifest"]["range"]["head_source_hash"] = "3" * 64
+        _replace_events_and_rebind(document, events)
     else:
         raise ValueError(f"unknown compatibility mutation: {mutation}")
     return json.dumps(document, indent=2, sort_keys=True) + "\n"
@@ -873,6 +1148,7 @@ def _parse_json_object(raw: str) -> dict[str, Any]:
         raw,
         object_pairs_hook=_reject_duplicate_keys,
         parse_constant=_reject_non_finite,
+        parse_float=_parse_finite_float,
     )
     if not isinstance(value, dict):
         raise ValueError("JSON document must be an object")
@@ -892,6 +1168,13 @@ def _reject_non_finite(value: str) -> None:
     raise NonFiniteJsonNumber(value)
 
 
+def _parse_finite_float(value: str) -> float:
+    parsed = float(value)
+    if not math.isfinite(parsed):
+        raise NonFiniteJsonNumber("non_finite_number")
+    return parsed
+
+
 def _canonical_json(value: Any) -> str:
     return json.dumps(
         value,
@@ -906,13 +1189,42 @@ def _forbidden_keys(value: Any) -> set[str]:
     found: set[str] = set()
     if isinstance(value, dict):
         for key, item in value.items():
-            if key.lower() in FORBIDDEN_EVENT_KEYS:
+            if _forbidden_key(key):
                 found.add(key.lower())
             found.update(_forbidden_keys(item))
     elif isinstance(value, list):
         for item in value:
             found.update(_forbidden_keys(item))
     return found
+
+
+def _forbidden_key(value: str) -> bool:
+    lowered = value.lower()
+    if lowered in FORBIDDEN_EVENT_KEYS:
+        return True
+    parts = [part for part in re.split(r"[^a-z0-9]+", lowered) if part]
+    sensitive_parts = {
+        "token",
+        "cookie",
+        "secret",
+        "password",
+        "passwd",
+        "credential",
+    }
+    if any(part in sensitive_parts for part in parts):
+        return True
+    compact = "".join(parts)
+    return compact.endswith(
+        (
+            "accesstoken",
+            "authtoken",
+            "refreshtoken",
+            "sessiontoken",
+            "privatekey",
+            "sessionkey",
+            "connectionstring",
+        )
+    )
 
 
 def _valid_signature_shape(value: Any) -> bool:
@@ -939,6 +1251,24 @@ def _safe_correlation_identifier(value: Any, prefix: str) -> bool:
         and value.startswith(prefix)
         and bool(_SAFE_CORRELATION_ID.fullmatch(value))
     )
+
+
+def _safe_label(value: Any) -> bool:
+    return isinstance(value, str) and bool(ATTRIBUTE_SAFE_LABEL.fullmatch(value))
+
+
+def _parse_timestamp(value: Any) -> datetime | None:
+    if not isinstance(value, str) or not _TIMESTAMP.fullmatch(value):
+        return None
+    try:
+        parsed = datetime.strptime(value, "%Y-%m-%dT%H:%M:%SZ")
+    except ValueError:
+        return None
+    return parsed if parsed.strftime("%Y-%m-%dT%H:%M:%SZ") == value else None
+
+
+def _valid_timestamp(value: Any) -> bool:
+    return _parse_timestamp(value) is not None
 
 
 def _correlation_prefix(key: str) -> str:

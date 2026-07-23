@@ -79,7 +79,7 @@ extraction or infer files from names.
 
 | Artifact | Candidate schema | Required binding |
 | --- | --- | --- |
-| Manifest | `ithildin.security_export_manifest.v1` | Profile, source range/head, source-export digest, event count, events digest, mapper version, redaction-policy version, creation time, signing key ID/epoch |
+| Manifest | `ithildin.security_export_manifest.v1` | Profile, source range/head, source-export digest, event and omission counts, closed omission receipts/category counts, events digest, mapper version, redaction-policy version, creation time, signing key ID/epoch |
 | Events | `ithildin.security_event.v1` NDJSON | One canonical JSON object per LF-terminated line; digest covers the exact UTF-8 bytes |
 | Signature | `ithildin.security_export_signature.v1` | Ed25519 signature over canonical manifest bytes; trusted public key is supplied out of band |
 
@@ -143,8 +143,10 @@ not a retroactive remap.
 Unknown event types, unknown source major versions, missing required fields, duplicate JSON keys,
 non-finite numbers, invalid Unicode, or an unregistered output attribute fail the export range. They
 must never be silently dropped or emitted as a partially shaped event. An explicit `not_exportable`
-mapping produces a counted redaction/omission receipt in the manifest without copying the source
-payload.
+mapping produces a closed redaction/omission receipt in the manifest without copying the source
+payload. Each receipt contains only the source sequence, canonical source-event hash, and closed
+`not_exportable` omission category. The per-category counts and receipt count must agree, and
+exported events plus omission receipts must cover the requested source range exactly once.
 
 ### Redaction And Data Minimization
 
@@ -159,8 +161,9 @@ email addresses, usernames, display names, database rows, or raw sandbox interna
 uses a closed safe code and category; exception messages and downstream response bodies are not
 events.
 
-The manifest records only counts by redaction category. It must not preserve the rejected key name
-or value when that would reveal sensitive structure.
+The manifest records only safe redaction categories, counts, source sequences, and canonical
+source-event hashes for omissions. It must not preserve the rejected key name, value, or source
+payload when that would reveal sensitive structure.
 
 ### Ordering, Idempotency, And Replay
 
@@ -169,7 +172,9 @@ or value when that would reveal sensitive structure.
 - Ordering is defined only by `source_sequence` within one deployment epoch. No cross-deployment,
   cross-organization, Node-clock, runner-clock, or model-provider total order is claimed.
 - Each bundle covers one contiguous, closed source-sequence range and binds the prior source hash,
-  range head, event count, omission count, and exact source-export digest.
+  range head, event count, omission count, closed omission receipts/category counts, and exact
+  source-export digest. Exported event records and omission receipts cover every sequence exactly
+  once; the final record's canonical source-event hash equals the range head.
 - Re-exporting the same range with the same mapper and redaction-policy versions must produce the
   same event bytes. Creation time and signature metadata may differ without changing event IDs.
 - A consumer may safely replay a fully verified bundle. Ithildin never interprets a replay or
@@ -230,15 +235,17 @@ re-request behavior, signing-key mismatch, and tampered manifest/event/signature
 ### SEA-001 Offline Compatibility Corpus
 
 The static [SIEM export adapter compatibility fixtures](siem-export-adapter-compatibility-fixtures.md)
-freeze the first accepted version-1 bundle and twelve rejected compatibility cases. Run:
+freeze three accepted version-1 shapes and eighteen rejected compatibility cases. Run:
 
 ```sh
 make siem-export-adapter-compatibility-check
 ```
 
-The corpus covers duplicate members, unknown fields and major versions, forbidden event material,
-activation-segment crossings, partial bundles, signature-reference mismatch, exact event-byte
-binding, source-sequence drift, non-finite numbers, and unregistered category attributes. Negative
+The corpus covers duplicate members and identities, unknown fields and major versions, forbidden
+event material including nested compound sensitive keys, closed category-attribute value types,
+activation-segment crossings, partial bundles, signature-reference mismatch, exact event-byte and
+range-head binding, coherent omission receipts, source-sequence drift, calendar-valid timestamps,
+finite numbers, architecture-optional attributes, and unregistered category attributes. Negative
 variants are materialized in memory from one committed canonical bundle and produce safe reason
 labels only.
 

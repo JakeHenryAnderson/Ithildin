@@ -19,7 +19,9 @@
     "event_schema": "ithildin.security_event.v1",
     "events_sha256": "9a5012f9bdeb179b5ade6271bbc1e1213e7a20d40b6bf89677dead815eda2aa8",
     "mapper_version": "mapper-1",
+    "omission_categories": {},
     "omission_count": 0,
+    "omissions": [],
     "profile": "operator_retrieved_offline_signed_bundle",
     "range": {
       "first_sequence": 41,
@@ -37,7 +39,7 @@
     "algorithm": "ed25519",
     "key_epoch": 1,
     "key_id": "key_1111111111111111",
-    "manifest_sha256": "2a5b81bc3fe3e451f63f181c42ba42da76beefb89613da6287fe8f3f8270c083",
+    "manifest_sha256": "571b74782522773e5e374b1fde41c0fed1ddad2f311d204b6fda4046a867ed98",
     "schema": "ithildin.security_export_signature.v1",
     "signature_b64": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=="
   }

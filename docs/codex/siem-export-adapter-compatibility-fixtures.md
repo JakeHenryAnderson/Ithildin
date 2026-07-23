@@ -5,7 +5,8 @@ Status: static planning-only compatibility corpus for `SEA-001` and `ERG-008`.
 Current governed tool count: `24`.
 
 `make siem-export-adapter-compatibility-check` validates one canonical accepted
-`ithildin.security_export_manifest.v1` bundle fixture and twelve descriptor-driven rejected cases.
+`ithildin.security_export_manifest.v1` bundle fixture and twenty-one descriptor-driven compatibility
+cases.
 The checker is an offline design oracle only. It reads committed static fixtures, materializes
 negative variants in memory, validates closed schemas and byte bindings, and emits safe reason
 labels. It does not generate an export, sign data, load a signing key, read runtime audit storage,
@@ -25,6 +26,12 @@ The accepted fixture contains the three logical artifacts defined by the archite
 1. a closed manifest that binds the verified source-export digest and exact NDJSON bytes;
 2. one LF-terminated canonical `ithildin.security_event.v1` line; and
 3. a detached `ithildin.security_export_signature.v1` reference.
+
+The manifest carries a closed omission receipt list and omission-category count object. Exported
+events plus omission receipts must cover every sequence in the closed source range exactly once,
+and the final event or receipt hash must equal the range head. Omission receipts contain only the
+source sequence, source-event hash, and closed `not_exportable` category; they never copy source
+payloads.
 
 The all-zero fixture signature is shape-only test data. The checker validates the algorithm,
 key-reference binding, canonical-manifest digest, and 64-byte base64 shape; it does not claim that
@@ -47,10 +54,24 @@ the fixture carries a valid Ed25519 signature or trusted signing authority.
 | `SEA-COMP-011` | Event sequence does not match the closed source range | reject | `non_contiguous_source_sequence` |
 | `SEA-COMP-012` | Event contains a non-finite JSON number | reject | `non_finite_number` |
 | `SEA-COMP-013` | Event category carries an unregistered attribute | reject | `unknown_event_attribute` |
+| `SEA-COMP-014` | Registered attribute contains a nested compound sensitive key | reject | `forbidden_event_field`, `invalid_event_attribute` |
+| `SEA-COMP-015` | Omission count disagrees with receipts and source-range cardinality | reject | `omission_count_mismatch`, `source_range_count_mismatch` |
+| `SEA-COMP-016` | Range-head hash disagrees with the final source record | reject | `range_head_hash_mismatch` |
+| `SEA-COMP-017` | Two source sequences reuse one canonical event identity | reject | `duplicate_event_identity` |
+| `SEA-COMP-018` | Timestamp has valid syntax but an impossible calendar date | reject | `invalid_calendar_timestamp` through `invalid_event_shape` |
+| `SEA-COMP-019` | Architecture-optional event `attributes` is absent | accept | none |
+| `SEA-COMP-020` | Valid JSON exponent overflows the finite-number parser | reject | `overflowing_json_number` through `non_finite_number` |
+| `SEA-COMP-021` | One safe omission receipt fills a source-range gap | accept | `valid_omission_receipt`; no rejection reason |
+
+The descriptor labels `nested_sensitive_attribute` and `optional_attributes_absent` make the
+redaction and optional-field compatibility cases machine-identifiable without including payload
+content.
 
 The validator also fails closed on malformed shapes, unknown manifest/event/signature fields,
-invalid timestamps and identifiers, invalid hash or signature encodings, event-count drift,
-deployment-epoch drift, mapper/redaction version drift, and non-canonical NDJSON.
+invalid timestamps and identifiers, invalid hash or signature encodings, event/omission-count drift,
+duplicate canonical identities, range-head drift, deployment-epoch drift, mapper/redaction version
+drift, unsafe attribute value types, and non-canonical NDJSON. Registered category attributes have
+closed scalar type/value schemas; arbitrary nested dictionaries and lists are not accepted.
 
 ## Redaction Boundary
 

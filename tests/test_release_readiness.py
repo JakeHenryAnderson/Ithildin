@@ -33542,7 +33542,7 @@ def test_siem_export_adapter_architecture_is_wired() -> None:
         "SEA-004",
         "SEA-005",
     ]
-    assert report["compatibility_fixture_count"] == 13
+    assert report["compatibility_fixture_count"] == 21
     assert report["compatibility_fixtures_valid"] is True
     assert report["runtime_changes_allowed"] is False
     assert report["siem_adapter_allowed"] is False
@@ -33631,16 +33631,16 @@ def test_siem_export_adapter_compatibility_fixtures_are_wired() -> None:
     }
 
     assert report["valid"] is True, report
-    assert report["case_count"] == 13
-    assert report["accepted_case_count"] == 1
-    assert report["rejected_case_count"] == 12
+    assert report["case_count"] == 21
+    assert report["accepted_case_count"] == 3
+    assert report["rejected_case_count"] == 18
     assert report["safe_reason_labels_only"] is True
     assert report["tool_count"] == 24
     assert report["corpus_sha256"] == (
-        "87a0e2eb9bfbad2b90b8812ea1c11fa159718dd1ffbbd909ec6f11a9579a7fc3"
+        "39a31416c80f727f1b049216ecbe6b6517bd6d0ab18ece596f74b065626d222c"
     )
     assert report["base_bundle_sha256"] == (
-        "f4931b5391638d604d4b3e3213bf4ef0c83040b10b807195bef73350d455e326"
+        "ea2c0fa28afaa4e0aefbd343383bf15121f1638f9dd505fe6ee94a294a5601c5"
     )
     assert reasons_by_id == {
         "SEA-COMP-001": [],
@@ -33656,6 +33656,17 @@ def test_siem_export_adapter_compatibility_fixtures_are_wired() -> None:
         "SEA-COMP-011": ["non_contiguous_source_sequence"],
         "SEA-COMP-012": ["non_finite_number"],
         "SEA-COMP-013": ["unknown_event_attribute"],
+        "SEA-COMP-014": ["forbidden_event_field", "invalid_event_attribute"],
+        "SEA-COMP-015": [
+            "omission_count_mismatch",
+            "source_range_count_mismatch",
+        ],
+        "SEA-COMP-016": ["range_head_hash_mismatch"],
+        "SEA-COMP-017": ["duplicate_event_identity"],
+        "SEA-COMP-018": ["invalid_event_shape"],
+        "SEA-COMP-019": [],
+        "SEA-COMP-020": ["non_finite_number"],
+        "SEA-COMP-021": [],
     }
     for key in siem_export_adapter_compatibility_check.AUTHORITY_FLAGS:
         assert report[key] is False
@@ -33668,7 +33679,7 @@ def test_siem_export_adapter_compatibility_fixtures_are_wired() -> None:
         "materialized in memory",
         "does not claim that the fixture carries a valid Ed25519 signature",
         "SEA-COMP-001",
-        "SEA-COMP-013",
+        "SEA-COMP-021",
         "reports only the safe reason label",
         "does not change `PRD-SIEM-EXPORT-001` from `no_go`",
         "does not close `ERG-008`",
@@ -33713,6 +33724,57 @@ def test_siem_export_adapter_compatibility_rejects_sensitive_field_without_echo(
     assert reasons == ["forbidden_event_field"]
     assert "raw_prompt" not in " ".join(reasons)
     assert "must-not-echo" not in " ".join(reasons)
+
+
+def test_siem_export_adapter_compatibility_rejects_nested_sensitive_field_without_echo(
+) -> None:
+    base_path = Path(siem_export_adapter_compatibility_check.BASE_BUNDLE_REL)
+    base_raw = base_path.read_text(encoding="utf-8")
+    base_document = siem_export_adapter_compatibility_check._parse_json_object(
+        base_raw
+    )
+    materialized = siem_export_adapter_compatibility_check._materialize_case(
+        base_raw,
+        base_document,
+        "nested_sensitive_attribute",
+    )
+
+    reasons = siem_export_adapter_compatibility_check.validate_bundle_text(
+        materialized
+    )
+
+    assert reasons == ["forbidden_event_field", "invalid_event_attribute"]
+    assert "access_token" not in " ".join(reasons)
+    assert "must-not-echo" not in " ".join(reasons)
+
+
+@pytest.mark.parametrize(
+    ("mutation", "expected"),
+    [
+        ("optional_attributes_absent", []),
+        ("overflowing_json_number", ["non_finite_number"]),
+        ("valid_omission_receipt", []),
+    ],
+)
+def test_siem_export_adapter_compatibility_review_regressions(
+    mutation: str,
+    expected: list[str],
+) -> None:
+    base_path = Path(siem_export_adapter_compatibility_check.BASE_BUNDLE_REL)
+    base_raw = base_path.read_text(encoding="utf-8")
+    base_document = siem_export_adapter_compatibility_check._parse_json_object(
+        base_raw
+    )
+    materialized = siem_export_adapter_compatibility_check._materialize_case(
+        base_raw,
+        base_document,
+        mutation,
+    )
+
+    assert (
+        siem_export_adapter_compatibility_check.validate_bundle_text(materialized)
+        == expected
+    )
 
 
 def test_siem_export_adapter_compatibility_rejects_duplicate_member() -> None:

@@ -924,7 +924,7 @@ checked with `make control-mapping-readiness`.
   and SIEM custody claims blocked.
 - [docs/codex/siem-export-adapter-compatibility-fixtures.md](docs/codex/siem-export-adapter-compatibility-fixtures.md) -
   canonical accepted and fail-closed rejected fixtures for the design-only offline signed bundle.
-- `make siem-export-adapter-compatibility-check` - validate the 13-case offline compatibility
+- `make siem-export-adapter-compatibility-check` - validate the 21-case offline compatibility
   corpus without generating exports, loading signing keys, opening destinations, or changing
   `ERG-008` from planning-only.
 - `make siem-export-adapter-disposition-packet` - generate the focused SIEM adapter disposition

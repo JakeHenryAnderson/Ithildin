@@ -115,6 +115,76 @@
       "id": "SEA-COMP-013",
       "label": "unknown_event_attribute",
       "mutation": "unknown_event_attribute"
+    },
+    {
+      "expected_accept": false,
+      "expected_reasons": [
+        "forbidden_event_field",
+        "invalid_event_attribute"
+      ],
+      "id": "SEA-COMP-014",
+      "label": "nested_sensitive_attribute",
+      "mutation": "nested_sensitive_attribute"
+    },
+    {
+      "expected_accept": false,
+      "expected_reasons": [
+        "omission_count_mismatch",
+        "source_range_count_mismatch"
+      ],
+      "id": "SEA-COMP-015",
+      "label": "omission_count_mismatch",
+      "mutation": "omission_count_mismatch"
+    },
+    {
+      "expected_accept": false,
+      "expected_reasons": [
+        "range_head_hash_mismatch"
+      ],
+      "id": "SEA-COMP-016",
+      "label": "range_head_hash_mismatch",
+      "mutation": "range_head_hash_mismatch"
+    },
+    {
+      "expected_accept": false,
+      "expected_reasons": [
+        "duplicate_event_identity"
+      ],
+      "id": "SEA-COMP-017",
+      "label": "duplicate_event_identity",
+      "mutation": "duplicate_event_identity"
+    },
+    {
+      "expected_accept": false,
+      "expected_reasons": [
+        "invalid_event_shape"
+      ],
+      "id": "SEA-COMP-018",
+      "label": "invalid_calendar_timestamp",
+      "mutation": "invalid_calendar_timestamp"
+    },
+    {
+      "expected_accept": true,
+      "expected_reasons": [],
+      "id": "SEA-COMP-019",
+      "label": "optional_attributes_absent",
+      "mutation": "optional_attributes_absent"
+    },
+    {
+      "expected_accept": false,
+      "expected_reasons": [
+        "non_finite_number"
+      ],
+      "id": "SEA-COMP-020",
+      "label": "overflowing_json_number",
+      "mutation": "overflowing_json_number"
+    },
+    {
+      "expected_accept": true,
+      "expected_reasons": [],
+      "id": "SEA-COMP-021",
+      "label": "valid_omission_receipt",
+      "mutation": "valid_omission_receipt"
     }
   ],
   "corpus_type": "ithildin.siem_export_adapter.compatibility_fixtures",
