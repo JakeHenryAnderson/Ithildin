@@ -24,6 +24,10 @@ from scripts import (
     siem_export_adapter_disposition_closure_check,
     trusted_host_promotion_disposition_closure_check,
 )
+from scripts.response_dry_run_lock import (
+    GLOBAL_FIXTURE_STATE_KEY,
+    response_dry_run_lock,
+)
 
 ROOT = Path(__file__).resolve().parents[1]
 DOC_REL = "docs/codex/enterprise-response-status-board.md"
@@ -71,6 +75,11 @@ def write_snapshot(report: dict[str, Any], output_dir: Path) -> Path:
 
 
 def build_report(repo_root: Path) -> dict[str, Any]:
+    with response_dry_run_lock(repo_root, GLOBAL_FIXTURE_STATE_KEY):
+        return _build_report_locked(repo_root)
+
+
+def _build_report_locked(repo_root: Path) -> dict[str, Any]:
     rows = [
         _row(
             repo_root,

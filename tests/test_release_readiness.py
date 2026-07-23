@@ -6,7 +6,9 @@ import os
 import re
 import subprocess
 import sys
+import threading
 from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import TimeoutError as FutureTimeoutError
 from pathlib import Path
 from typing import Any, cast
 
@@ -457,7 +459,11 @@ from scripts import (
     workbench_evidence_packet,
     workbench_readiness,
 )
+from scripts.response_dry_run_lock import response_dry_run_lock
 
+_ENTERPRISE_RESPONSE_STATUS_BOARD_BUILD_REPORT = (
+    enterprise_response_status_board.build_report
+)
 _REPORT_CACHE_MODULES: tuple[Any, ...] = (
     enterprise_current_checkpoint,
     enterprise_dependency_ladder,
@@ -7572,6 +7578,87 @@ def test_enterprise_response_status_board_is_wired() -> None:
     assert "enterprise-response-status-board" in (
         release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
     )
+
+
+def test_enterprise_response_status_board_serializes_cross_process_fixture_reads(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    lock_attempted = threading.Event()
+
+    def observed_lock(repo_root: Path, response_rel: str | Path) -> Any:
+        lock_attempted.set()
+        return response_dry_run_lock(repo_root, response_rel)
+
+    monkeypatch.setattr(
+        enterprise_response_status_board,
+        "response_dry_run_lock",
+        observed_lock,
+    )
+    monkeypatch.setattr(
+        enterprise_response_status_board,
+        "_build_report_locked",
+        lambda _repo_root: {
+            "valid": True,
+            "response_present_count": 0,
+            "closure_ready_count": 0,
+        },
+    )
+    holder_code = "\n".join(
+        [
+            "import sys",
+            "from pathlib import Path",
+            "from scripts.response_dry_run_lock import response_dry_run_lock",
+            "repo_root = Path(sys.argv[1])",
+            "response_rel = sys.argv[2]",
+            "with response_dry_run_lock(repo_root, response_rel):",
+            "    print('locked', flush=True)",
+            "    sys.stdin.readline()",
+        ]
+    )
+    holder = subprocess.Popen(
+        [
+            sys.executable,
+            "-c",
+            holder_code,
+            str(tmp_path),
+            sandbox_vm_static_preflight_disposition_closure_check.NORMALIZED_RESPONSE_REL,
+        ],
+        cwd=Path.cwd(),
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+    )
+    executor = ThreadPoolExecutor(max_workers=1)
+    try:
+        assert holder.stdout is not None
+        assert holder.stdin is not None
+        assert holder.stderr is not None
+        locked_line = holder.stdout.readline()
+        assert locked_line == "locked\n", holder.stderr.read()
+
+        future = executor.submit(
+            _ENTERPRISE_RESPONSE_STATUS_BOARD_BUILD_REPORT,
+            tmp_path,
+        )
+        assert lock_attempted.wait(timeout=5)
+        with pytest.raises(FutureTimeoutError):
+            future.result(timeout=0.1)
+
+        holder.stdin.write("\n")
+        holder.stdin.flush()
+        assert holder.wait(timeout=5) == 0
+        report = future.result(timeout=5)
+    finally:
+        if holder.poll() is None:
+            holder.kill()
+            holder.wait(timeout=5)
+        executor.shutdown(wait=True)
+
+    assert report["valid"] is True
+    assert report["response_present_count"] == 0
+    assert report["closure_ready_count"] == 0
 
 
 def test_enterprise_response_normalization_coverage_is_wired() -> None:
@@ -16231,10 +16318,12 @@ def test_sandbox_vm_static_preflight_response_dry_run_is_wired() -> None:
 
 def test_sandbox_vm_static_preflight_response_dry_run_serializes_fixture_writes() -> None:
     repo_root = Path.cwd()
-    response_path = repo_root / (
+    response_rel = (
         sandbox_vm_static_preflight_disposition_closure_check.NORMALIZED_RESPONSE_REL
     )
-    response_path.unlink(missing_ok=True)
+    response_path = repo_root / response_rel
+    with response_dry_run_lock(repo_root, response_rel):
+        original = response_path.read_bytes() if response_path.exists() else None
 
     with ThreadPoolExecutor(max_workers=2) as executor:
         reports = list(
@@ -16246,7 +16335,9 @@ def test_sandbox_vm_static_preflight_response_dry_run_serializes_fixture_writes(
 
     assert [report["valid"] for report in reports] == [True, True]
     assert [report["response_restored"] for report in reports] == [True, True]
-    assert not response_path.exists()
+    with response_dry_run_lock(repo_root, response_rel):
+        restored = response_path.read_bytes() if response_path.exists() else None
+    assert restored == original
 
 
 def test_sandbox_vm_static_preflight_triage_update_is_wired() -> None:
