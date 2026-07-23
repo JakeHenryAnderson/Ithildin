@@ -37,19 +37,20 @@ Ithildin is a v1.0 local-preview RC candidate, not a production enterprise produ
 implemented surface is the local governed MCP/tool gateway, local review console, Agent Run and
 evidence surfaces, demo/handoff packets, and bounded local-preview tools. The latest local-preview
 release transcript passed on exact candidate `c671d50`, but the current immutable RC review packet
-is not generated: `make review-candidate` remains blocked until exact-candidate MCC-006 live evidence
+is not valid: `make review-candidate` remains blocked until exact-candidate MCC-006 live evidence
 passes.
 
 Command Center closure-review dispatch and `CC-PILOT-107` UAT remain blocked. The durable
 non-dispatch record has a zero-finding Sol xhigh review, but no Sol Ultra approval, Sol Ultra
-closure disposition, or immutable packet exists.
+closure disposition, closure-dispatch authority, or human-UAT authority.
 
 Active enterprise route: external target and signed-receipt input wait; no review send is active.
 
 Historical dual-send route: `ERG-003` then `ERG-002`.
 
-The old dual-send packet flow remains available for provenance and response-intake rehearsal, but
-the active operator checkpoint now points at the combined `ERG-006`/`ERG-007` architecture review.
+The old dual-send packet flow remains available for provenance and response-intake rehearsal. The
+combined `ERG-006`/`ERG-007` architecture review is historical lineage; the active operator
+checkpoint remains the external target and signed-receipt input wait.
 
 The historical enterprise handoff set is:
 
@@ -60,7 +61,7 @@ The historical enterprise handoff set is:
 
 | Phase | Current status | Main proof command | Unlocks | Still blocked |
 | --- | --- | --- | --- | --- |
-| `v1_local_preview_rc` | `operator_trial_observed_packet_refresh_blocked_on_mcc_006_evidence` | `make review-candidate` | local technical-preview handoff only after exact MCC-006 evidence and packet generation | immutable current-candidate packet, Command Center closure dispatch, UAT entry, public/security-product positioning, production identity, hosted operation |
+| `v1_local_preview_rc` | `operator_trial_observed_packet_readiness_reported_by_enterprise_current_checkpoint` | `make review-candidate` | local technical-preview handoff only after exact MCC-006 evidence and packet generation | Command Center closure dispatch, UAT entry, public/security-product positioning, production identity, hosted operation |
 | `erg_003_static_preflight` | `external_review_required` | `make enterprise-next-review-ready-check` | static preflight local-preview closure only | live VM/container inspection, VM lifecycle, local model invocation, sandbox orchestration |
 | `erg_002_mission_control_display` | `planning_only` | `make mission-control-display-next-review-ready-check` | Mission Control-side design-only decision record | Mission Control runtime importer behavior, execution authority, polling or mutating Ithildin APIs |
 | `erg_004_live_sandbox_vm_poc` | `blocked` | `make sandbox-vm-live-poc-preconditions-ready-check` | live POC implementation planning only after `ERG-003` | live implementation, VM lifecycle management, sandbox orchestration |

@@ -40,7 +40,6 @@ REQUIRED_DOC_PHRASES = [
     "`ERG-002`: Mission Control display/import planning review",
     "make release-check",
     "make review-candidate",
-    "`make review-candidate` remains blocked until exact-candidate MCC-006 live evidence passes",
     "Command Center closure-review dispatch and `CC-PILOT-107` UAT remain blocked",
     "make enterprise-review-send-refresh",
     "make handoff-dry-run",
@@ -60,6 +59,19 @@ REQUIRED_DOC_PHRASES = [
     ),
     "No row in this roadmap approves new governed tool powers",
     "When To Ask For External Roadmap Review",
+]
+
+MCC_BLOCKED_PHRASES = [
+    "`make review-candidate` remains blocked until exact-candidate MCC-006 live evidence passes",
+    "the current immutable RC review packet is not valid",
+]
+
+PACKET_BLOCKED_PHRASES = [
+    "MCC-006 evidence is valid, but the current immutable RC review packet is absent or invalid",
+]
+
+PACKET_READY_PHRASES = [
+    "The current immutable RC review packet is valid for the exact source candidate",
 ]
 
 CANONICAL_DOCS = [
@@ -220,12 +232,31 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
     review_candidate_body = makefile.partition("review-candidate:")[2].partition("\n\n")[0]
 
+    mcc_poc_valid = current_checkpoint.get("review_candidate_prerequisite_mcc_006_valid") is True
+    immutable_packet_valid = current_checkpoint.get("immutable_review_packet_valid") is True
+    if not mcc_poc_valid:
+        required_packet_phrases = MCC_BLOCKED_PHRASES
+    elif not immutable_packet_valid:
+        required_packet_phrases = PACKET_BLOCKED_PHRASES
+    else:
+        required_packet_phrases = PACKET_READY_PHRASES
+
     if not doc:
         failures.append("enterprise north-star roadmap doc is missing")
     normalized_doc = " ".join(doc.split())
-    for phrase in REQUIRED_DOC_PHRASES:
+    for phrase in [*REQUIRED_DOC_PHRASES, *required_packet_phrases]:
         if phrase not in normalized_doc:
             failures.append(f"enterprise north-star roadmap doc is missing phrase: {phrase}")
+    for phrase in [
+        *MCC_BLOCKED_PHRASES,
+        *PACKET_BLOCKED_PHRASES,
+        *PACKET_READY_PHRASES,
+    ]:
+        if phrase not in required_packet_phrases and phrase in normalized_doc:
+            failures.append(
+                "enterprise north-star roadmap contradicts computed packet state: "
+                f"{phrase}"
+            )
     for doc_rel in CANONICAL_DOCS:
         if doc_rel not in doc:
             failures.append(f"enterprise north-star roadmap is missing canonical doc: {doc_rel}")

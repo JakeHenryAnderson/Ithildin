@@ -2734,7 +2734,7 @@ def test_enterprise_current_checkpoint_is_wired() -> None:
         "Current selected capability: `not selected`",
         "make enterprise-current-checkpoint",
         "`make review-candidate` is blocked at its required MCC-006 live-evidence precondition",
-        "No immutable current-candidate review packet exists",
+        "No valid immutable current-candidate review packet exists",
         "Command Center closure-review dispatch and `CC-PILOT-107` UAT remain blocked",
         "make mission-command-control-plane-poc-check",
         "make mission-command-control-plane-poc",
@@ -2773,38 +2773,160 @@ def test_enterprise_current_checkpoint_validates_immutable_packet(
     tmp_path: Path,
 ) -> None:
     commit = "a" * 40
-    packet = tmp_path / f"ithildin-v0.2-review-packet-{commit[:12]}"
-    packet.mkdir()
-    artifacts = {
-        "git-summary.txt": f"commit={commit}\nbranch=test\ndirty=false\n",
-        "release-check.txt": "$ make release-check\nreturncode=0\n",
-        "packet-redaction-scan.txt": (
-            "# Ithildin Packet Redaction Scan\n\n"
-            "findings: `0`\n\n"
-            "Packet redaction scan passed.\n"
-        ),
-        "payload.txt": "bounded evidence\n",
-    }
-    hashes: list[dict[str, object]] = []
-    for relative, content in artifacts.items():
-        encoded = content.encode()
-        packet.joinpath(relative).write_bytes(encoded)
-        hashes.append(
-            {
-                "bytes": len(encoded),
-                "path": relative,
-                "sha256": f"sha256:{hashlib.sha256(encoded).hexdigest()}",
-            }
+
+    def write_packet(
+        parent: Path,
+        *,
+        release_commit: str = commit,
+        release_dirty: bool = False,
+        nested_payload: bool = False,
+    ) -> Path:
+        packet = parent / f"ithildin-v0.2-review-packet-{commit[:12]}"
+        packet.mkdir(parents=True)
+        payload_path = "nested/payload.txt" if nested_payload else "payload.txt"
+        pre_scan_artifacts = {
+            "git-summary.txt": f"commit={commit}\nbranch=test\ndirty=false\n",
+            "release-check.txt": (
+                "$ make release-check\n"
+                "returncode=0\n\n"
+                "## stdout\n"
+                f"git_commit={release_commit}\n"
+                f"git_dirty={str(release_dirty).lower()}\n"
+                "returncode=0\n\n"
+                "## stderr\n"
+            ),
+            payload_path: "bounded evidence\n",
+        }
+        artifacts = {
+            **pre_scan_artifacts,
+            "packet-redaction-scan.txt": (
+                "# Ithildin Packet Redaction Scan\n\n"
+                "roots: `1`\n"
+                f"scanned_files: `{len(pre_scan_artifacts)}`\n"
+                "findings: `0`\n\n"
+                "Packet redaction scan passed.\n"
+            ),
+        }
+        hashes: list[dict[str, object]] = []
+        for relative, content in artifacts.items():
+            encoded = content.encode()
+            artifact = packet / relative
+            artifact.parent.mkdir(parents=True, exist_ok=True)
+            artifact.write_bytes(encoded)
+            hashes.append(
+                {
+                    "bytes": len(encoded),
+                    "path": relative,
+                    "sha256": f"sha256:{hashlib.sha256(encoded).hexdigest()}",
+                }
+            )
+        packet.joinpath("artifact-hashes.json").write_text(
+            json.dumps(hashes),
+            encoding="utf-8",
         )
-    packet.joinpath("artifact-hashes.json").write_text(
-        json.dumps(hashes),
-        encoding="utf-8",
+        return packet
+
+    valid_packet = write_packet(tmp_path / "valid")
+    assert (
+        enterprise_current_checkpoint._immutable_packet_valid(valid_packet, commit)
+        is True
     )
 
-    assert enterprise_current_checkpoint._immutable_packet_valid(packet, commit) is True
+    valid_packet.joinpath("payload.txt").write_text("tampered\n", encoding="utf-8")
+    assert (
+        enterprise_current_checkpoint._immutable_packet_valid(valid_packet, commit)
+        is False
+    )
 
-    packet.joinpath("payload.txt").write_text("tampered\n", encoding="utf-8")
-    assert enterprise_current_checkpoint._immutable_packet_valid(packet, commit) is False
+    cross_candidate = write_packet(
+        tmp_path / "cross-candidate",
+        release_commit="b" * 40,
+        release_dirty=True,
+    )
+    assert (
+        enterprise_current_checkpoint._immutable_packet_valid(
+            cross_candidate,
+            commit,
+        )
+        is False
+    )
+
+    unlisted = write_packet(tmp_path / "unlisted")
+    unlisted.joinpath("unlisted.txt").write_text(
+        "bounded but absent from the manifest\n",
+        encoding="utf-8",
+    )
+    assert enterprise_current_checkpoint._immutable_packet_valid(unlisted, commit) is False
+
+    forbidden = write_packet(tmp_path / "forbidden")
+    forbidden.joinpath(".env").write_text(
+        "ITHILDIN_ADMIN_TOKEN=not-allowed\n",
+        encoding="utf-8",
+    )
+    assert enterprise_current_checkpoint._immutable_packet_valid(forbidden, commit) is False
+
+    duplicate = write_packet(tmp_path / "duplicate")
+    duplicate_manifest = json.loads(
+        duplicate.joinpath("artifact-hashes.json").read_text(encoding="utf-8")
+    )
+    duplicate_manifest.append(duplicate_manifest[0])
+    duplicate.joinpath("artifact-hashes.json").write_text(
+        json.dumps(duplicate_manifest),
+        encoding="utf-8",
+    )
+    assert enterprise_current_checkpoint._immutable_packet_valid(duplicate, commit) is False
+
+    symlinked_ancestor = write_packet(
+        tmp_path / "symlinked-ancestor",
+        nested_payload=True,
+    )
+    external = tmp_path / "external"
+    external.mkdir()
+    external.joinpath("payload.txt").write_text("bounded evidence\n", encoding="utf-8")
+    symlinked_ancestor.joinpath("nested/payload.txt").unlink()
+    symlinked_ancestor.joinpath("nested").rmdir()
+    symlinked_ancestor.joinpath("nested").symlink_to(
+        external,
+        target_is_directory=True,
+    )
+    assert (
+        enterprise_current_checkpoint._immutable_packet_valid(
+            symlinked_ancestor,
+            commit,
+        )
+        is False
+    )
+
+
+def test_enterprise_current_checkpoint_rejects_stale_packet_prose(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        enterprise_current_checkpoint.mission_command_control_plane_poc_evidence_check,
+        "build_report",
+        lambda _repo_root: {"valid": True, "failures": [], "tool_count": 24},
+    )
+
+    cached_defaults = enterprise_current_checkpoint.build_report.__kwdefaults__
+    assert cached_defaults is not None
+    original_build_report = cached_defaults["_original"]
+    report = original_build_report(Path.cwd())
+
+    assert report["valid"] is False, report
+    assert report["review_candidate_prerequisite_mcc_006_valid"] is True
+    assert report["immutable_review_packet_valid"] is False
+    assert report["review_candidate_blocker"] == (
+        "missing_or_invalid_immutable_review_packet"
+    )
+    assert any(
+        enterprise_current_checkpoint.PACKET_BLOCKED_PHRASES[0] in failure
+        for failure in report["failures"]
+    )
+    assert any(
+        enterprise_current_checkpoint.MCC_BLOCKED_PHRASES[0] in failure
+        and "contradicts computed packet state" in failure
+        for failure in report["failures"]
+    )
 
 
 def test_enterprise_progress_model_is_wired() -> None:
@@ -6562,10 +6684,12 @@ def test_enterprise_north_star_roadmap_is_wired() -> None:
         "enterprise_architecture_lanes",
         "`make review-candidate` remains blocked until exact-candidate MCC-006 "
         "live evidence passes",
+        "the current immutable RC review packet is not valid",
         "Command Center closure-review dispatch and `CC-PILOT-107` UAT remain blocked",
         "make mission-command-control-plane-poc-check",
         "make mission-command-control-plane-poc",
         "A passing release transcript does not satisfy the MCC-006 prerequisite",
+        "the active operator checkpoint remains the external target and signed-receipt input wait",
         "A favorable `ERG-003` response can close static preflight only",
         (
             "A favorable `ERG-002` response can authorize a Mission Control-side "

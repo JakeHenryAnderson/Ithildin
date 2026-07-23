@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -19,6 +20,7 @@ from scripts import (
     enterprise_review_send_readiness,
     mission_command_control_plane_poc_evidence_check,
     next_capability_readiness,
+    packet_redaction_scan,
     review_docs,
     v1_progress_assessment,
 )
@@ -50,8 +52,6 @@ REQUIRED_PHRASES = [
     "Current governed tool count: `24`",
     "Current selected capability: `not selected`",
     "make enterprise-current-checkpoint",
-    "`make review-candidate` is blocked at its required MCC-006 live-evidence precondition",
-    "No immutable current-candidate review packet exists",
     "Command Center closure-review dispatch and `CC-PILOT-107` UAT remain blocked",
     "Capability expansion remains blocked",
     "Runtime changes remain blocked",
@@ -66,6 +66,20 @@ REQUIRED_PHRASES = [
     "The historical ERG-003/ERG-002 dual-send commands remain available only for "
     "lineage and fallback.",
     "What This Checkpoint Does Not Approve",
+]
+
+MCC_BLOCKED_PHRASES = [
+    "`make review-candidate` is blocked at its required MCC-006 live-evidence precondition",
+    "No valid immutable current-candidate review packet exists",
+]
+
+PACKET_BLOCKED_PHRASES = [
+    "The MCC-006 precondition is valid, but the immutable current-candidate review packet is "
+    "absent or invalid",
+]
+
+PACKET_READY_PHRASES = [
+    "The current immutable review packet is valid for the exact source candidate",
 ]
 
 BLOCKED_PHRASES = [
@@ -149,6 +163,18 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         current_commit,
     )
     mcc_poc_valid = mcc_poc.get("valid") is True
+    review_candidate_packet_ready = mcc_poc_valid and immutable_packet_valid
+    if not mcc_poc_valid:
+        review_candidate_blocker: str | None = (
+            "missing_or_invalid_exact_candidate_mcc_006_live_evidence"
+        )
+        required_packet_phrases = MCC_BLOCKED_PHRASES
+    elif not immutable_packet_valid:
+        review_candidate_blocker = "missing_or_invalid_immutable_review_packet"
+        required_packet_phrases = PACKET_BLOCKED_PHRASES
+    else:
+        review_candidate_blocker = None
+        required_packet_phrases = PACKET_READY_PHRASES
 
     failures.extend(f"v1-progress-assessment: {failure}" for failure in progress["failures"])
     if not pis_mode:
@@ -253,9 +279,19 @@ def build_report(repo_root: Path) -> dict[str, Any]:
             failures.append(f"response-status boundary flag drifted: {key}")
 
     normalized_doc = " ".join(doc.split())
-    for phrase in REQUIRED_PHRASES:
+    for phrase in [*REQUIRED_PHRASES, *required_packet_phrases]:
         if phrase not in normalized_doc:
             failures.append(f"enterprise checkpoint doc is missing phrase: {phrase}")
+    for phrase in [
+        *MCC_BLOCKED_PHRASES,
+        *PACKET_BLOCKED_PHRASES,
+        *PACKET_READY_PHRASES,
+    ]:
+        if phrase not in required_packet_phrases and phrase in normalized_doc:
+            failures.append(
+                "enterprise checkpoint doc contradicts computed packet state: "
+                f"{phrase}"
+            )
     for phrase in BLOCKED_PHRASES:
         if phrase not in normalized_doc:
             failures.append(f"enterprise checkpoint doc is missing blocked phrase: {phrase}")
@@ -303,15 +339,11 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "response_present_count": response_status.get("response_present_count"),
         "closure_ready_count": response_status.get("closure_ready_count"),
         "review_candidate_prerequisite_mcc_006_valid": mcc_poc_valid,
-        "review_candidate_blocker": (
-            None
-            if mcc_poc_valid
-            else "missing_or_invalid_exact_candidate_mcc_006_live_evidence"
-        ),
+        "review_candidate_blocker": review_candidate_blocker,
         "immutable_review_packet_path": immutable_packet_path.relative_to(repo_root).as_posix(),
         "immutable_review_packet_present": immutable_packet_present,
         "immutable_review_packet_valid": immutable_packet_valid,
-        "review_candidate_packet_ready": mcc_poc_valid and immutable_packet_valid,
+        "review_candidate_packet_ready": review_candidate_packet_ready,
         "closure_review_dispatch_allowed": False,
         "human_uat_allowed": False,
         **boundary_flags,
@@ -383,10 +415,21 @@ def _immutable_packet_valid(packet_path: Path, current_commit: str) -> bool:
         "packet-redaction-scan.txt",
         "release-check.txt",
     }
-    if not packet_path.is_dir() or not all(
-        packet_path.joinpath(relative).is_file()
-        and not packet_path.joinpath(relative).is_symlink()
-        for relative in required_paths
+    try:
+        packet_absolute = packet_path.absolute()
+        packet_resolved = packet_path.resolve(strict=True)
+    except OSError:
+        return False
+    if (
+        not packet_path.is_dir()
+        or packet_path.is_symlink()
+        or packet_resolved != packet_absolute
+        or packet_path.name != f"ithildin-v0.2-review-packet-{current_commit[:12]}"
+        or not all(
+            packet_path.joinpath(relative).is_file()
+            and not packet_path.joinpath(relative).is_symlink()
+            for relative in required_paths
+        )
     ):
         return False
 
@@ -402,15 +445,27 @@ def _immutable_packet_valid(packet_path: Path, current_commit: str) -> bool:
     except (OSError, UnicodeDecodeError, json.JSONDecodeError):
         return False
 
-    git_summary_lines = set(git_summary.splitlines())
+    git_summary_lines = git_summary.splitlines()
+    release_commit_lines = [
+        line.strip()
+        for line in release_check.splitlines()
+        if line.strip().startswith("git_commit=")
+    ]
+    release_dirty_lines = [
+        line.strip()
+        for line in release_check.splitlines()
+        if line.strip().startswith("git_dirty=")
+    ]
     release_returncodes = [
         line.strip()
         for line in release_check.splitlines()
         if line.strip().startswith("returncode=")
     ]
     if (
-        f"commit={current_commit}" not in git_summary_lines
-        or "dirty=false" not in git_summary_lines
+        git_summary_lines.count(f"commit={current_commit}") != 1
+        or git_summary_lines.count("dirty=false") != 1
+        or release_commit_lines != [f"git_commit={current_commit}"]
+        or release_dirty_lines != ["git_dirty=false"]
         or not release_returncodes
         or release_returncodes[-1] != "returncode=0"
         or "findings: `0`" not in redaction_scan
@@ -429,14 +484,30 @@ def _immutable_packet_valid(packet_path: Path, current_commit: str) -> bool:
         if (
             not isinstance(relative, str)
             or not isinstance(expected_sha256, str)
-            or not isinstance(expected_bytes, int)
+            or type(expected_bytes) is not int
         ):
             return False
         relative_path = Path(relative)
-        if relative_path.is_absolute() or ".." in relative_path.parts:
+        if (
+            relative in manifest_paths
+            or not relative_path.parts
+            or relative_path.is_absolute()
+            or ".." in relative_path.parts
+            or relative_path.as_posix() != relative
+            or relative == "artifact-hashes.json"
+        ):
             return False
         artifact_path = packet_path / relative_path
-        if not artifact_path.is_file() or artifact_path.is_symlink():
+        try:
+            artifact_resolved = artifact_path.resolve(strict=True)
+        except OSError:
+            return False
+        if (
+            not artifact_path.is_file()
+            or artifact_path.is_symlink()
+            or artifact_resolved != artifact_path.absolute()
+            or not artifact_resolved.is_relative_to(packet_resolved)
+        ):
             return False
         try:
             content = artifact_path.read_bytes()
@@ -447,7 +518,37 @@ def _immutable_packet_valid(packet_path: Path, current_commit: str) -> bool:
         if f"sha256:{hashlib.sha256(content).hexdigest()}" != expected_sha256:
             return False
         manifest_paths.add(relative)
-    return required_paths.difference({"artifact-hashes.json"}).issubset(manifest_paths)
+
+    disk_paths: set[str] = set()
+    for path in packet_path.rglob("*"):
+        if path.is_symlink():
+            return False
+        if path.is_file():
+            disk_paths.add(path.relative_to(packet_path).as_posix())
+        elif not path.is_dir():
+            return False
+    if manifest_paths | {"artifact-hashes.json"} != disk_paths:
+        return False
+    if not required_paths.difference({"artifact-hashes.json"}).issubset(manifest_paths):
+        return False
+
+    roots_match = re.search(r"(?m)^roots: `1`$", redaction_scan) is not None
+    scanned_match = re.search(r"(?m)^scanned_files: `(\d+)`$", redaction_scan)
+    if (
+        not roots_match
+        or scanned_match is None
+        or int(scanned_match.group(1)) != len(disk_paths) - 2
+    ):
+        return False
+    try:
+        current_redaction = packet_redaction_scan.scan_packet_paths([packet_path])
+    except packet_redaction_scan.PacketRedactionScanError:
+        return False
+    return (
+        not current_redaction.findings
+        and current_redaction.scanned_files == len(disk_paths)
+        and current_redaction.roots == [packet_resolved.as_posix()]
+    )
 
 
 if __name__ == "__main__":

@@ -20,8 +20,8 @@ close enterprise lanes, approve runtime behavior, or approve public/security-pro
 
 - The exact `c671d50` release transcript passed, but `make review-candidate` is blocked at its
   required MCC-006 live-evidence precondition.
-- No immutable current-candidate review packet exists. The mutable release transcript is not a
-  substitute for packet-local evidence.
+- No valid immutable current-candidate review packet exists. The mutable release transcript is not
+  a substitute for packet-local evidence.
 - Command Center closure-review dispatch and `CC-PILOT-107` UAT remain blocked. Sol Ultra approval
   has not been obtained and no closure review has been dispatched.
 - The current reviewed local-preview boundary remains the governed MCP/tool gateway with 24 tools.
@@ -63,12 +63,13 @@ only PIS-001 threat-model, non-goal, dependency-evaluation, exact-contract, and 
 remote administration, runtime Postgres, migrations, production Node transport, or new governed
 tool powers.
 
-The local review-packet route is a separate blocked dependency. The exact command
-`make review-candidate` currently stops at `make mission-command-control-plane-poc-check` because
-the exact-candidate MCC-006 live evidence is absent. The required reproduction command,
-`make mission-command-control-plane-poc`, starts a real loopback Gateway and writes isolated
-ignored SQLite, JSONL, signing-key, and Node state. It must run only in a separately bounded
-live-evidence lane; this checkpoint does not authorize or perform it.
+The local review-packet route is a separate dependency. When
+`make mission-command-control-plane-poc-check` reports missing or invalid exact-candidate evidence,
+`make review-candidate` stops before packet generation. The reproduction command,
+`make mission-command-control-plane-poc`, starts a real loopback Gateway and writes isolated ignored
+SQLite, JSONL, signing-key, and Node state. It must run only in a separately bounded live-evidence
+lane; this checkpoint does not authorize or perform it. Even valid MCC-006 evidence and an exact
+immutable packet would not authorize closure-review dispatch or human UAT.
 
 The durable non-dispatch evidence is:
 
@@ -166,8 +167,9 @@ The historical ERG-003/ERG-002 dual-send commands remain available only for line
 
 ## Current Packet Paths
 
-- current exact-candidate v0.2 review packet: absent until the MCC-006 prerequisite and
-  `make review-candidate` pass;
+- current exact-candidate v0.2 review packet: use `make enterprise-current-checkpoint`; packet
+  evidence is usable only when the reported MCC-006 prerequisite, immutable-packet validity, and
+  packet-readiness fields are all `true`;
 - v1.0 RC packet: `var/review-packets/v1.0/rc/`
 - historical consolidated packet: `var/review-packets/v0.2/GPT-5.5-Pro-consolidated/`
 - `ERG-003` packet: `var/review-packets/v3/sandbox-vm-static-preflight-external-review/`
