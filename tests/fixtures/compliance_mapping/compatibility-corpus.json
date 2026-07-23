@@ -1,0 +1,30 @@
+{
+  "base_template": "tests/fixtures/compliance_mapping/valid-template-v1.json",
+  "cases": [
+    {"expected_accept": true, "expected_reasons": [], "id": "CMT-COMP-001", "label": "valid_v1", "mutation": "none"},
+    {"expected_accept": true, "expected_reasons": [], "id": "CMT-COMP-002", "label": "valid_supported_only", "mutation": "supported_only"},
+    {"expected_accept": true, "expected_reasons": [], "id": "CMT-COMP-003", "label": "valid_unsupported_and_not_applicable", "mutation": "unsupported_and_not_applicable"},
+    {"expected_accept": false, "expected_reasons": ["duplicate_json_member"], "id": "CMT-COMP-004", "label": "duplicate_json_member", "mutation": "duplicate_json_member"},
+    {"expected_accept": false, "expected_reasons": ["unknown_template_field"], "id": "CMT-COMP-005", "label": "unknown_template_field", "mutation": "unknown_template_field"},
+    {"expected_accept": false, "expected_reasons": ["unsupported_template_schema"], "id": "CMT-COMP-006", "label": "unsupported_template_schema", "mutation": "unsupported_template_schema"},
+    {"expected_accept": false, "expected_reasons": ["real_framework_not_allowed"], "id": "CMT-COMP-007", "label": "real_framework_not_allowed", "mutation": "real_framework_not_allowed"},
+    {"expected_accept": false, "expected_reasons": ["legal_review_boundary_weakened"], "id": "CMT-COMP-008", "label": "legal_review_boundary_weakened", "mutation": "legal_review_boundary_weakened"},
+    {"expected_accept": false, "expected_reasons": ["authority_expansion"], "id": "CMT-COMP-009", "label": "authority_expansion", "mutation": "authority_expansion"},
+    {"expected_accept": false, "expected_reasons": ["forbidden_evidence_field"], "id": "CMT-COMP-010", "label": "forbidden_evidence_field", "mutation": "forbidden_evidence_field"},
+    {"expected_accept": false, "expected_reasons": ["unknown_evidence_field"], "id": "CMT-COMP-011", "label": "unknown_evidence_field", "mutation": "unknown_evidence_field"},
+    {"expected_accept": false, "expected_reasons": ["missing_evidence_limitation"], "id": "CMT-COMP-012", "label": "missing_evidence_limitation", "mutation": "missing_evidence_limitation"},
+    {"expected_accept": false, "expected_reasons": ["applicability_confidence_mismatch"], "id": "CMT-COMP-013", "label": "applicability_confidence_mismatch", "mutation": "applicability_confidence_mismatch"},
+    {"expected_accept": false, "expected_reasons": ["unsafe_verification_reference"], "id": "CMT-COMP-014", "label": "unsafe_verification_reference", "mutation": "unsafe_verification_reference"},
+    {"expected_accept": false, "expected_reasons": ["invalid_accepted_risk_reference"], "id": "CMT-COMP-015", "label": "invalid_accepted_risk_reference", "mutation": "invalid_accepted_risk_reference"},
+    {"expected_accept": false, "expected_reasons": ["duplicate_mapping_id"], "id": "CMT-COMP-016", "label": "duplicate_mapping_id", "mutation": "duplicate_mapping_id"},
+    {"expected_accept": false, "expected_reasons": ["duplicate_control_reference"], "id": "CMT-COMP-017", "label": "duplicate_control_reference", "mutation": "duplicate_control_reference"},
+    {"expected_accept": false, "expected_reasons": ["prohibited_claim_text", "unsupported_evidence_support_statement"], "id": "CMT-COMP-018", "label": "prohibited_claim_text", "mutation": "prohibited_claim_text"},
+    {"expected_accept": false, "expected_reasons": ["non_finite_number"], "id": "CMT-COMP-019", "label": "overflowing_json_number", "mutation": "overflowing_json_number"},
+    {"expected_accept": false, "expected_reasons": ["invalid_unicode"], "id": "CMT-COMP-020", "label": "invalid_unicode", "mutation": "invalid_unicode"},
+    {"expected_accept": false, "expected_reasons": ["unknown_row_field"], "id": "CMT-COMP-021", "label": "unknown_row_field", "mutation": "unknown_row_field"}
+  ],
+  "corpus_type": "ithildin.compliance_mapping_template.compatibility_fixtures",
+  "schema_version": "1",
+  "status": "static_planning_only",
+  "tool_count": 24
+}

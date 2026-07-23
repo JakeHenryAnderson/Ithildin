@@ -1,0 +1,123 @@
+{
+  "authority": {
+    "automated_certification_allowed": false,
+    "compliance_claims_allowed": false,
+    "compliance_mapping_runtime_allowed": false,
+    "custody_grade_audit_allowed": false,
+    "legal_advice_allowed": false,
+    "new_power_classes_allowed": false,
+    "production_identity_allowed": false,
+    "release_allowed": false,
+    "runtime_changes_allowed": false,
+    "uat_allowed": false
+  },
+  "framework": {
+    "family": "ithildin.synthetic.control_objectives",
+    "status": "synthetic_non_regulatory",
+    "version": "1"
+  },
+  "legal_review": {
+    "legal_advice_provided": false,
+    "required_before_external_claim": true
+  },
+  "operator_responsibility": {
+    "operator_decides_evidence_sufficiency": true,
+    "operator_must_review_legal_obligations": true,
+    "operator_must_validate_applicability": true
+  },
+  "rows": [
+    {
+      "accepted_risk_refs": [
+        "AR-002",
+        "AR-003"
+      ],
+      "applicability": {
+        "reason_code": "evidence_source_available",
+        "status": "supported"
+      },
+      "confidence": "design_example_only",
+      "control_objective": "least_privilege",
+      "control_reference": "SYNTHETIC-CONTROL-001",
+      "evidence_does_not_prove": [
+        "activity_outside_ithildin",
+        "human_identity",
+        "organizational_control_conformance"
+      ],
+      "evidence_source": "policy_decision_evidence",
+      "evidence_supports": "mediated_policy_decision_recorded",
+      "freshness": "at_review_time",
+      "mapping_id": "CM-SYN-001",
+      "operator_input": "confirm_scope_and_evidence_sufficiency",
+      "review_cadence": "each_mapping_review",
+      "review_console_expectation": "show_evidence_and_gaps",
+      "safe_evidence_fields": [
+        "decision",
+        "policy_id",
+        "reason_code",
+        "tool_id"
+      ],
+      "verification": {
+        "command": "make control-mapping-design-check",
+        "packet_pointer": "docs/codex/control-mapping-design.md"
+      }
+    },
+    {
+      "accepted_risk_refs": [
+        "AR-010"
+      ],
+      "applicability": {
+        "reason_code": "evidence_source_not_available",
+        "status": "unsupported"
+      },
+      "confidence": "unsupported",
+      "control_objective": "sensitive_resource_labeling",
+      "control_reference": "SYNTHETIC-CONTROL-002",
+      "evidence_does_not_prove": [
+        "activity_outside_ithildin",
+        "human_identity",
+        "organizational_control_conformance"
+      ],
+      "evidence_source": "none",
+      "evidence_supports": "no_supporting_statement",
+      "freshness": "at_review_time",
+      "mapping_id": "CM-SYN-002",
+      "operator_input": "none",
+      "review_cadence": "each_mapping_review",
+      "review_console_expectation": "show_unsupported_reason",
+      "safe_evidence_fields": [],
+      "verification": {
+        "command": "make control-mapping-design-check",
+        "packet_pointer": "docs/codex/control-mapping-design.md"
+      }
+    },
+    {
+      "accepted_risk_refs": [],
+      "applicability": {
+        "reason_code": "objective_not_selected",
+        "status": "not_applicable"
+      },
+      "confidence": "not_applicable",
+      "control_objective": "restricted_network_destinations",
+      "control_reference": "SYNTHETIC-CONTROL-003",
+      "evidence_does_not_prove": [
+        "activity_outside_ithildin",
+        "human_identity",
+        "organizational_control_conformance"
+      ],
+      "evidence_source": "none",
+      "evidence_supports": "no_supporting_statement",
+      "freshness": "at_review_time",
+      "mapping_id": "CM-SYN-003",
+      "operator_input": "none",
+      "review_cadence": "each_mapping_review",
+      "review_console_expectation": "show_not_applicable_reason",
+      "safe_evidence_fields": [],
+      "verification": {
+        "command": "make control-mapping-design-check",
+        "packet_pointer": "docs/codex/control-mapping-design.md"
+      }
+    }
+  ],
+  "schema": "ithildin.control_mapping_template.v1",
+  "template_id": "cmt_synthetic_example_v1"
+}

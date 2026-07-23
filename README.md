@@ -120,6 +120,11 @@ The compliance mapping architecture packet is
 is checked with `make compliance-mapping-architecture-check`; it defines future mapping-template,
 operator responsibility, legal-review, and evidence-field requirements while keeping compliance
 automation, legal conclusions, and regulated-industry compliance claims blocked.
+The synthetic compliance mapping template compatibility corpus is
+[docs/codex/compliance-mapping-template-compatibility-fixtures.md](docs/codex/compliance-mapping-template-compatibility-fixtures.md)
+and is checked with `make compliance-mapping-template-compatibility-check`; it validates only a
+closed non-regulatory template shape, safe evidence fields, unsupported/not-applicable rows, and
+false-assurance rejections while keeping all runtime and claim authority false.
 The incident reconstruction guide is
 [docs/codex/incident-reconstruction-guide.md](docs/codex/incident-reconstruction-guide.md) and is
 checked with `make incident-reconstruction-check`; it explains how to reconstruct mediated actions
@@ -953,6 +958,9 @@ checked with `make control-mapping-readiness`.
 - `make compliance-mapping-architecture-check` - validate the design-only compliance mapping
   architecture packet while keeping compliance automation, legal conclusions, and regulated-industry
   compliance claims blocked.
+- `make compliance-mapping-template-compatibility-check` - validate the static synthetic
+  compliance-mapping template corpus, evidence-field allowlists, unsupported/not-applicable rows,
+  and all-false authority boundary without selecting a real framework.
 - `make compliance-mapping-disposition-packet` - generate the focused compliance mapping
   disposition packet asking whether ERG-009 may continue architecture planning while runtime mapping,
   compliance automation, legal conclusions, automated certification, and regulated-industry
@@ -2131,6 +2139,11 @@ and is checked with `make compliance-mapping-architecture-check`; it defines fut
 scope, mapping-template, evidence allowlist/denylist, operator responsibility, legal-review, and
 accepted-risk questions while keeping compliance automation, legal conclusions, automated
 certification, and regulated-industry compliance claims blocked.
+The static `CMT-001` synthetic template corpus is
+[docs/codex/compliance-mapping-template-compatibility-fixtures.md](docs/codex/compliance-mapping-template-compatibility-fixtures.md)
+and is checked with `make compliance-mapping-template-compatibility-check`; it freezes only
+non-regulatory schema mechanics and keeps real-framework selection, runtime mapping, legal
+conclusions, compliance claims, release, promotion, and UAT blocked.
 Generate the compliance mapping disposition packet with
 `make compliance-mapping-disposition-packet`; it asks whether the current ERG-009 architecture
 evidence is coherent enough to continue planning while runtime compliance mapping, legal advice,

@@ -153,6 +153,19 @@ language, legal-review boundary drafting, and review packets may continue. Runti
 mapping implementation remains blocked until a separate post-RC decision record approves a specific
 implementation plan.
 
+## CMT-001 Synthetic Template Compatibility Corpus
+
+The static
+[compliance-mapping-template-compatibility-fixtures.md](compliance-mapping-template-compatibility-fixtures.md)
+packet freezes the synthetic `ithildin.control_mapping_template.v1` shape, safe evidence-field
+allowlists, unsupported and not-applicable examples, false-assurance rejections, accepted-risk
+references, and review-console expectations. Run
+`make compliance-mapping-template-compatibility-check`.
+
+`CMT-001` does not select a real framework or version, authorize runtime mapping, or establish that
+Ithildin or an operator satisfies any external control. It is planning evidence only and does not
+close `ERG-009`.
+
 The external response intake template for reviewer feedback is
 [compliance-mapping-external-response-intake.md](compliance-mapping-external-response-intake.md).
 It records allowed reviewer-response outcomes without mutating findings, closing `ERG-009`, or

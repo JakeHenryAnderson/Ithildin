@@ -40,6 +40,7 @@ from scripts import (
     compliance_mapping_external_review_bundle,
     compliance_mapping_response_dry_run,
     compliance_mapping_response_kit,
+    compliance_mapping_template_compatibility_check,
     consolidate_review_packet,
     control_mapping_design_check,
     control_mapping_readiness,
@@ -34700,6 +34701,128 @@ def test_compliance_mapping_architecture_is_wired() -> None:
     assert "compliance-mapping-architecture.md" in runway
     assert "compliance-mapping-architecture.md" in gap_matrix
     assert "compliance-mapping-architecture.md" in decision_register
+
+
+def test_compliance_mapping_template_compatibility_is_wired() -> None:
+    report = compliance_mapping_template_compatibility_check.build_report(Path.cwd())
+    doc = Path(
+        compliance_mapping_template_compatibility_check.DOC_REL
+    ).read_text(encoding="utf-8")
+    architecture = Path(
+        "docs/codex/compliance-mapping-architecture.md"
+    ).read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
+    review_index = Path("docs/codex/review-docs-index.md").read_text(
+        encoding="utf-8"
+    )
+    release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+
+    assert report["valid"] is True, report
+    assert report["case_count"] == 21
+    assert report["accepted_case_count"] == 3
+    assert report["rejected_case_count"] == 18
+    assert report["safe_reason_labels_only"] is True
+    assert report["tool_count"] == 24
+    assert report["corpus_sha256"] == (
+        "d49fbf2b301930598ce4ff0ad6dd73a16c6d749a32b5e413e999862d35560808"
+    )
+    assert report["base_template_sha256"] == (
+        "8ad83afb9626fb99c93a69e32b1d2542a334b42cc0c2c73728255b80cef20c1a"
+    )
+    assert [item["id"] for item in report["case_results"]] == [
+        f"CMT-COMP-{number:03d}" for number in range(1, 22)
+    ]
+    for key in compliance_mapping_template_compatibility_check.AUTHORITY_FLAGS:
+        assert report[key] is False
+    assert "synthetic, non-regulatory" in doc
+    assert "CMT-001" in architecture
+    assert (
+        Path(compliance_mapping_template_compatibility_check.DOC_REL).name
+        in architecture
+    )
+    assert "compliance-mapping-template-compatibility-check:" in makefile
+    assert (
+        "compliance-mapping-template-compatibility-check" in release_check_body
+        or "release-check: compliance-mapping-template-compatibility-check" in makefile
+    )
+    assert "make compliance-mapping-template-compatibility-check" in readme
+    assert compliance_mapping_template_compatibility_check.DOC_REL in readme
+    assert compliance_mapping_template_compatibility_check.DOC_REL in docs_site
+    assert (
+        compliance_mapping_template_compatibility_check.DOC_REL
+        in review_docs.REVIEW_DOCS
+    )
+    assert (
+        "Compliance Mapping Template Compatibility Fixtures"
+        in review_index
+    )
+    assert "compliance-mapping-template-compatibility-check" in (
+        release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
+    )
+
+
+def test_compliance_mapping_template_rejects_sensitive_field_without_echo() -> None:
+    base_path = Path(
+        compliance_mapping_template_compatibility_check.BASE_TEMPLATE_REL
+    )
+    base_raw = base_path.read_text(encoding="utf-8")
+    base_document = (
+        compliance_mapping_template_compatibility_check._parse_json_object(base_raw)
+    )
+    materialized = compliance_mapping_template_compatibility_check._materialize_case(
+        base_raw,
+        base_document,
+        "forbidden_evidence_field",
+    )
+
+    reasons = (
+        compliance_mapping_template_compatibility_check.validate_template_text(
+            materialized
+        )
+    )
+
+    assert reasons == ["forbidden_evidence_field"]
+    assert "access_token" not in " ".join(reasons)
+
+
+@pytest.mark.parametrize(
+    ("mutation", "expected"),
+    [
+        ("supported_only", []),
+        ("unsupported_and_not_applicable", []),
+        ("overflowing_json_number", ["non_finite_number"]),
+        ("invalid_unicode", ["invalid_unicode"]),
+        ("prohibited_claim_text", [
+            "prohibited_claim_text",
+            "unsupported_evidence_support_statement",
+        ]),
+    ],
+)
+def test_compliance_mapping_template_compatibility_regressions(
+    mutation: str,
+    expected: list[str],
+) -> None:
+    base_path = Path(
+        compliance_mapping_template_compatibility_check.BASE_TEMPLATE_REL
+    )
+    base_raw = base_path.read_text(encoding="utf-8")
+    base_document = (
+        compliance_mapping_template_compatibility_check._parse_json_object(base_raw)
+    )
+    materialized = compliance_mapping_template_compatibility_check._materialize_case(
+        base_raw,
+        base_document,
+        mutation,
+    )
+
+    assert (
+        compliance_mapping_template_compatibility_check.validate_template_text(
+            materialized
+        )
+        == expected
+    )
 
 
 def test_compliance_mapping_disposition_packet_is_wired(tmp_path: Path) -> None:

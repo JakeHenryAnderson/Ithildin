@@ -12,6 +12,7 @@ if __package__ in {None, ""}:
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from scripts import (
+    compliance_mapping_template_compatibility_check,
     control_mapping_design_check,
     incident_reconstruction_check,
     review_docs,
@@ -138,6 +139,9 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
     control_report = control_mapping_design_check.build_report(repo_root)
     incident_report = incident_reconstruction_check.build_report(repo_root)
+    template_report = compliance_mapping_template_compatibility_check.build_report(
+        repo_root
+    )
 
     text = ""
     if not doc_path.exists():
@@ -178,6 +182,10 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         f"incident reconstruction guide: {failure}"
         for failure in incident_report["failures"]
     )
+    failures.extend(
+        f"template compatibility corpus: {failure}"
+        for failure in template_report["failures"]
+    )
 
     if doc_rel not in review_docs.REVIEW_DOCS:
         failures.append("Compliance mapping architecture doc is missing from review docs")
@@ -206,6 +214,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "valid": not failures,
         "failures": failures,
         "architecture_doc": doc_rel,
+        "template_compatibility_valid": template_report["valid"],
         "erg_009_status": "planning_only",
         "tool_count": 24,
         "runtime_changes_allowed": False,
