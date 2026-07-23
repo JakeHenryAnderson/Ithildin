@@ -413,6 +413,7 @@ checked with `make control-mapping-readiness`.
 - [docs/codex/mission-command-control-plane-implementation-tickets.md](docs/codex/mission-command-control-plane-implementation-tickets.md) - ordered `MCC-001` through `MCC-006` implementation and exact-candidate gates.
 - [docs/codex/mission-command-control-plane-poc-evidence-contract.md](docs/codex/mission-command-control-plane-poc-evidence-contract.md) - reproducible live MCC-006 evidence, redaction, exact-candidate, and non-claim contract.
 - [docs/codex/mission-command-control-plane-authorization-record.md](docs/codex/mission-command-control-plane-authorization-record.md) - project-owner authority mapped to the bounded API, persistence, Node protocol, evidence, and UI changes.
+- [docs/codex/mission-command-runner-bridge-candidate-evaluation.md](docs/codex/mission-command-runner-bridge-candidate-evaluation.md) - design-only `MCC-007` evaluation of a fixed operator-managed Hermes bridge while implementation and runner lifecycle authority remain false.
 - `make mission-command-control-plane-plan-check` - validate mission admission authority while rejecting runner bridge, host control, provider authority, and tool-surface expansion.
 - `make mission-command-control-plane-poc` followed by `make mission-command-control-plane-poc-check` - exercise and validate the clean exact-candidate MCC-006 live proof.
 - [docs/codex/track-b-node-capability-decision.md](docs/codex/track-b-node-capability-decision.md) - project-owner authorization and the narrow enrollment/identity runtime boundary.

@@ -14,7 +14,8 @@ CAPABILITY = "docs/codex/mission-command-control-plane-capability-decision.md"
 ARCHITECTURE = "docs/codex/mission-command-control-plane-architecture.md"
 TICKETS = "docs/codex/mission-command-control-plane-implementation-tickets.md"
 AUTHORIZATION = "docs/codex/mission-command-control-plane-authorization-record.md"
-DOCS = (CAPABILITY, ARCHITECTURE, TICKETS, AUTHORIZATION)
+RUNNER_BRIDGE_EVALUATION = "docs/codex/mission-command-runner-bridge-candidate-evaluation.md"
+DOCS = (CAPABILITY, ARCHITECTURE, TICKETS, AUTHORIZATION, RUNNER_BRIDGE_EVALUATION)
 CONTRACT_START = "<!-- mission-command-contract:start -->"
 CONTRACT_END = "<!-- mission-command-contract:end -->"
 ORDERED_TICKETS = [f"MCC-{index:03d}" for index in range(1, 7)]
@@ -31,6 +32,49 @@ LIFECYCLE_STATES = {
     "claim_expired_review_required",
 }
 EVIDENCE_STATUSES = {"pending", "complete", "evidence_incomplete"}
+RUNNER_BRIDGE_FUTURE_DECISIONS = [
+    "artifact_and_executable_provenance",
+    "local_protocol_and_identity",
+    "prompt_custody",
+    "static_resource_ceilings",
+    "cancellation_semantics",
+    "evidence_ownership",
+    "non_bypass_ceiling",
+    "upgrade_rollback_and_failure_custody",
+]
+RUNNER_BRIDGE_REQUIRED_TRUE_FIELDS = (
+    "fixed_provenance_required",
+    "operator_managed_runner_required",
+    "closed_profile_required",
+    "static_resource_limits_required",
+    "gateway_node_runner_truth_separation_required",
+    "separate_capability_decision_required",
+    "exact_candidate_review_required",
+)
+RUNNER_BRIDGE_REQUIRED_FALSE_FIELDS = (
+    "capability_selected",
+    "implementation_authorized",
+    "runtime_adapter_authorized",
+    "runner_bridge_authorized",
+    "runner_lifecycle_authority",
+    "model_provider_authority",
+    "prompt_custody_authorized",
+    "arbitrary_host_control_authorized",
+    "generic_process_control_authorized",
+    "shell_execution_authorized",
+    "docker_socket_authorized",
+    "network_expansion_authorized",
+    "node_transport_change_authorized",
+    "public_api_change_authorized",
+    "policy_change_authorized",
+    "persistence_change_authorized",
+    "new_governed_tool",
+    "production_identity_authorized",
+    "release_allowed",
+    "production_promotion_allowed",
+    "uat_complete",
+    "sol_ultra_authorized",
+)
 
 
 class ContractError(ValueError):
@@ -58,6 +102,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     architecture = contracts.get(ARCHITECTURE, {})
     tickets = contracts.get(TICKETS, {})
     authorization = contracts.get(AUTHORIZATION, {})
+    runner_bridge_evaluation = contracts.get(RUNNER_BRIDGE_EVALUATION, {})
 
     _expect(capability, "document_type", "capability_decision", CAPABILITY, failures)
     _expect(capability, "decision", "approved_for_bounded_implementation", CAPABILITY, failures)
@@ -156,6 +201,53 @@ def build_report(repo_root: Path) -> dict[str, Any]:
                 failures,
             )
 
+    _expect(
+        runner_bridge_evaluation,
+        "document_type",
+        "runner_bridge_candidate_evaluation",
+        RUNNER_BRIDGE_EVALUATION,
+        failures,
+    )
+    _expect(runner_bridge_evaluation, "ticket_id", "MCC-007", RUNNER_BRIDGE_EVALUATION, failures)
+    _expect(
+        runner_bridge_evaluation,
+        "disposition",
+        "design_only_candidate_ready_for_exact_review",
+        RUNNER_BRIDGE_EVALUATION,
+        failures,
+    )
+    _expect(
+        runner_bridge_evaluation,
+        "candidate",
+        "fixed_hermes_runner_bridge",
+        RUNNER_BRIDGE_EVALUATION,
+        failures,
+    )
+    _expect(
+        runner_bridge_evaluation,
+        "required_future_decisions",
+        RUNNER_BRIDGE_FUTURE_DECISIONS,
+        RUNNER_BRIDGE_EVALUATION,
+        failures,
+    )
+    expected_runner_bridge_keys = {
+        "document_type",
+        "schema_version",
+        "ticket_id",
+        "disposition",
+        "candidate",
+        "tool_count",
+        "required_future_decisions",
+        *RUNNER_BRIDGE_REQUIRED_TRUE_FIELDS,
+        *RUNNER_BRIDGE_REQUIRED_FALSE_FIELDS,
+    }
+    if set(runner_bridge_evaluation) != expected_runner_bridge_keys:
+        failures.append(f"{RUNNER_BRIDGE_EVALUATION} contract fields are not closed")
+    for key in RUNNER_BRIDGE_REQUIRED_TRUE_FIELDS:
+        _expect(runner_bridge_evaluation, key, True, RUNNER_BRIDGE_EVALUATION, failures)
+    for key in RUNNER_BRIDGE_REQUIRED_FALSE_FIELDS:
+        _expect(runner_bridge_evaluation, key, False, RUNNER_BRIDGE_EVALUATION, failures)
+
     for relative, contract in contracts.items():
         _expect(contract, "schema_version", "1", relative, failures)
         _expect(contract, "tool_count", lock_count, relative, failures)
@@ -185,6 +277,14 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "arbitrary_host_control_authorized": capability.get("arbitrary_host_control_authorized"),
         "production_identity_authorized": capability.get("production_identity_authorized"),
         "uat_required_now": capability.get("uat_required_now"),
+        "runner_bridge_candidate": runner_bridge_evaluation.get("candidate"),
+        "runner_bridge_candidate_disposition": runner_bridge_evaluation.get("disposition"),
+        "runner_bridge_implementation_authorized": runner_bridge_evaluation.get(
+            "implementation_authorized"
+        ),
+        "separate_runner_bridge_capability_decision_required": runner_bridge_evaluation.get(
+            "separate_capability_decision_required"
+        ),
         "packet_digest_binding_valid": not any("sha256" in failure for failure in failures),
     }
 
@@ -197,6 +297,10 @@ def render_report(report: dict[str, Any]) -> str:
         "mission_admission_implementation_authorized: "
         f"{str(report['mission_admission_implementation_authorized']).lower()}",
         f"runner_bridge_authorized: {str(report['runner_bridge_authorized']).lower()}",
+        "runner_bridge_implementation_authorized: "
+        f"{str(report['runner_bridge_implementation_authorized']).lower()}",
+        "separate_runner_bridge_capability_decision_required: "
+        f"{str(report['separate_runner_bridge_capability_decision_required']).lower()}",
         "arbitrary_host_control_authorized: "
         f"{str(report['arbitrary_host_control_authorized']).lower()}",
         f"packet_digest_binding_valid: {str(report['packet_digest_binding_valid']).lower()}",
@@ -280,6 +384,13 @@ def _validate_document_tokens(texts: dict[str, str], failures: list[str]) -> Non
             "before/after mission finalization",
         ),
         AUTHORIZATION: ("exact SHA-256", "Sol Ultra requires separate prior user approval"),
+        RUNNER_BRIDGE_EVALUATION: (
+            "## Required Later Capability Decision",
+            "operator-installed, operator-started component",
+            "must not accept a command",
+            "The current selected capability remains `not selected`",
+            "No Hermes artifact, process",
+        ),
     }
     for relative, tokens in required.items():
         text = texts.get(relative, "")

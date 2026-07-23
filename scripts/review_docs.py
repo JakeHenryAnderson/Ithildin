@@ -328,6 +328,7 @@ REVIEW_DOCS = [
     "docs/codex/mission-command-control-plane-architecture.md",
     "docs/codex/mission-command-control-plane-implementation-tickets.md",
     "docs/codex/mission-command-control-plane-authorization-record.md",
+    "docs/codex/mission-command-runner-bridge-candidate-evaluation.md",
     "docs/codex/track-b-node-capability-decision.md",
     "docs/codex/track-b-node-architecture.md",
     "docs/codex/track-b-node-implementation-plan.md",
