@@ -2026,6 +2026,11 @@ receipt collection. Independent Sol xhigh review found zero issues and is durabl
 operational collection action remains ineffective pending external operator inputs and a separate
 action-authority record. It does not authorize activation preparation or any driver, DSN,
 connection, migration, service, container, runtime, release, promotion, or UAT action.
+The exact-candidate enterprise-status reconciliation review is recorded in
+[docs/codex/enterprise-status-external-input-reconciliation-internal-source-review.md](docs/codex/enterprise-status-external-input-reconciliation-internal-source-review.md).
+It clears exact commit `937ba0b` with zero findings for the external-input wait status only, binds
+the frozen exact validator separately from the descendant release bridge, and grants no target,
+receipt, activation, execution, runtime, release, promotion, or UAT authority.
 Generate the production identity and storage disposition packet with
 `make production-identity-storage-disposition-packet`; it asks whether the current ERG-006/ERG-007
 architecture evidence is coherent enough to continue planning while keeping production identity,

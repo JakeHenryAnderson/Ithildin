@@ -379,6 +379,7 @@ DEFAULT_DOCS = [
     "docs/codex/production-identity-storage-pis-003-sd-pg-001-environment-evidence-collection-gate.md",
     # Zero-finding activation review record; no collection action is effective.
     "docs/codex/production-identity-storage-pis-003-sd-pg-001-environment-evidence-collection-authority-record.md",
+    "docs/codex/enterprise-status-external-input-reconciliation-internal-source-review.md",
     "docs/codex/production-identity-storage-architecture.md",
     "docs/codex/production-identity-storage-disposition-packet.md",
     "docs/codex/production-identity-storage-external-review-bundle.md",

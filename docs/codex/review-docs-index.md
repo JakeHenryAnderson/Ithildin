@@ -471,6 +471,7 @@ externally closed.
 - [Production Identity And Storage PIS-003 SD-PG-001 Environment Execution Gate](production-identity-storage-pis-003-sd-pg-001-environment-execution-gate.md)
 - [Production Identity And Storage PIS-003 SD-PG-001 Environment Evidence Collection Gate](production-identity-storage-pis-003-sd-pg-001-environment-evidence-collection-gate.md)
 - [Production Identity And Storage PIS-003 SD-PG-001 Environment Evidence Collection Authority Activation Review Record](production-identity-storage-pis-003-sd-pg-001-environment-evidence-collection-authority-record.md)
+- [Enterprise Status External-Input Reconciliation Internal Source Review](enterprise-status-external-input-reconciliation-internal-source-review.md)
 - [Production Identity And Storage Architecture](production-identity-storage-architecture.md)
 - [Production Identity And Storage Disposition Packet](production-identity-storage-disposition-packet.md)
 - [Production Identity And Storage External Review Bundle](production-identity-storage-external-review-bundle.md)
