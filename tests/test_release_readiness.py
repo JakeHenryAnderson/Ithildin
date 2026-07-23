@@ -40861,6 +40861,12 @@ def test_command_center_pre_uat_remediation_contract_is_wired() -> None:
     ]:
         assert phrase in normalized_dispatch_record
     for phrase in [
+        "approved_as_durable_packet_ready_non_dispatch_record_only",
+        "4be6f330bf22a27ac7ba580f0f3d22bff9684ae5",
+        "af593edddbca1b9a429a104d0894546708fac277",
+        "c30d6646695bf8f1e861cbe7813134747e8d36c9f70f2d9ae83188854ae63926",
+        "grants no Sol Ultra authority",
+        "Historical Review Of The Earlier Blocked Non-Dispatch Record",
         "approved_as_durable_non_dispatch_record_only",
         "a9056788010f96c94833d35b1d5623c744a2b923",
         "Sol Ultra was not used",
@@ -40868,7 +40874,6 @@ def test_command_center_pre_uat_remediation_contract_is_wired() -> None:
         "High findings: `0`",
         "Medium findings: `0`",
         "Low findings: `0`",
-        "grants no Sol Ultra authority",
     ]:
         assert phrase in normalized_dispatch_review
 
