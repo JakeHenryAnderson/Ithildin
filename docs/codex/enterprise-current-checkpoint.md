@@ -18,7 +18,12 @@ close enterprise lanes, approve runtime behavior, or approve public/security-pro
 
 ## Current Interpretation
 
-- v1.0 local-preview RC packet generation is ready through `make review-candidate`.
+- The exact `c671d50` release transcript passed, but `make review-candidate` is blocked at its
+  required MCC-006 live-evidence precondition.
+- No immutable current-candidate review packet exists. The mutable release transcript is not a
+  substitute for packet-local evidence.
+- Command Center closure-review dispatch and `CC-PILOT-107` UAT remain blocked. Sol Ultra approval
+  has not been obtained and no closure review has been dispatched.
 - The current reviewed local-preview boundary remains the governed MCP/tool gateway with 24 tools.
 - Capability expansion remains blocked.
 - Runtime changes remain blocked outside already-approved local-preview tool behavior.
@@ -57,6 +62,25 @@ only PIS-001 threat-model, non-goal, dependency-evaluation, exact-contract, and 
   production identity, enterprise RBAC,
 remote administration, runtime Postgres, migrations, production Node transport, or new governed
 tool powers.
+
+The local review-packet route is a separate blocked dependency. The exact command
+`make review-candidate` currently stops at `make mission-command-control-plane-poc-check` because
+the exact-candidate MCC-006 live evidence is absent. The required reproduction command,
+`make mission-command-control-plane-poc`, starts a real loopback Gateway and writes isolated
+ignored SQLite, JSONL, signing-key, and Node state. It must run only in a separately bounded
+live-evidence lane; this checkpoint does not authorize or perform it.
+
+The durable non-dispatch evidence is:
+
+```sh
+docs/codex/command-center-sol-ultra-closure-review-dispatch-record.md
+docs/codex/command-center-sol-ultra-closure-review-dispatch-record-internal-source-review.md
+```
+
+The first record binds the green exact release evidence and failed review-packet precondition. The
+second records a zero-finding independent Sol xhigh review of that non-dispatch record. Neither
+record substitutes for Sol Ultra closure review, creates an immutable candidate packet, or opens
+human UAT.
 
 ## Recommended Next Actions
 
@@ -142,6 +166,8 @@ The historical ERG-003/ERG-002 dual-send commands remain available only for line
 
 ## Current Packet Paths
 
+- current exact-candidate v0.2 review packet: absent until the MCC-006 prerequisite and
+  `make review-candidate` pass;
 - v1.0 RC packet: `var/review-packets/v1.0/rc/`
 - historical consolidated packet: `var/review-packets/v0.2/GPT-5.5-Pro-consolidated/`
 - `ERG-003` packet: `var/review-packets/v3/sandbox-vm-static-preflight-external-review/`

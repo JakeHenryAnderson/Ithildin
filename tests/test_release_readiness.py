@@ -2687,6 +2687,7 @@ def test_enterprise_current_checkpoint_is_wired() -> None:
     docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
     review_index = Path("docs/codex/review-docs-index.md").read_text(encoding="utf-8")
     release_check_body = makefile.partition("release-check:")[2].partition("\n\n")[0]
+    normalized_doc = " ".join(doc.split())
 
     assert report["valid"] is True
     assert report["tool_count"] == 24
@@ -2709,6 +2710,15 @@ def test_enterprise_current_checkpoint_is_wired() -> None:
     )
     assert report["response_present_count"] == 0
     assert report["closure_ready_count"] == 0
+    assert report["review_candidate_prerequisite_mcc_006_valid"] is False
+    assert report["review_candidate_blocker"] == (
+        "missing_or_invalid_exact_candidate_mcc_006_live_evidence"
+    )
+    assert report["immutable_review_packet_present"] is False
+    assert report["immutable_review_packet_valid"] is False
+    assert report["review_candidate_packet_ready"] is False
+    assert report["closure_review_dispatch_allowed"] is False
+    assert report["human_uat_allowed"] is False
     assert report["runtime_changes_allowed"] is False
     assert report["mission_control_runtime_allowed"] is False
     assert report["live_vm_inspection_allowed"] is False
@@ -2723,7 +2733,12 @@ def test_enterprise_current_checkpoint_is_wired() -> None:
         "Current governed tool count: `24`",
         "Current selected capability: `not selected`",
         "make enterprise-current-checkpoint",
-        "v1.0 local-preview RC packet generation is ready through `make review-candidate`",
+        "`make review-candidate` is blocked at its required MCC-006 live-evidence precondition",
+        "No immutable current-candidate review packet exists",
+        "Command Center closure-review dispatch and `CC-PILOT-107` UAT remain blocked",
+        "make mission-command-control-plane-poc-check",
+        "make mission-command-control-plane-poc",
+        "command-center-sol-ultra-closure-review-dispatch-record.md",
         "`ERG-004`: descriptor-only sandbox/VM live POC runtime source review "
         "is locally dispositioned",
         "`ERG-005`: staging-only trusted-host promotion runtime source findings are dispositioned",
@@ -2740,7 +2755,7 @@ def test_enterprise_current_checkpoint_is_wired() -> None:
         "public/security-product positioning",
         "new governed tool powers",
     ]:
-        assert phrase in doc
+        assert phrase in normalized_doc
     assert "The current recommended enterprise handoff set is:\n\n1. `ERG-003`" not in doc
     assert "enterprise-current-checkpoint:" in makefile
     assert "enterprise-current-checkpoint" in release_check_body
@@ -2752,6 +2767,44 @@ def test_enterprise_current_checkpoint_is_wired() -> None:
     assert "enterprise-current-checkpoint" in (
         release_guardrails.REQUIRED_RELEASE_CHECK_FRAGMENTS
     )
+
+
+def test_enterprise_current_checkpoint_validates_immutable_packet(
+    tmp_path: Path,
+) -> None:
+    commit = "a" * 40
+    packet = tmp_path / f"ithildin-v0.2-review-packet-{commit[:12]}"
+    packet.mkdir()
+    artifacts = {
+        "git-summary.txt": f"commit={commit}\nbranch=test\ndirty=false\n",
+        "release-check.txt": "$ make release-check\nreturncode=0\n",
+        "packet-redaction-scan.txt": (
+            "# Ithildin Packet Redaction Scan\n\n"
+            "findings: `0`\n\n"
+            "Packet redaction scan passed.\n"
+        ),
+        "payload.txt": "bounded evidence\n",
+    }
+    hashes: list[dict[str, object]] = []
+    for relative, content in artifacts.items():
+        encoded = content.encode()
+        packet.joinpath(relative).write_bytes(encoded)
+        hashes.append(
+            {
+                "bytes": len(encoded),
+                "path": relative,
+                "sha256": f"sha256:{hashlib.sha256(encoded).hexdigest()}",
+            }
+        )
+    packet.joinpath("artifact-hashes.json").write_text(
+        json.dumps(hashes),
+        encoding="utf-8",
+    )
+
+    assert enterprise_current_checkpoint._immutable_packet_valid(packet, commit) is True
+
+    packet.joinpath("payload.txt").write_text("tampered\n", encoding="utf-8")
+    assert enterprise_current_checkpoint._immutable_packet_valid(packet, commit) is False
 
 
 def test_enterprise_progress_model_is_wired() -> None:
@@ -6463,6 +6516,7 @@ def test_enterprise_north_star_roadmap_is_wired() -> None:
     review_candidate_body = makefile.partition("review-candidate:")[2].partition(
         "\n\n"
     )[0]
+    normalized_doc = " ".join(doc.split())
 
     assert report["valid"] is True
     assert report["tool_count"] == 24
@@ -6475,6 +6529,15 @@ def test_enterprise_north_star_roadmap_is_wired() -> None:
     assert report["response_present_count"] == 0
     assert report["closure_ready_count"] == 0
     assert report["phase_count"] == 6
+    assert report["review_candidate_prerequisite_mcc_006_valid"] is False
+    assert report["review_candidate_blocker"] == (
+        "missing_or_invalid_exact_candidate_mcc_006_live_evidence"
+    )
+    assert report["immutable_review_packet_present"] is False
+    assert report["immutable_review_packet_valid"] is False
+    assert report["review_candidate_packet_ready"] is False
+    assert report["closure_review_dispatch_allowed"] is False
+    assert report["human_uat_allowed"] is False
     assert report["runtime_changes_allowed"] is False
     assert report["mission_control_runtime_allowed"] is False
     assert report["live_vm_inspection_allowed"] is False
@@ -6497,6 +6560,12 @@ def test_enterprise_north_star_roadmap_is_wired() -> None:
         "erg_002_mission_control_display",
         "erg_004_live_sandbox_vm_poc",
         "enterprise_architecture_lanes",
+        "`make review-candidate` remains blocked until exact-candidate MCC-006 "
+        "live evidence passes",
+        "Command Center closure-review dispatch and `CC-PILOT-107` UAT remain blocked",
+        "make mission-command-control-plane-poc-check",
+        "make mission-command-control-plane-poc",
+        "A passing release transcript does not satisfy the MCC-006 prerequisite",
         "A favorable `ERG-003` response can close static preflight only",
         (
             "A favorable `ERG-002` response can authorize a Mission Control-side "
@@ -6505,7 +6574,7 @@ def test_enterprise_north_star_roadmap_is_wired() -> None:
         "No row in this roadmap approves new governed tool powers",
         "When To Ask For External Roadmap Review",
     ]:
-        assert phrase in doc
+        assert phrase in normalized_doc
     assert "enterprise-north-star-roadmap:" in makefile
     assert (
         "enterprise-north-star-roadmap" in release_check_body

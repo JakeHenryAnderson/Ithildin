@@ -12,6 +12,7 @@ if __package__ in {None, ""}:
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from scripts import (
+    enterprise_current_checkpoint,
     enterprise_dependency_ladder,
     enterprise_operator_next_action,
     enterprise_readiness_gap_matrix_check,
@@ -39,6 +40,8 @@ REQUIRED_DOC_PHRASES = [
     "`ERG-002`: Mission Control display/import planning review",
     "make release-check",
     "make review-candidate",
+    "`make review-candidate` remains blocked until exact-candidate MCC-006 live evidence passes",
+    "Command Center closure-review dispatch and `CC-PILOT-107` UAT remain blocked",
     "make enterprise-review-send-refresh",
     "make handoff-dry-run",
     "make enterprise-send-now",
@@ -129,6 +132,7 @@ def main() -> int:
 def build_report(repo_root: Path) -> dict[str, Any]:
     failures: list[str] = []
     operator_next_action = enterprise_operator_next_action.build_report(repo_root)
+    current_checkpoint = enterprise_current_checkpoint.build_report(repo_root)
     external_input_wait = operator_next_action.get("next_action") == (
         enterprise_operator_next_action.PIS_003_EXTERNAL_INPUT_ACTION
     )
@@ -170,6 +174,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         ("enterprise-response-status-board", response_status),
         ("next-capability-readiness", capability),
         ("enterprise-operator-next-action", operator_next_action),
+        ("enterprise-current-checkpoint", current_checkpoint),
     ]:
         if report.get("valid") is not True:
             failures.append(f"{label} is not valid")
@@ -217,17 +222,18 @@ def build_report(repo_root: Path) -> dict[str, Any]:
 
     if not doc:
         failures.append("enterprise north-star roadmap doc is missing")
+    normalized_doc = " ".join(doc.split())
     for phrase in REQUIRED_DOC_PHRASES:
-        if phrase not in doc:
+        if phrase not in normalized_doc:
             failures.append(f"enterprise north-star roadmap doc is missing phrase: {phrase}")
     for doc_rel in CANONICAL_DOCS:
         if doc_rel not in doc:
             failures.append(f"enterprise north-star roadmap is missing canonical doc: {doc_rel}")
     for phase in PHASE_ROWS:
-        if phase not in doc:
+        if phase not in normalized_doc:
             failures.append(f"enterprise north-star roadmap is missing phase row: {phase}")
     for phrase in BLOCKED_PHRASES:
-        if phrase not in doc:
+        if phrase not in normalized_doc:
             failures.append(f"enterprise north-star roadmap is missing blocked phrase: {phrase}")
     lowered = doc.lower()
     for phrase in FORBIDDEN_PHRASES:
@@ -273,6 +279,23 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "response_present_count": response_status.get("response_present_count"),
         "closure_ready_count": response_status.get("closure_ready_count"),
         "phase_count": len(PHASE_ROWS),
+        "review_candidate_prerequisite_mcc_006_valid": current_checkpoint.get(
+            "review_candidate_prerequisite_mcc_006_valid"
+        ),
+        "review_candidate_blocker": current_checkpoint.get("review_candidate_blocker"),
+        "immutable_review_packet_present": current_checkpoint.get(
+            "immutable_review_packet_present"
+        ),
+        "immutable_review_packet_valid": current_checkpoint.get(
+            "immutable_review_packet_valid"
+        ),
+        "review_candidate_packet_ready": current_checkpoint.get(
+            "review_candidate_packet_ready"
+        ),
+        "closure_review_dispatch_allowed": current_checkpoint.get(
+            "closure_review_dispatch_allowed"
+        ),
+        "human_uat_allowed": current_checkpoint.get("human_uat_allowed"),
         **boundary_flags,
     }
 
@@ -294,6 +317,16 @@ def render_report(report: dict[str, Any]) -> str:
         f"response_present_count: {report.get('response_present_count', 'unknown')}",
         f"closure_ready_count: {report.get('closure_ready_count', 'unknown')}",
         f"phase_count: {report['phase_count']}",
+        "review_candidate_prerequisite_mcc_006_valid: "
+        f"{str(report['review_candidate_prerequisite_mcc_006_valid']).lower()}",
+        f"review_candidate_blocker: {report.get('review_candidate_blocker') or ''}",
+        "immutable_review_packet_present: "
+        f"{str(report['immutable_review_packet_present']).lower()}",
+        f"immutable_review_packet_valid: {str(report['immutable_review_packet_valid']).lower()}",
+        f"review_candidate_packet_ready: {str(report['review_candidate_packet_ready']).lower()}",
+        "closure_review_dispatch_allowed: "
+        f"{str(report['closure_review_dispatch_allowed']).lower()}",
+        f"human_uat_allowed: {str(report['human_uat_allowed']).lower()}",
     ]
     for key in [
         "runtime_changes_allowed",

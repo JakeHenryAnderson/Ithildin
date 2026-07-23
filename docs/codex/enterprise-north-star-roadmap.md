@@ -36,7 +36,13 @@ next. The canonical source documents remain:
 Ithildin is a v1.0 local-preview RC candidate, not a production enterprise product. The current
 implemented surface is the local governed MCP/tool gateway, local review console, Agent Run and
 evidence surfaces, demo/handoff packets, and bounded local-preview tools. The latest local-preview
-RC packet is generated through `make review-candidate`.
+release transcript passed on exact candidate `c671d50`, but the current immutable RC review packet
+is not generated: `make review-candidate` remains blocked until exact-candidate MCC-006 live evidence
+passes.
+
+Command Center closure-review dispatch and `CC-PILOT-107` UAT remain blocked. The durable
+non-dispatch record has a zero-finding Sol xhigh review, but no Sol Ultra approval, Sol Ultra
+closure disposition, or immutable packet exists.
 
 Active enterprise route: external target and signed-receipt input wait; no review send is active.
 
@@ -54,7 +60,7 @@ The historical enterprise handoff set is:
 
 | Phase | Current status | Main proof command | Unlocks | Still blocked |
 | --- | --- | --- | --- | --- |
-| `v1_local_preview_rc` | `operator_trial_observed` | `make review-candidate` | local technical-preview handoff only | public/security-product positioning, production identity, hosted operation |
+| `v1_local_preview_rc` | `operator_trial_observed_packet_refresh_blocked_on_mcc_006_evidence` | `make review-candidate` | local technical-preview handoff only after exact MCC-006 evidence and packet generation | immutable current-candidate packet, Command Center closure dispatch, UAT entry, public/security-product positioning, production identity, hosted operation |
 | `erg_003_static_preflight` | `external_review_required` | `make enterprise-next-review-ready-check` | static preflight local-preview closure only | live VM/container inspection, VM lifecycle, local model invocation, sandbox orchestration |
 | `erg_002_mission_control_display` | `planning_only` | `make mission-control-display-next-review-ready-check` | Mission Control-side design-only decision record | Mission Control runtime importer behavior, execution authority, polling or mutating Ithildin APIs |
 | `erg_004_live_sandbox_vm_poc` | `blocked` | `make sandbox-vm-live-poc-preconditions-ready-check` | live POC implementation planning only after `ERG-003` | live implementation, VM lifecycle management, sandbox orchestration |
@@ -63,14 +69,27 @@ The historical enterprise handoff set is:
 
 ## Immediate Operator Sequence
 
-1. Refresh the v1.0 local-preview packet:
+1. Validate the current source candidate without representing it as a complete review packet:
 
    ```sh
    make release-check
+   ```
+
+2. Keep `make review-candidate` blocked while
+   `make mission-command-control-plane-poc-check` reports missing exact-candidate evidence. In a
+   separately bounded live-evidence lane, the required packet sequence is:
+
+   ```sh
+   make mission-command-control-plane-poc
+   make mission-command-control-plane-poc-check
    make review-candidate
    ```
 
-2. Refresh the active enterprise handoff status:
+   The POC command starts a loopback Gateway and writes isolated ignored SQLite, JSONL, signing-key,
+   and Node state. Do not replace this gate with the mutable release transcript or direct packet
+   builder invocation.
+
+3. Refresh the active enterprise handoff status:
 
    ```sh
    make enterprise-current-checkpoint
@@ -78,15 +97,15 @@ The historical enterprise handoff set is:
    make enterprise-active-route-clarity
    ```
 
-3. Wait for external target identity and signed environment receipts before any separate
+4. Wait for external target identity and signed environment receipts before any separate
    operational collection-action authority decision. No repository action or review send is
    current in this state.
 
-4. If revisiting the historical dual-send path, use `make enterprise-review-send-refresh`,
+5. If revisiting the historical dual-send path, use `make enterprise-review-send-refresh`,
    `make handoff-dry-run`, and `make enterprise-send-now` only as the legacy ERG-003/ERG-002 packet
    workflow.
 
-5. After any human send step, copy and fill the ignored operator receipt. Do not fill the copied
+6. After any human send step, copy and fill the ignored operator receipt. Do not fill the copied
    receipt before sending because it records what was actually sent.
 
    ```sh
@@ -95,7 +114,7 @@ The historical enterprise handoff set is:
    make enterprise-review-send-receipt-validate RECEIPT=path/to/copied-receipt.json
    ```
 
-6. After historical ERG-003/ERG-002 responses arrive, paste them into the ignored dual-response inbox at
+7. After historical ERG-003/ERG-002 responses arrive, paste them into the ignored dual-response inbox at
    `var/review-runs/enterprise-dual-response-inbox/` and run:
 
    ```sh
@@ -108,7 +127,7 @@ The historical enterprise handoff set is:
    make enterprise-response-intake-quickstart
    ```
 
-7. Use the lane-specific normalizer, dry-run, closure gate, and response application record before
+8. Use the lane-specific normalizer, dry-run, closure gate, and response application record before
    any committed disposition update.
 
 ## Decision Rules
@@ -120,6 +139,8 @@ The historical enterprise handoff set is:
 - `ERG-004` remains blocked until `ERG-003` is favorably dispositioned and a separate `ERG-004`
   decision record exists.
 - Enterprise architecture lanes do not inherit approval from sandbox or Mission Control decisions.
+- A passing release transcript does not satisfy the MCC-006 prerequisite, create the immutable
+  review packet, close the Command Center findings, authorize Sol Ultra, or open UAT.
 - No row in this roadmap approves new governed tool powers.
 
 ## Blocked Boundaries

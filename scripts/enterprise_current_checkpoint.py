@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
+import subprocess
 import sys
 from pathlib import Path
 from typing import Any
@@ -15,6 +17,7 @@ from scripts import (
     enterprise_operator_next_action,
     enterprise_response_status_board,
     enterprise_review_send_readiness,
+    mission_command_control_plane_poc_evidence_check,
     next_capability_readiness,
     review_docs,
     v1_progress_assessment,
@@ -47,7 +50,9 @@ REQUIRED_PHRASES = [
     "Current governed tool count: `24`",
     "Current selected capability: `not selected`",
     "make enterprise-current-checkpoint",
-    "v1.0 local-preview RC packet generation is ready through `make review-candidate`",
+    "`make review-candidate` is blocked at its required MCC-006 live-evidence precondition",
+    "No immutable current-candidate review packet exists",
+    "Command Center closure-review dispatch and `CC-PILOT-107` UAT remain blocked",
     "Capability expansion remains blocked",
     "Runtime changes remain blocked",
     "Public/security-product positioning remains blocked",
@@ -125,6 +130,25 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     )
     response_status = enterprise_response_status_board.build_report(repo_root)
     capability = next_capability_readiness.build_report(repo_root)
+    mcc_poc = mission_command_control_plane_poc_evidence_check.build_report(repo_root)
+    current_commit = subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=repo_root,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+    immutable_packet_path = (
+        repo_root
+        / "var/review-packets/v0.2"
+        / f"ithildin-v0.2-review-packet-{current_commit[:12]}"
+    )
+    immutable_packet_present = immutable_packet_path.is_dir()
+    immutable_packet_valid = _immutable_packet_valid(
+        immutable_packet_path,
+        current_commit,
+    )
+    mcc_poc_valid = mcc_poc.get("valid") is True
 
     failures.extend(f"v1-progress-assessment: {failure}" for failure in progress["failures"])
     if not pis_mode:
@@ -159,6 +183,14 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         failures.append("response-status tool count is not 24")
     if capability.get("next_candidate") != "not selected":
         failures.append("next capability candidate is selected")
+    if mcc_poc.get("tool_count") != 24:
+        failures.append("MCC-006 evidence checker tool count is not 24")
+    if immutable_packet_present and not immutable_packet_valid:
+        failures.append("current immutable review packet is present but invalid")
+    if immutable_packet_valid and not mcc_poc_valid:
+        failures.append(
+            "current immutable review packet exists without valid exact-candidate MCC-006 evidence"
+        )
     next_action = operator_next_action.get("next_action")
     post_disposition_mode = next_action == POST_DISPOSITION_ACTION
     descriptor_only_mode = next_action == DESCRIPTOR_ONLY_PLANNING_ACTION
@@ -220,11 +252,12 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         if key in response_status and response_status[key] is not expected:
             failures.append(f"response-status boundary flag drifted: {key}")
 
+    normalized_doc = " ".join(doc.split())
     for phrase in REQUIRED_PHRASES:
-        if phrase not in doc:
+        if phrase not in normalized_doc:
             failures.append(f"enterprise checkpoint doc is missing phrase: {phrase}")
     for phrase in BLOCKED_PHRASES:
-        if phrase not in doc:
+        if phrase not in normalized_doc:
             failures.append(f"enterprise checkpoint doc is missing blocked phrase: {phrase}")
     lowered = doc.lower()
     for phrase in FORBIDDEN_PHRASES:
@@ -269,6 +302,18 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "operator_next_action_doc": operator_next_action.get("next_action_doc"),
         "response_present_count": response_status.get("response_present_count"),
         "closure_ready_count": response_status.get("closure_ready_count"),
+        "review_candidate_prerequisite_mcc_006_valid": mcc_poc_valid,
+        "review_candidate_blocker": (
+            None
+            if mcc_poc_valid
+            else "missing_or_invalid_exact_candidate_mcc_006_live_evidence"
+        ),
+        "immutable_review_packet_path": immutable_packet_path.relative_to(repo_root).as_posix(),
+        "immutable_review_packet_present": immutable_packet_present,
+        "immutable_review_packet_valid": immutable_packet_valid,
+        "review_candidate_packet_ready": mcc_poc_valid and immutable_packet_valid,
+        "closure_review_dispatch_allowed": False,
+        "human_uat_allowed": False,
         **boundary_flags,
     }
 
@@ -295,6 +340,17 @@ def render_report(report: dict[str, Any]) -> str:
         ],
         f"response_present_count: {report.get('response_present_count', 'unknown')}",
         f"closure_ready_count: {report.get('closure_ready_count', 'unknown')}",
+        "review_candidate_prerequisite_mcc_006_valid: "
+        f"{str(report['review_candidate_prerequisite_mcc_006_valid']).lower()}",
+        f"review_candidate_blocker: {report.get('review_candidate_blocker') or ''}",
+        f"immutable_review_packet_path: {report['immutable_review_packet_path']}",
+        "immutable_review_packet_present: "
+        f"{str(report['immutable_review_packet_present']).lower()}",
+        f"immutable_review_packet_valid: {str(report['immutable_review_packet_valid']).lower()}",
+        f"review_candidate_packet_ready: {str(report['review_candidate_packet_ready']).lower()}",
+        "closure_review_dispatch_allowed: "
+        f"{str(report['closure_review_dispatch_allowed']).lower()}",
+        f"human_uat_allowed: {str(report['human_uat_allowed']).lower()}",
         f"runtime_changes_allowed: {str(report['runtime_changes_allowed']).lower()}",
         "mission_control_runtime_allowed: "
         f"{str(report['mission_control_runtime_allowed']).lower()}",
@@ -318,6 +374,80 @@ def _read(path: Path) -> str:
         return path.read_text(encoding="utf-8")
     except FileNotFoundError:
         return ""
+
+
+def _immutable_packet_valid(packet_path: Path, current_commit: str) -> bool:
+    required_paths = {
+        "artifact-hashes.json",
+        "git-summary.txt",
+        "packet-redaction-scan.txt",
+        "release-check.txt",
+    }
+    if not packet_path.is_dir() or not all(
+        packet_path.joinpath(relative).is_file()
+        and not packet_path.joinpath(relative).is_symlink()
+        for relative in required_paths
+    ):
+        return False
+
+    try:
+        git_summary = packet_path.joinpath("git-summary.txt").read_text(encoding="utf-8")
+        release_check = packet_path.joinpath("release-check.txt").read_text(encoding="utf-8")
+        redaction_scan = packet_path.joinpath("packet-redaction-scan.txt").read_text(
+            encoding="utf-8"
+        )
+        artifact_hashes = json.loads(
+            packet_path.joinpath("artifact-hashes.json").read_text(encoding="utf-8")
+        )
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+        return False
+
+    git_summary_lines = set(git_summary.splitlines())
+    release_returncodes = [
+        line.strip()
+        for line in release_check.splitlines()
+        if line.strip().startswith("returncode=")
+    ]
+    if (
+        f"commit={current_commit}" not in git_summary_lines
+        or "dirty=false" not in git_summary_lines
+        or not release_returncodes
+        or release_returncodes[-1] != "returncode=0"
+        or "findings: `0`" not in redaction_scan
+        or "Packet redaction scan passed." not in redaction_scan
+        or not isinstance(artifact_hashes, list)
+    ):
+        return False
+
+    manifest_paths: set[str] = set()
+    for item in artifact_hashes:
+        if not isinstance(item, dict):
+            return False
+        relative = item.get("path")
+        expected_sha256 = item.get("sha256")
+        expected_bytes = item.get("bytes")
+        if (
+            not isinstance(relative, str)
+            or not isinstance(expected_sha256, str)
+            or not isinstance(expected_bytes, int)
+        ):
+            return False
+        relative_path = Path(relative)
+        if relative_path.is_absolute() or ".." in relative_path.parts:
+            return False
+        artifact_path = packet_path / relative_path
+        if not artifact_path.is_file() or artifact_path.is_symlink():
+            return False
+        try:
+            content = artifact_path.read_bytes()
+        except OSError:
+            return False
+        if len(content) != expected_bytes:
+            return False
+        if f"sha256:{hashlib.sha256(content).hexdigest()}" != expected_sha256:
+            return False
+        manifest_paths.add(relative)
+    return required_paths.difference({"artifact-hashes.json"}).issubset(manifest_paths)
 
 
 if __name__ == "__main__":
