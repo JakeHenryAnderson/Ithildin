@@ -5,7 +5,7 @@ Status: static planning-only compatibility corpus for `SEA-001` and `ERG-008`.
 Current governed tool count: `24`.
 
 `make siem-export-adapter-compatibility-check` validates one canonical accepted
-`ithildin.security_export_manifest.v1` bundle fixture and twenty-one descriptor-driven compatibility
+`ithildin.security_export_manifest.v1` bundle fixture and twenty-three descriptor-driven compatibility
 cases.
 The checker is an offline design oracle only. It reads committed static fixtures, materializes
 negative variants in memory, validates closed schemas and byte bindings, and emits safe reason
@@ -62,10 +62,14 @@ the fixture carries a valid Ed25519 signature or trusted signing authority.
 | `SEA-COMP-019` | Architecture-optional event `attributes` is absent | accept | none |
 | `SEA-COMP-020` | Valid JSON exponent overflows the finite-number parser | reject | `overflowing_json_number` through `non_finite_number` |
 | `SEA-COMP-021` | One safe omission receipt fills a source-range gap | accept | `valid_omission_receipt`; no rejection reason |
+| `SEA-COMP-022` | Every source event in the range is represented by a safe omission receipt | accept | `valid_all_omission_range`; empty NDJSON is valid |
+| `SEA-COMP-023` | A JSON string decodes to an unpaired Unicode surrogate | reject | `invalid_unicode_scalar` through `invalid_unicode` |
 
 The descriptor labels `nested_sensitive_attribute` and `optional_attributes_absent` make the
 redaction and optional-field compatibility cases machine-identifiable without including payload
-content.
+content. An empty event stream is valid only when the manifest and closed omission receipts cover
+the entire requested range. Every decoded string and object key must contain valid Unicode scalar
+values; invalid Unicode returns a fixed safe label before canonicalization or UTF-8 hashing.
 
 The validator also fails closed on malformed shapes, unknown manifest/event/signature fields,
 invalid timestamps and identifiers, invalid hash or signature encodings, event/omission-count drift,

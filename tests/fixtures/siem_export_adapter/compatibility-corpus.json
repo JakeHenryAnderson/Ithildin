@@ -185,6 +185,22 @@
       "id": "SEA-COMP-021",
       "label": "valid_omission_receipt",
       "mutation": "valid_omission_receipt"
+    },
+    {
+      "expected_accept": true,
+      "expected_reasons": [],
+      "id": "SEA-COMP-022",
+      "label": "valid_all_omission_range",
+      "mutation": "valid_all_omission_range"
+    },
+    {
+      "expected_accept": false,
+      "expected_reasons": [
+        "invalid_unicode"
+      ],
+      "id": "SEA-COMP-023",
+      "label": "invalid_unicode_scalar",
+      "mutation": "invalid_unicode_scalar"
     }
   ],
   "corpus_type": "ithildin.siem_export_adapter.compatibility_fixtures",

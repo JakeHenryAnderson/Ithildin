@@ -235,7 +235,7 @@ re-request behavior, signing-key mismatch, and tampered manifest/event/signature
 ### SEA-001 Offline Compatibility Corpus
 
 The static [SIEM export adapter compatibility fixtures](siem-export-adapter-compatibility-fixtures.md)
-freeze three accepted version-1 shapes and eighteen rejected compatibility cases. Run:
+freeze four accepted version-1 shapes and nineteen rejected compatibility cases. Run:
 
 ```sh
 make siem-export-adapter-compatibility-check
@@ -248,6 +248,10 @@ range-head binding, coherent omission receipts, source-sequence drift, calendar-
 finite numbers, architecture-optional attributes, and unregistered category attributes. Negative
 variants are materialized in memory from one committed canonical bundle and produce safe reason
 labels only.
+
+The event artifact may be an empty byte stream when every source sequence in the closed range has a
+valid omission receipt. Decoded JSON strings and keys must contain only valid Unicode scalar values;
+unpaired surrogates fail closed before canonical serialization or UTF-8 digest computation.
 
 This is `SEA-001` static design evidence, not an export generator, mapper implementation, signature
 verifier, destination adapter, runtime API, delivery receipt, custody claim, or authorization for

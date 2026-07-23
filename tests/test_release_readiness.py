@@ -33542,7 +33542,7 @@ def test_siem_export_adapter_architecture_is_wired() -> None:
         "SEA-004",
         "SEA-005",
     ]
-    assert report["compatibility_fixture_count"] == 21
+    assert report["compatibility_fixture_count"] == 23
     assert report["compatibility_fixtures_valid"] is True
     assert report["runtime_changes_allowed"] is False
     assert report["siem_adapter_allowed"] is False
@@ -33631,13 +33631,13 @@ def test_siem_export_adapter_compatibility_fixtures_are_wired() -> None:
     }
 
     assert report["valid"] is True, report
-    assert report["case_count"] == 21
-    assert report["accepted_case_count"] == 3
-    assert report["rejected_case_count"] == 18
+    assert report["case_count"] == 23
+    assert report["accepted_case_count"] == 4
+    assert report["rejected_case_count"] == 19
     assert report["safe_reason_labels_only"] is True
     assert report["tool_count"] == 24
     assert report["corpus_sha256"] == (
-        "39a31416c80f727f1b049216ecbe6b6517bd6d0ab18ece596f74b065626d222c"
+        "16d1aa12eb16778f706e08f559605409f80b7cc62710696ae2d727386afb9412"
     )
     assert report["base_bundle_sha256"] == (
         "ea2c0fa28afaa4e0aefbd343383bf15121f1638f9dd505fe6ee94a294a5601c5"
@@ -33667,6 +33667,8 @@ def test_siem_export_adapter_compatibility_fixtures_are_wired() -> None:
         "SEA-COMP-019": [],
         "SEA-COMP-020": ["non_finite_number"],
         "SEA-COMP-021": [],
+        "SEA-COMP-022": [],
+        "SEA-COMP-023": ["invalid_unicode"],
     }
     for key in siem_export_adapter_compatibility_check.AUTHORITY_FLAGS:
         assert report[key] is False
@@ -33679,7 +33681,7 @@ def test_siem_export_adapter_compatibility_fixtures_are_wired() -> None:
         "materialized in memory",
         "does not claim that the fixture carries a valid Ed25519 signature",
         "SEA-COMP-001",
-        "SEA-COMP-021",
+        "SEA-COMP-023",
         "reports only the safe reason label",
         "does not change `PRD-SIEM-EXPORT-001` from `no_go`",
         "does not close `ERG-008`",
@@ -33754,6 +33756,8 @@ def test_siem_export_adapter_compatibility_rejects_nested_sensitive_field_withou
         ("optional_attributes_absent", []),
         ("overflowing_json_number", ["non_finite_number"]),
         ("valid_omission_receipt", []),
+        ("valid_all_omission_range", []),
+        ("invalid_unicode_scalar", ["invalid_unicode"]),
     ],
 )
 def test_siem_export_adapter_compatibility_review_regressions(
@@ -33775,6 +33779,26 @@ def test_siem_export_adapter_compatibility_review_regressions(
         siem_export_adapter_compatibility_check.validate_bundle_text(materialized)
         == expected
     )
+
+
+@pytest.mark.parametrize("location", ["manifest", "events_container"])
+def test_siem_export_adapter_compatibility_rejects_invalid_unicode_safely(
+    location: str,
+) -> None:
+    base_path = Path(siem_export_adapter_compatibility_check.BASE_BUNDLE_REL)
+    document = json.loads(base_path.read_text(encoding="utf-8"))
+    if location == "manifest":
+        document["manifest"]["profile"] = "\ud800"
+    else:
+        document["events_ndjson"] = "\ud800"
+    materialized = json.dumps(document, sort_keys=True)
+
+    reasons = siem_export_adapter_compatibility_check.validate_bundle_text(
+        materialized
+    )
+
+    assert reasons == ["invalid_unicode"]
+    assert "\\ud800" not in " ".join(reasons)
 
 
 def test_siem_export_adapter_compatibility_rejects_duplicate_member() -> None:

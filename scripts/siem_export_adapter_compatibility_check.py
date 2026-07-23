@@ -29,7 +29,7 @@ ARCHITECTURE_REL = "docs/codex/siem-export-adapter-architecture.md"
 FIXTURE_DIR_REL = "tests/fixtures/siem_export_adapter"
 CORPUS_REL = f"{FIXTURE_DIR_REL}/compatibility-corpus.json"
 BASE_BUNDLE_REL = f"{FIXTURE_DIR_REL}/valid-bundle-v1.json"
-CORPUS_SHA256 = "39a31416c80f727f1b049216ecbe6b6517bd6d0ab18ece596f74b065626d222c"
+CORPUS_SHA256 = "16d1aa12eb16778f706e08f559605409f80b7cc62710696ae2d727386afb9412"
 BASE_BUNDLE_SHA256 = (
     "ea2c0fa28afaa4e0aefbd343383bf15121f1638f9dd505fe6ee94a294a5601c5"
 )
@@ -321,6 +321,20 @@ EXPECTED_CASES = [
         "expected_accept": True,
         "expected_reasons": [],
     },
+    {
+        "id": "SEA-COMP-022",
+        "label": "valid_all_omission_range",
+        "mutation": "valid_all_omission_range",
+        "expected_accept": True,
+        "expected_reasons": [],
+    },
+    {
+        "id": "SEA-COMP-023",
+        "label": "invalid_unicode_scalar",
+        "mutation": "invalid_unicode_scalar",
+        "expected_accept": False,
+        "expected_reasons": ["invalid_unicode"],
+    },
 ]
 
 REQUIRED_DOC_PHRASES = [
@@ -333,7 +347,7 @@ REQUIRED_DOC_PHRASES = [
     "never written",
     "does not claim that the fixture carries a valid Ed25519 signature",
     "SEA-COMP-001",
-    "SEA-COMP-021",
+    "SEA-COMP-023",
     "duplicate_json_member",
     "cross_activation_range",
     "signature_manifest_digest_mismatch",
@@ -347,6 +361,8 @@ REQUIRED_DOC_PHRASES = [
     "optional_attributes_absent",
     "overflowing_json_number",
     "valid_omission_receipt",
+    "valid_all_omission_range",
+    "invalid_unicode_scalar",
     "reports only the safe reason label",
     "does not change `PRD-SIEM-EXPORT-001` from `no_go`",
     "does not close `ERG-008`",
@@ -579,6 +595,8 @@ def validate_bundle_text(raw: str) -> list[str]:
         return ["non_finite_number"]
     except (json.JSONDecodeError, ValueError):
         return ["invalid_bundle_json"]
+    if _contains_invalid_unicode(document):
+        return ["invalid_unicode"]
     return _validate_bundle(document)
 
 
@@ -823,6 +841,8 @@ def _validate_bundle(document: dict[str, Any]) -> list[str]:
 
 
 def _parse_events(raw: str) -> tuple[list[dict[str, Any]], list[str]]:
+    if raw == "":
+        return [], []
     if not raw.endswith("\n") or "\r" in raw:
         return [], ["invalid_events_shape"]
     lines = raw.splitlines()
@@ -841,6 +861,9 @@ def _parse_events(raw: str) -> tuple[list[dict[str, Any]], list[str]]:
             continue
         except (json.JSONDecodeError, ValueError):
             reasons.append("invalid_event_json")
+            continue
+        if _contains_invalid_unicode(event):
+            reasons.append("invalid_unicode")
             continue
         if _canonical_json(event) != line:
             reasons.append("non_canonical_event_json")
@@ -1113,6 +1136,28 @@ def _materialize_case(
         document["manifest"]["range"]["last_sequence"] = 43
         document["manifest"]["range"]["head_source_hash"] = "3" * 64
         _replace_events_and_rebind(document, events)
+    elif mutation == "valid_all_omission_range":
+        document["manifest"]["event_count"] = 0
+        document["manifest"]["omission_count"] = 1
+        document["manifest"]["omission_categories"] = {"not_exportable": 1}
+        document["manifest"]["omissions"] = [
+            {
+                "category": "not_exportable",
+                "source_event_hash": "1" * 64,
+                "source_sequence": 41,
+            }
+        ]
+        _replace_events_and_rebind(document, [])
+    elif mutation == "invalid_unicode_scalar":
+        events_raw = str(document["events_ndjson"]).replace(
+            '"action":"audit.verify"',
+            '"action":"\\ud800"',
+        )
+        document["events_ndjson"] = events_raw
+        document["manifest"]["events_sha256"] = hashlib.sha256(
+            events_raw.encode("utf-8")
+        ).hexdigest()
+        _rebind_signature(document)
     else:
         raise ValueError(f"unknown compatibility mutation: {mutation}")
     return json.dumps(document, indent=2, sort_keys=True) + "\n"
@@ -1196,6 +1241,23 @@ def _forbidden_keys(value: Any) -> set[str]:
         for item in value:
             found.update(_forbidden_keys(item))
     return found
+
+
+def _contains_invalid_unicode(value: Any) -> bool:
+    if isinstance(value, str):
+        try:
+            value.encode("utf-8", errors="strict")
+        except UnicodeEncodeError:
+            return True
+        return False
+    if isinstance(value, dict):
+        return any(
+            _contains_invalid_unicode(key) or _contains_invalid_unicode(item)
+            for key, item in value.items()
+        )
+    if isinstance(value, list):
+        return any(_contains_invalid_unicode(item) for item in value)
+    return False
 
 
 def _forbidden_key(value: str) -> bool:
