@@ -116,6 +116,7 @@ externally closed.
 - [Command Center Pre-UAT Accessibility, Authority, and UI Review](command-center-pre-uat-accessibility-authority-ui-review.md)
 - [Command Center Independent Sol Ultra Pre-UAT Findings Register](command-center-sol-ultra-pre-uat-review.md)
 - [Command Center Sol Ultra Closure Review Handoff](command-center-sol-ultra-closure-review-handoff.md)
+- [Command Center Sol Ultra Closure Review Dispatch Record](command-center-sol-ultra-closure-review-dispatch-record.md)
 - [Ithildin Command Center Boundary](ithildin-command-center-boundary.md)
 
 ## Threat and Boundary

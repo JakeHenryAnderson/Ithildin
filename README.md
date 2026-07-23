@@ -402,6 +402,9 @@ checked with `make control-mapping-readiness`.
   disposition for trusted-host promotion while keeping runtime host promotion blocked.
 - `docs/codex/ithildin-command-center-boundary.md` - current naming and authority boundary for the
   operator UI/control-plane concept historically called Mission Control.
+- [docs/codex/command-center-sol-ultra-closure-review-dispatch-record.md](docs/codex/command-center-sol-ultra-closure-review-dispatch-record.md) -
+  exact-candidate dispatch-preparation disposition recording the green release evidence, blocked
+  immutable packet, and false Sol Ultra/UAT authority.
 - [docs/codex/governed-external-agent-hermes-poc-architecture.md](docs/codex/governed-external-agent-hermes-poc-architecture.md) - trust zones, pinned Hermes image, claim ladder, and current 24-tool topology.
 - [docs/codex/governed-external-agent-hermes-poc-capability-proposal.md](docs/codex/governed-external-agent-hermes-poc-capability-proposal.md) - allowed compatibility evidence versus blocked runtime expansion.
 - [docs/codex/governed-external-agent-hermes-poc-implementation-plan.md](docs/codex/governed-external-agent-hermes-poc-implementation-plan.md) - ordered fixture, MCP, negative-case, soak, and Command Center milestones.

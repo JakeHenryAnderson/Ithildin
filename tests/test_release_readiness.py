@@ -40275,16 +40275,26 @@ def test_command_center_pre_uat_remediation_contract_is_wired() -> None:
     handoff_path = "docs/codex/command-center-cc-pilot-107-uat-handoff.md"
     review_path = "docs/codex/command-center-sol-ultra-pre-uat-review.md"
     closure_path = "docs/codex/command-center-sol-ultra-closure-review-handoff.md"
+    dispatch_record_path = (
+        "docs/codex/command-center-sol-ultra-closure-review-dispatch-record.md"
+    )
     initial_uat_path = "docs/codex/command-center-initial-operator-uat-evidence.md"
     handoff = Path(handoff_path).read_text(encoding="utf-8")
     findings = Path(review_path).read_text(encoding="utf-8")
     initial_uat = Path(initial_uat_path).read_text(encoding="utf-8")
     closure = Path(closure_path).read_text(encoding="utf-8")
+    dispatch_record = Path(dispatch_record_path).read_text(encoding="utf-8")
     docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
     normalized_handoff = " ".join(handoff.split())
     normalized_closure = " ".join(closure.split())
 
-    for path in [handoff_path, review_path, closure_path, initial_uat_path]:
+    for path in [
+        handoff_path,
+        review_path,
+        closure_path,
+        dispatch_record_path,
+        initial_uat_path,
+    ]:
         assert path in review_docs.REVIEW_DOCS
         assert path in docs_site
     for phrase in [
@@ -40324,6 +40334,16 @@ def test_command_center_pre_uat_remediation_contract_is_wired() -> None:
         "does not constitute operator UAT",
     ]:
         assert phrase in normalized_closure
+    for phrase in [
+        "closure-review dispatch not prepared",
+        "mission-command-control-plane-poc-check",
+        "No immutable packet was created",
+        "Sol Ultra user approval has not been obtained",
+        "`closure_review_dispatch_allowed`",
+        "`human_uat_allowed`",
+        "must still wait for the user's prior approval to use Sol Ultra",
+    ]:
+        assert phrase in dispatch_record
 
 
 def _write_project_markers(root: Path) -> None:

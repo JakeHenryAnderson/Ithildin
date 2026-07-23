@@ -193,6 +193,7 @@ REVIEW_DOCS = [
     "docs/codex/command-center-pre-uat-accessibility-authority-ui-review.md",
     "docs/codex/command-center-sol-ultra-pre-uat-review.md",
     "docs/codex/command-center-sol-ultra-closure-review-handoff.md",
+    "docs/codex/command-center-sol-ultra-closure-review-dispatch-record.md",
     "docs/codex/guided-demo-readiness.md",
     "docs/codex/demo-flow-readiness.md",
     "docs/codex/demo-evidence-closure.md",
