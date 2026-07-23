@@ -40278,21 +40278,28 @@ def test_command_center_pre_uat_remediation_contract_is_wired() -> None:
     dispatch_record_path = (
         "docs/codex/command-center-sol-ultra-closure-review-dispatch-record.md"
     )
+    dispatch_review_path = (
+        "docs/codex/"
+        "command-center-sol-ultra-closure-review-dispatch-record-internal-source-review.md"
+    )
     initial_uat_path = "docs/codex/command-center-initial-operator-uat-evidence.md"
     handoff = Path(handoff_path).read_text(encoding="utf-8")
     findings = Path(review_path).read_text(encoding="utf-8")
     initial_uat = Path(initial_uat_path).read_text(encoding="utf-8")
     closure = Path(closure_path).read_text(encoding="utf-8")
     dispatch_record = Path(dispatch_record_path).read_text(encoding="utf-8")
+    dispatch_review = Path(dispatch_review_path).read_text(encoding="utf-8")
     docs_site = Path("scripts/build_docs_site.py").read_text(encoding="utf-8")
     normalized_handoff = " ".join(handoff.split())
     normalized_closure = " ".join(closure.split())
+    normalized_dispatch_review = " ".join(dispatch_review.split())
 
     for path in [
         handoff_path,
         review_path,
         closure_path,
         dispatch_record_path,
+        dispatch_review_path,
         initial_uat_path,
     ]:
         assert path in review_docs.REVIEW_DOCS
@@ -40344,6 +40351,17 @@ def test_command_center_pre_uat_remediation_contract_is_wired() -> None:
         "must still wait for the user's prior approval to use Sol Ultra",
     ]:
         assert phrase in dispatch_record
+    for phrase in [
+        "approved_as_durable_non_dispatch_record_only",
+        "a9056788010f96c94833d35b1d5623c744a2b923",
+        "Sol Ultra was not used",
+        "Critical findings: `0`",
+        "High findings: `0`",
+        "Medium findings: `0`",
+        "Low findings: `0`",
+        "grants no Sol Ultra authority",
+    ]:
+        assert phrase in normalized_dispatch_review
 
 
 def _write_project_markers(root: Path) -> None:

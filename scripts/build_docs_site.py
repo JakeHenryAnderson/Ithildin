@@ -155,6 +155,7 @@ DEFAULT_DOCS = [
     "docs/codex/command-center-sol-ultra-pre-uat-review.md",
     "docs/codex/command-center-sol-ultra-closure-review-handoff.md",
     "docs/codex/command-center-sol-ultra-closure-review-dispatch-record.md",
+    "docs/codex/command-center-sol-ultra-closure-review-dispatch-record-internal-source-review.md",
     "docs/codex/guided-demo-readiness.md",
     "docs/codex/demo-flow-readiness.md",
     "docs/codex/demo-evidence-closure.md",
