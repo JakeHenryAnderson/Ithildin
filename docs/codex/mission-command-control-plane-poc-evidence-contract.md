@@ -39,9 +39,11 @@ The POC target runs its Python entry point with `uv --offline`. The harness star
 its focused adversarial tests through the already-running Python interpreter rather than asking a
 package runner to resolve dependencies.
 
-Child processes receive a closed environment assembled by the harness. It carries only a fixed
-system `PATH`, proxy-denial and Python-isolation settings, and explicit `ITHILDIN_*` settings. The
-Gateway:
+Child processes receive a closed environment assembled by the harness. Git provenance queries use
+a system-path executable, disable system/global configuration, hooks, fsmonitor, the untracked
+cache, optional locks, terminal prompts, and non-file protocols, and exclude ambient `GIT_*`
+overrides. Gateway and focused-test children carry only a fixed system `PATH`, proxy-denial and
+Python-isolation settings, and explicit `ITHILDIN_*` settings. The Gateway:
 
 - runs from the ignored evidence root, where repository `.env` input is absent;
 - forces the `sqlite` storage backend and an empty PostgreSQL DSN;
@@ -52,10 +54,11 @@ Gateway:
 - disables telemetry and external HTTP allowlisting; and
 - does not inherit ambient credential, proxy, storage, policy, workspace, or runtime variables.
 
-All harness and Node HTTP requests use a proxy-free opener pinned to the fixed loopback API URL.
-The startup path owns the child process as soon as it is created and deterministically
-terminates-and-waits or kills-and-waits on timeout, startup failure, interruption, restart, and
-normal completion.
+All harness and Node HTTP requests use a proxy-free, redirect-denying opener pinned to the fixed
+loopback API URL. The startup path defers `SIGINT` and `SIGTERM` while acquiring the process handle,
+then deterministically terminates-and-waits or kills-and-waits on timeout, startup failure,
+Python interruption, restart, and normal completion. Shutdown also defers those signals until the
+child has been reaped, then restores and delivers the prior signal behavior.
 
 ## Live Evidence
 

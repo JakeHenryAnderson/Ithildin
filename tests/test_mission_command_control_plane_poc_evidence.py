@@ -1,5 +1,6 @@
 import json
 import os
+import signal
 import subprocess
 import time
 import urllib.request
@@ -60,6 +61,61 @@ def test_poc_environment_is_allowlisted_and_proxy_free(
         isinstance(handler, urllib.request.ProxyHandler)
         for handler in cast(Any, poc.LOOPBACK_OPENER).handlers
     )
+    redirect_handlers = [
+        handler
+        for handler in cast(Any, poc.LOOPBACK_OPENER).handlers
+        if isinstance(handler, urllib.request.HTTPRedirectHandler)
+    ]
+    assert len(redirect_handlers) == 1
+    assert type(redirect_handlers[0]) is poc._DenyRedirectHandler
+    assert (
+        redirect_handlers[0].redirect_request(
+            urllib.request.Request(poc.API_URL),
+            None,
+            302,
+            "Found",
+            {},
+            "https://external.invalid/",
+        )
+        is None
+    )
+
+
+def test_git_provenance_ignores_ambient_repository_and_config_overrides(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("PATH", str(tmp_path))
+    monkeypatch.setenv("GIT_DIR", str(tmp_path / "spoofed.git"))
+    monkeypatch.setenv("GIT_WORK_TREE", str(tmp_path / "spoofed-worktree"))
+    monkeypatch.setenv("GIT_CONFIG_GLOBAL", str(tmp_path / "spoofed-global-config"))
+    monkeypatch.setenv("GIT_CONFIG_SYSTEM", str(tmp_path / "spoofed-system-config"))
+    monkeypatch.setenv("GIT_CONFIG_COUNT", "1")
+    monkeypatch.setenv("GIT_CONFIG_KEY_0", "core.fsmonitor")
+    monkeypatch.setenv("GIT_CONFIG_VALUE_0", str(tmp_path / "host-helper"))
+
+    environment = poc._local_git_environment()
+
+    assert environment["PATH"] == os.defpath
+    assert environment["GIT_CONFIG_GLOBAL"] == os.devnull
+    assert environment["GIT_CONFIG_NOSYSTEM"] == "1"
+    assert environment["GIT_OPTIONAL_LOCKS"] == "0"
+    assert environment["GIT_TERMINAL_PROMPT"] == "0"
+    assert environment["GIT_ALLOW_PROTOCOL"] == "file"
+    assert not any(
+        key in environment
+        for key in (
+            "GIT_DIR",
+            "GIT_WORK_TREE",
+            "GIT_CONFIG_COUNT",
+            "GIT_CONFIG_KEY_0",
+            "GIT_CONFIG_VALUE_0",
+        )
+    )
+    assert Path(poc._git_output(poc.ROOT, "rev-parse", "--show-toplevel")) == poc.ROOT
+    assert evidence_check._git(poc.ROOT, "rev-parse", "HEAD") == poc._git_output(
+        poc.ROOT, "rev-parse", "HEAD"
+    )
 
 
 def test_gateway_startup_timeout_reaps_child(
@@ -94,6 +150,73 @@ def test_gateway_startup_timeout_reaps_child(
         poc._start_gateway(tmp_path, phase="timeout-test")
 
     assert process.terminated is True
+    assert process.waited is True
+
+
+def test_gateway_acquisition_defers_interrupt_until_child_is_reaped(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    (tmp_path / "logs").mkdir()
+
+    class FakeProcess:
+        terminated = False
+        waited = False
+
+        def poll(self) -> None:
+            return None
+
+        def terminate(self) -> None:
+            self.terminated = True
+
+        def wait(self, timeout: float | None = None) -> int:
+            self.waited = True
+            return 0
+
+        def kill(self) -> None:
+            raise AssertionError("graceful termination should not require kill")
+
+    process = FakeProcess()
+
+    def interrupting_popen(*args: Any, **kwargs: Any) -> FakeProcess:
+        handler = signal.getsignal(signal.SIGINT)
+        assert callable(handler)
+        handler(signal.SIGINT, None)
+        return process
+
+    monkeypatch.setattr(subprocess, "Popen", interrupting_popen)
+
+    with pytest.raises(KeyboardInterrupt):
+        poc._start_gateway(tmp_path, phase="interrupted-acquisition-test")
+
+    assert process.terminated is True
+    assert process.waited is True
+
+
+def test_gateway_shutdown_defers_interrupt_until_child_is_reaped() -> None:
+    class FakeProcess:
+        waited = False
+
+        def poll(self) -> None:
+            return None
+
+        def terminate(self) -> None:
+            handler = signal.getsignal(signal.SIGINT)
+            assert callable(handler)
+            handler(signal.SIGINT, None)
+
+        def wait(self, timeout: float | None = None) -> int:
+            self.waited = True
+            return 0
+
+        def kill(self) -> None:
+            raise AssertionError("graceful termination should not require kill")
+
+    process = FakeProcess()
+
+    with pytest.raises(KeyboardInterrupt):
+        poc._stop_gateway(process)  # type: ignore[arg-type]
+
     assert process.waited is True
 
 
@@ -232,6 +355,9 @@ def test_poc_contract_and_candidate_gate_are_wired() -> None:
     assert "**os.environ" not in poc_source
     assert "urllib.request.urlopen" not in poc_source
     assert "ProxyHandler({})" in poc_source
+    assert "_DenyRedirectHandler()" in poc_source
+    assert "GIT_CONFIG_NOSYSTEM" in poc_source
+    assert "core.fsmonitor=false" in poc_source
     assert '"uvicorn"' in poc_source
     assert '"pytest"' in poc_source
     assert "sys.executable" in poc_source

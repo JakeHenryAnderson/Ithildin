@@ -6,7 +6,6 @@ import argparse
 import json
 import sqlite3
 import stat
-import subprocess
 from pathlib import Path
 from typing import Any, cast
 
@@ -17,12 +16,14 @@ try:
         ADVERSARIAL_TESTS,
         DEFAULT_EVIDENCE_ROOT,
         RUNNER_OUTPUT_SENTINEL,
+        _git_output,
     )
 except ModuleNotFoundError:
     from mission_command_control_plane_poc import (  # type: ignore[import-not-found,no-redef]
         ADVERSARIAL_TESTS,
         DEFAULT_EVIDENCE_ROOT,
         RUNNER_OUTPUT_SENTINEL,
+        _git_output,
     )
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -325,13 +326,7 @@ def _json(path: Path) -> dict[str, Any]:
 
 
 def _git(repo_root: Path, *arguments: str) -> str:
-    return subprocess.run(
-        ["git", *arguments],
-        cwd=repo_root,
-        capture_output=True,
-        text=True,
-        check=True,
-    ).stdout.strip()
+    return _git_output(repo_root, *arguments)
 
 
 def main() -> int:

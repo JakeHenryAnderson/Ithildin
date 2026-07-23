@@ -9,14 +9,18 @@ import json
 import os
 import secrets
 import shutil
+import signal
 import subprocess
 import sys
 import time
 import urllib.error
 import urllib.parse
 import urllib.request
+from collections.abc import Iterator
+from contextlib import contextmanager
 from datetime import UTC, datetime
 from pathlib import Path
+from types import FrameType
 from typing import Any, cast
 
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
@@ -38,7 +42,25 @@ PORT = 8021
 API_URL = f"http://{HOST}:{PORT}"
 ADMIN_TOKEN = secrets.token_urlsafe(32)
 RUNNER_OUTPUT_SENTINEL = "MCC006-RUNNER-OUTPUT-MUST-NOT-BE-PERSISTED"
-LOOPBACK_OPENER = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+
+
+class _DenyRedirectHandler(urllib.request.HTTPRedirectHandler):
+    def redirect_request(
+        self,
+        req: urllib.request.Request,
+        fp: Any,
+        code: int,
+        msg: str,
+        headers: Any,
+        newurl: str,
+    ) -> urllib.request.Request | None:
+        return None
+
+
+LOOPBACK_OPENER = urllib.request.build_opener(
+    urllib.request.ProxyHandler({}),
+    _DenyRedirectHandler(),
+)
 
 ADVERSARIAL_TESTS = (
     "tests/test_api_service.py::test_signed_node_claim_is_single_winner_and_target_bound",
@@ -104,13 +126,10 @@ def main() -> int:
 
 
 def _require_clean_candidate() -> None:
-    status = subprocess.run(
-        ["git", "status", "--short"],
-        cwd=ROOT,
-        capture_output=True,
-        text=True,
-        check=True,
-    ).stdout
+    top_level = Path(_git_output(ROOT, "rev-parse", "--show-toplevel")).resolve()
+    if top_level != ROOT:
+        raise SystemExit("MCC-006 POC repository identity is not the expected checkout")
+    status = _git_output(ROOT, "status", "--short")
     if status.strip():
         raise SystemExit("MCC-006 POC requires a clean exact candidate")
 
@@ -127,13 +146,7 @@ def _prepare_root(root: Path, *, replace: bool) -> None:
 
 
 def _candidate_metadata() -> JsonObject:
-    commit = subprocess.run(
-        ["git", "rev-parse", "HEAD"],
-        cwd=ROOT,
-        capture_output=True,
-        text=True,
-        check=True,
-    ).stdout.strip()
+    commit = _git_output(ROOT, "rev-parse", "HEAD")
     return {
         "schema_version": "1",
         "ticket": "MCC-006",
@@ -162,25 +175,27 @@ def _generate_keys(root: Path) -> None:
 def _start_gateway(root: Path, *, phase: str) -> subprocess.Popen[str]:
     environment = _isolated_environment(root)
     log_path = root / f"logs/gateway-{phase}.log"
-    with log_path.open("w", encoding="utf-8") as log_handle:
-        process = subprocess.Popen(
-            [
-                sys.executable,
-                "-m",
-                "uvicorn",
-                "ithildin_api.app:app",
-                "--host",
-                HOST,
-                "--port",
-                str(PORT),
-            ],
-            cwd=root,
-            env=environment,
-            stdout=log_handle,
-            stderr=subprocess.STDOUT,
-            text=True,
-        )
+    process: subprocess.Popen[str] | None = None
     try:
+        with _defer_termination_signals():
+            with log_path.open("w", encoding="utf-8") as log_handle:
+                process = subprocess.Popen(
+                    [
+                        sys.executable,
+                        "-m",
+                        "uvicorn",
+                        "ithildin_api.app:app",
+                        "--host",
+                        HOST,
+                        "--port",
+                        str(PORT),
+                    ],
+                    cwd=root,
+                    env=environment,
+                    stdout=log_handle,
+                    stderr=subprocess.STDOUT,
+                    text=True,
+                )
         deadline = time.monotonic() + 20
         while time.monotonic() < deadline:
             if process.poll() is not None:
@@ -192,20 +207,28 @@ def _start_gateway(root: Path, *, phase: str) -> subprocess.Popen[str]:
                 time.sleep(0.2)
         raise RuntimeError("Gateway did not become healthy")
     except BaseException:
-        _stop_gateway(process)
+        if process is not None:
+            _stop_gateway(process)
         raise
 
 
 def _stop_gateway(process: subprocess.Popen[str]) -> None:
-    if process.poll() is not None:
-        process.wait(timeout=0)
-        return
-    process.terminate()
-    try:
-        process.wait(timeout=10)
-    except subprocess.TimeoutExpired:
-        process.kill()
-        process.wait(timeout=5)
+    with _defer_termination_signals():
+        if process.poll() is not None:
+            process.wait(timeout=0)
+            return
+        try:
+            process.terminate()
+        except ProcessLookupError:
+            pass
+        try:
+            process.wait(timeout=10)
+        except subprocess.TimeoutExpired:
+            try:
+                process.kill()
+            except ProcessLookupError:
+                pass
+            process.wait(timeout=5)
 
 
 def _prepare_node(root: Path) -> tuple[NodeState, StoredNodeConfiguration]:
@@ -741,6 +764,76 @@ class _LoopbackNodeClient(NodeClient):
         if not isinstance(document, dict):
             raise NodeClientError("Gateway returned an invalid response")
         return cast(JsonObject, document)
+
+
+def _local_git_environment() -> dict[str, str]:
+    return {
+        "PATH": os.defpath,
+        "LANG": "C",
+        "LC_ALL": "C",
+        "GIT_ALLOW_PROTOCOL": "file",
+        "GIT_CONFIG_GLOBAL": os.devnull,
+        "GIT_CONFIG_NOSYSTEM": "1",
+        "GIT_OPTIONAL_LOCKS": "0",
+        "GIT_TERMINAL_PROMPT": "0",
+    }
+
+
+def _git_output(repo_root: Path, *arguments: str) -> str:
+    git_executable = shutil.which("git", path=os.defpath)
+    if git_executable is None:
+        raise RuntimeError("system Git executable is unavailable")
+    return subprocess.run(
+        [
+            git_executable,
+            "--no-optional-locks",
+            "-c",
+            "core.fsmonitor=false",
+            "-c",
+            "core.untrackedCache=false",
+            "-c",
+            f"core.hooksPath={os.devnull}",
+            "-C",
+            str(repo_root),
+            *arguments,
+        ],
+        cwd=repo_root,
+        env=_local_git_environment(),
+        capture_output=True,
+        text=True,
+        check=True,
+    ).stdout.strip()
+
+
+@contextmanager
+def _defer_termination_signals() -> Iterator[None]:
+    received: list[tuple[int, Any]] = []
+    previous_handlers: dict[int, Any] = {}
+
+    def record(signum: int, frame: FrameType | None) -> None:
+        received.append((signum, frame))
+
+    for configured_signal in (signal.SIGINT, signal.SIGTERM):
+        previous = signal.getsignal(configured_signal)
+        if previous == signal.SIG_IGN:
+            continue
+        previous_handlers[configured_signal] = previous
+        signal.signal(configured_signal, record)
+    try:
+        yield
+    finally:
+        for restored_signum, previous in previous_handlers.items():
+            signal.signal(restored_signum, previous)
+    if not received:
+        return
+    received_signum, frame = received[0]
+    previous = previous_handlers[received_signum]
+    if callable(previous):
+        previous(received_signum, frame)
+        return
+    if received_signum == signal.SIGINT:
+        raise KeyboardInterrupt
+    raise SystemExit(128 + received_signum)
 
 
 def _isolated_environment(root: Path) -> dict[str, str]:
