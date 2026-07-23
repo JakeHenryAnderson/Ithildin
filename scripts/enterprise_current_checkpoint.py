@@ -446,28 +446,41 @@ def _immutable_packet_valid(packet_path: Path, current_commit: str) -> bool:
         return False
 
     git_summary_lines = git_summary.splitlines()
+    git_summary_commit_lines = [
+        line.strip()
+        for line in git_summary_lines
+        if line.strip().startswith("commit=")
+    ]
+    git_summary_dirty_lines = [
+        line.strip()
+        for line in git_summary_lines
+        if line.strip().startswith("dirty=")
+    ]
+    release_lines = release_check.splitlines()
     release_commit_lines = [
         line.strip()
-        for line in release_check.splitlines()
+        for line in release_lines
         if line.strip().startswith("git_commit=")
     ]
     release_dirty_lines = [
         line.strip()
-        for line in release_check.splitlines()
+        for line in release_lines
         if line.strip().startswith("git_dirty=")
     ]
     release_returncodes = [
         line.strip()
-        for line in release_check.splitlines()
+        for line in release_lines
         if line.strip().startswith("returncode=")
     ]
     if (
-        git_summary_lines.count(f"commit={current_commit}") != 1
-        or git_summary_lines.count("dirty=false") != 1
+        git_summary_commit_lines != [f"commit={current_commit}"]
+        or git_summary_dirty_lines != ["dirty=false"]
+        or not release_lines
+        or release_lines[0] != "$ make release-check"
         or release_commit_lines != [f"git_commit={current_commit}"]
         or release_dirty_lines != ["git_dirty=false"]
-        or not release_returncodes
-        or release_returncodes[-1] != "returncode=0"
+        or release_returncodes != ["returncode=0"]
+        or release_lines[-1] != "returncode=0"
         or "findings: `0`" not in redaction_scan
         or "Packet redaction scan passed." not in redaction_scan
         or not isinstance(artifact_hashes, list)

@@ -2779,21 +2779,31 @@ def test_enterprise_current_checkpoint_validates_immutable_packet(
         *,
         release_commit: str = commit,
         release_dirty: bool = False,
+        release_returncodes: tuple[int, ...] = (0,),
+        release_marker: bool = True,
+        git_summary_extra: tuple[str, ...] = (),
         nested_payload: bool = False,
     ) -> Path:
         packet = parent / f"ithildin-v0.2-review-packet-{commit[:12]}"
         packet.mkdir(parents=True)
         payload_path = "nested/payload.txt" if nested_payload else "payload.txt"
         pre_scan_artifacts = {
-            "git-summary.txt": f"commit={commit}\nbranch=test\ndirty=false\n",
+            "git-summary.txt": (
+                f"commit={commit}\n"
+                "branch=test\n"
+                "dirty=false\n"
+                + "".join(f"{line}\n" for line in git_summary_extra)
+            ),
             "release-check.txt": (
-                "$ make release-check\n"
-                "returncode=0\n\n"
-                "## stdout\n"
+                ("$ make release-check\n" if release_marker else "")
+                + "repo_root=/bounded/repository\n"
                 f"git_commit={release_commit}\n"
                 f"git_dirty={str(release_dirty).lower()}\n"
-                "returncode=0\n\n"
-                "## stderr\n"
+                "bounded release output\n"
+                + "".join(
+                    f"returncode={returncode}\n"
+                    for returncode in release_returncodes
+                )
             ),
             payload_path: "bounded evidence\n",
         }
@@ -2846,6 +2856,42 @@ def test_enterprise_current_checkpoint_validates_immutable_packet(
     assert (
         enterprise_current_checkpoint._immutable_packet_valid(
             cross_candidate,
+            commit,
+        )
+        is False
+    )
+
+    markerless = write_packet(
+        tmp_path / "markerless",
+        release_marker=False,
+    )
+    assert (
+        enterprise_current_checkpoint._immutable_packet_valid(
+            markerless,
+            commit,
+        )
+        is False
+    )
+
+    failed_then_successful = write_packet(
+        tmp_path / "failed-then-successful",
+        release_returncodes=(1, 0),
+    )
+    assert (
+        enterprise_current_checkpoint._immutable_packet_valid(
+            failed_then_successful,
+            commit,
+        )
+        is False
+    )
+
+    conflicting_summary = write_packet(
+        tmp_path / "conflicting-summary",
+        git_summary_extra=("commit=" + "b" * 40, "dirty=true"),
+    )
+    assert (
+        enterprise_current_checkpoint._immutable_packet_valid(
+            conflicting_summary,
             commit,
         )
         is False
