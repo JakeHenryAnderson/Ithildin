@@ -457,30 +457,47 @@ def _immutable_packet_valid(packet_path: Path, current_commit: str) -> bool:
         if line.strip().startswith("dirty=")
     ]
     release_lines = release_check.splitlines()
+    if (
+        len(release_lines) < 9
+        or release_lines[:4]
+        != ["$ make release-check", "returncode=0", "", "## stdout"]
+        or release_lines.count("## stdout") != 1
+        or release_lines.count("## stderr") != 1
+        or not release_check.endswith("\n\n")
+    ):
+        return False
+    stderr_index = release_lines.index("## stderr")
+    if stderr_index < 6 or release_lines[stderr_index - 1] != "":
+        return False
+    release_stdout_lines = release_lines[4:stderr_index]
+    while release_stdout_lines and not release_stdout_lines[-1].strip():
+        release_stdout_lines.pop()
+    release_stderr_lines = release_lines[stderr_index + 1 :]
     release_commit_lines = [
         line.strip()
-        for line in release_lines
+        for line in release_stdout_lines
         if line.strip().startswith("git_commit=")
     ]
     release_dirty_lines = [
         line.strip()
-        for line in release_lines
+        for line in release_stdout_lines
         if line.strip().startswith("git_dirty=")
     ]
-    release_returncodes = [
+    release_stdout_returncodes = [
         line.strip()
-        for line in release_lines
+        for line in release_stdout_lines
         if line.strip().startswith("returncode=")
     ]
     if (
         git_summary_commit_lines != [f"commit={current_commit}"]
         or git_summary_dirty_lines != ["dirty=false"]
-        or not release_lines
-        or release_lines[0] != "$ make release-check"
+        or not release_stdout_lines
+        or release_stdout_lines[0] != "$ make release-check"
         or release_commit_lines != [f"git_commit={current_commit}"]
         or release_dirty_lines != ["git_dirty=false"]
-        or release_returncodes != ["returncode=0"]
-        or release_lines[-1] != "returncode=0"
+        or release_stdout_returncodes != ["returncode=0"]
+        or release_stdout_lines[-1] != "returncode=0"
+        or release_stderr_lines != [""]
         or "findings: `0`" not in redaction_scan
         or "Packet redaction scan passed." not in redaction_scan
         or not isinstance(artifact_hashes, list)

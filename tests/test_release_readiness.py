@@ -2781,6 +2781,10 @@ def test_enterprise_current_checkpoint_validates_immutable_packet(
         release_dirty: bool = False,
         release_returncodes: tuple[int, ...] = (0,),
         release_marker: bool = True,
+        wrapper_returncode: int = 0,
+        release_metadata_extra: tuple[str, ...] = (),
+        release_trailing_output: tuple[str, ...] = (),
+        release_check_override: str | None = None,
         git_summary_extra: tuple[str, ...] = (),
         nested_payload: bool = False,
     ) -> Path:
@@ -2795,16 +2799,24 @@ def test_enterprise_current_checkpoint_validates_immutable_packet(
                 + "".join(f"{line}\n" for line in git_summary_extra)
             ),
             "release-check.txt": (
-                ("$ make release-check\n" if release_marker else "")
+                "$ make release-check\n"
+                f"returncode={wrapper_returncode}\n\n"
+                "## stdout\n"
+                + ("$ make release-check\n" if release_marker else "")
                 + "repo_root=/bounded/repository\n"
                 f"git_commit={release_commit}\n"
                 f"git_dirty={str(release_dirty).lower()}\n"
-                "bounded release output\n"
+                + "".join(f"{line}\n" for line in release_metadata_extra)
+                + "bounded release output\n"
                 + "".join(
                     f"returncode={returncode}\n"
                     for returncode in release_returncodes
                 )
-            ),
+                + "".join(f"{line}\n" for line in release_trailing_output)
+                + "\n## stderr\n\n"
+            )
+            if release_check_override is None
+            else release_check_override,
             payload_path: "bounded evidence\n",
         }
         artifacts = {
@@ -2836,7 +2848,25 @@ def test_enterprise_current_checkpoint_validates_immutable_packet(
         )
         return packet
 
-    valid_packet = write_packet(tmp_path / "valid")
+    generated_transcript = tmp_path / "generated-release-transcript.txt"
+    generated_transcript.write_text(
+        "$ make release-check\n"
+        "repo_root=/bounded/repository\n"
+        f"git_commit={commit}\n"
+        "git_dirty=false\n"
+        "bounded release output\n"
+        "returncode=0\n",
+        encoding="utf-8",
+    )
+    generated_release_check = tmp_path / "generated-release-check.txt"
+    review_packet_bundle._write_command_output(
+        generated_release_check,
+        review_packet_bundle._load_release_check_transcript(generated_transcript),
+    )
+    valid_packet = write_packet(
+        tmp_path / "valid",
+        release_check_override=generated_release_check.read_text(encoding="utf-8"),
+    )
     assert (
         enterprise_current_checkpoint._immutable_packet_valid(valid_packet, commit)
         is True
@@ -2880,6 +2910,42 @@ def test_enterprise_current_checkpoint_validates_immutable_packet(
     assert (
         enterprise_current_checkpoint._immutable_packet_valid(
             failed_then_successful,
+            commit,
+        )
+        is False
+    )
+
+    failed_wrapper = write_packet(
+        tmp_path / "failed-wrapper",
+        wrapper_returncode=1,
+    )
+    assert (
+        enterprise_current_checkpoint._immutable_packet_valid(
+            failed_wrapper,
+            commit,
+        )
+        is False
+    )
+
+    conflicting_release_metadata = write_packet(
+        tmp_path / "conflicting-release-metadata",
+        release_metadata_extra=("git_commit=" + "b" * 40, "git_dirty=true"),
+    )
+    assert (
+        enterprise_current_checkpoint._immutable_packet_valid(
+            conflicting_release_metadata,
+            commit,
+        )
+        is False
+    )
+
+    trailing_release_output = write_packet(
+        tmp_path / "trailing-release-output",
+        release_trailing_output=("not part of a successful release footer",),
+    )
+    assert (
+        enterprise_current_checkpoint._immutable_packet_valid(
+            trailing_release_output,
             commit,
         )
         is False
