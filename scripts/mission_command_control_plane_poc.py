@@ -10,6 +10,7 @@ import os
 import secrets
 import shutil
 import subprocess
+import sys
 import time
 import urllib.error
 import urllib.parse
@@ -37,6 +38,7 @@ PORT = 8021
 API_URL = f"http://{HOST}:{PORT}"
 ADMIN_TOKEN = secrets.token_urlsafe(32)
 RUNNER_OUTPUT_SENTINEL = "MCC006-RUNNER-OUTPUT-MUST-NOT-BE-PERSISTED"
+LOOPBACK_OPENER = urllib.request.build_opener(urllib.request.ProxyHandler({}))
 
 ADVERSARIAL_TESTS = (
     "tests/test_api_service.py::test_signed_node_claim_is_single_winner_and_target_bound",
@@ -158,57 +160,46 @@ def _generate_keys(root: Path) -> None:
 
 
 def _start_gateway(root: Path, *, phase: str) -> subprocess.Popen[str]:
-    environment = {
-        **os.environ,
-        "ITHILDIN_ADMIN_TOKEN": ADMIN_TOKEN,
-        "ITHILDIN_ALLOW_DEV_ADMIN_TOKEN": "false",
-        "ITHILDIN_DB_PATH": str(root / "db/ithildin.sqlite3"),
-        "ITHILDIN_AUDIT_LOG_PATH": str(root / "logs/audit.jsonl"),
-        "ITHILDIN_AUDIT_SIGNING_PRIVATE_KEY_PATH": str(root / "keys/audit-private.pem"),
-        "ITHILDIN_AUDIT_SIGNING_PUBLIC_KEY_PATH": str(root / "keys/audit-public.pem"),
-        "ITHILDIN_NODE_CONFIGURATION_SIGNING_PRIVATE_KEY_PATH": str(
-            root / "keys/configuration-private.pem"
-        ),
-        "ITHILDIN_NODE_CONFIGURATION_SIGNING_PUBLIC_KEY_PATH": str(
-            root / "keys/configuration-public.pem"
-        ),
-        "ITHILDIN_NODE_STALE_AFTER_SECONDS": "5",
-        "ITHILDIN_OTEL_ENABLED": "false",
-    }
+    environment = _isolated_environment(root)
     log_path = root / f"logs/gateway-{phase}.log"
-    log_handle = log_path.open("w", encoding="utf-8")
-    process = subprocess.Popen(
-        [
-            "uv",
-            "run",
-            "uvicorn",
-            "ithildin_api.app:app",
-            "--host",
-            HOST,
-            "--port",
-            str(PORT),
-        ],
-        cwd=ROOT,
-        env=environment,
-        stdout=log_handle,
-        stderr=subprocess.STDOUT,
-        text=True,
-    )
-    log_handle.close()
-    deadline = time.monotonic() + 20
-    while time.monotonic() < deadline:
-        if process.poll() is not None:
-            raise RuntimeError(f"Gateway failed to start; inspect {log_path}")
-        try:
-            with urllib.request.urlopen(f"{API_URL}/healthz", timeout=1):
-                return process
-        except (urllib.error.URLError, TimeoutError):
-            time.sleep(0.2)
-    process.terminate()
-    raise RuntimeError("Gateway did not become healthy")
+    with log_path.open("w", encoding="utf-8") as log_handle:
+        process = subprocess.Popen(
+            [
+                sys.executable,
+                "-m",
+                "uvicorn",
+                "ithildin_api.app:app",
+                "--host",
+                HOST,
+                "--port",
+                str(PORT),
+            ],
+            cwd=root,
+            env=environment,
+            stdout=log_handle,
+            stderr=subprocess.STDOUT,
+            text=True,
+        )
+    try:
+        deadline = time.monotonic() + 20
+        while time.monotonic() < deadline:
+            if process.poll() is not None:
+                raise RuntimeError(f"Gateway failed to start; inspect {log_path}")
+            try:
+                with LOOPBACK_OPENER.open(f"{API_URL}/healthz", timeout=1):
+                    return process
+            except (urllib.error.URLError, TimeoutError):
+                time.sleep(0.2)
+        raise RuntimeError("Gateway did not become healthy")
+    except BaseException:
+        _stop_gateway(process)
+        raise
 
 
 def _stop_gateway(process: subprocess.Popen[str]) -> None:
+    if process.poll() is not None:
+        process.wait(timeout=0)
+        return
     process.terminate()
     try:
         process.wait(timeout=10)
@@ -225,7 +216,7 @@ def _prepare_node(root: Path) -> tuple[NodeState, StoredNodeConfiguration]:
             "display_name": "MCC-006 synthetic Mission Node",
         },
     )
-    client = NodeClient(API_URL)
+    client = _node_client()
     state = client.enroll(
         enrollment_code=_required(issued, "enrollment_code"),
         node_version="0.1.0",
@@ -323,7 +314,7 @@ def _exercise_primary_mission(
     running = _signed_request(state, report_path, running_report, nonce="c1" * 16)
     _write(root / "evidence/primary-running-report.json", running)
     session_prefix = envelope_digest.removeprefix("sha256:")[:16]
-    governed = NodeClient(API_URL).governed_tool_call(
+    governed = _node_client().governed_tool_call(
         state,
         configuration,
         node_version="0.1.0",
@@ -352,7 +343,7 @@ def _exercise_partition(
     mission: JsonObject,
 ) -> None:
     try:
-        NodeClient(API_URL, timeout_seconds=0.25).governed_tool_call(
+        _node_client(timeout_seconds=0.25).governed_tool_call(
             state,
             configuration,
             node_version="0.1.0",
@@ -574,7 +565,7 @@ def _refresh_heartbeat(
     state: NodeState,
     configuration: StoredNodeConfiguration,
 ) -> None:
-    heartbeat = NodeClient(API_URL).heartbeat(
+    heartbeat = _node_client().heartbeat(
         state,
         node_version="0.1.0",
         runner_adapter="synthetic_external_runner",
@@ -586,10 +577,11 @@ def _refresh_heartbeat(
 
 
 def _run_adversarial_tests(root: Path) -> None:
-    command = ["uv", "run", "pytest", "-vv", "--tb=short", *ADVERSARIAL_TESTS]
+    command = [sys.executable, "-m", "pytest", "-vv", "--tb=short", *ADVERSARIAL_TESTS]
     result = subprocess.run(
         command,
         cwd=ROOT,
+        env=_isolated_environment(root),
         capture_output=True,
         text=True,
         check=False,
@@ -711,10 +703,117 @@ def _request_outcome(
         method=method,
     )
     try:
-        with urllib.request.urlopen(request, timeout=10) as response:
+        with LOOPBACK_OPENER.open(request, timeout=10) as response:
             return response.status, _parse_json(response.read().decode())
     except urllib.error.HTTPError as exc:
         return exc.code, _parse_json(exc.read().decode())
+
+
+def _node_client(*, timeout_seconds: float = 10.0) -> NodeClient:
+    return _LoopbackNodeClient(API_URL, timeout_seconds=timeout_seconds)
+
+
+class _LoopbackNodeClient(NodeClient):
+    def _post(
+        self,
+        path: str,
+        payload: JsonObject,
+        *,
+        headers: dict[str, str] | None = None,
+    ) -> JsonObject:
+        request = urllib.request.Request(
+            f"{self.api_url}{path}",
+            data=canonical_json(payload).encode(),
+            headers={"Content-Type": "application/json", **(headers or {})},
+            method="POST",
+        )
+        try:
+            with LOOPBACK_OPENER.open(request, timeout=self.timeout_seconds) as response:
+                document = json.loads(response.read().decode())
+        except urllib.error.HTTPError as exc:
+            raise NodeClientError(
+                f"Gateway rejected Node request with HTTP {exc.code}"
+            ) from exc
+        except (urllib.error.URLError, TimeoutError, OSError) as exc:
+            raise NodeClientError("Gateway is unavailable") from exc
+        except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+            raise NodeClientError("Gateway returned an invalid response") from exc
+        if not isinstance(document, dict):
+            raise NodeClientError("Gateway returned an invalid response")
+        return cast(JsonObject, document)
+
+
+def _isolated_environment(root: Path) -> dict[str, str]:
+    return {
+        "PATH": os.defpath,
+        "NO_PROXY": "*",
+        "no_proxy": "*",
+        "PYTHONHASHSEED": "0",
+        "PYTHONNOUSERSITE": "1",
+        "ITHILDIN_ADMIN_TOKEN": ADMIN_TOKEN,
+        "ITHILDIN_ALLOW_DEV_ADMIN_TOKEN": "false",
+        "ITHILDIN_AUDIT_LOG_PATH": str(root / "logs/audit.jsonl"),
+        "ITHILDIN_AUDIT_SIGNING_PRIVATE_KEY_PATH": str(root / "keys/audit-private.pem"),
+        "ITHILDIN_AUDIT_SIGNING_PUBLIC_KEY_PATH": str(root / "keys/audit-public.pem"),
+        "ITHILDIN_DB_PATH": str(root / "db/ithildin.sqlite3"),
+        "ITHILDIN_STORAGE_BACKEND": "sqlite",
+        "ITHILDIN_POSTGRES_DSN": "",
+        "ITHILDIN_MANIFEST_DIR": str(ROOT / "tool-manifests"),
+        "ITHILDIN_MANIFEST_LOCK_PATH": str(ROOT / "tool-manifests.lock.json"),
+        "ITHILDIN_REQUIRE_MANIFEST_LOCK": "true",
+        "ITHILDIN_MANIFEST_LOCK_SIGNING_PRIVATE_KEY_PATH": str(
+            root / "keys/unused-manifest-lock-private.pem"
+        ),
+        "ITHILDIN_MANIFEST_LOCK_SIGNING_PUBLIC_KEY_PATH": str(
+            root / "keys/unused-manifest-lock-public.pem"
+        ),
+        "ITHILDIN_MANIFEST_LOCK_SIGNATURE_PATH": str(
+            root / "keys/unused-manifest-lock-signature.json"
+        ),
+        "ITHILDIN_REQUIRE_SIGNED_MANIFEST_LOCK": "false",
+        "ITHILDIN_PRINCIPAL_REGISTRY_PATH": str(ROOT / "principals/local.yaml"),
+        "ITHILDIN_REQUIRE_KNOWN_PRINCIPALS": "true",
+        "ITHILDIN_POLICY_PATH": str(ROOT / "policies/default.yaml"),
+        "ITHILDIN_POLICY_TESTS_PATH": str(ROOT / "policies/tests/default.yaml"),
+        "ITHILDIN_POLICY_ENGINE": "yaml",
+        "ITHILDIN_OPA_URL": "",
+        "ITHILDIN_OPA_DECISION_PATH": "/v1/data/ithildin/decision",
+        "ITHILDIN_OPA_BUNDLE_MANIFEST_PATH": str(ROOT / "policies/opa/bundle.lock.json"),
+        "ITHILDIN_APPROVAL_EXPIRY_SECONDS": "900",
+        "ITHILDIN_NODE_ENROLLMENT_EXPIRY_SECONDS": "600",
+        "ITHILDIN_NODE_MAX_CLOCK_SKEW_SECONDS": "120",
+        "ITHILDIN_NODE_STALE_AFTER_SECONDS": "5",
+        "ITHILDIN_NODE_CONFIGURATION_SIGNING_PRIVATE_KEY_PATH": str(
+            root / "keys/configuration-private.pem"
+        ),
+        "ITHILDIN_NODE_CONFIGURATION_SIGNING_PUBLIC_KEY_PATH": str(
+            root / "keys/configuration-public.pem"
+        ),
+        "ITHILDIN_WORKSPACE_ROOT": str(ROOT / "workspaces"),
+        "ITHILDIN_WORKSPACE_REGISTRY_PATH": str(ROOT / "workspaces/local.yaml"),
+        "ITHILDIN_REQUIRE_KNOWN_WORKSPACES": "true",
+        "ITHILDIN_DEFAULT_WORKSPACE_ID": "default",
+        "ITHILDIN_TRUSTED_HOST_STAGING_ROOT": str(root / "trusted-host-staging"),
+        "ITHILDIN_TRUSTED_HOST_REGISTRY_PATH": str(ROOT / "trusted-hosts/local.yaml"),
+        "ITHILDIN_RUNTIME_CANDIDATE_AUTHORIZATION_PATH": str(
+            root / "disabled-runtime-candidate-authorization.json"
+        ),
+        "ITHILDIN_MAX_READ_BYTES": "131072",
+        "ITHILDIN_MAX_PATCH_BYTES": "131072",
+        "ITHILDIN_HTTP_ALLOWLIST": "",
+        "ITHILDIN_HTTP_TIMEOUT_SECONDS": "10",
+        "ITHILDIN_HTTP_MAX_RESPONSE_BYTES": "131072",
+        "ITHILDIN_HTTP_MAX_REDIRECTS": "3",
+        "ITHILDIN_REDACTION_EXTRA_KEYS": "",
+        "ITHILDIN_REDACTION_EXTRA_PATTERNS": "",
+        "ITHILDIN_SEARCH_RESULT_LIMIT": "100",
+        "ITHILDIN_GIT_LOG_LIMIT": "20",
+        "ITHILDIN_OTEL_ENABLED": "false",
+        "ITHILDIN_OTEL_SERVICE_NAME": "ithildin-mcc006-poc",
+        "ITHILDIN_OTEL_CONSOLE_EXPORT": "false",
+        "ITHILDIN_OTEL_OTLP_ENDPOINT": "",
+        "ITHILDIN_LOG_LEVEL": "INFO",
+    }
 
 
 def _claim_summary(claim: JsonObject) -> JsonObject:

@@ -42,7 +42,7 @@ mission-command-control-plane-plan-check:
 	uv run python scripts/mission_command_control_plane_plan_check.py
 
 mission-command-control-plane-poc:
-	uv run python scripts/mission_command_control_plane_poc.py --replace
+	uv run --offline python scripts/mission_command_control_plane_poc.py --replace
 
 mission-command-control-plane-poc-check:
 	uv run python scripts/mission_command_control_plane_poc_evidence_check.py

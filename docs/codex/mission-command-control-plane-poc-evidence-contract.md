@@ -33,6 +33,30 @@ make review-candidate
 `make review-candidate` depends on the MCC-006 POC checker so a stale, dirty, malformed, or
 redaction-unsafe POC cannot be packaged as the exact candidate.
 
+## Ambient Environment And Transport Isolation
+
+The POC target runs its Python entry point with `uv --offline`. The harness starts the Gateway and
+its focused adversarial tests through the already-running Python interpreter rather than asking a
+package runner to resolve dependencies.
+
+Child processes receive a closed environment assembled by the harness. It carries only a fixed
+system `PATH`, proxy-denial and Python-isolation settings, and explicit `ITHILDIN_*` settings. The
+Gateway:
+
+- runs from the ignored evidence root, where repository `.env` input is absent;
+- forces the `sqlite` storage backend and an empty PostgreSQL DSN;
+- forces the YAML policy engine and an empty OPA URL;
+- binds manifest, policy, principal, and workspace inputs to explicit repository paths;
+- binds database, audit, keys, trusted-host staging, and disabled runtime-authorization paths to
+  the selected ignored evidence root;
+- disables telemetry and external HTTP allowlisting; and
+- does not inherit ambient credential, proxy, storage, policy, workspace, or runtime variables.
+
+All harness and Node HTTP requests use a proxy-free opener pinned to the fixed loopback API URL.
+The startup path owns the child process as soon as it is created and deterministically
+terminates-and-waits or kills-and-waits on timeout, startup failure, interruption, restart, and
+normal completion.
+
 ## Live Evidence
 
 The harness starts a real loopback Gateway with isolated SQLite, JSONL, signing keys, and Node state;
