@@ -379,3 +379,8 @@ The live runtime seam remains `LV1-003`: the revised capability decision, exact-
 implementation candidate, and code-only authorization disposition define the smallest fixed runner
 bridge. Leg A and Leg B remain deliberately separate until a separate live authorization permits
 one exact-candidate `O4` evidence run.
+The prepared `PREPARE_REVIEW` gate and future producer contract blocked on mandatory assembler
+reconciliation are
+`local-v1-lv1-003-o4-execution-authorization.md` and
+`local-v1-lv1-003-o4-producer-contract.md`. They authorize no Docker, Hermes, provider, Node, or
+`O4` execution and do not change this walkthrough.

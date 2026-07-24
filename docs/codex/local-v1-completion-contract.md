@@ -120,6 +120,12 @@ or Low findings after the complete remediation lineage recorded in
 `docs/codex/mission-command-runner-bridge-authorization-record.md`. Live Hermes execution, Docker
 lifecycle action, and `O4` evidence execution remain separately unauthorized until a distinct
 live-evidence authorization is recorded.
+The prepared execution gate is
+`docs/codex/local-v1-lv1-003-o4-execution-authorization.md`; its status is `PREPARE_REVIEW`, its
+future exact candidate and post-review disposition are null, and its execution-attempt budget is
+zero. The future producer design is blocked pending mandatory assembler reconciliation and is
+`docs/codex/local-v1-lv1-003-o4-producer-contract.md`; it is a design contract, not producer
+implementation or live authority.
 
 The current implementation candidate is
 `docs/codex/local-v1-golden-path.md`, validated by `make local-v1-golden-path-check`. Its two

@@ -20,7 +20,7 @@ NODE_RELEASE_BUNDLE ?= var/node-release-artifact/node-release-$(NODE_RELEASE_VER
 .PHONY: hermes-governance-poc-plan-check mission-command-control-plane-plan-check mission-command-runner-bridge-decision-check mission-command-runner-bridge-authorization-check track-b-node-decision-check track-b-node-configuration-decision-check track-b-node-governed-access-decision-check track-b-node-manual-rollback-decision-check track-b-node-configuration-trust-rotation-decision-check track-b-node-version-posture-decision-check track-b-node-identity-key-rotation-decision-check track-b-node-service-lifecycle-decision-check track-b-node-release-artifact-decision-check track-b-node-evidence-check track-b-node-configuration-evidence-check track-b-node-governed-access-evidence-check track-b-node-configuration-trust-rotation-evidence-check track-b-node-version-posture-evidence-check track-b-node-identity-key-rotation-evidence-check track-b-node-service-lifecycle-evidence-check track-b-node-release-artifact-evidence-check node-configuration-keygen node-configuration-signing-status node-configuration-signing-ready node-service-image node-service-compose-check node-service-enroll node-service-status node-service-up node-service-stop node-release-image node-release-artifact-keygen node-release-artifact-sign node-release-artifact-verify
 .PHONY: hermes-poc-image hermes-poc-config-check hermes-poc-run hermes-poc-stop
 .PHONY: mission-command-control-plane-poc mission-command-control-plane-poc-check mission-command-control-plane-focused-gates
-.PHONY: mission-command-runner-bridge-profile-check mission-command-runner-bridge-implementation-check local-v1-constrained-mission-contract-check
+.PHONY: mission-command-runner-bridge-profile-check mission-command-runner-bridge-implementation-check local-v1-constrained-mission-contract-check local-v1-lv1-003-o4-execution-authorization-check local-v1-lv1-003-o4-producer-static-check
 .PHONY: local-v1-contract-check local-v1-golden-path-check local-v1-inner-check local-v1-milestone-check local-v1-runtime-trust-check local-v1-hermes-evidence-check local-v1-node-journey local-v1-node-journey-check local-v1-ui-production-build local-v1-candidate-inventory local-v1-candidate-check local-v1-release-check
 
 test:
@@ -50,6 +50,12 @@ mission-command-runner-bridge-decision-check:
 
 mission-command-runner-bridge-authorization-check:
 	uv run python scripts/mission_command_runner_bridge_authorization_check.py
+
+local-v1-lv1-003-o4-execution-authorization-check:
+	uv run python scripts/local_v1_lv1_003_o4_execution_authorization_check.py
+
+local-v1-lv1-003-o4-producer-static-check:
+	uv run pytest tests/test_local_v1_lv1_003_o4_execution_authorization_check.py -q
 
 mission-command-runner-bridge-profile-check:
 	uv run pytest \
@@ -115,6 +121,8 @@ local-v1-milestone-check:
 	$(MAKE) local-v1-golden-path-check
 	$(MAKE) mission-command-runner-bridge-decision-check
 	$(MAKE) mission-command-runner-bridge-authorization-check
+	$(MAKE) local-v1-lv1-003-o4-execution-authorization-check
+	$(MAKE) local-v1-lv1-003-o4-producer-static-check
 	$(MAKE) mission-command-runner-bridge-profile-check
 	$(MAKE) local-v1-constrained-mission-contract-check
 	$(MAKE) agent-workflow-check
