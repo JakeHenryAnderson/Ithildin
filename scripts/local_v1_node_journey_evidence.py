@@ -19,6 +19,51 @@ MAX_JOURNEY_DURATION = timedelta(minutes=20)
 MAX_EVIDENCE_AGE = timedelta(hours=24)
 MAX_FUTURE_SKEW = timedelta(minutes=2)
 
+STACK_DIAGNOSTIC_COLLECTION_STATUSES = frozenset(
+    {"complete", "inconclusive", "output_rejected"}
+)
+STACK_DIAGNOSTIC_REASON_CODES = frozenset(
+    {
+        "stack_api_service_not_ready",
+        "stack_ui_service_not_ready",
+        "stack_api_healthz_not_ready",
+        "stack_authenticated_system_status_not_ready",
+        "stack_ui_probe_not_ready",
+        "stack_multiple_readiness_failures",
+        "stack_same_cycle_readiness_timeout",
+        "stack_diagnostic_inconclusive",
+        "stack_diagnostic_output_rejected",
+    }
+)
+STACK_DIAGNOSTIC_COLLECTION_REASON_CODES = frozenset(
+    {
+        "compose_stack_diagnostic_collected",
+        "compose_stack_diagnostic_command_failed",
+        "compose_stack_diagnostic_output_rejected",
+    }
+)
+STACK_DIAGNOSTIC_PROBE_CODES = frozenset(
+    {"probe_ready", "probe_unavailable", "probe_rejected", "probe_invalid"}
+)
+STACK_DIAGNOSTIC_SERVICE_CODES = frozenset(
+    {
+        "service_missing",
+        "service_running_healthy",
+        "service_running_starting",
+        "service_running_unhealthy",
+        "service_running_without_healthcheck",
+        "service_exited_zero",
+        "service_exited_nonzero",
+        "service_created",
+        "service_restarting",
+        "service_paused",
+        "service_dead_zero",
+        "service_dead_nonzero",
+        "service_removing",
+        "service_unobserved",
+    }
+)
+
 NONCLAIMS = [
     "No governed tool call or real agent mission was exercised.",
     "No runner or model-provider health was established.",
@@ -343,6 +388,115 @@ def validate_report(
         raise EvidenceValidationError("authority fields are not all false")
 
 
+def validate_failure_record(report: JsonObject) -> None:
+    """Validate the failure-only extension without changing the pass contract."""
+
+    if report.get("result") == "passed":
+        if "failure" in report:
+            raise EvidenceValidationError("passed report contains a failure record")
+        return
+    if report.get("result") != "failed":
+        raise EvidenceValidationError("report result is invalid")
+    failure = _object(report, "failure")
+    code = failure.get("code")
+    if not isinstance(code, str) or not re.fullmatch(r"[a-z0-9_]{3,80}", code):
+        raise EvidenceValidationError("failure code is invalid")
+    if failure.get("details_recorded") is not False:
+        raise EvidenceValidationError("failure detail posture is invalid")
+    if code != "compose_stack_health_timeout":
+        if set(failure) != {"code", "details_recorded"}:
+            raise EvidenceValidationError("non-timeout failure fields are not closed")
+        return
+    if set(failure) != {"code", "details_recorded", "diagnostic"}:
+        raise EvidenceValidationError("timeout failure diagnostic is missing")
+    validate_stack_diagnostic(_object(failure, "diagnostic"))
+
+
+def validate_stack_diagnostic(diagnostic: JsonObject) -> None:
+    if set(diagnostic) != {
+        "collection_status",
+        "collection_reason_code",
+        "reason_code",
+        "probes",
+        "services",
+    }:
+        raise EvidenceValidationError("stack diagnostic fields are not closed")
+    collection_status = diagnostic.get("collection_status")
+    collection_reason_code = diagnostic.get("collection_reason_code")
+    reason_code = diagnostic.get("reason_code")
+    if (
+        not isinstance(collection_status, str)
+        or not isinstance(collection_reason_code, str)
+        or not isinstance(reason_code, str)
+        or collection_status not in STACK_DIAGNOSTIC_COLLECTION_STATUSES
+        or collection_reason_code not in STACK_DIAGNOSTIC_COLLECTION_REASON_CODES
+        or reason_code not in STACK_DIAGNOSTIC_REASON_CODES
+    ):
+        raise EvidenceValidationError("stack diagnostic status is invalid")
+    expected_collection_reason = {
+        "complete": "compose_stack_diagnostic_collected",
+        "inconclusive": "compose_stack_diagnostic_command_failed",
+        "output_rejected": "compose_stack_diagnostic_output_rejected",
+    }[collection_status]
+    if collection_reason_code != expected_collection_reason:
+        raise EvidenceValidationError("stack diagnostic status is contradictory")
+    if (
+        collection_status == "inconclusive"
+        and reason_code != "stack_diagnostic_inconclusive"
+    ) or (
+        collection_status == "output_rejected"
+        and reason_code != "stack_diagnostic_output_rejected"
+    ):
+        raise EvidenceValidationError("stack diagnostic reason is contradictory")
+
+    probes = _object(diagnostic, "probes")
+    probe_codes = list(probes.values())
+    if (
+        set(probes) != {"api_healthz", "authenticated_system_status", "ui"}
+        or not all(isinstance(value, str) for value in probe_codes)
+        or any(value not in STACK_DIAGNOSTIC_PROBE_CODES for value in probe_codes)
+    ):
+        raise EvidenceValidationError("stack diagnostic probes are invalid")
+
+    services = _object(diagnostic, "services")
+    service_codes = list(services.values())
+    if (
+        set(services) != {"ithildin-api", "ithildin-ui"}
+        or not all(isinstance(value, str) for value in service_codes)
+        or any(value not in STACK_DIAGNOSTIC_SERVICE_CODES for value in service_codes)
+    ):
+        raise EvidenceValidationError("stack diagnostic services are invalid")
+    if collection_status == "complete":
+        if any(value == "service_unobserved" for value in service_codes):
+            raise EvidenceValidationError("complete stack diagnostic is unobserved")
+        if reason_code != _expected_stack_reason(services, probes):
+            raise EvidenceValidationError("stack diagnostic reason is contradictory")
+    elif any(value != "service_unobserved" for value in service_codes):
+        raise EvidenceValidationError("incomplete stack diagnostic reflects service state")
+
+
+def _expected_stack_reason(services: JsonObject, probes: JsonObject) -> str:
+    failures: list[str] = []
+    if services.get("ithildin-api") != "service_running_healthy":
+        failures.append("stack_api_service_not_ready")
+    if services.get("ithildin-ui") not in {
+        "service_running_healthy",
+        "service_running_without_healthcheck",
+    }:
+        failures.append("stack_ui_service_not_ready")
+    if probes.get("api_healthz") != "probe_ready":
+        failures.append("stack_api_healthz_not_ready")
+    if probes.get("authenticated_system_status") != "probe_ready":
+        failures.append("stack_authenticated_system_status_not_ready")
+    if probes.get("ui") != "probe_ready":
+        failures.append("stack_ui_probe_not_ready")
+    if not failures:
+        return "stack_same_cycle_readiness_timeout"
+    if len(failures) == 1:
+        return failures[0]
+    return "stack_multiple_readiness_failures"
+
+
 def render_markdown(report: JsonObject) -> str:
     provenance = _object(report, "provenance")
     cleanup = _object(report, "cleanup")
@@ -390,6 +544,29 @@ def render_markdown(report: JsonObject) -> str:
     else:
         failure = _object(report, "failure")
         lines.append(f"- Failure code: `{failure['code']}`")
+        diagnostic = failure.get("diagnostic")
+        if isinstance(diagnostic, dict):
+            validated = diagnostic
+            validate_stack_diagnostic(validated)
+            probes = _object(validated, "probes")
+            services = _object(validated, "services")
+            lines.extend(
+                [
+                    f"- Stack diagnostic: `{validated['reason_code']}`",
+                    (
+                        "- Stack diagnostic collection: "
+                        f"`{validated['collection_reason_code']}`"
+                    ),
+                    f"- API service: `{services['ithildin-api']}`",
+                    f"- UI service: `{services['ithildin-ui']}`",
+                    f"- API healthz probe: `{probes['api_healthz']}`",
+                    (
+                        "- Authenticated system-status probe: "
+                        f"`{probes['authenticated_system_status']}`"
+                    ),
+                    f"- UI probe: `{probes['ui']}`",
+                ]
+            )
     lines.extend(
         [
             "",

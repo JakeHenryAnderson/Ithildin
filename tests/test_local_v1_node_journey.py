@@ -52,6 +52,12 @@ class FakeExecutor:
         inspection_failure: bool = False,
         up_returncode: int = 0,
         node_build_returncode: int = 0,
+        diagnostic_returncode: int = 0,
+        diagnostic_stdout: str = (
+            "ithildin-api\trunning\thealthy\t0\n"
+            "ithildin-ui\trunning\t\t0\n"
+        ),
+        diagnostic_stderr: str = "",
     ) -> None:
         self.commands: list[tuple[tuple[str, ...], str | None]] = []
         self.enroll_returncode = enroll_returncode
@@ -71,6 +77,9 @@ class FakeExecutor:
         self.inspection_failure = inspection_failure
         self.up_returncode = up_returncode
         self.node_build_returncode = node_build_returncode
+        self.diagnostic_returncode = diagnostic_returncode
+        self.diagnostic_stdout = diagnostic_stdout
+        self.diagnostic_stderr = diagnostic_stderr
 
     def run(
         self,
@@ -121,6 +130,12 @@ class FakeExecutor:
             self.images[f"{project}-ithildin-api"] = API_IMAGE_ID
             self.images[f"{project}-ithildin-ui"] = UI_IMAGE_ID
             return journey.CommandResult(self.up_returncode, "", "synthetic up result")
+        if tail[:4] == ("ps", "--all", "--format", journey.STACK_DIAGNOSTIC_FORMAT):
+            return journey.CommandResult(
+                self.diagnostic_returncode,
+                self.diagnostic_stdout,
+                self.diagnostic_stderr,
+            )
         if tail == ("--profile", "node", "build", "ithildin-node"):
             self.images[f"ithildin/node-journey:{command[3][-8:]}"] = NODE_IMAGE_ID
             return journey.CommandResult(
@@ -136,6 +151,7 @@ class FakeApi:
     secret_returned_once = True
     inventory_evidence_status = "complete"
     assignment_evidence_status = "complete"
+    system_status_document: JsonObject | None = None
 
     def __init__(self, admin_token: str) -> None:
         self.admin_token = admin_token
@@ -146,6 +162,8 @@ class FakeApi:
         if path == "/healthz":
             return {"status": "ok", "service": "ithildin-api"}
         if path == "/system/status":
+            if self.system_status_document is not None:
+                return copy.deepcopy(self.system_status_document)
             return {
                 "status": "ok",
                 "tool_count": 24,
@@ -310,6 +328,11 @@ def test_successful_fake_journey_writes_exact_checkable_redacted_evidence(
     assert CODE not in command
     assert CODE not in (report_root / journey.REPORT_JSON).read_text()
     assert "A" * 48 not in (report_root / journey.REPORT_MARKDOWN).read_text()
+    assert "failure" not in report
+    assert not any(
+        len(command) > 10 and command[10:11] == ("ps",)
+        for command, _ in executor.commands
+    )
     removed_images = {
         command[3]
         for command, _ in executor.commands
@@ -788,6 +811,30 @@ def test_local_api_recursively_rejects_secret_shaped_response_fields(
         journey.LocalApi("safe-but-private").get("/healthz", admin=False)
 
 
+def test_local_ui_http_rejection_has_closed_probe_category(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def reject(*args: object, **kwargs: object) -> object:
+        del args, kwargs
+        raise urllib.error.HTTPError(
+            "http://127.0.0.1:5173/",
+            503,
+            "DO_NOT_REFLECT",
+            Message(),
+            None,
+        )
+
+    monkeypatch.setattr(journey.urllib.request, "urlopen", reject)
+    with pytest.raises(journey.JourneyError) as captured:
+        journey.LocalUi().health()
+    assert captured.value.code == "ui_http_rejected"
+    assert (
+        journey._classify_probe_error(captured.value, ui=True)
+        == "probe_rejected"
+    )
+    assert "DO_NOT_REFLECT" not in str(captured.value)
+
+
 @pytest.mark.parametrize(
     ("api_type", "failure_code"),
     [
@@ -827,6 +874,377 @@ def test_partial_ui_health_is_not_accepted(
 
     with pytest.raises(journey.JourneyError, match="compose_stack_health_timeout"):
         run_fake(ui_factory=PartialUi)
+
+    report = load_run_report(journey.REPORT_BASE / RUN_ID)
+    assert report["failure"] == {
+        "code": "compose_stack_health_timeout",
+        "details_recorded": False,
+        "diagnostic": {
+            "collection_status": "complete",
+            "collection_reason_code": "compose_stack_diagnostic_collected",
+            "reason_code": "stack_ui_probe_not_ready",
+            "probes": {
+                "api_healthz": "probe_ready",
+                "authenticated_system_status": "probe_ready",
+                "ui": "probe_invalid",
+            },
+            "services": {
+                "ithildin-api": "service_running_healthy",
+                "ithildin-ui": "service_running_without_healthcheck",
+            },
+        },
+    }
+    markdown = (journey.REPORT_BASE / RUN_ID / journey.REPORT_MARKDOWN).read_text()
+    assert "stack_ui_probe_not_ready" in markdown
+    assert "compose_stack_diagnostic_collected" in markdown
+    assert "service_running_healthy" in markdown
+    assert "service_running_without_healthcheck" in markdown
+    assert set(report["authority"].values()) == {False}  # type: ignore[union-attr]
+    cleanup = report["cleanup"]
+    assert isinstance(cleanup, dict)
+    assert cleanup["outcome"] == "completed"
+    assert cleanup["recovery_required"] is False
+    assert cleanup["runtime_state_removed"] is True
+
+
+def test_stack_probes_run_independently_in_one_cycle() -> None:
+    calls: list[str] = []
+
+    class IndependentApi:
+        def get(self, path: str, *, admin: bool = True) -> JsonObject:
+            calls.append(f"api:{path}:{admin}")
+            if path == "/healthz":
+                raise journey.JourneyError("gateway_unavailable")
+            return FakeApi("synthetic").get(path, admin=admin)
+
+    class IndependentUi:
+        def health(self) -> JsonObject:
+            calls.append("ui")
+            return FakeUi().health()
+
+    cycle = journey._probe_stack_cycle(  # type: ignore[arg-type]
+        IndependentApi(),
+        IndependentUi(),  # type: ignore[arg-type]
+    )
+    assert calls == [
+        "api:/healthz:False",
+        "api:/system/status:True",
+        "ui",
+    ]
+    assert cycle.evidence() == {
+        "api_healthz": "probe_unavailable",
+        "authenticated_system_status": "probe_ready",
+        "ui": "probe_ready",
+    }
+    assert cycle.ready is False
+    assert (
+        journey._classify_probe_error(
+            journey.JourneyError("gateway_http_401"),
+            ui=False,
+        )
+        == "probe_rejected"
+    )
+    assert (
+        journey._classify_probe_error(
+            journey.JourneyError("gateway_response_invalid"),
+            ui=False,
+        )
+        == "probe_invalid"
+    )
+
+
+def test_probe_successes_in_different_cycles_do_not_establish_readiness() -> None:
+    class FlappingApi(FakeApi):
+        health_calls = 0
+
+        def get(self, path: str, *, admin: bool = True) -> JsonObject:
+            if path == "/healthz":
+                self.health_calls += 1
+                if self.health_calls == 2:
+                    raise journey.JourneyError("gateway_unavailable")
+            return super().get(path, admin=admin)
+
+    class FlappingUi(FakeUi):
+        calls = 0
+
+        def health(self) -> JsonObject:
+            self.calls += 1
+            if self.calls == 1:
+                raise journey.JourneyError("ui_unavailable")
+            return super().health()
+
+    api = FlappingApi("synthetic")
+    ui = FlappingUi()
+    first = journey._probe_stack_cycle(api, ui)
+    second = journey._probe_stack_cycle(api, ui)
+
+    assert first.evidence() == {
+        "api_healthz": "probe_ready",
+        "authenticated_system_status": "probe_ready",
+        "ui": "probe_unavailable",
+    }
+    assert second.evidence() == {
+        "api_healthz": "probe_unavailable",
+        "authenticated_system_status": "probe_ready",
+        "ui": "probe_ready",
+    }
+    assert first.ready is False
+    assert second.ready is False
+
+
+@pytest.mark.parametrize(
+    ("status_document", "failure_code"),
+    [
+        (
+            {
+                "status": "ok",
+                "tool_count": 25,
+                "runtime_candidate": {"posture": "unreviewed_local"},
+                "storage": {
+                    "runtime_backend": "sqlite",
+                    "postgres": {"configured": False},
+                },
+            },
+            "governed_tool_count_changed",
+        ),
+        (
+            {
+                "status": "ok",
+                "tool_count": 24,
+                "runtime_candidate": {"posture": "released"},
+                "storage": {
+                    "runtime_backend": "sqlite",
+                    "postgres": {"configured": False},
+                },
+            },
+            "runtime_candidate_authority_unexpected",
+        ),
+        (
+            {
+                "status": "ok",
+                "tool_count": 24,
+                "runtime_candidate": {"posture": "unreviewed_local"},
+                "storage": {
+                    "runtime_backend": "postgres",
+                    "postgres": {"configured": False},
+                },
+            },
+            "storage_backend_not_sqlite",
+        ),
+        (
+            {
+                "status": "ok",
+                "tool_count": 24,
+                "runtime_candidate": {"posture": "unreviewed_local"},
+                "storage": {
+                    "runtime_backend": "sqlite",
+                    "postgres": {"configured": True},
+                },
+            },
+            "postgres_dsn_unexpected",
+        ),
+    ],
+)
+def test_ready_system_response_preserves_immediate_trust_failures(
+    isolated_roots: tuple[Path, Path],
+    status_document: JsonObject,
+    failure_code: str,
+) -> None:
+    api_type = type(
+        "TrustMismatchApi",
+        (FakeApi,),
+        {"system_status_document": status_document},
+    )
+    with pytest.raises(journey.JourneyError, match=failure_code):
+        run_fake(api_factory=api_type)
+    report = load_run_report(journey.REPORT_BASE / RUN_ID)
+    assert report["failure"] == {
+        "code": failure_code,
+        "details_recorded": False,
+    }
+
+
+def test_stack_reason_inference_is_closed_and_does_not_guess_root_cause() -> None:
+    services: JsonObject = {
+        "ithildin-api": "service_running_healthy",
+        "ithildin-ui": "service_running_without_healthcheck",
+    }
+    ui_failure = journey.StackProbeCycle(
+        api_healthz="probe_ready",
+        authenticated_system_status="probe_ready",
+        ui="probe_unavailable",
+        system_status=None,
+        ui_health=None,
+    )
+    assert journey._infer_stack_reason(services, ui_failure) == (
+        "stack_ui_probe_not_ready"
+    )
+    all_ready = journey.StackProbeCycle(
+        api_healthz="probe_ready",
+        authenticated_system_status="probe_ready",
+        ui="probe_ready",
+        system_status=None,
+        ui_health=None,
+    )
+    assert (
+        journey._infer_stack_reason(services, all_ready)
+        == "stack_same_cycle_readiness_timeout"
+    )
+    services["ithildin-api"] = "service_exited_nonzero"
+    assert (
+        journey._infer_stack_reason(services, ui_failure)
+        == "stack_multiple_readiness_failures"
+    )
+
+
+@pytest.mark.parametrize(
+    ("state", "health", "exit_code", "expected"),
+    [
+        ("running", "healthy", 0, "service_running_healthy"),
+        ("running", "starting", 0, "service_running_starting"),
+        ("running", "unhealthy", 0, "service_running_unhealthy"),
+        ("running", "", 0, "service_running_without_healthcheck"),
+        ("exited", "", 0, "service_exited_zero"),
+        ("exited", "", 23, "service_exited_nonzero"),
+        ("created", "", 0, "service_created"),
+        ("restarting", "", 0, "service_restarting"),
+        ("paused", "", 0, "service_paused"),
+        ("dead", "", 0, "service_dead_zero"),
+        ("dead", "", 137, "service_dead_nonzero"),
+        ("removing", "", 0, "service_removing"),
+    ],
+)
+def test_stack_diagnostic_classification_is_closed(
+    state: str,
+    health: str,
+    exit_code: int,
+    expected: str,
+) -> None:
+    assert journey._classify_stack_service(state, health, exit_code) == expected
+
+
+@pytest.mark.parametrize(
+    "hostile_output",
+    [
+        "malformed",
+        "ithildin-api\trunning\thealthy\t0\nithildin-api\texited\t\t1\n",
+        "unrelated-service\trunning\thealthy\t0\n",
+        "ithildin-api\trunning\thealthy\t0\nithildin-ui\trunning\t\t0\nextra\tline\t\t0\n",
+        "ithildin-api\trunning\thealthy\t0\x1b[31m\n",
+        "ithildin-api\trunning\thealthy\t0\r\n",
+        "authorization=DO_NOT_REFLECT",
+        "ithildin-api\tunknown\t\t0\n",
+        "ithildin-api\texited\thealthy\t1\n",
+        "ithildin-api\trunning\thealthy\t999\n",
+        "x" * (journey.MAX_STACK_DIAGNOSTIC_BYTES + 1),
+        "ithildin-api\trünning\thealthy\t0\n",
+        "A" * 48,
+        "ITHILDIN_ADMIN_TOKEN=DO_NOT_REFLECT",
+        "-----BEGIN PRIVATE KEY-----",
+        "Bearer DO_NOT_REFLECT",
+        "/private/tmp/ithildin-host-material",
+        "command=/bin/sh -c whoami",
+        "mounts=/private/tmp:/data",
+        "address=127.0.0.1:8000",
+    ],
+)
+def test_hostile_stack_diagnostic_output_is_rejected_without_reflection(
+    isolated_roots: tuple[Path, Path],
+    hostile_output: str,
+) -> None:
+    class PartialUi(FakeUi):
+        def health(self) -> JsonObject:
+            raise journey.JourneyError("ui_unavailable")
+
+    executor = FakeExecutor(diagnostic_stdout=hostile_output)
+    with pytest.raises(journey.JourneyError, match="compose_stack_health_timeout"):
+        run_fake(executor=executor, ui_factory=PartialUi)
+
+    report_root = journey.REPORT_BASE / RUN_ID
+    report = load_run_report(report_root)
+    failure = report["failure"]
+    assert isinstance(failure, dict)
+    assert failure["diagnostic"] == {
+        "collection_status": "output_rejected",
+        "collection_reason_code": "compose_stack_diagnostic_output_rejected",
+        "reason_code": "stack_diagnostic_output_rejected",
+        "probes": {
+            "api_healthz": "probe_ready",
+            "authenticated_system_status": "probe_ready",
+            "ui": "probe_unavailable",
+        },
+        "services": {
+            "ithildin-api": "service_unobserved",
+            "ithildin-ui": "service_unobserved",
+        },
+    }
+    emitted = (
+        (report_root / journey.REPORT_JSON).read_text()
+        + (report_root / journey.REPORT_MARKDOWN).read_text()
+    )
+    assert hostile_output not in emitted
+    diagnostic_commands = [
+        command
+        for command, _ in executor.commands
+        if len(command) > 10 and command[10:11] == ("ps",)
+    ]
+    assert len(diagnostic_commands) == 1
+
+
+def test_stack_diagnostic_command_failure_is_inconclusive_without_reflection(
+    isolated_roots: tuple[Path, Path],
+) -> None:
+    class PartialUi(FakeUi):
+        def health(self) -> JsonObject:
+            raise journey.JourneyError("ui_unavailable")
+
+    executor = FakeExecutor(
+        diagnostic_returncode=2,
+        diagnostic_stdout="",
+        diagnostic_stderr="safe synthetic failure",
+    )
+    with pytest.raises(journey.JourneyError, match="compose_stack_health_timeout"):
+        run_fake(executor=executor, ui_factory=PartialUi)
+    report = load_run_report(journey.REPORT_BASE / RUN_ID)
+    failure = report["failure"]
+    assert isinstance(failure, dict)
+    diagnostic = failure["diagnostic"]
+    assert isinstance(diagnostic, dict)
+    assert diagnostic["collection_status"] == "inconclusive"
+    assert (
+        diagnostic["collection_reason_code"]
+        == "compose_stack_diagnostic_command_failed"
+    )
+    assert diagnostic["reason_code"] == "stack_diagnostic_inconclusive"
+    assert set(diagnostic["services"].values()) == {"service_unobserved"}  # type: ignore[union-attr]
+    assert "safe synthetic failure" not in json.dumps(report)
+    cleanup = report["cleanup"]
+    assert isinstance(cleanup, dict)
+    assert cleanup["outcome"] == "completed"
+    assert cleanup["recovery_required"] is False
+    assert cleanup["runtime_state_removed"] is True
+
+
+def test_stack_diagnostic_validator_rejects_contradictory_closed_fields() -> None:
+    diagnostic: JsonObject = {
+        "collection_status": "complete",
+        "collection_reason_code": "compose_stack_diagnostic_collected",
+        "reason_code": "stack_ui_probe_not_ready",
+        "probes": {
+            "api_healthz": "probe_ready",
+            "authenticated_system_status": "probe_ready",
+            "ui": "probe_invalid",
+        },
+        "services": {
+            "ithildin-api": "service_running_healthy",
+            "ithildin-ui": "service_running_without_healthcheck",
+        },
+    }
+    evidence.validate_stack_diagnostic(diagnostic)
+    hostile = copy.deepcopy(diagnostic)
+    hostile["collection_status"] = "inconclusive"
+    with pytest.raises(evidence.EvidenceValidationError, match="contradictory"):
+        evidence.validate_stack_diagnostic(hostile)
 
 
 def test_checker_requires_exact_candidate_run_and_fresh_time(
@@ -1142,6 +1560,7 @@ def test_compose_command_and_http_allowlists_are_closed(
         plan.remove_image(plan.ui_image),
         plan.remove_image(plan.node_image),
         plan.start_stack(),
+        plan.stack_diagnostic(),
         plan.build_node(),
         plan.enroll_node(),
         plan.start_node(),
@@ -1159,6 +1578,26 @@ def test_compose_command_and_http_allowlists_are_closed(
         )
     with pytest.raises(journey.JourneyError, match="http_operation_not_allowed"):
         journey._validate_http_operation("GET", "/audit/events", admin=True)
+    assert plan.stack_diagnostic()[10:] == (
+        "ps",
+        "--all",
+        "--format",
+        "{{.Service}}\t{{.State}}\t{{.Health}}\t{{.ExitCode}}",
+        "ithildin-api",
+        "ithildin-ui",
+    )
+    diagnostic_text = plan.stack_diagnostic()[13]
+    for forbidden in (
+        "json",
+        "inspect",
+        ".State.Error",
+        "environment",
+        "labels",
+        "mounts",
+        "ports",
+        "command",
+    ):
+        assert forbidden not in diagnostic_text
 
 
 def test_compose_override_isolates_runtime_and_run_specific_image(

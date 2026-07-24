@@ -43,7 +43,9 @@ from scripts.local_v1_node_journey_evidence import (
     reject_secret_fields,
     render_markdown,
     scan_safe_text,
+    validate_failure_record,
     validate_report,
+    validate_stack_diagnostic,
 )
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -55,6 +57,10 @@ COMPOSE_PROJECT_PREFIX = "ithildin-local-v1-node-"
 NODE_VERSION = "0.1.0"
 WORKSPACE_ID = "demo"
 POLL_SECONDS = 90.0
+STACK_DIAGNOSTIC_FORMAT = (
+    "{{.Service}}\t{{.State}}\t{{.Health}}\t{{.ExitCode}}"
+)
+MAX_STACK_DIAGNOSTIC_BYTES = 1024
 COMPOSE_PLUGIN_CANDIDATES = (
     Path("/Applications/Docker.app/Contents/Resources/cli-plugins/docker-compose"),
     Path("/usr/local/lib/docker/cli-plugins/docker-compose"),
@@ -306,6 +312,30 @@ class JourneyRunResult:
     candidate_commit: str
 
 
+@dataclass(frozen=True)
+class StackProbeCycle:
+    api_healthz: str
+    authenticated_system_status: str
+    ui: str
+    system_status: JsonObject | None
+    ui_health: JsonObject | None
+
+    @property
+    def ready(self) -> bool:
+        return (
+            self.api_healthz == "probe_ready"
+            and self.authenticated_system_status == "probe_ready"
+            and self.ui == "probe_ready"
+        )
+
+    def evidence(self) -> JsonObject:
+        return {
+            "api_healthz": self.api_healthz,
+            "authenticated_system_status": self.authenticated_system_status,
+            "ui": self.ui,
+        }
+
+
 class CommandExecutor(Protocol):
     def run(
         self,
@@ -465,6 +495,16 @@ class ComposePlan:
     def start_stack(self) -> tuple[str, ...]:
         return self.command("up", "--build", "--detach", "ithildin-api", "ithildin-ui")
 
+    def stack_diagnostic(self) -> tuple[str, ...]:
+        return self.command(
+            "ps",
+            "--all",
+            "--format",
+            STACK_DIAGNOSTIC_FORMAT,
+            "ithildin-api",
+            "ithildin-ui",
+        )
+
     def build_node(self) -> tuple[str, ...]:
         return self.command("--profile", "node", "build", "ithildin-node")
 
@@ -615,7 +655,9 @@ class LocalUi:
                 content_type = response.headers.get_content_type()
                 raw = response.read(262_145)
                 status_code = response.status
-        except (urllib.error.HTTPError, urllib.error.URLError, TimeoutError, OSError) as exc:
+        except urllib.error.HTTPError as exc:
+            raise JourneyError("ui_http_rejected") from exc
+        except (urllib.error.URLError, TimeoutError, OSError) as exc:
             raise JourneyError("ui_unavailable") from exc
         if len(raw) > 262_144:
             raise JourneyError("ui_response_too_large")
@@ -660,6 +702,7 @@ class JourneyState:
     created_images: dict[str, str] = field(default_factory=dict)
     image_reconciliation_ambiguous: bool = False
     compose_plugin_path: Path | None = None
+    failure_diagnostic: JsonObject | None = None
     safe_observations: JsonObject = field(default_factory=dict)
 
     @property
@@ -1107,6 +1150,217 @@ def _preflight(state: JourneyState, executor: CommandExecutor) -> None:
     }
 
 
+def _probe_stack_cycle(api: LocalApi, ui: LocalUi) -> StackProbeCycle:
+    """Run all three fixed probes even when another probe is not ready."""
+
+    api_healthz = "probe_invalid"
+    system_probe = "probe_invalid"
+    ui_probe = "probe_invalid"
+    ready_status: JsonObject | None = None
+    ready_ui: JsonObject | None = None
+
+    try:
+        health = api.get("/healthz", admin=False)
+        if health == {"status": "ok", "service": "ithildin-api"}:
+            api_healthz = "probe_ready"
+    except JourneyError as exc:
+        api_healthz = _classify_probe_error(exc, ui=False)
+
+    try:
+        status = api.get("/system/status")
+        if status.get("status") == "ok":
+            system_probe = "probe_ready"
+            ready_status = status
+    except JourneyError as exc:
+        system_probe = _classify_probe_error(exc, ui=False)
+
+    try:
+        ui_health = ui.health()
+        if ui_health == {
+            "ui_http_status": 200,
+            "ui_content_type": "text/html",
+            "ui_shell_observed": True,
+        }:
+            ui_probe = "probe_ready"
+            ready_ui = ui_health
+    except JourneyError as exc:
+        ui_probe = _classify_probe_error(exc, ui=True)
+
+    return StackProbeCycle(
+        api_healthz=api_healthz,
+        authenticated_system_status=system_probe,
+        ui=ui_probe,
+        system_status=ready_status,
+        ui_health=ready_ui,
+    )
+
+
+def _classify_probe_error(error: JourneyError, *, ui: bool) -> str:
+    if error.code in {"gateway_unavailable", "ui_unavailable"}:
+        return "probe_unavailable"
+    if (not ui and error.code.startswith("gateway_http_")) or (
+        ui and error.code == "ui_http_rejected"
+    ):
+        return "probe_rejected"
+    return "probe_invalid"
+
+
+def _collect_stack_diagnostic(
+    executor: CommandExecutor,
+    compose: ComposePlan,
+    probes: StackProbeCycle,
+) -> JsonObject:
+    """Collect one bounded, closed diagnostic without exposing raw CLI output."""
+
+    try:
+        result = executor.run(compose.stack_diagnostic(), timeout=30.0)
+    except Exception:
+        return _inconclusive_stack_diagnostic(probes, output_rejected=False)
+    try:
+        _validate_stack_diagnostic_output_safety(result)
+        if result.returncode != 0 or result.stderr:
+            return _inconclusive_stack_diagnostic(probes, output_rejected=False)
+        services = _parse_stack_diagnostic_output(result.stdout)
+        diagnostic: JsonObject = {
+            "collection_status": "complete",
+            "collection_reason_code": "compose_stack_diagnostic_collected",
+            "reason_code": _infer_stack_reason(services, probes),
+            "probes": probes.evidence(),
+            "services": services,
+        }
+        validate_stack_diagnostic(diagnostic)
+        return diagnostic
+    except (JourneyError, UnicodeError, ValueError):
+        return _inconclusive_stack_diagnostic(probes, output_rejected=True)
+
+
+def _inconclusive_stack_diagnostic(
+    probes: StackProbeCycle,
+    *,
+    output_rejected: bool,
+) -> JsonObject:
+    diagnostic: JsonObject = {
+        "collection_status": "output_rejected" if output_rejected else "inconclusive",
+        "collection_reason_code": (
+            "compose_stack_diagnostic_output_rejected"
+            if output_rejected
+            else "compose_stack_diagnostic_command_failed"
+        ),
+        "reason_code": (
+            "stack_diagnostic_output_rejected"
+            if output_rejected
+            else "stack_diagnostic_inconclusive"
+        ),
+        "probes": probes.evidence(),
+        "services": {
+            "ithildin-api": "service_unobserved",
+            "ithildin-ui": "service_unobserved",
+        },
+    }
+    validate_stack_diagnostic(diagnostic)
+    return diagnostic
+
+
+def _infer_stack_reason(services: JsonObject, probes: StackProbeCycle) -> str:
+    failures: list[str] = []
+    if services.get("ithildin-api") != "service_running_healthy":
+        failures.append("stack_api_service_not_ready")
+    if services.get("ithildin-ui") not in {
+        "service_running_healthy",
+        "service_running_without_healthcheck",
+    }:
+        failures.append("stack_ui_service_not_ready")
+    if probes.api_healthz != "probe_ready":
+        failures.append("stack_api_healthz_not_ready")
+    if probes.authenticated_system_status != "probe_ready":
+        failures.append("stack_authenticated_system_status_not_ready")
+    if probes.ui != "probe_ready":
+        failures.append("stack_ui_probe_not_ready")
+    if not failures:
+        return "stack_same_cycle_readiness_timeout"
+    if len(failures) == 1:
+        return failures[0]
+    return "stack_multiple_readiness_failures"
+
+
+def _validate_stack_diagnostic_output_safety(result: CommandResult) -> None:
+    combined = (result.stdout + result.stderr).encode("utf-8", errors="strict")
+    if len(combined) > MAX_STACK_DIAGNOSTIC_BYTES:
+        raise JourneyError("compose_stack_diagnostic_output_rejected")
+    for text in (result.stdout, result.stderr):
+        if any(
+            (ord(character) < 32 and character not in {"\t", "\n"})
+            or ord(character) == 127
+            or ord(character) > 126
+            for character in text
+        ):
+            raise JourneyError("compose_stack_diagnostic_output_rejected")
+        if re.search(
+            r"(?i)(?:authorization|bearer[ \t]|credential|enrollment[_ -]?code|"
+            r"password|private[_ -]?key|secret|token)",
+            text,
+        ):
+            raise JourneyError("compose_stack_diagnostic_output_rejected")
+
+
+def _parse_stack_diagnostic_output(stdout: str) -> JsonObject:
+    services: JsonObject = {
+        "ithildin-api": "service_missing",
+        "ithildin-ui": "service_missing",
+    }
+    observed: set[str] = set()
+    lines = stdout.splitlines()
+    if len(lines) > 2:
+        raise JourneyError("compose_stack_diagnostic_output_rejected")
+    for line in lines:
+        fields = line.split("\t")
+        if len(fields) != 4:
+            raise JourneyError("compose_stack_diagnostic_output_rejected")
+        service, state, health, raw_exit_code = fields
+        if service not in services or service in observed:
+            raise JourneyError("compose_stack_diagnostic_output_rejected")
+        if not re.fullmatch(r"(?:0|[1-9][0-9]{0,2})", raw_exit_code):
+            raise JourneyError("compose_stack_diagnostic_output_rejected")
+        exit_code = int(raw_exit_code)
+        if exit_code > 255:
+            raise JourneyError("compose_stack_diagnostic_output_rejected")
+        services[service] = _classify_stack_service(state, health, exit_code)
+        observed.add(service)
+    return services
+
+
+def _classify_stack_service(state: str, health: str, exit_code: int) -> str:
+    if state == "running":
+        if exit_code != 0:
+            raise JourneyError("compose_stack_diagnostic_output_rejected")
+        classification = {
+            "healthy": "service_running_healthy",
+            "starting": "service_running_starting",
+            "unhealthy": "service_running_unhealthy",
+            "": "service_running_without_healthcheck",
+        }.get(health)
+        if classification is None:
+            raise JourneyError("compose_stack_diagnostic_output_rejected")
+        return classification
+    if health:
+        raise JourneyError("compose_stack_diagnostic_output_rejected")
+    if state == "exited":
+        return "service_exited_zero" if exit_code == 0 else "service_exited_nonzero"
+    if state == "dead":
+        return "service_dead_zero" if exit_code == 0 else "service_dead_nonzero"
+    if exit_code != 0:
+        raise JourneyError("compose_stack_diagnostic_output_rejected")
+    classification = {
+        "created": "service_created",
+        "restarting": "service_restarting",
+        "paused": "service_paused",
+        "removing": "service_removing",
+    }.get(state)
+    if classification is None:
+        raise JourneyError("compose_stack_diagnostic_output_rejected")
+    return classification
+
+
 def _start_normal_stack(
     state: JourneyState,
     executor: CommandExecutor,
@@ -1133,25 +1387,28 @@ def _start_normal_stack(
     ):
         raise JourneyError("journey_image_identity_invalid")
     deadline = time.monotonic() + poll_seconds
+    last_probe = StackProbeCycle(
+        api_healthz="probe_unavailable",
+        authenticated_system_status="probe_unavailable",
+        ui="probe_unavailable",
+        system_status=None,
+        ui_health=None,
+    )
     while time.monotonic() < deadline:
-        try:
-            health = api.get("/healthz", admin=False)
-            status = api.get("/system/status")
-            ui_health = ui.health()
-            if (
-                health == {"status": "ok", "service": "ithildin-api"}
-                and status.get("status") == "ok"
-                and ui_health
-                == {
-                    "ui_http_status": 200,
-                    "ui_content_type": "text/html",
-                    "ui_shell_observed": True,
-                }
-            ):
-                break
-        except JourneyError:
-            time.sleep(0.25)
+        last_probe = _probe_stack_cycle(api, ui)
+        if last_probe.ready:
+            break
+        time.sleep(0.25)
     else:
+        state.failure_diagnostic = _collect_stack_diagnostic(
+            executor,
+            state.compose,
+            last_probe,
+        )
+        raise JourneyError("compose_stack_health_timeout")
+    status = last_probe.system_status
+    ui_health = last_probe.ui_health
+    if status is None or ui_health is None:
         raise JourneyError("compose_stack_health_timeout")
     if status.get("tool_count") != 24:
         raise JourneyError("governed_tool_count_changed")
@@ -1455,7 +1712,23 @@ def _report(
         "nonclaims": nonclaims_json_value(),
     }
     if failure_code is not None:
-        report["failure"] = {"code": failure_code, "details_recorded": False}
+        failure: JsonObject = {"code": failure_code, "details_recorded": False}
+        if failure_code == "compose_stack_health_timeout":
+            diagnostic = state.failure_diagnostic
+            if diagnostic is None:
+                diagnostic = _inconclusive_stack_diagnostic(
+                    StackProbeCycle(
+                        api_healthz="probe_unavailable",
+                        authenticated_system_status="probe_unavailable",
+                        ui="probe_unavailable",
+                        system_status=None,
+                        ui_health=None,
+                    ),
+                    output_rejected=False,
+                )
+            validate_stack_diagnostic(diagnostic)
+            failure["diagnostic"] = diagnostic
+        report["failure"] = failure
     return report
 
 
@@ -1465,6 +1738,7 @@ def _write_reports(
     *,
     secrets_to_reject: tuple[str, ...],
 ) -> None:
+    validate_failure_record(report)
     json_text = json.dumps(report, indent=2, sort_keys=True) + "\n"
     markdown_text = render_markdown(report)
     _scan_safe_texts((json_text, markdown_text), secrets_to_reject)
@@ -1568,6 +1842,14 @@ def _validate_subprocess_command(command: tuple[str, ...]) -> None:
     allowed_exact = {
         ("--profile", "node", "config", "--quiet"),
         ("up", "--build", "--detach", "ithildin-api", "ithildin-ui"),
+        (
+            "ps",
+            "--all",
+            "--format",
+            STACK_DIAGNOSTIC_FORMAT,
+            "ithildin-api",
+            "ithildin-ui",
+        ),
         ("--profile", "node", "build", "ithildin-node"),
         ("--profile", "node", "up", "--detach", "--no-deps", "ithildin-node"),
         ("--profile", "node", "stop", "ithildin-node"),
