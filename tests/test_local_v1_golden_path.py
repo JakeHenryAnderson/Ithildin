@@ -59,7 +59,20 @@ def test_golden_path_contract_stage_rejects_stale_completion_status() -> None:
     contract = (ROOT / local_v1_golden_path_check.CONTRACT_REL).read_text(
         encoding="utf-8"
     )
-    stale = contract.replace(
+    in_progress = (
+        contract.replace(
+            "Critical-path milestones complete: `2/8`",
+            "Critical-path milestones complete: `1/8`",
+            1,
+        )
+        .replace("Active next action: `LV1-002`", "Active next action: `LV1-001`", 1)
+        .replace(
+            "| `LV1-001` | Golden local path assembly | `complete` |",
+            "| `LV1-001` | Golden local path assembly | `in_progress` |",
+            1,
+        )
+    )
+    stale = in_progress.replace(
         "| `LV1-001` | Golden local path assembly | `in_progress` |",
         "| `LV1-001` | Golden local path assembly | `complete` |",
         1,
