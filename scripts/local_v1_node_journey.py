@@ -575,7 +575,7 @@ class ComposePlan:
         )
 
     def cleanup(self, *, remove_volumes: bool) -> tuple[str, ...]:
-        tail = ["down", "--remove-orphans"]
+        tail = ["--profile", "node", "down", "--remove-orphans"]
         if remove_volumes:
             tail.append("--volumes")
         return self.command(*tail)
@@ -637,6 +637,13 @@ class LocalApi:
         if path == "/system/status":
             return _project_system_status(
                 cast(JsonObject, document),
+                secrets_to_reject=(self._admin_token,),
+            )
+        node_inventory = re.fullmatch(r"/nodes/(node_[0-9a-f]{32})", path)
+        if method == "GET" and admin and node_inventory is not None:
+            return _project_node_inventory(
+                cast(JsonObject, document),
+                expected_node_id=node_inventory.group(1),
                 secrets_to_reject=(self._admin_token,),
             )
         try:
@@ -708,6 +715,166 @@ def _projected_system_status_text(
         or any(secret and secret in value for secret in secrets_to_reject)
     ):
         raise JourneyError("gateway_system_status_invalid")
+    return value
+
+
+def _project_node_inventory(
+    document: JsonObject,
+    *,
+    expected_node_id: str,
+    secrets_to_reject: tuple[str, ...] = (),
+) -> JsonObject:
+    """Project only Node identity and synchronization truth used by this journey."""
+
+    required = {
+        "node_id",
+        "principal_id",
+        "workspace_id",
+        "identity_source",
+        "evidence_status",
+        "desired_configuration_generation",
+        "desired_configuration_digest",
+        "acknowledged_configuration_generation",
+        "acknowledged_configuration_digest",
+        "last_configuration_digest",
+        "configuration_acknowledgment_status",
+        "configuration_state",
+        "observed_state",
+        "connectivity_source",
+        "runner_health_known",
+        "model_health_known",
+    }
+    if not required.issubset(document):
+        raise JourneyError("gateway_node_inventory_invalid")
+    node_id = _project_node_text(
+        document.get("node_id"),
+        pattern=_NODE_ID,
+        secrets_to_reject=secrets_to_reject,
+    )
+    if node_id != expected_node_id:
+        raise JourneyError("gateway_node_inventory_invalid")
+    projected: JsonObject = {
+        "node_id": node_id,
+        "principal_id": _project_node_text(
+            document.get("principal_id"),
+            pattern=_SAFE_ID,
+            secrets_to_reject=secrets_to_reject,
+        ),
+        "workspace_id": _project_node_text(
+            document.get("workspace_id"),
+            pattern=_SAFE_ID,
+            secrets_to_reject=secrets_to_reject,
+        ),
+        "identity_source": _project_node_text(
+            document.get("identity_source"),
+            pattern=_SYSTEM_STATUS_TEXT,
+            secrets_to_reject=secrets_to_reject,
+        ),
+        "evidence_status": _project_node_text(
+            document.get("evidence_status"),
+            pattern=_SYSTEM_STATUS_TEXT,
+            secrets_to_reject=secrets_to_reject,
+        ),
+        "desired_configuration_generation": _project_node_generation(
+            document.get("desired_configuration_generation")
+        ),
+        "desired_configuration_digest": _project_node_digest(
+            document.get("desired_configuration_digest"),
+            secrets_to_reject=secrets_to_reject,
+        ),
+        "acknowledged_configuration_generation": _project_node_generation(
+            document.get("acknowledged_configuration_generation")
+        ),
+        "acknowledged_configuration_digest": _project_node_digest(
+            document.get("acknowledged_configuration_digest"),
+            secrets_to_reject=secrets_to_reject,
+        ),
+        "last_configuration_digest": _project_node_digest(
+            document.get("last_configuration_digest"),
+            secrets_to_reject=secrets_to_reject,
+        ),
+        "configuration_acknowledgment_status": _project_node_optional_text(
+            document.get("configuration_acknowledgment_status"),
+            secrets_to_reject=secrets_to_reject,
+        ),
+        "configuration_state": _project_node_text(
+            document.get("configuration_state"),
+            pattern=_SYSTEM_STATUS_TEXT,
+            secrets_to_reject=secrets_to_reject,
+        ),
+        "observed_state": _project_node_text(
+            document.get("observed_state"),
+            pattern=_SYSTEM_STATUS_TEXT,
+            secrets_to_reject=secrets_to_reject,
+        ),
+        "connectivity_source": _project_node_text(
+            document.get("connectivity_source"),
+            pattern=_SYSTEM_STATUS_TEXT,
+            secrets_to_reject=secrets_to_reject,
+        ),
+        "runner_health_known": _project_node_bool(document.get("runner_health_known")),
+        "model_health_known": _project_node_bool(document.get("model_health_known")),
+    }
+    return projected
+
+
+def _project_node_text(
+    value: object,
+    *,
+    pattern: re.Pattern[str],
+    secrets_to_reject: tuple[str, ...],
+) -> str:
+    if (
+        not isinstance(value, str)
+        or not pattern.fullmatch(value)
+        or _SYSTEM_STATUS_SECRET_TEXT.search(value)
+        or any(secret and secret in value for secret in secrets_to_reject)
+    ):
+        raise JourneyError("gateway_node_inventory_invalid")
+    return value
+
+
+def _project_node_optional_text(
+    value: object,
+    *,
+    secrets_to_reject: tuple[str, ...],
+) -> str | None:
+    if value is None:
+        return None
+    return _project_node_text(
+        value,
+        pattern=_SYSTEM_STATUS_TEXT,
+        secrets_to_reject=secrets_to_reject,
+    )
+
+
+def _project_node_generation(value: object) -> int | None:
+    if value is None:
+        return None
+    if not isinstance(value, int) or isinstance(value, bool) or value < 1:
+        raise JourneyError("gateway_node_inventory_invalid")
+    return value
+
+
+def _project_node_digest(
+    value: object,
+    *,
+    secrets_to_reject: tuple[str, ...],
+) -> str | None:
+    if value is None:
+        return None
+    if (
+        not isinstance(value, str)
+        or not _DIGEST.fullmatch(value)
+        or any(secret and secret in value for secret in secrets_to_reject)
+    ):
+        raise JourneyError("gateway_node_inventory_invalid")
+    return value
+
+
+def _project_node_bool(value: object) -> bool:
+    if not isinstance(value, bool):
+        raise JourneyError("gateway_node_inventory_invalid")
     return value
 
 
@@ -1937,8 +2104,8 @@ def _validate_subprocess_command(command: tuple[str, ...]) -> None:
         ("--profile", "node", "build", "ithildin-node"),
         ("--profile", "node", "up", "--detach", "--no-deps", "ithildin-node"),
         ("--profile", "node", "stop", "ithildin-node"),
-        ("down", "--remove-orphans"),
-        ("down", "--remove-orphans", "--volumes"),
+        ("--profile", "node", "down", "--remove-orphans"),
+        ("--profile", "node", "down", "--remove-orphans", "--volumes"),
     }
     if tail in allowed_exact:
         return

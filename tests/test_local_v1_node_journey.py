@@ -80,6 +80,7 @@ class FakeExecutor:
         self.diagnostic_returncode = diagnostic_returncode
         self.diagnostic_stdout = diagnostic_stdout
         self.diagnostic_stderr = diagnostic_stderr
+        self.profile_volume_present = False
 
     def run(
         self,
@@ -96,10 +97,14 @@ class FakeExecutor:
             raise self.interrupt
         if command == ("docker", "version", "--format", "{{json .Server.Version}}"):
             return journey.CommandResult(0, '"27.0.0"\n', "")
-        if command[:2] == ("docker", "ps") or command[:3] in {
-            ("docker", "volume", "ls"),
-            ("docker", "network", "ls"),
-        }:
+        if command[:3] == ("docker", "volume", "ls"):
+            volume = "synthetic-node-state-volume\n" if self.profile_volume_present else ""
+            return journey.CommandResult(0, self.residue or volume, "")
+        if command[:2] == ("docker", "ps") or command[:3] == (
+            "docker",
+            "network",
+            "ls",
+        ):
             return journey.CommandResult(0, self.residue, "")
         if command[:3] == ("docker", "image", "ls"):
             reference = command[6].removeprefix("reference=")
@@ -114,6 +119,7 @@ class FakeExecutor:
             self.images.pop(command[3], None)
             return journey.CommandResult(0, "", "")
         if "enroll" in tail:
+            self.profile_volume_present = True
             return journey.CommandResult(
                 self.enroll_returncode,
                 self.enroll_stdout,
@@ -143,6 +149,10 @@ class FakeExecutor:
                 "",
                 "synthetic build result",
             )
+        if tail[:4] == ("--profile", "node", "down", "--remove-orphans"):
+            if "--volumes" in tail:
+                self.profile_volume_present = False
+            return journey.CommandResult(0, "", "")
         return journey.CommandResult(0, "", "")
 
 
@@ -306,6 +316,54 @@ def load_run_report(report_root: Path) -> JsonObject:
     return value
 
 
+def production_node_inventory(*, assigned: bool) -> JsonObject:
+    generation = 1 if assigned else None
+    digest = DIGEST if assigned else None
+    return {
+        "node_id": NODE_ID,
+        "principal_id": PRINCIPAL_ID,
+        "workspace_id": "demo",
+        "identity_source": "gateway_derived",
+        "evidence_status": "complete",
+        "desired_configuration_generation": generation,
+        "desired_configuration_digest": digest,
+        "acknowledged_configuration_generation": generation,
+        "acknowledged_configuration_digest": digest,
+        "last_configuration_digest": digest,
+        "configuration_acknowledgment_status": (
+            "stored_not_enforced" if assigned else None
+        ),
+        "configuration_state": (
+            CONFIGURATION_STATE_STORED_CURRENT_NOT_ENFORCED
+            if assigned
+            else "unassigned"
+        ),
+        "observed_state": (
+            NODE_OBSERVED_STATE_CONNECTED if assigned else "never_observed"
+        ),
+        "connectivity_source": "gateway_accepted_heartbeat",
+        "runner_health_known": False,
+        "model_health_known": False,
+        "descriptor": {
+            "runner_adapter": "hermes",
+            "private_key_received": False,
+        },
+        "public_key": "ignored-public-key-material",
+        "active_identity_key_id": "ignored-identity-key-id",
+        "configuration_signing_key_id": "ignored-configuration-key-id",
+        "identity_key_rotation": {
+            "status": "none",
+            "private_key_received": False,
+        },
+        "governed_access": {
+            "state": "ready",
+            "authorization_profile": "read_only_governed",
+            "allowed_risks": ["read"],
+            "offline_fallback_allowed": False,
+        },
+    }
+
+
 def test_successful_fake_journey_writes_exact_checkable_redacted_evidence(
     isolated_roots: tuple[Path, Path],
 ) -> None:
@@ -343,6 +401,15 @@ def test_successful_fake_journey_writes_exact_checkable_redacted_evidence(
         "ithildin-local-v1-node-aaaaaaaa-ithildin-ui",
         "ithildin/node-journey:aaaaaaaa",
     }
+    assert executor.profile_volume_present is False
+    cleanup_calls = [
+        command[10:]
+        for command, _ in executor.commands
+        if command[10:13] == ("--profile", "node", "down")
+    ]
+    assert cleanup_calls == [
+        ("--profile", "node", "down", "--remove-orphans", "--volumes")
+    ]
     assert all("ithildin/node:local" not in command for command, _ in executor.commands)
     assert reports == report_root.parent
 
@@ -362,9 +429,14 @@ def test_enrollment_failure_retains_recovery_state_and_never_removes_volumes(
     markdown = (journey.REPORT_BASE / RUN_ID / journey.REPORT_MARKDOWN).read_text()
     assert "Candidate commit at finish observed: `None`" in markdown
     assert "Candidate finish observation completed: `false`" in markdown
-    down = [command for command, _ in executor.commands if command[10:11] == ("down",)]
+    down = [
+        command
+        for command, _ in executor.commands
+        if command[10:13] == ("--profile", "node", "down")
+    ]
     assert down
     assert all("--volumes" not in command for command in down)
+    assert executor.profile_volume_present is True
 
 
 def test_pre_docker_interrupt_removes_isolated_runtime_and_writes_safe_failure(
@@ -403,7 +475,11 @@ def test_interrupt_during_enrollment_preserves_possible_remote_contact(
     assert (runtime / RUN_ID).exists()
     report = load_run_report(journey.REPORT_BASE / RUN_ID)
     assert report["cleanup"]["recovery_required"] is True  # type: ignore[index]
-    down = [command for command, _ in executor.commands if command[10:11] == ("down",)]
+    down = [
+        command
+        for command, _ in executor.commands
+        if command[10:13] == ("--profile", "node", "down")
+    ]
     assert down and all("--volumes" not in command for command in down)
 
 
@@ -1056,6 +1132,219 @@ def test_system_status_projection_failure_is_absent_from_reports_and_cli(
     assert output.err.strip() == (
         "Local-v1 Node journey failed closed: gateway_system_status_invalid"
     )
+
+
+@pytest.mark.parametrize("assigned", [False, True])
+def test_node_inventory_uses_closed_projection_before_generic_secret_guard(
+    monkeypatch: pytest.MonkeyPatch,
+    assigned: bool,
+) -> None:
+    source = production_node_inventory(assigned=assigned)
+
+    class Response:
+        status = 200
+        headers = Message()
+
+        def __enter__(self) -> Response:
+            return self
+
+        def __exit__(
+            self,
+            exc_type: type[BaseException] | None,
+            exc: BaseException | None,
+            traceback: TracebackType | None,
+        ) -> None:
+            del exc_type, exc, traceback
+
+        def read(self, size: int) -> bytes:
+            del size
+            return json.dumps(source).encode()
+
+    monkeypatch.setattr(journey.urllib.request, "urlopen", lambda *a, **k: Response())
+    projected = journey.LocalApi("safe-private-admin").get(f"/nodes/{NODE_ID}")
+    assert set(projected) == {
+        "node_id",
+        "principal_id",
+        "workspace_id",
+        "identity_source",
+        "evidence_status",
+        "desired_configuration_generation",
+        "desired_configuration_digest",
+        "acknowledged_configuration_generation",
+        "acknowledged_configuration_digest",
+        "last_configuration_digest",
+        "configuration_acknowledgment_status",
+        "configuration_state",
+        "observed_state",
+        "connectivity_source",
+        "runner_health_known",
+        "model_health_known",
+    }
+    assert projected["node_id"] == NODE_ID
+    assert projected["desired_configuration_generation"] == (1 if assigned else None)
+    serialized = json.dumps(projected)
+    for ignored in (
+        "authorization_profile",
+        "private_key_received",
+        "ignored-public-key-material",
+        "ignored-identity-key-id",
+        "ignored-configuration-key-id",
+        "governed_access",
+    ):
+        assert ignored not in serialized
+
+
+@pytest.mark.parametrize(
+    ("path", "value"),
+    [
+        (("node_id",), "node_" + "f" * 32),
+        (("principal_id",), "agent:token.secret"),
+        (("workspace_id",), "admin_token_workspace"),
+        (("identity_source",), "private_key_source"),
+        (("evidence_status",), "credential_pending"),
+        (("desired_configuration_generation",), True),
+        (("desired_configuration_generation",), 0),
+        (("desired_configuration_digest",), "secret_digest"),
+        (("acknowledged_configuration_generation",), "1"),
+        (("acknowledged_configuration_digest",), "token_digest"),
+        (("last_configuration_digest",), "not-a-digest"),
+        (("configuration_acknowledgment_status",), "authorization_pending"),
+        (("configuration_state",), "secret_state"),
+        (("observed_state",), "password_state"),
+        (("connectivity_source",), "bearer_source"),
+        (("runner_health_known",), 0),
+        (("model_health_known",), "false"),
+    ],
+)
+def test_node_inventory_projection_rejects_hostile_required_fields(
+    path: tuple[str, ...],
+    value: object,
+) -> None:
+    document = production_node_inventory(assigned=True)
+    target: object = document
+    for part in path[:-1]:
+        assert isinstance(target, dict)
+        target = target[part]
+    assert isinstance(target, dict)
+    target[path[-1]] = value
+    with pytest.raises(journey.JourneyError) as captured:
+        journey._project_node_inventory(
+            document,
+            expected_node_id=NODE_ID,
+        )
+    assert captured.value.code == "gateway_node_inventory_invalid"
+    assert str(value) not in str(captured.value)
+
+
+def test_node_inventory_projection_rejects_missing_and_opaque_admin_secret() -> None:
+    missing = production_node_inventory(assigned=False)
+    del missing["desired_configuration_digest"]
+    with pytest.raises(journey.JourneyError, match="gateway_node_inventory_invalid"):
+        journey._project_node_inventory(missing, expected_node_id=NODE_ID)
+
+    opaque_secret = "opaqueadminvalue"
+    secret = production_node_inventory(assigned=False)
+    secret["workspace_id"] = opaque_secret
+    with pytest.raises(journey.JourneyError) as captured:
+        journey._project_node_inventory(
+            secret,
+            expected_node_id=NODE_ID,
+            secrets_to_reject=(opaque_secret,),
+        )
+    assert captured.value.code == "gateway_node_inventory_invalid"
+    assert opaque_secret not in str(captured.value)
+
+    digest_secret = DIGEST
+    secret_digest = production_node_inventory(assigned=True)
+    with pytest.raises(journey.JourneyError) as digest_captured:
+        journey._project_node_inventory(
+            secret_digest,
+            expected_node_id=NODE_ID,
+            secrets_to_reject=(digest_secret,),
+        )
+    assert digest_captured.value.code == "gateway_node_inventory_invalid"
+    assert digest_secret not in str(digest_captured.value)
+
+
+def test_projected_node_inventory_preserves_identity_binding_failure_code() -> None:
+    source = production_node_inventory(assigned=False)
+    source["principal_id"] = "agent:node.node_" + "2" * 32
+    projected = journey._project_node_inventory(
+        source,
+        expected_node_id=NODE_ID,
+    )
+    with pytest.raises(journey.JourneyError) as captured:
+        journey._verify_gateway_identity(
+            projected,
+            NODE_ID,
+            PRINCIPAL_ID,
+            "demo",
+        )
+    assert captured.value.code == "gateway_identity_binding_invalid"
+
+
+def test_node_inventory_projection_failure_is_nonreflective_and_revoked(
+    isolated_roots: tuple[Path, Path],
+) -> None:
+    secret = "authorization_profile_do_not_reflect"
+
+    class ProjectionFailureApi(FakeApi):
+        def get(self, path: str, *, admin: bool = True) -> JsonObject:
+            if path == f"/nodes/{NODE_ID}":
+                source = production_node_inventory(assigned=False)
+                source["workspace_id"] = secret
+                return journey._project_node_inventory(
+                    source,
+                    expected_node_id=NODE_ID,
+                )
+            return super().get(path, admin=admin)
+
+    with pytest.raises(journey.JourneyError) as failed:
+        run_fake(api_factory=ProjectionFailureApi)
+    assert failed.value.code == "gateway_node_inventory_invalid"
+    report_root = journey.REPORT_BASE / RUN_ID
+    report = load_run_report(report_root)
+    assert report["failure"] == {
+        "code": "gateway_node_inventory_invalid",
+        "details_recorded": False,
+    }
+    assert report["cleanup"]["revocation_succeeded"] is True  # type: ignore[index]
+    assert report["cleanup"]["recovery_required"] is False  # type: ignore[index]
+    emitted = (
+        (report_root / journey.REPORT_JSON).read_text()
+        + (report_root / journey.REPORT_MARKDOWN).read_text()
+    )
+    assert secret not in emitted
+
+
+def test_projected_production_node_inventory_preserves_success_evidence_schema(
+    isolated_roots: tuple[Path, Path],
+) -> None:
+    class ProjectingApi(FakeApi):
+        def get(self, path: str, *, admin: bool = True) -> JsonObject:
+            if path == f"/nodes/{NODE_ID}":
+                return journey._project_node_inventory(
+                    production_node_inventory(assigned=True),
+                    expected_node_id=NODE_ID,
+                )
+            return super().get(path, admin=admin)
+
+    report_root = run_fake(api_factory=ProjectingApi)
+    report = checker.check_report(report_root, expected_candidate=COMMIT, now=NOW)
+    assert report["result"] == "passed"
+    assert "failure" not in report
+    assert set(report) == {
+        "schema_version",
+        "run_id",
+        "result",
+        "provenance",
+        "last_stage",
+        "observations",
+        "cleanup",
+        "redaction_scan",
+        "authority",
+        "nonclaims",
+    }
 
 
 def test_local_ui_http_rejection_has_closed_probe_category(
@@ -1869,6 +2158,23 @@ def test_compose_command_and_http_allowlists_are_closed(
         "ithildin-api",
         "ithildin-ui",
     )
+    assert plan.cleanup(remove_volumes=False)[10:] == (
+        "--profile",
+        "node",
+        "down",
+        "--remove-orphans",
+    )
+    assert plan.cleanup(remove_volumes=True)[10:] == (
+        "--profile",
+        "node",
+        "down",
+        "--remove-orphans",
+        "--volumes",
+    )
+    with pytest.raises(journey.JourneyError, match="subprocess_command_not_allowed"):
+        journey._validate_subprocess_command(
+            plan.command("--profile", "other", "down", "--volumes")
+        )
     diagnostic_text = plan.stack_diagnostic()[13]
     for forbidden in (
         "json",
