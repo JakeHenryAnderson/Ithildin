@@ -80,6 +80,11 @@ EXPECTED_KEYS = {
     "bridge_source_identity",
     "bridge_entrypoint",
     "bridge_arguments",
+    "model_provider",
+    "model_base_url",
+    "model_name",
+    "allowed_environment_names",
+    "working_directory",
     "governed_tools",
     "bridge_affordances",
     "local_protocol",
@@ -97,6 +102,20 @@ EXPECTED_KEYS = {
     "tmpfs_mib",
     "per_file_mib",
     "writable_disk_mib",
+    "runner_root_filesystem_read_only",
+    "runner_writable_tmpfs",
+    "runner_persistent_session_volume",
+    "runner_logging_driver",
+    "runner_raw_logging_allowed",
+    "runner_memory_enabled",
+    "runner_verbose_enabled",
+    "plaintext_lifetime_seconds",
+    "cleanup_owner",
+    "cleanup_evidence_fields",
+    "failed_cleanup_blocks_retry",
+    "build_identity_fields",
+    "same_candidate_equality_fields",
+    "o4_harness_identity_binding_required",
     "profile_input_source",
     "prompt_custody",
     "ambiguity_policy",
@@ -147,6 +166,11 @@ def build_report(repo_root: Path) -> dict[str, Any]:
             "ithildin_node_mcp_bridge",
         ],
         "bridge_arguments": [],
+        "model_provider": "custom",
+        "model_base_url": "http://host.docker.internal:11434/v1",
+        "model_name": "gemma4:e4b",
+        "allowed_environment_names": [],
+        "working_directory": "/opt/data/scratch",
         "governed_tools": GOVERNED_TOOLS,
         "bridge_affordances": BRIDGE_AFFORDANCES,
         "local_protocol": "unix_domain_socket_canonical_json_v1",
@@ -171,6 +195,50 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "tmpfs_mib": 256,
         "per_file_mib": 16,
         "writable_disk_mib": 256,
+        "runner_root_filesystem_read_only": True,
+        "runner_writable_tmpfs": {
+            "/opt/data/scratch": {"mib": 128, "mode": "0700"},
+            "/tmp": {"mib": 128, "mode": "0700"},
+        },
+        "runner_persistent_session_volume": False,
+        "runner_logging_driver": "none",
+        "runner_raw_logging_allowed": False,
+        "runner_memory_enabled": False,
+        "runner_verbose_enabled": False,
+        "plaintext_lifetime_seconds": 900,
+        "cleanup_owner": "operator_profile_teardown",
+        "cleanup_evidence_fields": [
+            "profile_digest",
+            "runner_image_digest",
+            "node_image_digest",
+            "read_only_root",
+            "logging_driver",
+            "tmpfs_limits",
+            "container_absent",
+            "persistent_profile_volume_absent",
+        ],
+        "failed_cleanup_blocks_retry": True,
+        "build_identity_fields": [
+            "candidate_commit",
+            "candidate_tree",
+            "clean_before_bridge_build",
+            "clean_after_bridge_build",
+            "clean_before_node_build",
+            "clean_after_node_build",
+            "bridge_source_digest",
+            "node_source_digest",
+            "dependency_lock_digest",
+            "hermes_oci_index_digest",
+            "hermes_platform_digest",
+            "profile_digest",
+            "bridge_image_digest",
+            "node_image_digest",
+            "platform",
+            "sbom_digest",
+            "license_receipt_digest",
+        ],
+        "same_candidate_equality_fields": ["candidate_commit", "candidate_tree"],
+        "o4_harness_identity_binding_required": True,
         "profile_input_source": "operator_fixed_immutable_image_profile",
         "prompt_custody": "operator_fixed_profile_only_not_gateway_evidence",
         "ambiguity_policy": "no_automatic_retry_reassignment_or_finalization",
@@ -288,6 +356,13 @@ def _validate_text(
         "model correctness, output quality",
         "malicious process already running",
         "There is no automatic claim, handoff, operation",
+        "clean-source observations before",
+        "same candidate commit and tree",
+        "read-only root filesystem",
+        "Docker logging driver `none`",
+        "no persistent session or data volume",
+        "operator owns teardown and deletion",
+        "failed removal blocks retry",
         "Ithildin does not enforce or claim provider-network non-bypass",
         "post-review authorization record",
     )
@@ -312,10 +387,26 @@ def _validate_wiring(repo_root: Path, failures: list[str]) -> None:
     docs_site = _read(repo_root / "scripts/build_docs_site.py", failures)
     review_docs = _read(repo_root / "scripts/review_docs.py", failures)
     review_index = _read(repo_root / "docs/codex/review-docs-index.md", failures)
-    if f"{TARGET}:" not in makefile:
+    if not any(line.startswith(f"{TARGET}:") for line in makefile.splitlines()):
         failures.append(f"Make target is missing: {TARGET}")
-    if TARGET not in makefile.split("release-check:", 1)[-1]:
-        failures.append("runner-bridge decision check is missing from release-check")
+    milestone_invocation = f"\t$(MAKE) {TARGET}"
+    milestone_body = _target_body(makefile, "local-v1-milestone-check")
+    if milestone_body.count(milestone_invocation) != 1:
+        failures.append(
+            "runner-bridge decision check must occur exactly once in "
+            "local-v1-milestone-check"
+        )
+    release_dependencies = [
+        dependency
+        for line in makefile.splitlines()
+        if line.startswith("release-check:")
+        for dependency in line.split(":", 1)[1].split()
+    ]
+    if release_dependencies.count(TARGET) != 1:
+        failures.append(
+            "runner-bridge decision check must occur exactly once as a "
+            "release-check dependency"
+        )
     for label, text in (
         ("README", readme),
         ("docs site", docs_site),
@@ -324,6 +415,23 @@ def _validate_wiring(repo_root: Path, failures: list[str]) -> None:
     ):
         if DECISION not in text and Path(DECISION).name not in text:
             failures.append(f"{label} is missing the runner-bridge capability decision")
+
+
+def _target_body(makefile: str, target: str) -> str:
+    lines = makefile.splitlines()
+    for index, line in enumerate(lines):
+        if not line.startswith(f"{target}:"):
+            continue
+        body: list[str] = []
+        for candidate in lines[index + 1 :]:
+            if candidate.startswith("\t"):
+                body.append(candidate)
+                continue
+            if not candidate.strip():
+                break
+            break
+        return "\n".join(body)
+    return ""
 
 
 def _read(path: Path, failures: list[str]) -> str:

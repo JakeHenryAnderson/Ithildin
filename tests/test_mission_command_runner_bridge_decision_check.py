@@ -9,6 +9,9 @@ from scripts import mission_command_runner_bridge_decision_check as decision_che
 
 def test_live_runner_bridge_decision_is_selected_but_not_authorized() -> None:
     report = decision_check.build_report(Path("."))
+    contract = decision_check._contract(  # noqa: SLF001
+        Path(decision_check.DECISION).read_text(encoding="utf-8")
+    )
 
     assert report["valid"] is True, report["failures"]
     assert report["tool_count"] == 24
@@ -19,6 +22,14 @@ def test_live_runner_bridge_decision_is_selected_but_not_authorized() -> None:
     assert report["arbitrary_host_control_authorized"] is False
     assert report["exact_candidate_review_required"] is True
     assert report["post_review_authorization_required"] is True
+    assert contract["same_candidate_equality_fields"] == [
+        "candidate_commit",
+        "candidate_tree",
+    ]
+    assert contract["runner_root_filesystem_read_only"] is True
+    assert contract["runner_persistent_session_volume"] is False
+    assert contract["runner_logging_driver"] == "none"
+    assert contract["failed_cleanup_blocks_retry"] is True
 
 
 def test_runner_bridge_decision_rejects_authority_rise(tmp_path: Path) -> None:
@@ -87,6 +98,44 @@ def test_runner_bridge_decision_reads_actual_tool_count(tmp_path: Path) -> None:
     assert report["valid"] is False
     assert report["tool_count"] == 23
     assert "actual governed tool count changed: 23" in report["failures"]
+
+
+def test_runner_bridge_decision_requires_local_v1_milestone_wiring(
+    tmp_path: Path,
+) -> None:
+    repo = _copy_inputs(tmp_path)
+    makefile_path = repo / "Makefile"
+    makefile_path.write_text(
+        makefile_path.read_text(encoding="utf-8").replace(
+            "\t$(MAKE) mission-command-runner-bridge-decision-check\n",
+            "",
+            1,
+        ),
+        encoding="utf-8",
+    )
+
+    report = decision_check.build_report(repo)
+
+    assert report["valid"] is False
+    assert any("local-v1-milestone-check" in failure for failure in report["failures"])
+
+
+def test_runner_bridge_decision_requires_exact_release_wiring(tmp_path: Path) -> None:
+    repo = _copy_inputs(tmp_path)
+    makefile_path = repo / "Makefile"
+    makefile_path.write_text(
+        makefile_path.read_text(encoding="utf-8").replace(
+            "release-check: mission-command-runner-bridge-decision-check\n",
+            "unrelated-check: mission-command-runner-bridge-decision-check\n",
+            1,
+        ),
+        encoding="utf-8",
+    )
+
+    report = decision_check.build_report(repo)
+
+    assert report["valid"] is False
+    assert any("release-check dependency" in failure for failure in report["failures"])
 
 
 def _copy_inputs(tmp_path: Path) -> Path:
