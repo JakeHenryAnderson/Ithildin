@@ -19,9 +19,14 @@ TARGET = "mission-command-runner-bridge-authorization-check"
 AUTHORIZATION = "docs/codex/mission-command-runner-bridge-authorization-record.md"
 START = "<!-- mission-command-runner-bridge-authorization:start -->"
 END = "<!-- mission-command-runner-bridge-authorization:end -->"
-REVIEWED_COMMIT = "6cc8a4f1f9deceee231b185cf0d7f0acd63bb313"
-REVIEWED_TREE = "542f6d3b146b8bb5fa07f7cd73f80329d6de8ab6"
-DECISION_DIGEST = "sha256:3edb0ce71c01e9e3763a622642ab531b64bfa1d001575e9cad9a601f05101b98"
+PREVIOUS_REVIEWED_COMMIT = "6cc8a4f1f9deceee231b185cf0d7f0acd63bb313"
+PREVIOUS_REVIEWED_TREE = "542f6d3b146b8bb5fa07f7cd73f80329d6de8ab6"
+PREVIOUS_DECISION_DIGEST = (
+    "sha256:3edb0ce71c01e9e3763a622642ab531b64bfa1d001575e9cad9a601f05101b98"
+)
+CURRENT_DECISION_DIGEST = (
+    "sha256:2a5792c80b672e9e44b24e9ef1e7201990386c90c89e496f17ac2073e04efc72"
+)
 ALLOWED_RUNTIME_PATHS = decision_check.IMPLEMENTATION_PATHS
 FORBIDDEN_RUNTIME_PATHS = [
     "pyproject.toml",
@@ -32,13 +37,13 @@ FORBIDDEN_RUNTIME_PATHS = [
     "tool-manifests.lock.json",
 ]
 TRUE_FIELDS = (
-    "code_implementation_authorized",
-    "runtime_adapter_code_authorized",
-    "runner_bridge_code_authorized",
     "exact_implementation_review_required",
     "separate_live_evidence_authorization_required",
 )
 FALSE_FIELDS = (
+    "code_implementation_authorized",
+    "runtime_adapter_code_authorized",
+    "runner_bridge_code_authorized",
     "live_hermes_execution_authorized",
     "docker_lifecycle_authorized",
     "o4_evidence_execution_authorized",
@@ -71,14 +76,15 @@ EXPECTED_KEYS = {
     "decision",
     "tool_count",
     "authority_source",
-    "reviewed_candidate_commit",
-    "reviewed_candidate_tree",
-    "decision_sha256",
+    "previous_reviewed_candidate_commit",
+    "previous_reviewed_candidate_tree",
+    "previous_decision_sha256",
+    "current_decision_sha256",
     "review_disposition",
-    "critical_findings",
-    "high_findings",
-    "medium_findings",
-    "low_findings",
+    "superseded_candidate_critical_findings",
+    "superseded_candidate_high_findings",
+    "superseded_candidate_medium_findings",
+    "superseded_candidate_low_findings",
     *TRUE_FIELDS,
     *FALSE_FIELDS,
     "allowed_runtime_paths",
@@ -107,19 +113,31 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     if decision_report["implementation_authorized"] is not False:
         failures.append("decision candidate must remain non-authorizing")
 
-    reviewed_tree = _git(repo_root, ["show", "-s", "--format=%T", REVIEWED_COMMIT], failures)
-    if reviewed_tree != REVIEWED_TREE:
+    reviewed_tree = _git(
+        repo_root,
+        ["show", "-s", "--format=%T", PREVIOUS_REVIEWED_COMMIT],
+        failures,
+    )
+    if reviewed_tree != PREVIOUS_REVIEWED_TREE:
         failures.append("reviewed candidate Git tree does not match authorization")
     reviewed_decision = _git(
         repo_root,
-        ["show", f"{REVIEWED_COMMIT}:{decision_check.DECISION}"],
+        ["show", f"{PREVIOUS_REVIEWED_COMMIT}:{decision_check.DECISION}"],
         failures,
         strip=False,
     )
-    if reviewed_decision and _digest(reviewed_decision) != DECISION_DIGEST:
+    if reviewed_decision and _digest(reviewed_decision) != PREVIOUS_DECISION_DIGEST:
         failures.append("reviewed candidate decision digest does not match authorization")
     ancestry = subprocess.run(
-        ["git", "-C", str(repo_root), "merge-base", "--is-ancestor", REVIEWED_COMMIT, "HEAD"],
+        [
+            "git",
+            "-C",
+            str(repo_root),
+            "merge-base",
+            "--is-ancestor",
+            PREVIOUS_REVIEWED_COMMIT,
+            "HEAD",
+        ],
         check=False,
         capture_output=True,
         text=True,
@@ -134,7 +152,9 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "valid": not failures,
         "failures": failures,
         "tool_count": authorization.get("tool_count"),
-        "reviewed_candidate_commit": authorization.get("reviewed_candidate_commit"),
+        "reviewed_candidate_commit": authorization.get(
+            "previous_reviewed_candidate_commit"
+        ),
         "code_implementation_authorized": authorization.get(
             "code_implementation_authorized"
         ),
@@ -158,23 +178,24 @@ def _validate_contract(
     decision_text: str,
     failures: list[str],
 ) -> None:
-    if _digest(decision_text) != DECISION_DIGEST:
-        failures.append("current runner-bridge decision does not match reviewed digest")
+    if _digest(decision_text) != CURRENT_DECISION_DIGEST:
+        failures.append("current runner-bridge decision does not match review-needed digest")
     expected: dict[str, object] = {
         "document_type": "runner_bridge_authorization_record",
         "schema_version": "1",
         "ticket_id": "MCC-007",
-        "decision": "bounded_code_implementation_authorized",
+        "decision": "combined_candidate_exact_review_required",
         "tool_count": 24,
         "authority_source": "user_local_v1_to_uat_direction_and_standing_delegation",
-        "reviewed_candidate_commit": REVIEWED_COMMIT,
-        "reviewed_candidate_tree": REVIEWED_TREE,
-        "decision_sha256": DECISION_DIGEST,
-        "review_disposition": "GO",
-        "critical_findings": 0,
-        "high_findings": 0,
-        "medium_findings": 0,
-        "low_findings": 0,
+        "previous_reviewed_candidate_commit": PREVIOUS_REVIEWED_COMMIT,
+        "previous_reviewed_candidate_tree": PREVIOUS_REVIEWED_TREE,
+        "previous_decision_sha256": PREVIOUS_DECISION_DIGEST,
+        "current_decision_sha256": CURRENT_DECISION_DIGEST,
+        "review_disposition": "REVIEW_REQUIRED",
+        "superseded_candidate_critical_findings": 0,
+        "superseded_candidate_high_findings": 3,
+        "superseded_candidate_medium_findings": 1,
+        "superseded_candidate_low_findings": 1,
         "allowed_runtime_paths": ALLOWED_RUNTIME_PATHS,
         "forbidden_runtime_paths": FORBIDDEN_RUNTIME_PATHS,
     }
@@ -215,9 +236,10 @@ def _reject_duplicates(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
 
 def _validate_text(text: str, failures: list[str]) -> None:
     for token in (
-        "authorizes only the code, tests, deployment profile, evidence harness",
+        "does not authorize the current code, deployment profile, evidence harness",
         "It does not authorize a live",
-        "rejected decision candidate",
+        "three High, one Medium, and one Low",
+        "prior code-only authorization does not cover",
         "If an implementation owner needs any unauthorized path or power",
         "live-evidence authorization",
         "Sol Ultra remains prohibited",

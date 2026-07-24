@@ -7,8 +7,9 @@ from pathlib import Path
 
 import pytest
 from ithildin_node import service as service_module
-from ithildin_node.client import NodeClientError
+from ithildin_node.client import NodeClientError, StoredNodeConfiguration
 from ithildin_node.service import retry_delay_seconds, run_service, synchronize_once
+from ithildin_schemas import JsonObject
 from test_node_client import RecordingNodeClient
 
 
@@ -71,6 +72,59 @@ def test_service_cycle_persists_verified_configuration_and_reports_without_runne
     assert stat.S_IMODE(configuration_path.stat().st_mode) == 0o600
 
 
+def test_service_fixed_adapter_runs_mission_branch_only_after_configuration_and_heartbeat(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    client = RecordingNodeClient()
+    state = client.enroll(
+        enrollment_code="one-time-code",
+        node_version="0.1.0",
+        runner_adapter="hermes_fixed_node_bridge",
+        deployment_topology="docker_sidecar",
+    )
+    state_path = tmp_path / "node" / "state.json"
+    configuration_path = tmp_path / "node" / "configuration.json"
+    state.write_new(state_path)
+    called: list[tuple[int, str]] = []
+    original_pull = client.pull_configuration_with_state
+    fixed_now = datetime(2026, 7, 16, 12, 5, tzinfo=UTC)
+    monkeypatch.setattr(service_module, "NodeClient", lambda _url: client)
+    monkeypatch.setattr(
+        client,
+        "pull_configuration_with_state",
+        lambda state, known_generation=None: original_pull(
+            state,
+            known_generation=known_generation,
+            now=fixed_now,
+            nonce="7" * 32,
+        ),
+    )
+
+    def fixed_cycle(**values: object) -> JsonObject:
+        configuration = values["configuration"]
+        assert isinstance(configuration, StoredNodeConfiguration)
+        called.append((configuration.generation, str(values["node_version"])))
+        assert client.requests[-1][0].endswith("/heartbeat")
+        return {
+            "status": "no_queued_mission",
+            "runner_state_authority": "runner_reported_only",
+            "model_provider_state_known": False,
+        }
+
+    monkeypatch.setattr(service_module, "run_fixed_mission_cycle", fixed_cycle)
+    result = synchronize_once(
+        state_path=state_path,
+        configuration_path=configuration_path,
+        node_version="0.1.0",
+        runner_adapter="hermes_fixed_node_bridge",
+        deployment_topology="docker_sidecar",
+    )
+
+    assert called == [(1, "0.1.0")]
+    assert result.mission_status == "no_queued_mission"
+    assert result.safe_summary()["runner_execution_authority"] is False
+
+
 def test_service_one_cycle_emits_safe_posture(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
@@ -104,6 +158,31 @@ def test_service_one_cycle_emits_safe_posture(
     assert len(emitted) == 1
     assert '"status": "synchronized"' in emitted[0]
     assert '"runner_execution_authority": false' in emitted[0]
+
+
+def test_fixed_runner_service_refuses_missing_or_second_cycle_before_sync(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    calls: list[object] = []
+    monkeypatch.setattr(
+        service_module,
+        "synchronize_once",
+        lambda **values: calls.append(values),
+    )
+
+    for max_cycles in (None, 2):
+        with pytest.raises(NodeClientError, match="exactly one service cycle"):
+            run_service(
+                state_path=tmp_path / "state.json",
+                configuration_path=tmp_path / "configuration.json",
+                node_version="0.1.0",
+                runner_adapter="hermes_fixed_node_bridge",
+                deployment_topology="docker_sidecar",
+                max_cycles=max_cycles,
+            )
+
+    assert calls == []
 
 
 def test_retry_delay_is_exponential_and_bounded() -> None:

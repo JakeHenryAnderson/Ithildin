@@ -15,6 +15,10 @@ from threading import Event
 from ithildin_schemas import JsonObject
 
 from ithildin_node.client import NodeClient, NodeClientError, NodeState, StoredNodeConfiguration
+from ithildin_node.fixed_runner_bridge import (
+    FIXED_RUNNER_ADAPTER,
+    run_fixed_mission_cycle,
+)
 
 
 @dataclass(frozen=True)
@@ -29,6 +33,7 @@ class NodeServiceCycle:
     heartbeat_interval_seconds: int
     trust_promoted: bool
     verification_trust: str
+    mission_status: str = "not_enabled"
 
     def safe_summary(self) -> JsonObject:
         return {
@@ -41,6 +46,7 @@ class NodeServiceCycle:
             "heartbeat_interval_seconds": self.heartbeat_interval_seconds,
             "configuration_trust_promoted": self.trust_promoted,
             "configuration_verification_trust": self.verification_trust,
+            "mission_status": self.mission_status,
             "runner_execution_authority": False,
             "self_update_authority": False,
         }
@@ -80,6 +86,15 @@ def synchronize_once(
         deployment_topology=deployment_topology,
         configuration_digest=pulled.configuration.configuration_digest,
     )
+    mission_status = "not_enabled"
+    if runner_adapter == FIXED_RUNNER_ADAPTER:
+        mission_result = run_fixed_mission_cycle(
+            client=client,
+            state=pulled.state,
+            configuration=pulled.configuration,
+            node_version=node_version,
+        )
+        mission_status = _response_string(mission_result, "status", "failed_closed")
     return NodeServiceCycle(
         node_id=pulled.state.node_id,
         generation=pulled.configuration.generation,
@@ -91,6 +106,7 @@ def synchronize_once(
         heartbeat_interval_seconds=_heartbeat_interval(pulled.configuration),
         trust_promoted=pulled.trust_promoted,
         verification_trust=pulled.verification_trust,
+        mission_status=mission_status,
     )
 
 
@@ -111,6 +127,8 @@ def run_service(
 
     if max_cycles is not None and max_cycles < 1:
         raise NodeClientError("max cycles must be at least 1")
+    if runner_adapter == FIXED_RUNNER_ADAPTER and max_cycles != 1:
+        raise NodeClientError("fixed runner bridge requires exactly one service cycle")
     if retry_initial_seconds < 1 or retry_max_seconds < retry_initial_seconds:
         raise NodeClientError("retry bounds are invalid")
     effective_stop = stop_event or Event()

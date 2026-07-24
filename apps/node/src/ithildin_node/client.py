@@ -15,7 +15,7 @@ import urllib.request
 from dataclasses import dataclass, replace
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import cast
+from typing import Literal, cast
 
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric.ed25519 import (
@@ -56,6 +56,14 @@ _LOCAL_PREVIEW_HOSTS = {
 
 class NodeClientError(RuntimeError):
     """Raised when the local-preview Node client cannot proceed safely."""
+
+
+class NodeGatewayResponseError(NodeClientError):
+    """A closed HTTP rejection carrying only the status needed for safe branching."""
+
+    def __init__(self, status_code: int) -> None:
+        super().__init__(f"Gateway rejected Node request with HTTP {status_code}")
+        self.status_code = status_code
 
 
 @dataclass(frozen=True)
@@ -899,6 +907,109 @@ class NodeClient:
             nonce=nonce,
         )
 
+    def claim_mission(
+        self,
+        state: NodeState,
+        *,
+        now: datetime | None = None,
+        nonce: str | None = None,
+    ) -> JsonObject | None:
+        """Claim one queued mission through the existing signed closed endpoint."""
+
+        try:
+            return self._signed_post(
+                state,
+                f"/nodes/{state.node_id}/mission-claims",
+                {"protocol_version": NODE_PROTOCOL_VERSION},
+                now=now,
+                nonce=nonce,
+            )
+        except NodeGatewayResponseError as exc:
+            if exc.status_code == 404:
+                return None
+            raise
+
+    def poll_mission_control(
+        self,
+        state: NodeState,
+        *,
+        mission_id: str,
+        claim_id: str,
+        envelope_digest: str,
+        observed_lifecycle_revision: int,
+        now: datetime | None = None,
+        nonce: str | None = None,
+    ) -> JsonObject:
+        """Poll the existing signed control endpoint without local fallback."""
+
+        return self._signed_post(
+            state,
+            f"/nodes/{state.node_id}/mission-control",
+            {
+                "protocol_version": NODE_PROTOCOL_VERSION,
+                "mission_id": mission_id,
+                "claim_id": claim_id,
+                "envelope_digest": envelope_digest,
+                "observed_lifecycle_revision": observed_lifecycle_revision,
+            },
+            now=now,
+            nonce=nonce,
+        )
+
+    def report_mission(
+        self,
+        state: NodeState,
+        *,
+        mission_id: str,
+        claim_id: str,
+        envelope_digest: str,
+        expected_lifecycle_revision: int,
+        report_id: str,
+        report_kind: Literal[
+            "runner_running",
+            "runner_succeeded",
+            "runner_failed",
+            "cancel_observed",
+            "runner_canceled",
+        ],
+        outcome_code: Literal[
+            "started",
+            "succeeded",
+            "failed",
+            "cancellation_observed",
+            "canceled",
+        ],
+        reason_code: Literal[
+            "runner_error",
+            "runner_timeout",
+            "runner_output_invalid",
+            "runner_dependency_unavailable",
+        ]
+        | None = None,
+        artifact_digest: str | None = None,
+        now: datetime | None = None,
+        nonce: str | None = None,
+    ) -> JsonObject:
+        """Submit one closed runner observation through the existing signed endpoint."""
+
+        return self._signed_post(
+            state,
+            f"/nodes/{state.node_id}/mission-reports",
+            {
+                "mission_id": mission_id,
+                "claim_id": claim_id,
+                "envelope_digest": envelope_digest,
+                "expected_lifecycle_revision": expected_lifecycle_revision,
+                "report_id": report_id,
+                "report_kind": report_kind,
+                "outcome_code": outcome_code,
+                "reason_code": reason_code,
+                "artifact_digest": artifact_digest,
+            },
+            now=now,
+            nonce=nonce,
+        )
+
     def _signed_post(
         self,
         state: NodeState,
@@ -967,7 +1078,7 @@ class NodeClient:
             with urllib.request.urlopen(request, timeout=self.timeout_seconds) as response:
                 document = json.loads(response.read().decode())
         except urllib.error.HTTPError as exc:
-            raise NodeClientError(f"Gateway rejected Node request with HTTP {exc.code}") from exc
+            raise NodeGatewayResponseError(exc.code) from exc
         except (urllib.error.URLError, TimeoutError, OSError) as exc:
             raise NodeClientError("Gateway is unavailable") from exc
         except (UnicodeDecodeError, json.JSONDecodeError) as exc:

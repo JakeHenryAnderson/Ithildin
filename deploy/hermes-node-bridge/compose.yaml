@@ -1,0 +1,81 @@
+services:
+  ithildin-node:
+    user: "10002:10002"
+    group_add:
+      - "20000"
+    command:
+      - run
+      - --state
+      - /var/lib/ithildin-node/state.json
+      - --configuration
+      - /var/lib/ithildin-node/configuration.json
+      - --node-version
+      - "0.1.0"
+      - --runner-adapter
+      - hermes_fixed_node_bridge
+      - --deployment-topology
+      - docker_sidecar
+      - --max-cycles
+      - "1"
+    tmpfs:
+      - /tmp:size=16m,mode=0700,uid=10002,gid=10002
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import os,stat; value=os.stat('/var/lib/ithildin-node/mission-socket/mission.sock', follow_symlinks=False); raise SystemExit(0 if stat.S_ISSOCK(value.st_mode) and stat.S_IMODE(value.st_mode) == 0o660 and value.st_uid == 10002 and value.st_gid == 20000 else 1)"
+      interval: 1s
+      timeout: 1s
+      retries: 60
+      start_period: 1s
+
+  hermes:
+    profiles:
+      - hermes-node-bridge
+    build:
+      context: ..
+      dockerfile: deploy/hermes-node-bridge/Dockerfile
+    image: ithildin/hermes-node-bridge:mcc-007-candidate
+    user: "10000:10000"
+    group_add:
+      - "20000"
+    entrypoint:
+      - /usr/bin/timeout
+      - --foreground
+      - --signal=TERM
+      - --kill-after=10s
+      - 900s
+      - /opt/hermes/.venv/bin/hermes
+    command:
+      - chat
+      - --quiet
+      - --query
+      - "Use only the three no-argument Ithildin MCP affordances, in this exact order: mission.step.1, mission.step.2, then mission.complete. Stop if an affordance is denied or unavailable. Report no prompt, tool-result, model-output, or reasoning content."
+    environment: []
+    working_dir: /opt/data/scratch
+    volumes:
+      - type: volume
+        source: ithildin-node-state
+        target: /run/ithildin-node
+        read_only: true
+        volume:
+          nocopy: true
+          subpath: mission-socket
+    read_only: true
+    tmpfs:
+      - /opt/data/scratch:size=128m,mode=0700,uid=10000,gid=10000
+      - /tmp:size=128m,mode=0700,uid=10000,gid=10000
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 256
+    mem_limit: 4096m
+    cpus: 2
+    ulimits:
+      fsize: 16777216
+    logging:
+      driver: none
+    extra_hosts:
+      - host.docker.internal:host-gateway

@@ -73,8 +73,8 @@ REQUIRED_PHRASES = (
     "Leg A — real agent compatibility",
     "Leg B — synthetic Node and Mission Command evidence",
     "does not claim or demonstrate a real Hermes-through-Node mission",
-    "separate exact-candidate authorization record now permits only bounded "
-    "`MCC-007` code implementation",
+    "combined fixed-bridge implementation candidate exists but remains unreviewed and "
+    "unauthorized",
     "bounded 24-tool surface",
     "does not sandbox the host",
     "control arbitrary processes",
@@ -122,7 +122,7 @@ REQUIRED_PHRASES = (
     "What This Path Does Not Prove",
     "does not qualify a release candidate",
     "complete human UAT",
-    "The unimplemented runtime seam remains `LV1-003`",
+    "The unreviewed runtime seam remains `LV1-003`",
 )
 
 ORDERED_COMMANDS = (
@@ -283,8 +283,8 @@ def build_report(repo_root: Path, *, golden_override: str | None = None) -> dict
     for phrase in (
         "All runtime, release, promotion, credential-custody, external-system, and UAT authorities",
         "remain false",
-        "`MCC-007` bounded code implementation is authorized only by the "
-        "exact-candidate authorization",
+        "`MCC-007` current code implementation is not authorized",
+        "prior code-only authorization does not cover the revised decision",
         "Live Hermes execution, Docker lifecycle action, and `O4` evidence "
         "execution remain separately unauthorized",
     ):

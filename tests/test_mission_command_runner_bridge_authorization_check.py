@@ -5,12 +5,12 @@ from pathlib import Path
 from scripts import mission_command_runner_bridge_authorization_check as authorization_check
 
 
-def test_live_runner_bridge_authorization_is_code_only() -> None:
+def test_live_runner_bridge_authorization_is_review_needed_and_non_authorizing() -> None:
     report = authorization_check.build_report(Path("."))
 
     assert report["valid"] is True, report["failures"]
     assert report["tool_count"] == 24
-    assert report["code_implementation_authorized"] is True
+    assert report["code_implementation_authorized"] is False
     assert report["live_hermes_execution_authorized"] is False
     assert report["docker_lifecycle_authorized"] is False
     assert report["o4_evidence_execution_authorized"] is False
@@ -26,8 +26,8 @@ def test_authorization_rejects_live_authority() -> None:
     )
     authorization = authorization_check._contract(  # noqa: SLF001
         text.replace(
-            '"live_hermes_execution_authorized":false',
-            '"live_hermes_execution_authorized":true',
+            '"live_hermes_execution_authorized": false',
+            '"live_hermes_execution_authorized": true',
             1,
         )
     )
@@ -50,7 +50,7 @@ def test_authorization_rejects_path_expansion() -> None:
     authorization = authorization_check._contract(  # noqa: SLF001
         text.replace(
             '"apps/node/src/ithildin_node/client.py"',
-            '"pyproject.toml","apps/node/src/ithildin_node/client.py"',
+            '"pyproject.toml",\n    "apps/node/src/ithildin_node/client.py"',
             1,
         )
     )
@@ -87,7 +87,7 @@ def test_authorization_rejects_coupled_current_decision_and_digest_substitution(
     )
     substituted_digest = authorization_check._digest(decision)  # noqa: SLF001
     authorization = authorization_check._contract(  # noqa: SLF001
-        text.replace(authorization_check.DECISION_DIGEST, substituted_digest, 1)
+        text.replace(authorization_check.CURRENT_DECISION_DIGEST, substituted_digest, 1)
     )
     failures: list[str] = []
 
@@ -96,7 +96,7 @@ def test_authorization_rejects_coupled_current_decision_and_digest_substitution(
     )
 
     assert any("current runner-bridge decision" in failure for failure in failures)
-    assert any("decision_sha256" in failure for failure in failures)
+    assert any("current_decision_sha256" in failure for failure in failures)
 
 
 def test_authorization_requires_own_make_target_definition(tmp_path: Path) -> None:

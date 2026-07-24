@@ -367,14 +367,15 @@ checker reports malformed/stale evidence.
 ## What This Path Does Not Prove
 
 - It does not prove a real Hermes-through-Node mission or close Local-v1 outcome `O4`.
-- It does not implement or exercise `MCC-007`, a runner bridge, generic process control, or
-  arbitrary host control; the separate authorization record permits only reviewed code changes.
+- It does not exercise `MCC-007`, a runner bridge, generic process control, or arbitrary host
+  control. A combined fixed-bridge implementation candidate exists but remains unreviewed and
+  unauthorized.
 - It does not prove production identity/storage, production deployment, remote hosting, whole-host
   isolation, filesystem non-bypass, compliance, SIEM custody, or public security-product claims.
 - It does not qualify a release candidate, complete human UAT, accept Local v1.0, or grant runtime,
   release, promotion, credential-custody, or external-system authority.
 
-The unimplemented runtime seam remains `LV1-003`: the separately reviewed capability decision and
-code-only authorization now define the smallest fixed runner bridge. Leg A and Leg B remain
-deliberately separate until a clean implementation candidate, harness review, and separate live
-authorization permit an `O4` evidence run.
+The unreviewed runtime seam remains `LV1-003`: the revised capability decision, fixed implementation
+candidate, and review-needed authorization disposition define the smallest fixed runner bridge.
+Leg A and Leg B remain deliberately separate until an exact candidate receives `GO` and a separate
+live authorization permits one `O4` evidence run.

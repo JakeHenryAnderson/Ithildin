@@ -6899,6 +6899,19 @@ def test_signed_runner_reports_control_poll_and_cancellation_lifecycle(
             "reason_code": None,
             "artifact_digest": None,
         }
+        profile_injected = client.post(
+            report_path,
+            headers=_signed_node_headers(
+                private_key,
+                node_id=node_id,
+                path=report_path,
+                payload={**running_payload, "profile_digest": "sha256:" + ("f" * 64)},
+                nonce="5f" * 16,
+            ),
+            json={**running_payload, "profile_digest": "sha256:" + ("f" * 64)},
+        )
+        assert profile_injected.status_code == 400
+        assert profile_injected.json()["detail"] == "invalid mission runner report"
         running_headers = _signed_node_headers(
             private_key,
             node_id=node_id,

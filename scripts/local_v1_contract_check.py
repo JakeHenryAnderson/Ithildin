@@ -97,8 +97,8 @@ REQUIRED_CONTRACT_PHRASES = (
     "must not claim a real Hermes-through-Node mission",
     "PIS external target and signed-receipt wait remains valid enterprise lineage",
     "does not block Local v1.0",
-    "`MCC-007` bounded code implementation is authorized only by the "
-    "exact-candidate authorization",
+    "`MCC-007` current code implementation is not authorized",
+    "prior code-only authorization does not cover the revised decision",
     "Live Hermes execution, Docker lifecycle action, and `O4` evidence "
     "execution remain separately unauthorized",
     "production PostgreSQL",

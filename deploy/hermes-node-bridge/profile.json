@@ -1,0 +1,108 @@
+{
+  "schema_version": "1",
+  "profile_id": "ithildin-fixed-hermes-node-bridge-v1",
+  "hermes_config_digest": "sha256:6108578c7f300aa0a98a10554fb0e036c4a4d8812ba0d5a6a0334e45197e2ed8",
+  "hermes": {
+    "version": "0.18.2 (2026.7.7.2)",
+    "upstream_commit": "0512f06a",
+    "oci_index_digest": "sha256:6705aac1f41c5faca559858611ce696b760d858b73fa3b51be11599c73ba1ffc",
+    "platform_digests": {
+      "linux/amd64": "sha256:48420b0abcf18f9f33cfa1da4c4e8bbd4ad107a0ddc52e5fb3ebb34a9fd20149",
+      "linux/arm64": "sha256:bca5bafd0292bdf0d4b4b975780e96c0ec9e428e08941a87aacddb116663ce13"
+    }
+  },
+  "bridge_entrypoint": [
+    "/opt/ithildin/.venv/bin/python",
+    "-m",
+    "ithildin_mcp_server.node_bridge"
+  ],
+  "bridge_arguments": [],
+  "runner_entrypoint": [
+    "/usr/bin/timeout",
+    "--foreground",
+    "--signal=TERM",
+    "--kill-after=10s",
+    "900s",
+    "/opt/hermes/.venv/bin/hermes"
+  ],
+  "runner_arguments": [
+    "chat",
+    "--quiet",
+    "--query",
+    "Use only the three no-argument Ithildin MCP affordances, in this exact order: mission.step.1, mission.step.2, then mission.complete. Stop if an affordance is denied or unavailable. Report no prompt, tool-result, model-output, or reasoning content."
+  ],
+  "environment_names": [],
+  "provider": {
+    "type": "custom",
+    "base_url": "http://host.docker.internal:11434/v1",
+    "model": "gemma4:e4b"
+  },
+  "affordances": [
+    "mission.step.1",
+    "mission.step.2",
+    "mission.complete"
+  ],
+  "fixed_instruction": "Use only the three no-argument Ithildin MCP affordances, in this exact order: mission.step.1, mission.step.2, then mission.complete. Stop if an affordance is denied or unavailable. Report no prompt, tool-result, model-output, or reasoning content.",
+  "governed_tools": [
+    "project.structure.summary",
+    "project.test.summary"
+  ],
+  "transport": {
+    "protocol": "unix_domain_socket_canonical_json_v1",
+    "node_socket_path": "/var/lib/ithildin-node/mission-socket/mission.sock",
+    "runner_socket_path": "/run/ithildin-node/mission.sock",
+    "node_uid": 10002,
+    "runner_uid": 10000,
+    "shared_socket_gid": 20000,
+    "socket_parent_mode": "0770",
+    "socket_mode": "0660",
+    "peer_uid": 10000,
+    "max_frame_bytes": 16384
+  },
+  "limits": {
+    "cpu": 2,
+    "memory_mib": 4096,
+    "pids": 256,
+    "operation_timeout_seconds": 120,
+    "mission_wall_time_seconds": 900,
+    "wall_time_enforcement": "fixed_container_init_timeout",
+    "per_file_mib": 16,
+    "per_file_enforcement": "kernel_rlimit_fsize",
+    "writable_disk_mib": 256,
+    "tmpfs": {
+      "/opt/data/scratch": {
+        "mib": 128,
+        "mode": "0700"
+      },
+      "/tmp": {
+        "mib": 128,
+        "mode": "0700"
+      }
+    }
+  },
+  "custody": {
+    "compose_base": "deploy/docker-compose.yml",
+    "compose_overlay": "deploy/hermes-node-bridge/compose.yaml",
+    "gateway_network": "established_compose_default_network",
+    "node_state_volume": "ithildin-node-state",
+    "runner_state_volume_subpath": "mission-socket",
+    "runner_start_gate": "node_unix_socket_healthcheck_then_operator_compose_wait",
+    "read_only_root": true,
+    "logging_driver": "none",
+    "persistent_session_volume": false,
+    "memory_enabled": false,
+    "verbose_enabled": false,
+    "reasoning_display_enabled": false,
+    "prompt_output_evidence_custody": false
+  },
+  "authority": {
+    "runner_lifecycle": false,
+    "model_provider": false,
+    "arbitrary_host_control": false,
+    "generic_process_control": false,
+    "shell_execution": false,
+    "docker_socket": false,
+    "network_non_bypass_claimed": false,
+    "filesystem_non_bypass_claimed": false
+  }
+}

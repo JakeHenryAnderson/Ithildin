@@ -459,11 +459,17 @@ checked with `make control-mapping-readiness`.
 - [docs/codex/mission-command-control-plane-authorization-record.md](docs/codex/mission-command-control-plane-authorization-record.md) - project-owner authority mapped to the bounded API, persistence, Node protocol, evidence, and UI changes.
 - [docs/codex/mission-command-runner-bridge-candidate-evaluation.md](docs/codex/mission-command-runner-bridge-candidate-evaluation.md) - design-only `MCC-007` evaluation of a fixed operator-managed Hermes bridge while implementation and runner lifecycle authority remain false.
 - [docs/codex/mission-command-runner-bridge-candidate-evaluation-internal-source-review.md](docs/codex/mission-command-runner-bridge-candidate-evaluation-internal-source-review.md) - zero-finding exact-candidate review permitting only preparation of a separate runner-bridge capability decision.
-- [docs/codex/mission-command-runner-bridge-capability-decision.md](docs/codex/mission-command-runner-bridge-capability-decision.md) - review-pending selection of the fixed Hermes/Node bridge profile while implementation and all runtime authority remain false.
-- [docs/codex/mission-command-runner-bridge-authorization-record.md](docs/codex/mission-command-runner-bridge-authorization-record.md) - exact-candidate authorization for only the reviewed code paths while live Hermes, Docker, O4 evidence, release, and UAT authority remain false.
+- [docs/codex/mission-command-runner-bridge-capability-decision.md](docs/codex/mission-command-runner-bridge-capability-decision.md) - revised fixed Hermes/Node bridge topology and combined-candidate exact-review requirement while all runtime authority remains false.
+- [docs/codex/mission-command-runner-bridge-authorization-record.md](docs/codex/mission-command-runner-bridge-authorization-record.md) - review-needed disposition recording that prior code authority does not cover the revised combined candidate and that live Hermes, Docker, O4 evidence, release, and UAT authority remain false.
 - `make mission-command-control-plane-plan-check` - validate mission admission authority while rejecting runner bridge, host control, provider authority, and tool-surface expansion.
 - `make mission-command-runner-bridge-decision-check` - validate the closed MCC-007 selection, pinned artifacts, 24-tool boundary, and post-review implementation stop line.
-- `make mission-command-runner-bridge-authorization-check` - validate the reviewed-candidate hash/tree binding and code-only MCC-007 authority.
+- `make mission-command-runner-bridge-authorization-check` - validate the MCC-007 prior-review lineage, current decision digest, review-needed disposition, and false code/live authority.
+- `make mission-command-runner-bridge-profile-check` - run only the non-live decision,
+  authorization, immutable-profile, bridge, and Compose-overlay contract tests.
+- `make mission-command-runner-bridge-implementation-check` - run the non-live Node client,
+  service, fixed bridge, MCP bridge, and existing Gateway API test slice.
+- `make local-v1-constrained-mission-contract-check` - test the evidence assembler/checker contract
+  and negative correlation mutations without running Docker, Hermes, a provider, or a Node.
 - `make mission-command-control-plane-poc` followed by `make mission-command-control-plane-poc-check` - exercise and validate the clean exact-candidate MCC-006 live proof.
 - [docs/codex/track-b-node-capability-decision.md](docs/codex/track-b-node-capability-decision.md) - project-owner authorization and the narrow enrollment/identity runtime boundary.
 - [docs/codex/track-b-node-architecture.md](docs/codex/track-b-node-architecture.md) - Gateway-derived Node identity, signed request, replay, and connectivity contracts.

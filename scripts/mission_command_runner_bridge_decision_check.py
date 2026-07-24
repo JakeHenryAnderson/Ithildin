@@ -88,7 +88,21 @@ EXPECTED_KEYS = {
     "governed_tools",
     "bridge_affordances",
     "local_protocol",
-    "socket_path",
+    "compose_base",
+    "compose_overlay",
+    "gateway_network",
+    "node_state_volume",
+    "node_state_volume_subpath",
+    "runner_start_gate",
+    "node_uid",
+    "node_gid",
+    "runner_uid",
+    "runner_gid",
+    "shared_socket_gid",
+    "node_socket_path",
+    "runner_socket_path",
+    "socket_parent_mode",
+    "socket_mode",
     "peer_identity",
     "state_mode",
     "state_fields",
@@ -101,6 +115,9 @@ EXPECTED_KEYS = {
     "pids_limit",
     "tmpfs_mib",
     "per_file_mib",
+    "per_file_enforcement",
+    "wall_time_enforcement",
+    "node_max_cycles",
     "writable_disk_mib",
     "runner_root_filesystem_read_only",
     "runner_writable_tmpfs",
@@ -140,6 +157,18 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     evaluation_text = _read(evaluation_path, failures)
     review_text = _read(review_path, failures)
     hermes_dockerfile = _read(repo_root / "deploy/hermes-poc/Dockerfile", failures)
+    bridge_dockerfile = _read(
+        repo_root / "deploy/hermes-node-bridge/Dockerfile",
+        failures,
+    )
+    bridge_compose = _read(
+        repo_root / "deploy/hermes-node-bridge/compose.yaml",
+        failures,
+    )
+    bridge_profile = _read(
+        repo_root / "deploy/hermes-node-bridge/profile.json",
+        failures,
+    )
     pyproject = _read(repo_root / "pyproject.toml", failures)
     try:
         decision = _contract(decision_text)
@@ -152,7 +181,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "document_type": "runner_bridge_capability_decision",
         "schema_version": "1",
         "ticket_id": "MCC-007",
-        "decision": "fixed_hermes_node_bridge_selected_pending_exact_review",
+        "decision": "fixed_hermes_node_bridge_combined_candidate_pending_exact_review",
         "tool_count": tool_count,
         "capability_selected": True,
         "candidate_evaluation_sha256": _digest(evaluation_text),
@@ -177,7 +206,21 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "governed_tools": GOVERNED_TOOLS,
         "bridge_affordances": BRIDGE_AFFORDANCES,
         "local_protocol": "unix_domain_socket_canonical_json_v1",
-        "socket_path": "/run/ithildin-node/mission.sock",
+        "compose_base": "deploy/docker-compose.yml",
+        "compose_overlay": "deploy/hermes-node-bridge/compose.yaml",
+        "gateway_network": "established_compose_default_network",
+        "node_state_volume": "ithildin-node-state",
+        "node_state_volume_subpath": "mission-socket",
+        "runner_start_gate": "node_unix_socket_healthcheck_then_operator_compose_wait",
+        "node_uid": 10002,
+        "node_gid": 10002,
+        "runner_uid": 10000,
+        "runner_gid": 10000,
+        "shared_socket_gid": 20000,
+        "node_socket_path": "/var/lib/ithildin-node/mission-socket/mission.sock",
+        "runner_socket_path": "/run/ithildin-node/mission.sock",
+        "socket_parent_mode": "0770",
+        "socket_mode": "0660",
         "peer_identity": "linux_so_peercred_uid_10000_plus_profile_digest",
         "state_mode": "0600",
         "state_fields": [
@@ -197,6 +240,9 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "pids_limit": 256,
         "tmpfs_mib": 256,
         "per_file_mib": 16,
+        "per_file_enforcement": "kernel_rlimit_fsize",
+        "wall_time_enforcement": "fixed_container_init_timeout",
+        "node_max_cycles": 1,
         "writable_disk_mib": 256,
         "runner_root_filesystem_read_only": True,
         "runner_writable_tmpfs": {
@@ -287,6 +333,53 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     _validate_text(decision_text, evaluation_text, review_text, failures)
     if f"FROM nousresearch/hermes-agent@{HERMES_DIGEST}" not in hermes_dockerfile:
         failures.append("reviewed Hermes Dockerfile does not bind the selected OCI index")
+    for token in (
+        "RUN test -x /usr/bin/timeout",
+        f"FROM nousresearch/hermes-agent@{HERMES_DIGEST}",
+        "uv sync --frozen --no-dev --no-editable",
+        "import ithildin_mcp_server.node_bridge, ithildin_schemas",
+    ):
+        if token not in bridge_dockerfile:
+            failures.append(f"runner-bridge Dockerfile is missing: {token}")
+    for token in (
+        'user: "10002:10002"',
+        'user: "10000:10000"',
+        'group_add:\n      - "20000"',
+        "subpath: mission-socket",
+        "stat.S_ISSOCK",
+        "dockerfile: deploy/hermes-node-bridge/Dockerfile",
+        "fsize: 16777216",
+        "--max-cycles",
+        "/usr/bin/timeout",
+    ):
+        if token not in bridge_compose:
+            failures.append(f"runner-bridge Compose overlay is missing: {token}")
+    if "\nname:" in f"\n{bridge_compose}" or "external: true" in bridge_compose:
+        failures.append("runner-bridge Compose must remain an established-project overlay")
+    try:
+        profile = json.loads(bridge_profile)
+    except json.JSONDecodeError:
+        profile = None
+        failures.append("runner-bridge profile is invalid JSON")
+    if not isinstance(profile, dict):
+        failures.append("runner-bridge profile must be an object")
+    else:
+        transport = profile.get("transport")
+        limits = profile.get("limits")
+        custody = profile.get("custody")
+        if (
+            not isinstance(transport, dict)
+            or not isinstance(limits, dict)
+            or not isinstance(custody, dict)
+            or transport.get("shared_socket_gid") != 20000
+            or limits.get("per_file_enforcement") != "kernel_rlimit_fsize"
+            or limits.get("wall_time_enforcement") != "fixed_container_init_timeout"
+            or custody.get("runner_start_gate")
+            != "node_unix_socket_healthcheck_then_operator_compose_wait"
+        ):
+            failures.append(
+                "runner-bridge profile does not bind the reviewed enforcement topology"
+            )
     package_mapping = (
         'ithildin_mcp_server = "apps/mcp-server/src/ithildin_mcp_server"'
     )
@@ -373,6 +466,8 @@ def _validate_text(
         "failed removal blocks retry",
         "Ithildin does not enforce or claim provider-network non-bypass",
         "post-review authorization record",
+        "prior exact decision review does not cover this combined candidate",
+        "same-UID host/container process remains inside the local host TCB",
     )
     for token in required:
         if token not in decision:

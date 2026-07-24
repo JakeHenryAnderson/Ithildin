@@ -30,6 +30,16 @@ def test_live_runner_bridge_decision_is_selected_but_not_authorized() -> None:
     assert contract["runner_persistent_session_volume"] is False
     assert contract["runner_logging_driver"] == "none"
     assert contract["failed_cleanup_blocks_retry"] is True
+    assert contract["node_uid"] == 10002
+    assert contract["runner_uid"] == 10000
+    assert contract["shared_socket_gid"] == 20000
+    assert contract["node_max_cycles"] == 1
+    assert contract["per_file_enforcement"] == "kernel_rlimit_fsize"
+    assert contract["wall_time_enforcement"] == "fixed_container_init_timeout"
+    assert (
+        contract["runner_start_gate"]
+        == "node_unix_socket_healthcheck_then_operator_compose_wait"
+    )
 
 
 def test_runner_bridge_decision_rejects_authority_rise(tmp_path: Path) -> None:
@@ -37,8 +47,8 @@ def test_runner_bridge_decision_rejects_authority_rise(tmp_path: Path) -> None:
     path = repo / decision_check.DECISION
     path.write_text(
         path.read_text(encoding="utf-8").replace(
-            '"implementation_authorized":false',
-            '"implementation_authorized":true',
+            '"implementation_authorized": false',
+            '"implementation_authorized": true',
             1,
         ),
         encoding="utf-8",
@@ -59,8 +69,8 @@ def test_runner_bridge_decision_rejects_unknown_contract_field(tmp_path: Path) -
     path = repo / decision_check.DECISION
     path.write_text(
         path.read_text(encoding="utf-8").replace(
-            '"capability_selected":true',
-            '"host_shutdown_authorized":false,"capability_selected":true',
+            '"capability_selected": true',
+            '"host_shutdown_authorized": false,\n  "capability_selected": true',
             1,
         ),
         encoding="utf-8",
@@ -162,6 +172,9 @@ def _copy_inputs(tmp_path: Path) -> Path:
         decision_check.EVALUATION,
         decision_check.EVALUATION_REVIEW,
         "deploy/hermes-poc/Dockerfile",
+        "deploy/hermes-node-bridge/Dockerfile",
+        "deploy/hermes-node-bridge/compose.yaml",
+        "deploy/hermes-node-bridge/profile.json",
         "pyproject.toml",
         "tool-manifests.lock.json",
         "Makefile",

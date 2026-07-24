@@ -1,0 +1,53 @@
+model:
+  default: gemma4:e4b
+  provider: custom
+  base_url: http://host.docker.internal:11434/v1
+  context_length: 65536
+
+mcp_discovery_timeout: 10
+
+terminal:
+  backend: local
+  cwd: /opt/data/scratch
+  timeout: 30
+
+agent:
+  max_turns: 8
+  verbose: false
+  reasoning_effort: medium
+  verify_on_stop: false
+
+platform_toolsets:
+  cli: []
+
+plugins:
+  enabled: []
+
+memory:
+  memory_enabled: false
+  user_profile_enabled: false
+
+skills:
+  creation_nudge_interval: 0
+
+mcp_servers:
+  ithildin-node:
+    command: /opt/ithildin/.venv/bin/python
+    args:
+      - -m
+      - ithildin_mcp_server.node_bridge
+    env: {}
+    tools:
+      include:
+        - mission.step.1
+        - mission.step.2
+        - mission.complete
+      prompts: false
+      resources: false
+
+display:
+  show_reasoning: false
+  streaming: false
+  tool_progress: none
+
+_config_version: 33

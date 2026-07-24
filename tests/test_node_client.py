@@ -218,6 +218,46 @@ class RecordingNodeClient(NodeClient):
                 "content": {"path": "README.md"},
                 "is_error": False,
             }
+        if path.endswith("/mission-claims"):
+            template_payload: JsonObject = {
+                "operations": [
+                    {"sequence": 1, "tool_name": "project.structure.summary"},
+                    {"sequence": 2, "tool_name": "project.test.summary"},
+                ]
+            }
+            return {
+                "delivery_schema_version": "1",
+                "mission_id": "mission_" + ("2" * 32),
+                "claim_id": "mclaim_" + ("3" * 32),
+                "envelope_digest": "sha256:" + ("4" * 64),
+                "claim_lifecycle_revision": 2,
+                "workspace_id": "default",
+                "mission_template_id": "synthetic_read_review_v1",
+                "template_payload": template_payload,
+                "template_payload_digest": sha256_digest(template_payload),
+                "gateway_lifecycle_state": "claimed",
+                "gateway_delivery_recorded": True,
+                "runner_state_authority": "runner_reported_only",
+                "model_provider_state_known": False,
+            }
+        if path.endswith("/mission-control"):
+            return {
+                "control_decision": "continue",
+                "decision_revision": payload["observed_lifecycle_revision"],
+            }
+        if path.endswith("/mission-reports"):
+            expected_revision = payload["expected_lifecycle_revision"]
+            assert isinstance(expected_revision, int) and not isinstance(
+                expected_revision, bool
+            )
+            revision = expected_revision + 1
+            return {
+                "gateway_lifecycle_state": f"runner_reported_{payload['outcome_code']}",
+                "gateway_lifecycle_revision": revision,
+                "runner_state_authority": "runner_reported_only",
+                "runner_behavior_proven": False,
+                "model_provider_state_known": False,
+            }
         return {"status": "enrolled", "observed_state": "observed_connected"}
 
 
@@ -396,6 +436,69 @@ def test_client_governed_read_partition_fails_without_retry_or_local_fallback() 
             now=now,
             nonce="e2" * 16,
         )
+
+
+def test_client_mission_methods_use_only_existing_closed_signed_payloads() -> None:
+    client = RecordingNodeClient()
+    state = client.enroll(
+        enrollment_code="one-time-code",
+        node_version="0.1.0",
+        runner_adapter="hermes",
+        deployment_topology="docker_sidecar",
+    )
+    now = datetime(2026, 7, 16, 12, 0, tzinfo=UTC)
+    envelope = client.claim_mission(state, now=now, nonce="a1" * 16)
+    assert envelope is not None
+    mission_id = str(envelope["mission_id"])
+    claim_id = str(envelope["claim_id"])
+    envelope_digest = str(envelope["envelope_digest"])
+    control = client.poll_mission_control(
+        state,
+        mission_id=mission_id,
+        claim_id=claim_id,
+        envelope_digest=envelope_digest,
+        observed_lifecycle_revision=2,
+        now=now,
+        nonce="a2" * 16,
+    )
+    assert control["control_decision"] == "continue"
+    report = client.report_mission(
+        state,
+        mission_id=mission_id,
+        claim_id=claim_id,
+        envelope_digest=envelope_digest,
+        expected_lifecycle_revision=2,
+        report_id="mreport_" + ("5" * 32),
+        report_kind="runner_running",
+        outcome_code="started",
+        now=now,
+        nonce="a3" * 16,
+    )
+    assert report["gateway_lifecycle_revision"] == 3
+    assert [request[0].rsplit("/", 1)[-1] for request in client.requests[-3:]] == [
+        "mission-claims",
+        "mission-control",
+        "mission-reports",
+    ]
+    assert client.requests[-3][1] == {"protocol_version": "1"}
+    assert client.requests[-2][1] == {
+        "protocol_version": "1",
+        "mission_id": mission_id,
+        "claim_id": claim_id,
+        "envelope_digest": envelope_digest,
+        "observed_lifecycle_revision": 2,
+    }
+    assert client.requests[-1][1] == {
+        "mission_id": mission_id,
+        "claim_id": claim_id,
+        "envelope_digest": envelope_digest,
+        "expected_lifecycle_revision": 2,
+        "report_id": "mreport_" + ("5" * 32),
+        "report_kind": "runner_running",
+        "outcome_code": "started",
+        "reason_code": None,
+        "artifact_digest": None,
+    }
 
 
 def test_client_stages_promotes_and_retains_bounded_previous_trust(tmp_path: Path) -> None:
