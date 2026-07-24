@@ -67,12 +67,12 @@ local-v1-golden-path-check:
 	uv run pytest tests/test_local_v1_golden_path.py -q
 
 local-v1-node-journey:
-	uv run python scripts/local_v1_node_journey.py
+	uv run python -m scripts.local_v1_node_journey
 
 local-v1-node-journey-check:
 	@test -n "$(LOCAL_V1_NODE_JOURNEY_REPORT)" || (echo "LOCAL_V1_NODE_JOURNEY_REPORT is required" >&2; exit 2)
 	@test -n "$(LOCAL_V1_NODE_JOURNEY_CANDIDATE)" || (echo "LOCAL_V1_NODE_JOURNEY_CANDIDATE is required" >&2; exit 2)
-	uv run python scripts/local_v1_node_journey_check.py \
+	uv run python -m scripts.local_v1_node_journey_check \
 		--report-root "$(LOCAL_V1_NODE_JOURNEY_REPORT)" \
 		--expected-candidate "$(LOCAL_V1_NODE_JOURNEY_CANDIDATE)"
 

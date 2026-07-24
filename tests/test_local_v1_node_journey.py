@@ -5,6 +5,8 @@ import io
 import json
 import os
 import stat
+import subprocess
+import sys
 import urllib.error
 from datetime import UTC, datetime, timedelta
 from email.message import Message
@@ -966,6 +968,35 @@ def test_main_failure_is_safe_and_does_not_reobserve_head(
         "Local-v1 Node journey failed closed: "
         "source_candidate_changed_during_journey"
     )
+
+
+@pytest.mark.parametrize(
+    "module",
+    [
+        "scripts.local_v1_node_journey",
+        "scripts.local_v1_node_journey_check",
+    ],
+)
+def test_real_module_entrypoints_resolve_before_execution(module: str) -> None:
+    result = subprocess.run(
+        (sys.executable, "-m", module, "--help"),
+        cwd=REPO_ROOT,
+        capture_output=True,
+        text=True,
+        timeout=10,
+        check=False,
+    )
+    assert result.returncode == 0, result.stderr
+    assert "usage:" in result.stdout
+    assert "ModuleNotFoundError" not in result.stderr
+
+
+def test_make_targets_use_module_entrypoints() -> None:
+    makefile = (REPO_ROOT / "Makefile").read_text()
+    assert "python -m scripts.local_v1_node_journey\n" in makefile
+    assert "python -m scripts.local_v1_node_journey_check \\" in makefile
+    assert "python scripts/local_v1_node_journey.py" not in makefile
+    assert "python scripts/local_v1_node_journey_check.py" not in makefile
 
 
 def test_checker_rejects_secret_fields_permissions_and_markdown_drift(
