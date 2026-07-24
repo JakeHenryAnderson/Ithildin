@@ -208,6 +208,49 @@ capability, runner lifecycle, self-update, or arbitrary host control. The status
 client summary; it is not runner or model-provider health. This candidate sequence must be observed
 and recorded separately before `LV1-002` or `O3` can complete.
 
+### Deliberate synthetic journey and evidence
+
+After the implementation candidate is committed and the checkout is clean, the bounded synthetic
+journey can record the integrated onboarding observation without putting its one-time code into a
+command, environment variable, log, transcript, or report:
+
+```sh
+make local-v1-node-journey
+# Then run the exact check command printed by the journey, for example:
+make local-v1-node-journey-check \
+  LOCAL_V1_NODE_JOURNEY_REPORT=var/local-v1-node-journey/<run-id> \
+  LOCAL_V1_NODE_JOURNEY_CANDIDATE=<40-lowercase-hex-commit>
+```
+
+The live target is deliberately separate from every validation gate. It requires Docker Compose and
+free local ports `8000` and `5173`; it starts the normal API/UI images in a uniquely named Compose
+project, with an isolated SQLite database, workspace mount, configuration signer, unreviewed-local
+runtime-candidate placeholder, and owner-only ephemeral Compose environment file. It looks up the
+active `demo` workspace from the Gateway, keeps the issued code in process memory, and supplies it
+only to the fixed `docker compose run --rm -T --no-deps` enrollment path over stdin.
+
+The journey verifies the Gateway-derived `node_id`, `agent:node.<node_id>` principal, and workspace
+binding; assigns a signed configuration; starts the optional Node; waits for a
+Gateway-accepted heartbeat and matching desired/acknowledged generation and digest; preserves
+`stored_not_enforced` as the configuration truth; stops the Node; revokes it; and proves a
+subsequent signed heartbeat is rejected. On a fully observed success it removes only that uniquely
+created Compose project's resources and volume, its run-specific Node image, and its isolated
+runtime state. If enrollment may have reached the Gateway but no safe identity is known, it retains
+the isolated runtime and volume as `recovery_required` and never performs a blind retry or volume
+deletion.
+
+The ignored reports are written under `var/local-v1-node-journey/<run-id>/` as deterministic,
+redacted JSON and Markdown. The live command prints the exact report path, observed candidate, and
+checker invocation. The non-live checker validates only that explicitly selected report against the
+explicit expected commit, rejects stale or future-dated evidence, and never starts a service,
+searches for a "latest" run, or regenerates evidence. A passing report is candidate-bound
+observation for later review; it is not execution authority, release approval, promotion, UAT, or
+evidence of a governed tool call, real agent mission, restart/replay/partition behavior, runner
+health, model-provider health, configuration enforcement, production identity, or PostgreSQL.
+Owner-only run directories and inode revalidation reduce accidental path substitution; they are not
+a security boundary against a malicious concurrent process running as the same host UID while the
+Docker CLI opens a validated path.
+
 The retained-evidence checks below validate ignored local evidence from already-recorded isolated
 POCs; those checks do not start the optional Compose `ithildin-node` profile. That profile cannot
 safely self-enroll: never place a one-time enrollment code, Node private key, or API admin token

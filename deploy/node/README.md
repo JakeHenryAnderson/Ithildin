@@ -96,6 +96,37 @@ Stop only the optional Node service with:
 make node-service-stop
 ```
 
+## Repeatable Local-v1 Synthetic Journey
+
+For a committed clean candidate, the deliberately live automation wraps the manual enrollment
+sequence in a uniquely named, isolated Compose project:
+
+```sh
+make local-v1-node-journey
+# Then run the exact check command printed by the journey, for example:
+make local-v1-node-journey-check \
+  LOCAL_V1_NODE_JOURNEY_REPORT=var/local-v1-node-journey/<run-id> \
+  LOCAL_V1_NODE_JOURNEY_CANDIDATE=<40-lowercase-hex-commit>
+```
+
+The first command requires Docker Compose and free local ports `8000` and `5173`. It generates only
+local synthetic credentials under ignored owner-only runtime state, passes the one-time enrollment
+code exclusively over stdin to the same fixed `run --rm -T --no-deps` Node path, verifies
+Gateway-derived identity and workspace binding, observes signed configuration storage and
+acknowledgment plus a Gateway-accepted heartbeat, then stops and revokes the Node and confirms a
+subsequent signed heartbeat is rejected. The second command reads only the explicitly selected
+redacted report under `var/local-v1-node-journey/`, requires the exact expected candidate commit,
+and rejects stale evidence; it never searches for a "latest" run or reruns the live sequence.
+Owner-only run directories and inode revalidation reduce accidental path substitution, but they are
+not a security boundary against a malicious concurrent process running as the same host UID while
+the Docker CLI opens a validated path.
+
+Successful cleanup removes only the journey's unique project resources, volume, run-specific Node
+image, and isolated state. An ambiguous enrollment retains the isolated runtime and volume for
+explicit recovery and blocks any claim of completion. Neither command demonstrates governed tool
+execution, a real agent mission, runner or model-provider health, configuration enforcement,
+restart/replay/partition behavior, production identity/storage, release, promotion, or UAT.
+
 ## Operator-Managed Upgrade Or Rollback
 
 Build or select the intended reviewed image, stop the old container, and recreate the service while

@@ -21,9 +21,8 @@ dist/
 build/
 .vite/
 
-# Local runtime state
-var/db/*
-var/logs/*
+# Local runtime state and generated evidence never enter a build context
+var/
 workspaces/*
 runtime-authority/
 

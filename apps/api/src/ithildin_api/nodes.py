@@ -30,6 +30,7 @@ NODE_PROTOCOL_VERSION = "1"
 NODE_SIGNATURE_CONTEXT = "ITHILDIN-NODE-V1"
 NODE_IDENTITY_ROTATION_PROOF_CONTEXT = "ITHILDIN-NODE-IDENTITY-ROTATION-V1"
 NODE_PRINCIPAL_PREFIX = "agent:node."
+NODE_OBSERVED_STATE_CONNECTED = "observed_connected"
 _LABEL_PATTERN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.:@-]{0,127}$")
 _DISPLAY_NAME_PATTERN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9 _.,:@()-]{0,127}$")
 _NODE_ID_PATTERN = re.compile(r"^node_[0-9a-f]{32}$")
@@ -1327,7 +1328,11 @@ def _observed_state(
     if last_seen_at is None:
         return "never_observed"
     age = now - _parse_datetime(last_seen_at)
-    return "observed_connected" if age <= timedelta(seconds=stale_after_seconds) else "stale"
+    return (
+        NODE_OBSERVED_STATE_CONNECTED
+        if age <= timedelta(seconds=stale_after_seconds)
+        else "stale"
+    )
 
 
 def _ensure_column(

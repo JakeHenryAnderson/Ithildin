@@ -20,7 +20,7 @@ NODE_RELEASE_BUNDLE ?= var/node-release-artifact/node-release-$(NODE_RELEASE_VER
 .PHONY: hermes-governance-poc-plan-check mission-command-control-plane-plan-check track-b-node-decision-check track-b-node-configuration-decision-check track-b-node-governed-access-decision-check track-b-node-manual-rollback-decision-check track-b-node-configuration-trust-rotation-decision-check track-b-node-version-posture-decision-check track-b-node-identity-key-rotation-decision-check track-b-node-service-lifecycle-decision-check track-b-node-release-artifact-decision-check track-b-node-evidence-check track-b-node-configuration-evidence-check track-b-node-governed-access-evidence-check track-b-node-configuration-trust-rotation-evidence-check track-b-node-version-posture-evidence-check track-b-node-identity-key-rotation-evidence-check track-b-node-service-lifecycle-evidence-check track-b-node-release-artifact-evidence-check node-configuration-keygen node-configuration-signing-status node-configuration-signing-ready node-service-image node-service-compose-check node-service-enroll node-service-status node-service-up node-service-stop node-release-image node-release-artifact-keygen node-release-artifact-sign node-release-artifact-verify
 .PHONY: hermes-poc-image hermes-poc-config-check hermes-poc-run hermes-poc-stop
 .PHONY: mission-command-control-plane-poc mission-command-control-plane-poc-check mission-command-control-plane-focused-gates
-.PHONY: local-v1-contract-check local-v1-golden-path-check local-v1-inner-check local-v1-milestone-check local-v1-runtime-trust-check local-v1-hermes-evidence-check local-v1-ui-production-build local-v1-candidate-inventory local-v1-candidate-check local-v1-release-check
+.PHONY: local-v1-contract-check local-v1-golden-path-check local-v1-inner-check local-v1-milestone-check local-v1-runtime-trust-check local-v1-hermes-evidence-check local-v1-node-journey local-v1-node-journey-check local-v1-ui-production-build local-v1-candidate-inventory local-v1-candidate-check local-v1-release-check
 
 test:
 	uv run pytest
@@ -66,6 +66,16 @@ local-v1-golden-path-check:
 	uv run python scripts/local_v1_golden_path_check.py
 	uv run pytest tests/test_local_v1_golden_path.py -q
 
+local-v1-node-journey:
+	uv run python scripts/local_v1_node_journey.py
+
+local-v1-node-journey-check:
+	@test -n "$(LOCAL_V1_NODE_JOURNEY_REPORT)" || (echo "LOCAL_V1_NODE_JOURNEY_REPORT is required" >&2; exit 2)
+	@test -n "$(LOCAL_V1_NODE_JOURNEY_CANDIDATE)" || (echo "LOCAL_V1_NODE_JOURNEY_CANDIDATE is required" >&2; exit 2)
+	uv run python scripts/local_v1_node_journey_check.py \
+		--report-root "$(LOCAL_V1_NODE_JOURNEY_REPORT)" \
+		--expected-candidate "$(LOCAL_V1_NODE_JOURNEY_CANDIDATE)"
+
 local-v1-inner-check:
 	$(MAKE) local-v1-contract-check
 	$(MAKE) manifest-lock-check
@@ -98,6 +108,7 @@ local-v1-runtime-trust-check:
 		tests/test_node_configuration.py \
 		tests/test_node_configuration_trust.py \
 		tests/test_node_governed_access.py \
+		tests/test_local_v1_node_journey.py \
 		tests/test_node_release_artifact.py \
 		tests/test_node_service.py \
 		tests/test_node_versions.py \

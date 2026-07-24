@@ -28,6 +28,7 @@ CONFIGURATION_SIGNATURE_TYPE = "ithildin.node_configuration"
 CONFIGURATION_FORMAT_VERSION = "1"
 CONFIGURATION_ALGORITHM = "ed25519"
 CONFIGURATION_ACK_STATUS = "stored_not_enforced"
+CONFIGURATION_STATE_STORED_CURRENT_NOT_ENFORCED = "stored_current_not_enforced"
 _EVIDENCE_PENDING = "pending"
 _EVIDENCE_COMPLETE = "complete"
 
@@ -632,7 +633,7 @@ def configuration_state(
         and acknowledged_digest == desired_digest
         and acknowledgment_status == CONFIGURATION_ACK_STATUS
     ):
-        return "stored_current_not_enforced"
+        return CONFIGURATION_STATE_STORED_CURRENT_NOT_ENFORCED
     return "configuration_drift"
 
 
