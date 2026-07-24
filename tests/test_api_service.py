@@ -5646,6 +5646,45 @@ def test_database_initialization_is_idempotent(tmp_path: Path) -> None:
     assert rows == [("minimum_writer_version", "4"), ("schema_version", "4")]
 
 
+@pytest.mark.parametrize(
+    ("unavailable_prerequisite", "expected_detail"),
+    [
+        ("configuration_signer", "Node configuration signing trust root is unavailable"),
+        ("manifest_lock", "manifest lock is unavailable for Node enrollment"),
+    ],
+)
+def test_node_enrollment_code_issuance_fails_closed_before_secret_or_audit_success(
+    tmp_path: Path,
+    unavailable_prerequisite: str,
+    expected_detail: str,
+) -> None:
+    settings = make_settings(tmp_path)
+    api = create_app(settings)
+    with TestClient(api) as client:
+        if unavailable_prerequisite == "configuration_signer":
+            api.state.node_configuration_signer = None
+        else:
+            settings.manifest_lock_path.unlink()
+
+        response = client.post(
+            "/nodes/enrollment-codes",
+            headers={"Authorization": f"Bearer {settings.admin_token}"},
+            json={"workspace_id": "default", "display_name": "Fail Closed Node"},
+        )
+
+    assert response.status_code == 503
+    assert response.json() == {"detail": expected_detail}
+    assert "enrollment_code" not in response.text
+    with sqlite3.connect(settings.db_path) as connection:
+        assert connection.execute("SELECT COUNT(*) FROM node_enrollment_codes").fetchone() == (0,)
+    audit_text = (
+        settings.audit_log_path.read_text(encoding="utf-8")
+        if settings.audit_log_path.exists()
+        else ""
+    )
+    assert "node.enrollment_code.issued" not in audit_text
+
+
 def test_node_api_enrolls_authenticates_rejects_replay_and_revokes(tmp_path: Path) -> None:
     settings = make_settings(tmp_path)
     admin_headers = {"Authorization": "Bearer test-admin-token"}

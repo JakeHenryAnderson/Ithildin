@@ -16,6 +16,8 @@ services:
       ITHILDIN_MANIFEST_DIR: /app/tool-manifests
       ITHILDIN_MANIFEST_LOCK_PATH: /app/tool-manifests.lock.json
       ITHILDIN_REQUIRE_MANIFEST_LOCK: "${ITHILDIN_REQUIRE_MANIFEST_LOCK:-true}"
+      ITHILDIN_NODE_CONFIGURATION_SIGNING_PRIVATE_KEY_PATH: /app/var/keys/node-configuration-ed25519-private.pem
+      ITHILDIN_NODE_CONFIGURATION_SIGNING_PUBLIC_KEY_PATH: /app/var/keys/node-configuration-ed25519-public.pem
       ITHILDIN_POLICY_PATH: /app/policies/default.yaml
       ITHILDIN_POLICY_ENGINE: "${ITHILDIN_POLICY_ENGINE:-yaml}"
       ITHILDIN_OPA_URL: "${ITHILDIN_OPA_URL:-}"

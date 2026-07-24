@@ -20,6 +20,22 @@ If the CLI is installed but Docker returns HTTP 500 while the dashboard says "St
 Docker Engine", quit Docker Desktop, reopen it, and use Docker Desktop's Troubleshoot panel
 if the engine does not become ready.
 
+For optional Node onboarding, initialize the operator-owned configuration-signing trust root
+**before** API startup. The one-time key generator refuses overwrite:
+
+```sh
+make node-configuration-signing-status
+# Run only when status reports configured=false:
+make node-configuration-keygen
+make node-configuration-signing-ready
+```
+
+Keep `.env` mode `0600`. On Linux, set `ITHILDIN_CONTAINER_UID` and
+`ITHILDIN_CONTAINER_GID` to the operator UID/GID before startup so the unprivileged API process can
+read the owner-only signer under `var/keys/`. See [the Node operator sequence](node/README.md) for
+the stdin-only enrollment and fixed lifecycle commands. Never place a Node enrollment code in
+`.env`, a Compose environment, a command argument, or a Make variable.
+
 ```sh
 make demo-seed
 make compose-up

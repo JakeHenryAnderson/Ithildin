@@ -6,32 +6,94 @@ The image runs only Ithildin Node's signed configuration and heartbeat loop. It 
 stop, inspect, invoke, or update Hermes or another runner. It exposes no port and receives no
 Docker socket, host process namespace, host filesystem mount, or package-install authority.
 
+## Initialize Signing Trust Before API Startup
+
+Node enrollment requires an operator-owned configuration-signing trust root. Check the ignored
+local key paths before starting the API:
+
+```sh
+make node-configuration-signing-status
+```
+
+If the result says `"configured": false`, create the keypair once:
+
+```sh
+make node-configuration-keygen
+make node-configuration-signing-ready
+```
+
+Key generation refuses to overwrite either key. The private key is created mode `0600`; the public
+key is mode `0644`. Keep both under ignored `var/keys/`, do not use production signing material, and
+do not paste either key into Command Center. On Linux, set `ITHILDIN_CONTAINER_UID` and
+`ITHILDIN_CONTAINER_GID` in the owner-only `.env` to the operator UID/GID so the unprivileged API
+process can read the owner-only private key. Confirm ownership and mode without printing key
+contents:
+
+```sh
+ls -ln var/keys/node-configuration-ed25519-*.pem
+```
+
+Then start the normal API/UI stack. An API started without the signer remains usable for non-Node
+local-preview work, but enrollment-code issuance and enrollment fail closed until the signer is
+initialized and the API is restarted.
+
 ## Build And Enroll
 
-Start the local-preview API and create a one-time Node enrollment code through Command Center or
-the authenticated API. Then build the image and pipe the code through stdin:
+Build the optional image and start the normal API/UI stack first:
 
 ```sh
 make node-service-image
-printf '%s\n' "$ONE_TIME_CODE" | docker compose -f deploy/docker-compose.yml \
-  --profile node run --rm -T ithildin-node enroll \
-  --api-url http://ithildin-api:8000 \
-  --state /var/lib/ithildin-node/state.json \
-  --node-version 0.1.0 \
-  --runner-adapter hermes \
-  --deployment-topology docker_sidecar \
-  --enrollment-code-stdin
+make compose-up
+make compose-smoke
 ```
 
-The code is consumed once and is not stored in the Node state. Avoid shell history expansion or
-command arguments containing the code; the environment variable above is illustrative shell-local
-input, not a container environment variable.
+In Command Center, open **Nodes**, enter a bounded display name, explicitly select an active
+workspace, and issue one short-lived code. Command Center keeps the raw value only in that mounted
+React component and clears it on dismissal, replacement, navigation away from Nodes, sign-out,
+refresh, or page reload. Delayed responses are invalidated when that component loses ownership. It
+does not persist, log, export, copy, or generate a shell command containing the code.
 
-Assign a signed per-Node configuration from Command Center before starting the service:
+In a private, non-recorded terminal, run the fixed stdin-only enrollment target:
 
 ```sh
-docker compose -f deploy/docker-compose.yml --profile node up -d ithildin-node
-docker compose -f deploy/docker-compose.yml --profile node logs -f ithildin-node
+make node-service-enroll
+```
+
+Paste exactly one nonempty code line with no leading or trailing whitespace, press Return, then send
+EOF. The target uses
+`docker compose run --rm -T --no-deps`; the code is not accepted as a Make variable, environment
+variable, or command argument. Before reading the code, enrollment atomically reserves the Node
+state destination as a mode-`0600` regular file and keeps that exact inode open through enrollment.
+An existing regular file, directory, symlink, or competing reservation fails before stdin is read or
+the Gateway is contacted. Inspect the safe summary:
+
+```sh
+make node-service-status
+```
+
+Immediately before possible Gateway contact, the reservation becomes a secret-free
+`recovery_required` marker. A lost Gateway response or local finalization failure leaves that marker
+in place and blocks blind retry because the remote enrollment outcome is unknown. Use the status
+command, inspect the Gateway Node inventory, and revoke any identity that may correspond to the
+ambiguous attempt. Only after that revocation may the operator explicitly remove or recreate the
+local Node state volume and issue a new code. Ithildin never deletes a nonempty recovery reservation
+automatically; known pre-contact input failures clean up only the still-empty reservation created by
+that invocation.
+
+Assign a signed per-Node configuration from Command Center, then start the optional service:
+
+```sh
+make node-service-up
+make node-service-status
+```
+
+`node-service-status` emits the client's bounded safe summary. There is intentionally no onboarding
+logs target because raw container logs are not part of the secret-safe operator contract.
+
+Stop only the optional Node service with:
+
+```sh
+make node-service-stop
 ```
 
 ## Operator-Managed Upgrade Or Rollback

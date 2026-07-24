@@ -17,7 +17,7 @@ NODE_RELEASE_BUNDLE ?= var/node-release-artifact/node-release-$(NODE_RELEASE_VER
 .PHONY: command-center-closure-review-history-check
 .PHONY: enterprise-current-checkpoint enterprise-progress-model enterprise-status-export enterprise-status-export-check technical-mvp-ticket-map technical-mvp-execution-board roadmap-status technical-mvp-operator-trial-readiness development-efficiency-status live-demo-environment-diagnostics
 .PHONY: dev-check capability-check evidence-check docs-check quick-check readiness-check smart-check smart-handoff-check progress-check validation-decision validation-decision-run validation-plan validation-recommendation validation-timing artifact-freshness-check status-now release-check-profile release-check-slice release-check-impact release-check-transcript-summary packet-check-recursion-guard
-.PHONY: hermes-governance-poc-plan-check mission-command-control-plane-plan-check track-b-node-decision-check track-b-node-configuration-decision-check track-b-node-governed-access-decision-check track-b-node-manual-rollback-decision-check track-b-node-configuration-trust-rotation-decision-check track-b-node-version-posture-decision-check track-b-node-identity-key-rotation-decision-check track-b-node-service-lifecycle-decision-check track-b-node-release-artifact-decision-check track-b-node-evidence-check track-b-node-configuration-evidence-check track-b-node-governed-access-evidence-check track-b-node-configuration-trust-rotation-evidence-check track-b-node-version-posture-evidence-check track-b-node-identity-key-rotation-evidence-check track-b-node-service-lifecycle-evidence-check track-b-node-release-artifact-evidence-check node-configuration-keygen node-configuration-signing-status node-service-image node-service-compose-check node-release-image node-release-artifact-keygen node-release-artifact-sign node-release-artifact-verify
+.PHONY: hermes-governance-poc-plan-check mission-command-control-plane-plan-check track-b-node-decision-check track-b-node-configuration-decision-check track-b-node-governed-access-decision-check track-b-node-manual-rollback-decision-check track-b-node-configuration-trust-rotation-decision-check track-b-node-version-posture-decision-check track-b-node-identity-key-rotation-decision-check track-b-node-service-lifecycle-decision-check track-b-node-release-artifact-decision-check track-b-node-evidence-check track-b-node-configuration-evidence-check track-b-node-governed-access-evidence-check track-b-node-configuration-trust-rotation-evidence-check track-b-node-version-posture-evidence-check track-b-node-identity-key-rotation-evidence-check track-b-node-service-lifecycle-evidence-check track-b-node-release-artifact-evidence-check node-configuration-keygen node-configuration-signing-status node-configuration-signing-ready node-service-image node-service-compose-check node-service-enroll node-service-status node-service-up node-service-stop node-release-image node-release-artifact-keygen node-release-artifact-sign node-release-artifact-verify
 .PHONY: hermes-poc-image hermes-poc-config-check hermes-poc-run hermes-poc-stop
 .PHONY: mission-command-control-plane-poc mission-command-control-plane-poc-check mission-command-control-plane-focused-gates
 .PHONY: local-v1-contract-check local-v1-golden-path-check local-v1-inner-check local-v1-milestone-check local-v1-runtime-trust-check local-v1-hermes-evidence-check local-v1-ui-production-build local-v1-candidate-inventory local-v1-candidate-check local-v1-release-check
@@ -94,6 +94,7 @@ local-v1-runtime-trust-check:
 		tests/test_storage_schema_import.py \
 		tests/test_nodes.py \
 		tests/test_node_client.py \
+		tests/test_node_cli.py \
 		tests/test_node_configuration.py \
 		tests/test_node_configuration_trust.py \
 		tests/test_node_governed_access.py \
@@ -188,6 +189,9 @@ node-configuration-keygen:
 
 node-configuration-signing-status:
 	uv run python scripts/node_configuration_signing.py status
+
+node-configuration-signing-ready:
+	uv run python scripts/node_configuration_signing.py status --require-configured
 
 hermes-poc-image:
 	docker build -f deploy/hermes-poc/Dockerfile -t ithildin/hermes-poc:local .
@@ -285,6 +289,29 @@ node-service-image:
 
 node-service-compose-check:
 	$(COMPOSE) --env-file $(COMPOSE_ENV_FILE) -f deploy/docker-compose.yml --profile node config --quiet
+
+node-service-enroll: node-service-compose-check node-configuration-signing-ready
+	@$(COMPOSE) --env-file $(COMPOSE_ENV_FILE) -f deploy/docker-compose.yml \
+		--profile node run --rm -T --no-deps ithildin-node enroll \
+		--api-url http://ithildin-api:8000 \
+		--state /var/lib/ithildin-node/state.json \
+		--node-version 0.1.0 \
+		--runner-adapter hermes \
+		--deployment-topology docker_sidecar \
+		--enrollment-code-stdin
+
+node-service-status: node-service-compose-check
+	@$(COMPOSE) --env-file $(COMPOSE_ENV_FILE) -f deploy/docker-compose.yml \
+		--profile node run --rm -T --no-deps ithildin-node status \
+		--state /var/lib/ithildin-node/state.json
+
+node-service-up: node-service-compose-check node-configuration-signing-ready
+	$(COMPOSE) --env-file $(COMPOSE_ENV_FILE) -f deploy/docker-compose.yml \
+		--profile node up -d --no-deps ithildin-node
+
+node-service-stop:
+	$(COMPOSE) --env-file $(COMPOSE_ENV_FILE) -f deploy/docker-compose.yml \
+		--profile node stop ithildin-node
 
 node-release-image:
 	@test -z "$$(git status --porcelain=v1 --untracked-files=normal)" || (echo "Node release image requires a clean checkout" >&2; exit 1)

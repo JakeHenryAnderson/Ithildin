@@ -221,6 +221,23 @@ type IthildinNode = {
   };
 };
 
+type WorkspaceSummary = {
+  id: string;
+  display_name: string;
+  enabled: boolean;
+  metadata: JsonObject;
+};
+
+type IssuedNodeEnrollmentCode = {
+  code_id: string;
+  enrollment_code: string;
+  workspace_id: string;
+  display_name: string;
+  created_at: string;
+  expires_at: string;
+  secret_returned_once: true;
+};
+
 type MissionTemplateSummary = {
   mission_template_id: "synthetic_read_review_v1";
   template_payload_digest: string;
@@ -656,6 +673,7 @@ type DashboardData = {
   trustedHostDiagnostics: TrustedHostPromotionDiagnostics | null;
   runs: AgentRun[];
   nodes: IthildinNode[];
+  workspaces: WorkspaceSummary[];
   missionTemplates: MissionTemplateSummary[];
   missions: MissionOperatorSummary[];
   runSummary: AgentRunSummary | null;
@@ -736,6 +754,7 @@ function emptyDashboardData(): DashboardData {
     trustedHostDiagnostics: null,
     runs: [],
     nodes: [],
+    workspaces: [],
     missionTemplates: [],
     missions: [],
     runSummary: null,
@@ -784,6 +803,7 @@ export function App() {
   const [nodePosture, setNodePosture] = useState("all");
   const [nodeWorkspace, setNodeWorkspace] = useState("all");
   const [nodeSort, setNodeSort] = useState("attention");
+  const [nodeEnrollmentSessionKey, setNodeEnrollmentSessionKey] = useState(0);
   const [
     selectedNodeConfigurationCohortKey,
     setSelectedNodeConfigurationCohortKey,
@@ -964,6 +984,7 @@ export function App() {
   async function loadDashboard(activeToken = token, activeRunFilters = appliedRunFilters) {
     const requestId = ++dashboardRequest.current;
     operationGeneration.current += 1;
+    setNodeEnrollmentSessionKey((current) => current + 1);
     setSelectedNodeConfigurationCohortKey(null);
     setSelectedNodeVersionCohortKey(null);
     setPreviewResult(null);
@@ -1031,6 +1052,7 @@ export function App() {
         trustedHostDiagnostics,
         runsResponse,
         nodesResponse,
+        workspacesResponse,
         missionTemplatesResponse,
         missionsResponse,
         auditResponse,
@@ -1055,6 +1077,7 @@ export function App() {
           activeToken,
         ),
         apiRequest<{ nodes: IthildinNode[] }>("/nodes", activeToken),
+        apiRequest<{ workspaces: WorkspaceSummary[] }>("/workspaces", activeToken),
         apiRequest<{ templates: MissionTemplateSummary[] }>("/mission-templates", activeToken),
         apiRequest<{ missions: MissionOperatorSummary[] }>("/missions?limit=50", activeToken),
         apiRequest<{ audit_events: AuditEvent[] }>("/audit-events?limit=100", activeToken),
@@ -1074,6 +1097,7 @@ export function App() {
         trustedHostDiagnostics,
         runs: runsResponse.runs,
         nodes: nodesResponse.nodes,
+        workspaces: workspacesResponse.workspaces,
         missionTemplates: missionTemplatesResponse.templates,
         missions: missionsResponse.missions,
         runSummary: runsResponse.summary,
@@ -1347,6 +1371,7 @@ export function App() {
     setExportNotice(null);
     setExportLoading(false);
     setError(null);
+    setNodeEnrollmentSessionKey((current) => current + 1);
     setToken(nextToken);
     if (nextToken) {
       sessionStorage.setItem(TOKEN_STORAGE_KEY, nextToken);
@@ -3088,6 +3113,14 @@ export function App() {
             </div>
             <span>Local-preview Track B slice</span>
           </div>
+          {activeSection === "nodes" ? (
+            <NodeEnrollmentControl
+              key={nodeEnrollmentSessionKey}
+              loading={loading}
+              token={token}
+              workspaces={data.workspaces}
+            />
+          ) : null}
           <dl className="node-metrics" aria-label="Node fleet summary">
             <div>
               <dt>Enrolled identities</dt>
@@ -3889,6 +3922,210 @@ function NodeVersionCohorts({
           );
         })}
       </div>
+    </section>
+  );
+}
+
+function NodeEnrollmentControl({
+  loading,
+  token,
+  workspaces,
+}: {
+  loading: boolean;
+  token: string;
+  workspaces: WorkspaceSummary[];
+}) {
+  const activeWorkspaces = workspaces.filter((workspace) => workspace.enabled);
+  const [displayName, setDisplayName] = useState("");
+  const [workspaceId, setWorkspaceId] = useState("");
+  const [issuedCode, setIssuedCode] = useState<IssuedNodeEnrollmentCode | null>(null);
+  const [issuing, setIssuing] = useState(false);
+  const [issueError, setIssueError] = useState<string | null>(null);
+  const displayNameInput = useRef<HTMLInputElement>(null);
+  const enrollmentCodeOutput = useRef<HTMLTextAreaElement>(null);
+  const mounted = useRef(true);
+  const issueRequestGeneration = useRef(0);
+  const issueAbortController = useRef<AbortController | null>(null);
+
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+      issueRequestGeneration.current += 1;
+      issueAbortController.current?.abort();
+      issueAbortController.current = null;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (mounted.current && issuedCode) {
+      enrollmentCodeOutput.current?.focus();
+    }
+  }, [issuedCode]);
+
+  async function issueEnrollmentCode(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const boundedDisplayName = displayName.trim();
+    if (!token || !boundedDisplayName || !workspaceId) return;
+    const requestGeneration = issueRequestGeneration.current + 1;
+    issueRequestGeneration.current = requestGeneration;
+    issueAbortController.current?.abort();
+    const abortController = new AbortController();
+    issueAbortController.current = abortController;
+    setIssuedCode(null);
+    setIssueError(null);
+    setIssuing(true);
+    try {
+      const response = await apiRequest<IssuedNodeEnrollmentCode>(
+        "/nodes/enrollment-codes",
+        token,
+        {
+          method: "POST",
+          signal: abortController.signal,
+          body: JSON.stringify({
+            display_name: boundedDisplayName,
+            workspace_id: workspaceId,
+          }),
+        },
+      );
+      if (
+        !mounted.current
+        || abortController.signal.aborted
+        || requestGeneration !== issueRequestGeneration.current
+      ) return;
+      setIssuedCode(response);
+    } catch (caught) {
+      if (
+        mounted.current
+        && !abortController.signal.aborted
+        && requestGeneration === issueRequestGeneration.current
+      ) {
+        setIssueError(errorMessage(caught));
+      }
+    } finally {
+      if (mounted.current && requestGeneration === issueRequestGeneration.current) {
+        issueAbortController.current = null;
+        setIssuing(false);
+      }
+    }
+  }
+
+  function dismissIssuedCode() {
+    setIssuedCode(null);
+    displayNameInput.current?.focus();
+  }
+
+  return (
+    <section className="node-enrollment-control" aria-labelledby="node-enrollment-heading">
+      <div className="node-enrollment-heading">
+        <div>
+          <p className="eyebrow">Operator-owned onboarding</p>
+          <h3 id="node-enrollment-heading">Issue a one-time Node code</h3>
+        </div>
+        <span>Short-lived · server expiry</span>
+      </div>
+      <p className="node-enrollment-boundary">
+        Select an active workspace explicitly. The code appears once in this page memory and is
+        cleared on dismissal, replacement, sign-out, or dashboard refresh. It is never saved by
+        Command Center. Issuing another code clears this display but does not revoke a previously
+        issued code; that code remains governed by its server expiry.
+      </p>
+      <form onSubmit={issueEnrollmentCode}>
+        <label>
+          <span>Node display name</span>
+          <input
+            ref={displayNameInput}
+            autoComplete="off"
+            maxLength={128}
+            required
+            spellCheck="false"
+            value={displayName}
+            onChange={(event) => setDisplayName(event.target.value)}
+            disabled={!token || loading || issuing}
+          />
+        </label>
+        <label>
+          <span>Active workspace</span>
+          <select
+            required
+            value={workspaceId}
+            onChange={(event) => setWorkspaceId(event.target.value)}
+            disabled={!token || loading || issuing || activeWorkspaces.length === 0}
+          >
+            <option value="">Select an active workspace</option>
+            {activeWorkspaces.map((workspace) => (
+              <option key={workspace.id} value={workspace.id}>
+                {workspace.display_name} · {workspace.id}
+              </option>
+            ))}
+          </select>
+        </label>
+        <button
+          className="secondary-button"
+          type="submit"
+          disabled={
+            !token
+            || loading
+            || issuing
+            || !displayName.trim()
+            || !workspaceId
+            || activeWorkspaces.length === 0
+          }
+        >
+          <KeyRound aria-hidden="true" size={16} />
+          {issuing
+            ? "Issuing one-time code…"
+            : issuedCode
+              ? "Replace displayed code"
+              : "Issue one-time code"}
+        </button>
+      </form>
+      {loading && token ? (
+        <p className="node-enrollment-status" role="status">
+          Loading active workspaces. Enrollment-code issuance remains unavailable.
+        </p>
+      ) : token && activeWorkspaces.length === 0 ? (
+        <p className="node-enrollment-error" role="alert">
+          No active workspace is available. Enrollment-code issuance is unavailable.
+        </p>
+      ) : !token ? (
+        <p className="node-enrollment-status" role="status">
+          Sign in to load active workspaces and issue a one-time code.
+        </p>
+      ) : null}
+      {issuedCode ? (
+        <div
+          className="node-enrollment-secret"
+          role="group"
+          aria-label="Issued Node enrollment secret"
+        >
+          <div>
+            <strong>Use this code once before {formatDate(issuedCode.expires_at)}</strong>
+            <span>
+              It is not persisted, logged, exported, copied, or placed in a command by Command
+              Center. Dismissing this view cannot be undone.
+            </span>
+          </div>
+          <label htmlFor="node-enrollment-code">One-time enrollment code</label>
+          <textarea
+            id="node-enrollment-code"
+            ref={enrollmentCodeOutput}
+            aria-describedby="node-enrollment-code-warning"
+            readOnly
+            rows={3}
+            value={issuedCode.enrollment_code}
+          />
+          <p id="node-enrollment-code-warning">
+            Pipe the code directly to <code>make node-service-enroll</code> through stdin. Do not
+            place it in an environment variable, argument, shell history, note, or transcript.
+          </p>
+          <button type="button" onClick={dismissIssuedCode}>
+            <X aria-hidden="true" size={16} />
+            Dismiss and clear code
+          </button>
+        </div>
+      ) : null}
+      {issueError ? <p className="node-enrollment-error" role="alert">{issueError}</p> : null}
     </section>
   );
 }

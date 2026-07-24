@@ -13,15 +13,16 @@ from ithildin_node.client import (
     NodeClient,
     NodeClientError,
     NodeState,
+    NodeStateReservation,
     StoredNodeConfiguration,
 )
 from ithildin_node.service import install_signal_handlers, run_service
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser(description=__doc__, allow_abbrev=False)
     subparsers = parser.add_subparsers(dest="command", required=True)
-    enroll = subparsers.add_parser("enroll")
+    enroll = subparsers.add_parser("enroll", allow_abbrev=False)
     _common(enroll)
     enroll.add_argument("--state", type=Path, required=True)
     enroll.add_argument(
@@ -63,6 +64,10 @@ def main() -> int:
     args = parser.parse_args()
     try:
         if args.command == "status":
+            recovery = NodeStateReservation.recovery_summary(args.state)
+            if recovery is not None:
+                print(json.dumps(recovery, indent=2, sort_keys=True))
+                return 0
             print(json.dumps(NodeState.load(args.state).safe_summary(), indent=2, sort_keys=True))
             return 0
         if args.command == "run":
@@ -79,24 +84,9 @@ def main() -> int:
                 retry_max_seconds=args.retry_max_seconds,
                 stop_event=stop_event,
             )
-        client = NodeClient(args.api_url)
         if args.command == "enroll":
-            code = (
-                sys.stdin.readline().rstrip("\r\n")
-                if args.enrollment_code_stdin
-                else getpass.getpass("One-time enrollment code: ")
-            )
-            if not code:
-                parser.error("one-time enrollment code is required")
-            state = client.enroll(
-                enrollment_code=code,
-                node_version=args.node_version,
-                runner_adapter=args.runner_adapter,
-                deployment_topology=args.deployment_topology,
-            )
-            state.write_new(args.state)
-            print(json.dumps(state.safe_summary(), indent=2, sort_keys=True))
-            return 0
+            return _enroll(args, parser)
+        client = NodeClient(args.api_url)
         state = NodeState.load(args.state)
         if args.command == "identity-key-rotate":
             if state.pending_identity_rotation_id is None:
@@ -183,6 +173,51 @@ def main() -> int:
     except NodeClientError as exc:
         parser.error(str(exc))
     return 2
+
+
+def _read_enrollment_code_from_stdin(parser: argparse.ArgumentParser) -> str:
+    lines = sys.stdin.read().splitlines()
+    if len(lines) != 1 or not lines[0]:
+        parser.error("stdin must contain exactly one nonempty enrollment-code line")
+    return lines[0]
+
+
+def _validate_enrollment_code_input(value: str) -> str:
+    if not value or value != value.strip():
+        raise NodeClientError(
+            "one-time enrollment code must be nonempty with no surrounding whitespace"
+        )
+    return value
+
+
+def _enroll(args: argparse.Namespace, parser: argparse.ArgumentParser) -> int:
+    reservation = NodeStateReservation.acquire(args.state)
+    remote_attempted = False
+    try:
+        code = _validate_enrollment_code_input(
+            _read_enrollment_code_from_stdin(parser)
+            if args.enrollment_code_stdin
+            else getpass.getpass("One-time enrollment code: ")
+        )
+        client = NodeClient(args.api_url)
+        reservation.ensure_current()
+        reservation.mark_remote_attempt()
+        remote_attempted = True
+        state = client.enroll(
+            enrollment_code=code,
+            node_version=args.node_version,
+            runner_adapter=args.runner_adapter,
+            deployment_topology=args.deployment_topology,
+        )
+        reservation.finalize(state)
+        print(json.dumps(state.safe_summary(), indent=2, sort_keys=True))
+        return 0
+    except BaseException:
+        if remote_attempted:
+            reservation.close()
+        else:
+            reservation.cleanup_empty()
+        raise
 
 
 def _common(parser: argparse.ArgumentParser) -> None:

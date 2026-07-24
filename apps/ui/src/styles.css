@@ -3505,6 +3505,145 @@ td,
   white-space: nowrap;
 }
 
+.node-enrollment-control {
+  background: #0b2130;
+  border: 1px solid #345467;
+  display: grid;
+  gap: 12px;
+  margin: 0 0 16px;
+  padding: 14px;
+}
+
+.node-enrollment-heading {
+  align-items: start;
+  display: flex;
+  gap: 16px;
+  justify-content: space-between;
+}
+
+.node-enrollment-heading .eyebrow {
+  color: #79bdbe;
+  margin: 0 0 3px;
+}
+
+.node-enrollment-heading h3 {
+  color: #edf8f8;
+  font-size: 1rem;
+  margin: 0;
+}
+
+.node-enrollment-heading > span {
+  color: #9bb6c0;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.node-enrollment-boundary {
+  color: #91a9b7;
+  font-size: 0.76rem;
+  line-height: 1.5;
+  margin: 0;
+  max-width: 980px;
+}
+
+.node-enrollment-control > form {
+  align-items: end;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: minmax(220px, 1fr) minmax(220px, 1fr) auto;
+}
+
+.node-enrollment-control > form label {
+  color: #91a9b7;
+  display: grid;
+  font-size: 0.68rem;
+  font-weight: 700;
+  gap: 5px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.node-enrollment-control input,
+.node-enrollment-control select,
+.node-enrollment-control textarea {
+  background: #081a27;
+  border: 1px solid #3b5b6d;
+  color: #e6f2f3;
+  min-width: 0;
+  text-transform: none;
+  width: 100%;
+}
+
+.node-enrollment-control .secondary-button {
+  background: #174357;
+  border-color: #4a7380;
+  color: #d8eeee;
+}
+
+.node-enrollment-secret {
+  background: #132f39;
+  border: 1px solid #5a817f;
+  border-left: 3px solid #77cfd0;
+  display: grid;
+  gap: 9px;
+  padding: 12px;
+}
+
+.node-enrollment-secret strong,
+.node-enrollment-secret span {
+  display: block;
+}
+
+.node-enrollment-secret strong {
+  color: #e8f7f6;
+  font-size: 0.84rem;
+}
+
+.node-enrollment-secret span,
+.node-enrollment-secret p,
+.node-enrollment-secret label {
+  color: #9fb9bd;
+  font-size: 0.72rem;
+}
+
+.node-enrollment-secret span {
+  margin-top: 3px;
+}
+
+.node-enrollment-secret textarea {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  min-height: 76px;
+  overflow-wrap: anywhere;
+  resize: none;
+}
+
+.node-enrollment-secret p {
+  line-height: 1.5;
+  margin: 0;
+}
+
+.node-enrollment-secret code {
+  color: #c9e7e5;
+}
+
+.node-enrollment-secret button {
+  background: #173746;
+  border-color: #456777;
+  color: #d1e4e6;
+  justify-self: start;
+}
+
+.node-enrollment-error,
+.node-enrollment-status {
+  color: #f0a3a3;
+  font-size: 0.72rem;
+  margin: 0;
+}
+
+.node-enrollment-status {
+  color: #9fb9bd;
+}
+
 .node-metrics {
   display: grid;
   gap: 10px;
@@ -4167,6 +4306,14 @@ td,
 }
 
 @media (max-width: 900px) {
+  .node-enrollment-control > form {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .node-enrollment-control > form button {
+    justify-self: start;
+  }
+
   .node-controls {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -4204,6 +4351,11 @@ td,
 }
 
 @media (max-width: 560px) {
+  .node-enrollment-heading {
+    display: grid;
+  }
+
+  .node-enrollment-control > form,
   .node-controls,
   .node-metrics,
   .node-cohort-grid dl,

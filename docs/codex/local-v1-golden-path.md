@@ -57,6 +57,10 @@ Keep the template's SQLite, audit, and key paths under ignored `var/`. Confirm t
 
 ```sh
 git status --short
+make node-configuration-signing-status
+# If and only if configured=false:
+make node-configuration-keygen
+make node-configuration-signing-ready
 make local-v1-golden-path-check
 make live-demo-preflight
 make demo-readiness-summary
@@ -64,7 +68,10 @@ make demo-readiness-summary
 
 Expected: the source check reports the golden path valid; preflight identifies the 24-tool
 local-preview boundary, confirms the existing `.env` has no group/world permission bits, and reports
-Compose availability without starting services. `.env` must not appear in `git status --short`.
+Compose availability without starting services. The Node configuration signer is operator-created
+under ignored `var/keys/` before API startup and its private key remains mode `0600`. On Linux,
+align `ITHILDIN_CONTAINER_UID` and `ITHILDIN_CONTAINER_GID` with the operator UID/GID before
+startup so the unprivileged API can read it. `.env` must not appear in `git status --short`.
 
 **Stop** if `.env` is tracked, the tool count is not 24, the manifest/policy inputs are unexpected,
 or preflight reports a required local dependency missing. Do not compensate by weakening a
@@ -151,14 +158,62 @@ Always run `make hermes-poc-stop` after `make hermes-poc-run`, including after a
 Hermes is operator-started and unmanaged by Ithildin. Its model prose is not authoritative evidence,
 and the shared fixture filesystem is not a non-bypass boundary.
 
-## 3. Leg B — Synthetic Authenticated Node Evidence
+## 3. Leg B — Authenticated Node Onboarding Candidate And Synthetic Evidence
 
-This leg validates retained ignored local evidence from already-recorded isolated POCs. It does not
-start the optional Compose `ithildin-node` profile. That profile cannot safely self-enroll: never
-place a one-time enrollment code, Node private key, or API admin token into the optional
-`ithildin-node` service's environment variables or command arguments. The normal `ithildin-api`
-service is different: Compose supplies its required API admin token from the operator-owned `.env`
-file.
+The normal local stack now has an explicit optional onboarding candidate. This sequence is
+implemented but is **not yet recorded as an observed integrated journey** and therefore does not
+close `LV1-002` or `O3`.
+
+With the signer initialized before the API started, open **Nodes** in Command Center. Enter a
+bounded display name, explicitly select an active workspace, and issue one short-lived code.
+Command Center keeps the raw code only in mounted component memory; it does not persist it, copy it,
+log it, export it, put it in a URL, or generate a command containing it. Dismissal, replacement,
+navigation away from Nodes, sign-out, dashboard refresh, or page reload clears the displayed value;
+delayed responses are invalidated when the component loses ownership.
+
+Build the optional image, then use the fixed stdin-only target in a private, non-recorded terminal:
+
+```sh
+make node-service-image
+make node-service-enroll
+make node-service-status
+```
+
+Paste exactly one nonempty code line with no leading or trailing whitespace into
+`make node-service-enroll`, press Return, then send EOF. Never place the code in an environment
+variable, command argument, Make variable, note, or transcript. Before reading stdin, the CLI
+atomically reserves a mode-`0600` regular state file and holds that exact inode through enrollment.
+An existing file, directory, symlink, or competing reservation therefore fails before the secret is
+read or the Gateway is contacted; do not overwrite or delete state to force re-enrollment.
+
+Immediately before possible Gateway contact, that reservation becomes a secret-free
+`recovery_required` marker. If the request may have reached the Gateway but its response is lost, or
+if final state persistence fails, the marker remains and a blind retry is blocked. Run
+`make node-service-status`, inspect the Gateway Node inventory, and revoke any identity that may
+correspond to the ambiguous attempt. Only after revocation may the operator explicitly remove or
+recreate the local Node state volume and issue a new code. Ithildin automatically removes only its
+own still-empty reservation after a known pre-contact failure.
+
+In Command Center, assign a signed desired configuration to the new Gateway-derived Node identity.
+Then start and later stop only the optional Node service:
+
+```sh
+make node-service-up
+make node-service-status
+make node-service-stop
+```
+
+The optional profile has no environment, host mount, published port, Docker socket, Linux
+capability, runner lifecycle, self-update, or arbitrary host control. The status command is a safe
+client summary; it is not runner or model-provider health. This candidate sequence must be observed
+and recorded separately before `LV1-002` or `O3` can complete.
+
+The retained-evidence checks below validate ignored local evidence from already-recorded isolated
+POCs; those checks do not start the optional Compose `ithildin-node` profile. That profile cannot
+safely self-enroll: never place a one-time enrollment code, Node private key, or API admin token
+into the optional `ithildin-node` service's environment variables or command arguments. The normal
+`ithildin-api` service is different: Compose supplies its required API admin token from the
+operator-owned `.env` file.
 
 Run:
 

@@ -256,6 +256,164 @@ class NodeState:
         return state
 
 
+_ENROLLMENT_RECOVERY_RECORD_TYPE = "ithildin_node_enrollment_recovery"
+_ENROLLMENT_RECOVERY_STATUS = "recovery_required"
+
+
+@dataclass
+class NodeStateReservation:
+    """An inode-bound enrollment destination held from preflight through finalization."""
+
+    path: Path
+    file_descriptor: int
+    device: int
+    inode: int
+
+    @classmethod
+    def acquire(cls, path: Path) -> NodeStateReservation:
+        try:
+            path.parent.mkdir(parents=True, exist_ok=True)
+        except OSError as exc:
+            raise NodeClientError("Node state parent is unavailable") from exc
+        flags = os.O_RDWR | os.O_CREAT | os.O_EXCL
+        if hasattr(os, "O_NOFOLLOW"):
+            flags |= os.O_NOFOLLOW
+        if hasattr(os, "O_CLOEXEC"):
+            flags |= os.O_CLOEXEC
+        try:
+            descriptor = os.open(path, flags, 0o600)
+        except FileExistsError as exc:
+            raise NodeClientError("Node state already exists; refusing re-enrollment") from exc
+        except OSError as exc:
+            raise NodeClientError("Node state cannot be reserved") from exc
+        try:
+            status = os.fstat(descriptor)
+            reservation = cls(
+                path=path,
+                file_descriptor=descriptor,
+                device=status.st_dev,
+                inode=status.st_ino,
+            )
+            os.fchmod(descriptor, 0o600)
+            reservation.ensure_current()
+            _fsync_directory(path.parent)
+            return reservation
+        except Exception:
+            try:
+                status = os.fstat(descriptor)
+                current = os.lstat(path)
+                if (
+                    stat.S_ISREG(status.st_mode)
+                    and status.st_size == 0
+                    and current.st_dev == status.st_dev
+                    and current.st_ino == status.st_ino
+                ):
+                    path.unlink()
+            except OSError:
+                pass
+            os.close(descriptor)
+            raise
+
+    @classmethod
+    def recovery_summary(cls, path: Path) -> JsonObject | None:
+        try:
+            document = _read_private_json(path, label="Node state")
+        except NodeClientError:
+            return None
+        if (
+            document.get("record_type") != _ENROLLMENT_RECOVERY_RECORD_TYPE
+            or document.get("status") != _ENROLLMENT_RECOVERY_STATUS
+        ):
+            return None
+        return {
+            "record_type": _ENROLLMENT_RECOVERY_RECORD_TYPE,
+            "status": _ENROLLMENT_RECOVERY_STATUS,
+            "remote_enrollment_outcome": "unknown",
+            "contains_enrollment_code": False,
+            "contains_private_key": False,
+            "operator_action": (
+                "inspect Gateway Node inventory and revoke any ambiguous identity before "
+                "explicitly removing this reservation"
+            ),
+        }
+
+    def ensure_current(self) -> None:
+        if self.file_descriptor < 0:
+            raise NodeClientError("Node state reservation is closed")
+        try:
+            held = os.fstat(self.file_descriptor)
+            current = os.lstat(self.path)
+        except OSError as exc:
+            raise NodeClientError("Node state reservation changed; refusing enrollment") from exc
+        if (
+            not stat.S_ISREG(held.st_mode)
+            or held.st_dev != self.device
+            or held.st_ino != self.inode
+            or current.st_dev != self.device
+            or current.st_ino != self.inode
+            or stat.S_IMODE(held.st_mode) != 0o600
+        ):
+            raise NodeClientError("Node state reservation changed; refusing enrollment")
+
+    def mark_remote_attempt(self) -> None:
+        self.ensure_current()
+        _write_reserved_json(
+            self.file_descriptor,
+            _enrollment_recovery_document(),
+            label="Node enrollment recovery reservation",
+        )
+        self.ensure_current()
+
+    def finalize(self, state: NodeState) -> None:
+        self.ensure_current()
+        try:
+            _write_reserved_json(
+                self.file_descriptor,
+                state._document(),
+                label="Node state",
+            )
+        except NodeClientError:
+            try:
+                _write_reserved_json(
+                    self.file_descriptor,
+                    _enrollment_recovery_document(),
+                    label="Node enrollment recovery reservation",
+                )
+            except NodeClientError:
+                # The inode remains reserved even if the marker cannot be restored. A subsequent
+                # enrollment still fails closed and the invalid file requires operator recovery.
+                pass
+            raise
+        self.ensure_current()
+        self.close()
+
+    def cleanup_empty(self) -> None:
+        if self.file_descriptor < 0:
+            return
+        try:
+            held = os.fstat(self.file_descriptor)
+            current = os.lstat(self.path)
+            if (
+                stat.S_ISREG(held.st_mode)
+                and held.st_size == 0
+                and held.st_dev == self.device
+                and held.st_ino == self.inode
+                and current.st_dev == self.device
+                and current.st_ino == self.inode
+            ):
+                self.path.unlink()
+                _fsync_directory(self.path.parent)
+        except (OSError, NodeClientError):
+            pass
+        finally:
+            self.close()
+
+    def close(self) -> None:
+        if self.file_descriptor >= 0:
+            os.close(self.file_descriptor)
+            self.file_descriptor = -1
+
+
 @dataclass(frozen=True)
 class StoredNodeConfiguration:
     bundle: JsonObject
@@ -1087,6 +1245,49 @@ def _write_private_json_atomic(path: Path, document: JsonObject, *, label: str) 
         except OSError:
             pass
         raise NodeClientError(f"failed to store {label}") from exc
+
+
+def _write_reserved_json(descriptor: int, document: JsonObject, *, label: str) -> None:
+    payload = canonical_json(document).encode()
+    try:
+        os.lseek(descriptor, 0, os.SEEK_SET)
+        os.ftruncate(descriptor, 0)
+        remaining = memoryview(payload)
+        while remaining:
+            written = os.write(descriptor, remaining)
+            if written <= 0:
+                raise OSError("short write")
+            remaining = remaining[written:]
+        os.fsync(descriptor)
+    except OSError as exc:
+        raise NodeClientError(f"failed to store {label}") from exc
+
+
+def _enrollment_recovery_document() -> JsonObject:
+    return {
+        "record_type": _ENROLLMENT_RECOVERY_RECORD_TYPE,
+        "schema_version": "1",
+        "status": _ENROLLMENT_RECOVERY_STATUS,
+        "remote_enrollment_outcome": "unknown",
+        "contains_enrollment_code": False,
+        "contains_private_key": False,
+        "operator_action": (
+            "inspect Gateway Node inventory and revoke any ambiguous identity before "
+            "explicitly removing this reservation"
+        ),
+    }
+
+
+def _fsync_directory(path: Path) -> None:
+    flags = os.O_RDONLY | (os.O_DIRECTORY if hasattr(os, "O_DIRECTORY") else 0)
+    try:
+        descriptor = os.open(path, flags)
+        try:
+            os.fsync(descriptor)
+        finally:
+            os.close(descriptor)
+    except OSError as exc:
+        raise NodeClientError("Node state directory could not be synchronized") from exc
 
 
 def _read_private_json(path: Path, *, label: str) -> JsonObject:

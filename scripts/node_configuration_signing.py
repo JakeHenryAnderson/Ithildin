@@ -19,6 +19,11 @@ def main() -> int:
     parser.add_argument("command", choices=("keygen", "status"))
     parser.add_argument("--private-key", type=Path)
     parser.add_argument("--public-key", type=Path)
+    parser.add_argument(
+        "--require-configured",
+        action="store_true",
+        help="fail status when the signing trust root has not been initialized",
+    )
     args = parser.parse_args()
     settings = Settings(admin_token="node-configuration-cli")
     private_path, public_path = _paths(settings, args.private_key, args.public_key)
@@ -34,7 +39,13 @@ def main() -> int:
             }
         else:
             if not private_path.exists() and not public_path.exists():
-                result = {"valid": True, "configured": False, "key_id": None}
+                result = {
+                    "valid": not args.require_configured,
+                    "configured": False,
+                    "key_id": None,
+                }
+                if args.require_configured:
+                    result["failure"] = "Node configuration signing trust root is not initialized"
             else:
                 signer = NodeConfigurationSigner.load(private_path, public_path)
                 result = {

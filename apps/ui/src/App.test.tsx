@@ -1,5 +1,6 @@
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { StrictMode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { App, verifyEvidenceSectionDigests } from "./App";
@@ -190,6 +191,7 @@ type FetchMockOptions = {
   noApprovals?: boolean;
   additionalNodes?: Record<string, unknown>[];
   nodeOverrides?: Record<string, unknown>;
+  nodeEnrollmentFailure?: boolean;
   nodeRevokeFailure?: boolean;
   nodeRun?: boolean;
   nodeRunOriginMismatch?: boolean;
@@ -426,6 +428,7 @@ function trustedHostProposal(
 }
 
 function installFetchMock(status = systemStatus(), options: FetchMockOptions = {}) {
+  let enrollmentIssueCount = 0;
   let missionRecords = options.emptyMissions
     ? []
     : [
@@ -471,6 +474,36 @@ function installFetchMock(status = systemStatus(), options: FetchMockOptions = {
     const url = String(input);
     const path = url.replace(API_BASE, "");
     if (path === "/system/status") return jsonResponse(status);
+    if (path === "/workspaces") {
+      return jsonResponse({
+        workspaces: [
+          { id: "demo", display_name: "Demo workspace", enabled: true, metadata: {} },
+          { id: "archive", display_name: "Archive", enabled: false, metadata: {} },
+        ],
+      });
+    }
+    if (path === "/nodes/enrollment-codes" && init?.method === "POST") {
+      if (options.nodeEnrollmentFailure) {
+        return jsonResponse(
+          { detail: "Node configuration signing trust root is unavailable" },
+          { status: 503, statusText: "Service Unavailable" },
+        );
+      }
+      enrollmentIssueCount += 1;
+      const body = JSON.parse(String(init.body)) as {
+        display_name: string;
+        workspace_id: string;
+      };
+      return jsonResponse({
+        code_id: `ncode_${String(enrollmentIssueCount).padStart(32, "0")}`,
+        enrollment_code: `one-time-code-${enrollmentIssueCount}-not-persisted`,
+        workspace_id: body.workspace_id,
+        display_name: body.display_name,
+        created_at: "2026-07-23T12:00:00Z",
+        expires_at: "2026-07-23T12:10:00Z",
+        secret_returned_once: true,
+      });
+    }
     if (path === "/mission-templates") {
       return jsonResponse({
         registry_generation: "sha256:templateregistry",
@@ -1581,6 +1614,338 @@ describe("Review console interactions", () => {
         expect.objectContaining({ method: "POST" }),
       );
     });
+  });
+
+  it("issues a Node code once in component memory and clears it on every operator boundary", async () => {
+    const fetchMock = installFetchMock();
+    const user = await saveToken();
+    await user.click(screen.getByRole("link", { name: "Nodes" }));
+    const nodes = screen.getByRole("region", { name: "Ithildin Nodes" });
+    const displayName = within(nodes).getByLabelText("Node display name");
+    const workspace = within(nodes).getByLabelText("Active workspace");
+
+    expect(within(workspace).getByRole("option", { name: /Demo workspace/ })).toBeInTheDocument();
+    expect(within(workspace).queryByRole("option", { name: /Archive/ })).toBeNull();
+    await user.type(displayName, "Power User Node");
+    await user.selectOptions(workspace, "demo");
+    await user.click(within(nodes).getByRole("button", { name: "Issue one-time code" }));
+
+    const firstCode = "one-time-code-1-not-persisted";
+    const firstOutput = await within(nodes).findByLabelText("One-time enrollment code");
+    expect(firstOutput).toHaveValue(firstCode);
+    expect(firstOutput).toHaveFocus();
+    expect(within(nodes).getByText(/never saved by Command Center/i)).toBeInTheDocument();
+    expect(within(nodes).getByText(/Pipe the code directly to/i)).toBeInTheDocument();
+    expect(fetchMock).toHaveBeenCalledWith(
+      `${API_BASE}/nodes/enrollment-codes`,
+      expect.objectContaining({
+        method: "POST",
+        body: JSON.stringify({
+          display_name: "Power User Node",
+          workspace_id: "demo",
+        }),
+      }),
+    );
+    expect(within(nodes).queryByRole("button", { name: /copy/i })).toBeNull();
+    for (let index = 0; index < sessionStorage.length; index += 1) {
+      expect(sessionStorage.getItem(sessionStorage.key(index)!)).not.toContain(firstCode);
+    }
+
+    await user.click(within(nodes).getByRole("button", { name: "Replace displayed code" }));
+    const secondCode = "one-time-code-2-not-persisted";
+    expect(await within(nodes).findByLabelText("One-time enrollment code")).toHaveValue(secondCode);
+    expect(within(nodes).queryByDisplayValue(firstCode)).toBeNull();
+
+    await user.click(within(nodes).getByRole("button", { name: "Dismiss and clear code" }));
+    expect(within(nodes).queryByDisplayValue(secondCode)).toBeNull();
+    expect(displayName).toHaveFocus();
+
+    await user.click(within(nodes).getByRole("button", { name: "Issue one-time code" }));
+    expect(await within(nodes).findByLabelText("One-time enrollment code")).toHaveValue(
+      "one-time-code-3-not-persisted",
+    );
+    await user.click(screen.getByRole("button", { name: "Refresh" }));
+    await waitFor(() => {
+      expect(screen.queryByDisplayValue("one-time-code-3-not-persisted")).toBeNull();
+    });
+
+    const refreshedNodes = screen.getByRole("region", { name: "Ithildin Nodes" });
+    await user.type(within(refreshedNodes).getByLabelText("Node display name"), "Signout Node");
+    await user.selectOptions(within(refreshedNodes).getByLabelText("Active workspace"), "demo");
+    await user.click(
+      within(refreshedNodes).getByRole("button", { name: "Issue one-time code" }),
+    );
+    expect(await within(refreshedNodes).findByLabelText("One-time enrollment code")).toHaveValue(
+      "one-time-code-4-not-persisted",
+    );
+    await user.clear(screen.getByLabelText("Admin token"));
+    await user.click(screen.getByRole("button", { name: /save/i }));
+    expect(screen.queryByDisplayValue("one-time-code-4-not-persisted")).toBeNull();
+    expect(sessionStorage.length).toBe(0);
+  });
+
+  it("shows fail-closed Node enrollment readiness errors without retaining a code", async () => {
+    installFetchMock(systemStatus(), { nodeEnrollmentFailure: true });
+    const user = await saveToken();
+    await user.click(screen.getByRole("link", { name: "Nodes" }));
+    const nodes = screen.getByRole("region", { name: "Ithildin Nodes" });
+    await user.type(within(nodes).getByLabelText("Node display name"), "Unavailable Node");
+    await user.selectOptions(within(nodes).getByLabelText("Active workspace"), "demo");
+    await user.click(within(nodes).getByRole("button", { name: "Issue one-time code" }));
+
+    expect(await within(nodes).findByRole("alert")).toHaveTextContent(
+      "Node configuration signing trust root is unavailable",
+    );
+    expect(within(nodes).queryByRole("group", { name: "Issued Node enrollment secret" })).toBeNull();
+  });
+
+  it("unmounts Node onboarding on navigation and ignores its delayed response", async () => {
+    const fetchMock = installFetchMock();
+    const user = await saveToken();
+    await user.click(screen.getByRole("link", { name: "Nodes" }));
+    const nodes = screen.getByRole("region", { name: "Ithildin Nodes" });
+    const pending = deferredResponse();
+    const originalImplementation = fetchMock.getMockImplementation()!;
+    fetchMock.mockImplementation((input, init) => {
+      if (
+        String(input) === `${API_BASE}/nodes/enrollment-codes`
+        && init?.method === "POST"
+      ) return pending.promise;
+      return originalImplementation(input, init);
+    });
+    await user.type(within(nodes).getByLabelText("Node display name"), "Delayed Node");
+    await user.selectOptions(within(nodes).getByLabelText("Active workspace"), "demo");
+    await user.click(within(nodes).getByRole("button", { name: "Issue one-time code" }));
+
+    await user.click(screen.getByRole("link", { name: "Evidence" }));
+    expect(screen.queryByRole("heading", { name: "Issue a one-time Node code" })).toBeNull();
+    await act(async () => {
+      pending.resolve(jsonResponse({
+        code_id: "ncode_delayed",
+        enrollment_code: "delayed-navigation-code",
+        workspace_id: "demo",
+        display_name: "Delayed Node",
+        created_at: "2026-07-23T12:00:00Z",
+        expires_at: "2026-07-23T12:10:00Z",
+        secret_returned_once: true,
+      }));
+    });
+    expect(screen.queryByDisplayValue("delayed-navigation-code")).toBeNull();
+
+    await user.click(screen.getByRole("link", { name: "Nodes" }));
+    expect(screen.queryByDisplayValue("delayed-navigation-code")).toBeNull();
+    expect(within(nodes).getByLabelText("Node display name")).toHaveValue("");
+  });
+
+  it("issues successfully in StrictMode while still discarding a stale unmounted response", async () => {
+    const fetchMock = installFetchMock();
+    const delayedSuccess = deferredResponse();
+    const delayedStale = deferredResponse();
+    const pendingResponses = [delayedSuccess.promise, delayedStale.promise];
+    const originalImplementation = fetchMock.getMockImplementation()!;
+    fetchMock.mockImplementation((input, init) => {
+      if (
+        String(input) === `${API_BASE}/nodes/enrollment-codes`
+        && init?.method === "POST"
+      ) return pendingResponses.shift()!;
+      return originalImplementation(input, init);
+    });
+    const user = userEvent.setup();
+    render(
+      <StrictMode>
+        <App />
+      </StrictMode>,
+    );
+    await user.type(screen.getByLabelText("Admin token"), "local-token");
+    await user.click(screen.getByRole("button", { name: /save/i }));
+    await screen.findByText("Authenticated local preview");
+    await user.click(screen.getByRole("link", { name: "Nodes" }));
+    let nodes = screen.getByRole("region", { name: "Ithildin Nodes" });
+    await user.type(within(nodes).getByLabelText("Node display name"), "Strict Mode Node");
+    await user.selectOptions(within(nodes).getByLabelText("Active workspace"), "demo");
+    await user.click(within(nodes).getByRole("button", { name: "Issue one-time code" }));
+
+    await act(async () => {
+      delayedSuccess.resolve(jsonResponse({
+        code_id: "ncode_strict_success",
+        enrollment_code: "strict-mode-success-code",
+        workspace_id: "demo",
+        display_name: "Strict Mode Node",
+        created_at: "2026-07-23T12:00:00Z",
+        expires_at: "2026-07-23T12:10:00Z",
+        secret_returned_once: true,
+      }));
+    });
+    expect(await within(nodes).findByLabelText("One-time enrollment code")).toHaveValue(
+      "strict-mode-success-code",
+    );
+
+    await user.click(within(nodes).getByRole("button", { name: "Replace displayed code" }));
+    await user.click(screen.getByRole("link", { name: "Evidence" }));
+    await act(async () => {
+      delayedStale.resolve(jsonResponse({
+        code_id: "ncode_strict_stale",
+        enrollment_code: "strict-mode-stale-code",
+        workspace_id: "demo",
+        display_name: "Strict Mode Node",
+        created_at: "2026-07-23T12:00:01Z",
+        expires_at: "2026-07-23T12:10:01Z",
+        secret_returned_once: true,
+      }));
+    });
+    expect(screen.queryByDisplayValue("strict-mode-stale-code")).toBeNull();
+
+    await user.click(screen.getByRole("link", { name: "Nodes" }));
+    nodes = screen.getByRole("region", { name: "Ithildin Nodes" });
+    expect(within(nodes).queryByDisplayValue("strict-mode-success-code")).toBeNull();
+    expect(within(nodes).queryByDisplayValue("strict-mode-stale-code")).toBeNull();
+  });
+
+  it("ignores a delayed Node code after dashboard refresh invalidates onboarding", async () => {
+    const fetchMock = installFetchMock();
+    const user = await saveToken();
+    await user.click(screen.getByRole("link", { name: "Nodes" }));
+    const nodes = screen.getByRole("region", { name: "Ithildin Nodes" });
+    const pending = deferredResponse();
+    const originalImplementation = fetchMock.getMockImplementation()!;
+    fetchMock.mockImplementation((input, init) => {
+      if (
+        String(input) === `${API_BASE}/nodes/enrollment-codes`
+        && init?.method === "POST"
+      ) return pending.promise;
+      return originalImplementation(input, init);
+    });
+    await user.type(within(nodes).getByLabelText("Node display name"), "Refresh Race Node");
+    await user.selectOptions(within(nodes).getByLabelText("Active workspace"), "demo");
+    await user.click(within(nodes).getByRole("button", { name: "Issue one-time code" }));
+
+    await user.click(screen.getByRole("button", { name: "Refresh" }));
+    await act(async () => {
+      pending.resolve(jsonResponse({
+        code_id: "ncode_refresh",
+        enrollment_code: "delayed-refresh-code",
+        workspace_id: "demo",
+        display_name: "Refresh Race Node",
+        created_at: "2026-07-23T12:00:00Z",
+        expires_at: "2026-07-23T12:10:00Z",
+        secret_returned_once: true,
+      }));
+    });
+    await waitFor(() => {
+      expect(screen.queryByDisplayValue("delayed-refresh-code")).toBeNull();
+    });
+  });
+
+  it("ignores delayed Node codes after token replacement and sign-out", async () => {
+    const fetchMock = installFetchMock();
+    const user = await saveToken();
+    await user.click(screen.getByRole("link", { name: "Nodes" }));
+    const pendingReplacement = deferredResponse();
+    const pendingSignout = deferredResponse();
+    const pendingResponses = [pendingReplacement.promise, pendingSignout.promise];
+    const originalImplementation = fetchMock.getMockImplementation()!;
+    fetchMock.mockImplementation((input, init) => {
+      if (
+        String(input) === `${API_BASE}/nodes/enrollment-codes`
+        && init?.method === "POST"
+      ) return pendingResponses.shift()!;
+      return originalImplementation(input, init);
+    });
+    let nodes = screen.getByRole("region", { name: "Ithildin Nodes" });
+    await user.type(within(nodes).getByLabelText("Node display name"), "Replacement Race Node");
+    await user.selectOptions(within(nodes).getByLabelText("Active workspace"), "demo");
+    await user.click(within(nodes).getByRole("button", { name: "Issue one-time code" }));
+
+    const adminToken = screen.getByLabelText("Admin token");
+    await user.clear(adminToken);
+    await user.type(adminToken, "replacement-token");
+    await user.click(screen.getByRole("button", { name: /save/i }));
+    await act(async () => {
+      pendingReplacement.resolve(jsonResponse({
+        code_id: "ncode_replacement",
+        enrollment_code: "delayed-replacement-code",
+        workspace_id: "demo",
+        display_name: "Replacement Race Node",
+        created_at: "2026-07-23T12:00:00Z",
+        expires_at: "2026-07-23T12:10:00Z",
+        secret_returned_once: true,
+      }));
+    });
+    await waitFor(() => {
+      expect(screen.queryByDisplayValue("delayed-replacement-code")).toBeNull();
+    });
+
+    nodes = screen.getByRole("region", { name: "Ithildin Nodes" });
+    await user.type(within(nodes).getByLabelText("Node display name"), "Signout Race Node");
+    await user.selectOptions(within(nodes).getByLabelText("Active workspace"), "demo");
+    await user.click(within(nodes).getByRole("button", { name: "Issue one-time code" }));
+    await user.clear(screen.getByLabelText("Admin token"));
+    await user.click(screen.getByRole("button", { name: /save/i }));
+    await act(async () => {
+      pendingSignout.resolve(jsonResponse({
+        code_id: "ncode_signout",
+        enrollment_code: "delayed-signout-code",
+        workspace_id: "demo",
+        display_name: "Signout Race Node",
+        created_at: "2026-07-23T12:00:00Z",
+        expires_at: "2026-07-23T12:10:00Z",
+        secret_returned_once: true,
+      }));
+    });
+    expect(screen.queryByDisplayValue("delayed-signout-code")).toBeNull();
+  });
+
+  it("keeps only the newest overlapping Node enrollment-code response", async () => {
+    const fetchMock = installFetchMock();
+    const user = await saveToken();
+    await user.click(screen.getByRole("link", { name: "Nodes" }));
+    const nodes = screen.getByRole("region", { name: "Ithildin Nodes" });
+    const older = deferredResponse();
+    const newer = deferredResponse();
+    const pendingResponses = [older.promise, newer.promise];
+    const originalImplementation = fetchMock.getMockImplementation()!;
+    fetchMock.mockImplementation((input, init) => {
+      if (
+        String(input) === `${API_BASE}/nodes/enrollment-codes`
+        && init?.method === "POST"
+      ) return pendingResponses.shift()!;
+      return originalImplementation(input, init);
+    });
+    await user.type(within(nodes).getByLabelText("Node display name"), "Overlap Node");
+    await user.selectOptions(within(nodes).getByLabelText("Active workspace"), "demo");
+    const issueButton = within(nodes).getByRole("button", { name: "Issue one-time code" });
+    await user.click(issueButton);
+    fireEvent.submit(issueButton.closest("form")!);
+
+    await act(async () => {
+      newer.resolve(jsonResponse({
+        code_id: "ncode_newer",
+        enrollment_code: "newest-overlap-code",
+        workspace_id: "demo",
+        display_name: "Overlap Node",
+        created_at: "2026-07-23T12:00:01Z",
+        expires_at: "2026-07-23T12:10:01Z",
+        secret_returned_once: true,
+      }));
+    });
+    expect(await within(nodes).findByLabelText("One-time enrollment code")).toHaveValue(
+      "newest-overlap-code",
+    );
+    await act(async () => {
+      older.resolve(jsonResponse({
+        code_id: "ncode_older",
+        enrollment_code: "older-overlap-code",
+        workspace_id: "demo",
+        display_name: "Overlap Node",
+        created_at: "2026-07-23T12:00:00Z",
+        expires_at: "2026-07-23T12:10:00Z",
+        secret_returned_once: true,
+      }));
+    });
+    expect(within(nodes).getByLabelText("One-time enrollment code")).toHaveValue(
+      "newest-overlap-code",
+    );
+    expect(screen.queryByDisplayValue("older-overlap-code")).toBeNull();
   });
 
   it("opens a Node's mediated runs with Gateway-derived authority and non-claims", async () => {

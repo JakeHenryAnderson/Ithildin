@@ -601,6 +601,7 @@ def create_app(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="unknown or disabled workspace",
             ) from exc
+        _require_node_enrollment_readiness(api)
         settings_state = cast(Settings, api.state.settings)
         node_store = cast(NodeStore, api.state.node_store)
         issued = node_store.issue_enrollment_code(
@@ -626,15 +627,7 @@ def create_app(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="invalid Node enrollment request",
             ) from exc
-        signer = _require_node_configuration_signer(api)
-        settings_state = cast(Settings, api.state.settings)
-        try:
-            manifest_lock_digest = _manifest_lock_digest(settings_state.manifest_lock_path)
-        except (OSError, ValueError, json.JSONDecodeError) as exc:
-            raise HTTPException(
-                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail="manifest lock is unavailable for Node enrollment",
-            ) from exc
+        signer, manifest_lock_digest = _require_node_enrollment_readiness(api)
         node_store = cast(NodeStore, api.state.node_store)
         try:
             record = node_store.enroll(request_payload)
@@ -2256,6 +2249,21 @@ def _require_node_configuration_signer(api: FastAPI) -> NodeConfigurationSigner:
             detail="Node configuration signing trust root is unavailable",
         )
     return signer
+
+
+def _require_node_enrollment_readiness(
+    api: FastAPI,
+) -> tuple[NodeConfigurationSigner, str]:
+    signer = _require_node_configuration_signer(api)
+    settings_state = cast(Settings, api.state.settings)
+    try:
+        manifest_lock_digest = _manifest_lock_digest(settings_state.manifest_lock_path)
+    except (OSError, ValueError, json.JSONDecodeError) as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="manifest lock is unavailable for Node enrollment",
+        ) from exc
+    return signer, manifest_lock_digest
 
 
 def _manifest_lock_digest(path: Path) -> str:
