@@ -5,9 +5,9 @@ Status: active fixed-scope delivery contract.
 - Active delivery target: `Ithildin Local v1.0`
 - Current governed tool count: `24`
 - Release outcomes complete: `0/8`
-- Critical-path milestones complete: `0/8`
-- Latest completed milestone: `none`
-- Active next action: `LV1-000`
+- Critical-path milestones complete: `1/8`
+- Latest completed milestone: `LV1-000`
+- Active next action: `LV1-001`
 - Local-v1 release gate: `blocked`
 - Human UAT: `not_started`
 - Release acceptance: `false`
@@ -74,7 +74,7 @@ authorized, implemented, and evidenced.
 
 | Milestone | Scope | Status | Exit |
 | --- | --- | --- | --- |
-| `LV1-000` | Product-control pivot | `in_progress` | This contract, navigation, count-based status, fail-closed Local-v1 gate topology, disposition binding, and drift tests pass exact independent review. No release outcome closes. |
+| `LV1-000` | Product-control pivot | `complete` | This contract, navigation, count-based status, fail-closed Local-v1 gate topology, disposition binding, and drift tests pass exact independent review. No release outcome closes. |
 | `LV1-001` | Golden local path assembly | `not_started` | Assemble a reproducible operator-facing install/start/exercise/evidence/stop path from existing Gateway, UI, real Hermes MCP, and synthetic authenticated Node/Mission Command parts while preserving their truth separation. |
 | `LV1-002` | Authenticated Node journey | `not_started` | Close the enrollment, signed-configuration, identity, connectivity, and revocation experience required by `O3`. |
 | `LV1-003` | Real constrained mission seam | `not_started` | Make and review the bounded capability decision required before implementing the smallest fixed runner bridge and closing `O4`. |
@@ -83,12 +83,15 @@ authorized, implemented, and evidenced.
 | `LV1-006` | Local operations | `not_started` | Close installation hardening, backup/restore, update/rollback, diagnostics, data ownership, and cleanup required by `O1` and `O7`. |
 | `LV1-007` | Candidate freeze and UAT | `not_started` | Close remaining outcomes, freeze an exact candidate, run the dedicated release gate and independent review, then stop for genuine human UAT and an explicit release decision. |
 
-The immediate next action is `LV1-000`: complete this product-control repair and its exact
-independent review without self-declaring closure. After that disposition is recorded, `LV1-001`
-will evolve the existing v1.0 operator quickstart and trial path into one reproducible golden local
-install/start/exercise/evidence/stop workflow with a focused validator. It adds no runtime powers.
-`MCC-007` remains a later, separate bounded capability decision for `LV1-003`; this contract does
-not authorize its implementation.
+The exact `LV1-000` candidate
+`bb306a0e3698fb19293061c2760f9781cc6de395` received an independent Sol xhigh `GO` with zero
+Critical, High, Medium, or Low findings. The durable disposition is
+`docs/codex/local-v1-lv1-000-exact-review.md`.
+
+The immediate next action is `LV1-001`: evolve the existing v1.0 operator quickstart and trial path
+into one reproducible golden local install/start/exercise/evidence/stop workflow with a focused
+validator. It adds no runtime powers. `MCC-007` remains a later, separate bounded capability
+decision for `LV1-003`; this contract does not authorize its implementation.
 
 ## Explicitly Deferred From Local v1.0
 
