@@ -7,6 +7,7 @@ import json
 import platform
 import re
 import shutil
+import stat
 import subprocess
 import sys
 from pathlib import Path
@@ -64,6 +65,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
 
     env_path = repo_root / ".env"
     env_source = ".env" if env_path.exists() else ".env.example"
+    env_mode = _check_existing_env_permissions(env_path, failures)
     env = _read_env(repo_root / env_source, failures)
     admin_token_configured = bool(env.get("ITHILDIN_ADMIN_TOKEN"))
     sample_token_active = env.get("ITHILDIN_ADMIN_TOKEN") == SAMPLE_ADMIN_TOKEN
@@ -144,6 +146,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "repo_root": str(repo_root),
         "platform": platform.platform(),
         "env_source": env_source,
+        "env_mode": f"{env_mode:04o}" if env_mode is not None else None,
         "admin_token_configured": admin_token_configured,
         "sample_admin_token_active": sample_token_active,
         "dev_admin_token_allowed": dev_token_allowed,
@@ -185,6 +188,21 @@ def _read_env(path: Path, failures: list[str]) -> dict[str, str]:
         key, value = line.split("=", 1)
         values[key.strip()] = value.strip().strip('"').strip("'")
     return values
+
+
+def _check_existing_env_permissions(
+    env_path: Path,
+    failures: list[str],
+) -> int | None:
+    if not env_path.exists():
+        return None
+    mode = stat.S_IMODE(env_path.stat().st_mode)
+    if mode & 0o077:
+        failures.append(
+            f".env has group/world permission bits ({mode:04o}); "
+            "restrict it to owner-only access before running the live demo"
+        )
+    return mode
 
 
 def _make_targets(makefile: str) -> set[str]:
@@ -249,6 +267,8 @@ def _print_human(report: dict[str, Any]) -> None:
     print(f"status: {'pass' if report['valid'] else 'fail'}")
     print(f"repo_root: {report['repo_root']}")
     print(f"env_source: {report['env_source']}")
+    if report["env_mode"] is not None:
+        print(f"env_mode: {report['env_mode']}")
     print(f"tool_count: {report['tool_count']} / expected {report['expected_tool_count']}")
     print(f"compose_available: {str(report['compose_available']).lower()}")
     print(f"loopback_ports_valid: {str(report['loopback_ports_valid']).lower()}")

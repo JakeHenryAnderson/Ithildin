@@ -2092,7 +2092,8 @@ def test_v1_rc_packet_includes_current_artifact_map(tmp_path: Path) -> None:
     assert "29. `v1-rc-artifact-hashes.json`" in index
     assert "Ithildin v1.0 Operator Trial Checklist" in trial_checklist
     assert "Trial Pass Criteria" in trial_checklist
-    assert "make release-check" in trial_checklist
+    assert "make local-v1-golden-path-check" in trial_checklist
+    assert re.search(r"(?m)^make release-check$", trial_checklist) is None
     assert "Ithildin v1.0 Operator Trial Record" in trial_record
     assert "make v1-operator-trial-record" in trial_record
     assert "What The Record Does Not Do" in trial_record

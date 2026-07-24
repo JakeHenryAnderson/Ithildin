@@ -24,6 +24,7 @@ ALLOWED_OUTCOME_STATUSES = {
 }
 LOCAL_V1_CANDIDATE_TARGETS = (
     "local-v1-contract-check",
+    "local-v1-golden-path-check",
     "release-context",
     "manifest-lock-check",
     "release-guardrails",
@@ -120,6 +121,7 @@ REQUIRED_CONTRACT_PHRASES = (
     "remain false",
     "make local-v1-inner-check",
     "make local-v1-milestone-check",
+    "make local-v1-golden-path-check",
     "make local-v1-candidate-check",
     "make local-v1-release-check",
     "fixed target inventory",
@@ -264,6 +266,10 @@ def build_report(
         "local-v1-contract-check": (
             "uv run python scripts/local_v1_contract_check.py",
         ),
+        "local-v1-golden-path-check": (
+            "uv run python scripts/local_v1_golden_path_check.py",
+            "tests/test_local_v1_golden_path.py",
+        ),
         "local-v1-inner-check": (
             "$(MAKE) local-v1-contract-check",
             "$(MAKE) manifest-lock-check",
@@ -273,6 +279,7 @@ def build_report(
         ),
         "local-v1-milestone-check": (
             "$(MAKE) local-v1-inner-check",
+            "$(MAKE) local-v1-golden-path-check",
             "$(MAKE) agent-workflow-check",
             "tests/test_docs_site.py",
             "$(MAKE) docs-site",

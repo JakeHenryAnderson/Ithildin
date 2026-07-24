@@ -75,7 +75,7 @@ authorized, implemented, and evidenced.
 | Milestone | Scope | Status | Exit |
 | --- | --- | --- | --- |
 | `LV1-000` | Product-control pivot | `complete` | This contract, navigation, count-based status, fail-closed Local-v1 gate topology, disposition binding, and drift tests pass exact independent review. No release outcome closes. |
-| `LV1-001` | Golden local path assembly | `not_started` | Assemble a reproducible operator-facing install/start/exercise/evidence/stop path from existing Gateway, UI, real Hermes MCP, and synthetic authenticated Node/Mission Command parts while preserving their truth separation. |
+| `LV1-001` | Golden local path assembly | `in_progress` | Assemble a reproducible operator-facing install/start/exercise/evidence/stop path from existing Gateway, UI, real Hermes MCP, and synthetic authenticated Node/Mission Command parts while preserving their truth separation. |
 | `LV1-002` | Authenticated Node journey | `not_started` | Close the enrollment, signed-configuration, identity, connectivity, and revocation experience required by `O3`. |
 | `LV1-003` | Real constrained mission seam | `not_started` | Make and review the bounded capability decision required before implementing the smallest fixed runner bridge and closing `O4`. |
 | `LV1-004` | Failure and recovery | `not_started` | Bind the integrated restart/replay/partition/revocation/stale-configuration/rollback scenario required by `O5`. |
@@ -92,6 +92,11 @@ The immediate next action is `LV1-001`: evolve the existing v1.0 operator quicks
 into one reproducible golden local install/start/exercise/evidence/stop workflow with a focused
 validator. It adds no runtime powers. `MCC-007` remains a later, separate bounded capability
 decision for `LV1-003`; this contract does not authorize its implementation.
+
+The current implementation candidate is
+`docs/codex/local-v1-golden-path.md`, validated by `make local-v1-golden-path-check`. Its two
+operator-visible legs remain explicitly separate, so assembling and validating the walkthrough does
+not complete a release outcome or this milestone.
 
 ## Explicitly Deferred From Local v1.0
 
@@ -152,7 +157,8 @@ JSON disposition, and is validated from a clean current checkout.
 - Inner loop: `make local-v1-inner-check` validates this contract, its focused tests, the manifest
   lock, exact 24-tool surface, and no-new-powers guardrail.
 - Milestone checkpoint: `make local-v1-milestone-check` adds agent-workflow, release-readiness
-  wiring, and docs-site checks. Run it after a coherent Local-v1 batch.
+  wiring, the focused `make local-v1-golden-path-check`, and docs-site checks. Run it after a
+  coherent Local-v1 batch.
 - Candidate tier: after `O1`-`O7` are complete and the frozen candidate moves `O8` into progress,
   `make local-v1-candidate-check` requires a clean checkout, emits exact candidate markers, runs the
   milestone gate, and executes a fixed target inventory. The inventory explicitly covers policy,

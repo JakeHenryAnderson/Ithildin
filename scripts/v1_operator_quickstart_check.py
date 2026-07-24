@@ -17,26 +17,19 @@ ROOT = Path(__file__).resolve().parents[1]
 QUICKSTART_DOC = ROOT / "docs/codex/v1.0-operator-quickstart.md"
 
 REQUIRED_COMMANDS = [
-    "make v1-rc-status-check",
+    "make local-v1-golden-path-check",
     "make live-demo-preflight",
     "make demo-readiness-summary",
-    "make demo-seed",
-    "make compose-up",
-    "make compose-smoke",
-    "make demo-flow",
-    "make live-demo-status",
-    "make demo-evidence-packet",
-    "make workbench-evidence-packet",
-    "make review-candidate",
     "make compose-down",
 ]
 
 REQUIRED_PHRASES = [
-    "Status: local-preview operator quickstart for the v1.0 RC path.",
+    "Status: Local-v1 operator entry point.",
     "Current governed tool count: `24`",
-    "Zero-To-One Command Path",
-    "Manual Review Steps",
-    "Evidence Reading Order",
+    "Ithildin Local v1.0 Golden Path",
+    "Start Here",
+    "Manual Review Orientation",
+    "Evidence Orientation",
     "If Compose Is Unavailable",
     "What This Demonstrates",
     "What This Does Not Demonstrate",
@@ -47,6 +40,8 @@ REQUIRED_PHRASES = [
     "LIVE_DEMO_INDEX.md",
     "LIVE_DEMO_EVIDENCE_SUMMARY.md",
     "does not prove production deployment safety",
+    "does not prove a real Hermes-through-Node mission",
+    "authorize `MCC-007`",
 ]
 
 FORBIDDEN_PHRASES = [

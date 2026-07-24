@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 from pathlib import Path
 from typing import Any
@@ -17,42 +18,29 @@ ROOT = Path(__file__).resolve().parents[1]
 CHECKLIST_DOC = ROOT / "docs/codex/v1.0-operator-trial-checklist.md"
 
 REQUIRED_COMMANDS = [
-    "make v1-rc-status-check",
-    "make v1-progress-assessment",
+    "make local-v1-golden-path-check",
     "make live-demo-preflight",
     "make demo-readiness-summary",
-    "make demo-seed",
-    "make compose-up",
-    "make compose-smoke",
     "make compose-down",
-    "make demo-workbench",
-    "make signed-evidence-demo",
-    "make negative-review-transcripts",
-    "make live-demo-status",
-    "make demo-evidence-packet",
-    "make workbench-evidence-packet",
-    "make release-check",
-    "make review-candidate",
+    "make hermes-poc-stop",
+    "make local-v1-candidate-check",
     "git status --short",
 ]
 
 REQUIRED_PHRASES = [
-    "Status: local-preview operator trial checklist for the v1.0 RC path.",
+    "Status: Local-v1 operator trial companion.",
+    "Ithildin Local v1.0 Golden Path",
     "Trial Metadata",
     "Governed tool count | `24`",
-    "Latest implemented tool | `sandbox.artifact.write_text`",
-    "Selected next capability | `not selected`",
     "Required Preflight",
-    "Optional Compose Path",
-    "Non-Compose Evidence Path",
-    "Final Handoff Gate",
+    "Golden Path Record",
     "Trial Pass Criteria",
     "Trial Fail Criteria",
     "What The Trial Does Not Prove",
     "http://127.0.0.1:5173",
-    "packet redaction scan reports `findings: 0`",
-    "enterprise next-review handoff exists",
-    "Compose skipped",
+    "existing evidence is validated or recorded honestly as unavailable",
+    "reserved for deliberate full-integrity checkpoints",
+    "does not prove a real Hermes-through-Node mission",
 ]
 
 BLOCKED_PHRASES = [
@@ -126,6 +114,10 @@ def build_report(repo_root: Path) -> dict[str, Any]:
                 failures.append(
                     f"v1.0 operator trial checklist contains forbidden phrase: {phrase}"
                 )
+        if re.search(r"(?m)^make release-check$", text):
+            failures.append(
+                "v1.0 operator trial checklist requires the historical full release gate"
+            )
 
     if tool_surface.get("tool_count") != 24:
         failures.append("tool surface tool count is not 24")
