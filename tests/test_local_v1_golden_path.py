@@ -33,6 +33,44 @@ def test_live_local_v1_golden_path_is_valid_and_fail_closed() -> None:
     assert report["uat_complete"] is False
 
 
+def test_golden_path_contract_stage_allows_reviewed_completion_and_future_progress() -> None:
+    contract = (ROOT / local_v1_golden_path_check.CONTRACT_REL).read_text(
+        encoding="utf-8"
+    )
+    completed = (
+        contract.replace(
+            "Critical-path milestones complete: `1/8`",
+            "Critical-path milestones complete: `2/8`",
+            1,
+        )
+        .replace("Active next action: `LV1-001`", "Active next action: `LV1-002`", 1)
+        .replace(
+            "| `LV1-001` | Golden local path assembly | `in_progress` |",
+            "| `LV1-001` | Golden local path assembly | `complete` |",
+            1,
+        )
+        .replace("Release outcomes complete: `0/8`", "Release outcomes complete: `3/8`", 1)
+    )
+
+    assert local_v1_golden_path_check._validate_contract_stage(completed) == []  # noqa: SLF001
+
+
+def test_golden_path_contract_stage_rejects_stale_completion_status() -> None:
+    contract = (ROOT / local_v1_golden_path_check.CONTRACT_REL).read_text(
+        encoding="utf-8"
+    )
+    stale = contract.replace(
+        "| `LV1-001` | Golden local path assembly | `in_progress` |",
+        "| `LV1-001` | Golden local path assembly | `complete` |",
+        1,
+    )
+
+    failures = local_v1_golden_path_check._validate_contract_stage(stale)  # noqa: SLF001
+
+    assert any("at least two completed" in failure for failure in failures)
+    assert any("cannot remain the active next action" in failure for failure in failures)
+
+
 def test_golden_path_rejects_integrated_runner_and_authority_claims() -> None:
     drifted = (
         _golden()

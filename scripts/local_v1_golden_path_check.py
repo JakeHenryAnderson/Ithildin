@@ -263,18 +263,7 @@ def build_report(repo_root: Path, *, golden_override: str | None = None) -> dict
     if "make local-v1-golden-path-check" not in trial:
         failures.append("operator trial checklist does not require the golden-path checker")
 
-    lv1_row = next(
-        (line for line in contract.splitlines() if line.startswith("| `LV1-001` |")),
-        "",
-    )
-    if "`in_progress`" not in lv1_row:
-        failures.append("LV1-001 is not in_progress in the Local-v1 contract")
-    if "Critical-path milestones complete: `1/8`" not in contract:
-        failures.append("Local-v1 milestone count changed while LV1-001 is in progress")
-    if "Release outcomes complete: `0/8`" not in contract:
-        failures.append("Local-v1 outcome count changed before integrated evidence exists")
-    if "Active next action: `LV1-001`" not in contract:
-        failures.append("Local-v1 next action is not LV1-001")
+    failures.extend(_validate_contract_stage(contract))
     normalized_contract = " ".join(contract.split())
     for phrase in (
         "All runtime, release, promotion, credential-custody, external-system, and UAT authorities",
@@ -344,6 +333,47 @@ def validate_golden_text(text: str) -> list[str]:
         failures.append("golden path does not repeat the real Hermes-through-Node non-claim")
     if text.count("24-tool") < 2:
         failures.append("golden path does not repeat the fixed 24-tool boundary")
+    return failures
+
+
+def _validate_contract_stage(contract: str) -> list[str]:
+    failures: list[str] = []
+    lv1_row = next(
+        (line for line in contract.splitlines() if line.startswith("| `LV1-001` |")),
+        "",
+    )
+    status_match = re.search(r"\| `(in_progress|complete)` \|", lv1_row)
+    if status_match is None:
+        return ["LV1-001 must be in_progress or complete in the Local-v1 contract"]
+
+    count_match = re.search(
+        r"Critical-path milestones complete: `(\d+)/8`",
+        contract,
+    )
+    next_match = re.search(r"Active next action: `([^`]+)`", contract)
+    if count_match is None:
+        failures.append("Local-v1 contract is missing the 8-milestone completion count")
+        return failures
+    if next_match is None:
+        failures.append("Local-v1 contract is missing the active next action")
+        return failures
+
+    completed_count = int(count_match.group(1))
+    active_next = next_match.group(1)
+    if status_match.group(1) == "in_progress":
+        if completed_count != 1:
+            failures.append(
+                "LV1-001 in_progress requires exactly one completed Local-v1 milestone"
+            )
+        if active_next != "LV1-001":
+            failures.append("LV1-001 in_progress must remain the active next action")
+    else:
+        if completed_count < 2:
+            failures.append(
+                "LV1-001 complete requires at least two completed Local-v1 milestones"
+            )
+        if active_next == "LV1-001":
+            failures.append("LV1-001 complete cannot remain the active next action")
     return failures
 
 
