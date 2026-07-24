@@ -55,6 +55,13 @@ COMPOSE_PROJECT_PREFIX = "ithildin-local-v1-node-"
 NODE_VERSION = "0.1.0"
 WORKSPACE_ID = "demo"
 POLL_SECONDS = 90.0
+COMPOSE_PLUGIN_CANDIDATES = (
+    Path("/Applications/Docker.app/Contents/Resources/cli-plugins/docker-compose"),
+    Path("/usr/local/lib/docker/cli-plugins/docker-compose"),
+    Path("/usr/local/libexec/docker/cli-plugins/docker-compose"),
+    Path("/usr/lib/docker/cli-plugins/docker-compose"),
+    Path("/usr/libexec/docker/cli-plugins/docker-compose"),
+)
 
 _SAFE_ID = re.compile(r"^[A-Za-z0-9_.:@-]{1,128}$")
 _COMMIT = re.compile(r"^[0-9a-f]{40}$")
@@ -212,6 +219,19 @@ class AnchoredRunDirectory:
 
     def write_text(self, relative: str, content: str, *, mode: int) -> None:
         self.write_bytes(relative, content.encode("utf-8"), mode=mode)
+
+    def symlink(self, relative: str, target: Path) -> None:
+        if not target.is_absolute():
+            raise JourneyError("runtime_symlink_target_invalid")
+        self.validate()
+        parent_descriptor, name = self._open_parent(relative)
+        try:
+            os.symlink(str(target), name, dir_fd=parent_descriptor)
+        except OSError as exc:
+            raise JourneyError("runtime_symlink_create_failed") from exc
+        finally:
+            os.close(parent_descriptor)
+        self.validate()
 
     def file_path(self, relative: str) -> Path:
         _safe_relative_parts(relative)
@@ -388,6 +408,9 @@ class ComposePlan:
 
     def daemon_version(self) -> tuple[str, ...]:
         return ("docker", "version", "--format", "{{json .Server.Version}}")
+
+    def compose_version(self) -> tuple[str, ...]:
+        return ("docker", "compose", "version")
 
     def config_check(self) -> tuple[str, ...]:
         return self.command("--profile", "node", "config", "--quiet")
@@ -636,6 +659,7 @@ class JourneyState:
     owned_image_references: set[str] = field(default_factory=set)
     created_images: dict[str, str] = field(default_factory=dict)
     image_reconciliation_ambiguous: bool = False
+    compose_plugin_path: Path | None = None
     safe_observations: JsonObject = field(default_factory=dict)
 
     @property
@@ -681,6 +705,7 @@ def run_live_journey(
     api_factory: type[LocalApi] = LocalApi,
     ui_factory: type[LocalUi] = LocalUi,
     daemon_probe: Callable[[], str] | None = None,
+    compose_plugin_candidates: tuple[Path, ...] | None = None,
     now: datetime | None = None,
 ) -> JourneyRunResult:
     effective_now = now or datetime.now(UTC)
@@ -726,6 +751,10 @@ def run_live_journey(
     api: LocalApi | None = None
     try:
         _prepare_isolated_runtime(state, admin_token)
+        _install_compose_plugin(
+            state,
+            compose_plugin_candidates or COMPOSE_PLUGIN_CANDIDATES,
+        )
         environment = _isolated_docker_environment(state, docker_endpoint)
         delegate = executor or SubprocessExecutor(environment)
         command_executor = AnchoredExecutor(
@@ -969,13 +998,61 @@ def _prepare_isolated_runtime(state: JourneyState, admin_token: str) -> None:
     )
 
 
+def _select_compose_plugin(candidates: tuple[Path, ...]) -> Path:
+    executable_targets: dict[tuple[int, int], Path] = {}
+    for candidate in candidates:
+        if not candidate.is_absolute():
+            raise JourneyError("compose_plugin_candidate_invalid")
+        try:
+            details = candidate.lstat()
+        except OSError:
+            continue
+        if (
+            not stat.S_ISREG(details.st_mode)
+            or details.st_mode & 0o111 == 0
+            or not os.access(candidate, os.X_OK)
+        ):
+            raise JourneyError("compose_plugin_candidate_invalid")
+        executable_targets.setdefault((details.st_dev, details.st_ino), candidate)
+    if not executable_targets:
+        raise JourneyError("compose_plugin_unavailable")
+    if len(executable_targets) != 1:
+        raise JourneyError("compose_plugin_ambiguous")
+    return next(iter(executable_targets.values()))
+
+
+def _install_compose_plugin(
+    state: JourneyState,
+    candidates: tuple[Path, ...],
+) -> None:
+    selected = _select_compose_plugin(candidates)
+    state.runtime_anchor.mkdir("docker-config/cli-plugins")
+    state.runtime_anchor.symlink(
+        "docker-config/cli-plugins/docker-compose",
+        selected,
+    )
+    state.compose_plugin_path = selected
+
+
 def _isolated_docker_environment(
     state: JourneyState,
     docker_endpoint: str,
 ) -> dict[str, str]:
     state.runtime_anchor.validate()
     config_path = state.runtime_anchor.file_path("docker-config")
-    if stat.S_IMODE(config_path.stat().st_mode) != 0o700 or any(config_path.iterdir()):
+    plugin_directory = config_path / "cli-plugins"
+    plugin_link = plugin_directory / "docker-compose"
+    if (
+        state.compose_plugin_path is None
+        or stat.S_IMODE(config_path.stat().st_mode) != 0o700
+        or {path.name for path in config_path.iterdir()} != {"cli-plugins"}
+        or plugin_directory.is_symlink()
+        or not plugin_directory.is_dir()
+        or stat.S_IMODE(plugin_directory.stat().st_mode) != 0o700
+        or {path.name for path in plugin_directory.iterdir()} != {"docker-compose"}
+        or not plugin_link.is_symlink()
+        or plugin_link.readlink() != state.compose_plugin_path
+    ):
         raise JourneyError("docker_config_not_isolated")
     environment = {
         "PATH": os.environ.get("PATH", "/usr/bin:/bin"),
@@ -998,6 +1075,10 @@ def _preflight(state: JourneyState, executor: CommandExecutor) -> None:
         if state.runtime_anchor.file_mode(relative) != expected_mode:
             raise JourneyError("runtime_file_permissions_invalid")
     _require_success(executor.run(state.compose.daemon_version()), "docker_daemon_unavailable")
+    _require_success(
+        executor.run(state.compose.compose_version()),
+        "compose_plugin_execution_failed",
+    )
     _require_success(executor.run(state.compose.config_check()), "compose_configuration_invalid")
     for command in (
         state.compose.project_containers(),
@@ -1415,6 +1496,8 @@ def _compose_override(runtime_root: Path, node_image: str) -> str:
 
 def _validate_subprocess_command(command: tuple[str, ...]) -> None:
     if command == ("docker", "version", "--format", "{{json .Server.Version}}"):
+        return
+    if command == ("docker", "compose", "version"):
         return
     if len(command) == 6 and command[:2] == ("docker", "ps"):
         label = command[5] if command[2:5] == ("--all", "--quiet", "--filter") else ""
