@@ -11,9 +11,9 @@ components. It is intentionally a **two-leg path**:
   configuration, governed access, and Mission Command recovery evidence produced by isolated POCs.
 
 The legs are not an integrated runner path. This walkthrough does not claim or demonstrate a real
-Hermes-through-Node mission. The separate exact-candidate authorization record now permits only
-bounded `MCC-007` code implementation for `LV1-003`; this walkthrough does not implement or exercise
-that seam, and live Hermes/O4 evidence authority remains false.
+Hermes-through-Node mission. The exact-reviewed fixed-bridge implementation candidate is authorized
+for code use only under `MCC-007`; this walkthrough does not exercise that seam, and live
+Hermes/Docker/O4 evidence authority remains false.
 
 ## Prerequisites And Trust Ceiling
 
@@ -368,14 +368,14 @@ checker reports malformed/stale evidence.
 
 - It does not prove a real Hermes-through-Node mission or close Local-v1 outcome `O4`.
 - It does not exercise `MCC-007`, a runner bridge, generic process control, or arbitrary host
-  control. A combined fixed-bridge implementation candidate exists but remains unreviewed and
-  unauthorized.
+  control. The exact-reviewed fixed-bridge implementation candidate is authorized for code use
+  only; live execution remains unauthorized.
 - It does not prove production identity/storage, production deployment, remote hosting, whole-host
   isolation, filesystem non-bypass, compliance, SIEM custody, or public security-product claims.
 - It does not qualify a release candidate, complete human UAT, accept Local v1.0, or grant runtime,
   release, promotion, credential-custody, or external-system authority.
 
-The unreviewed runtime seam remains `LV1-003`: the revised capability decision, fixed implementation
-candidate, and review-needed authorization disposition define the smallest fixed runner bridge.
-Leg A and Leg B remain deliberately separate until an exact candidate receives `GO` and a separate
-live authorization permits one `O4` evidence run.
+The live runtime seam remains `LV1-003`: the revised capability decision, exact-reviewed
+implementation candidate, and code-only authorization disposition define the smallest fixed runner
+bridge. Leg A and Leg B remain deliberately separate until a separate live authorization permits
+one exact-candidate `O4` evidence run.

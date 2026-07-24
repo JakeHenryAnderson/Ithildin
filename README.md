@@ -10,7 +10,8 @@ Active delivery target: **Ithildin Local v1.0**. The authoritative
 [Local v1.0 completion contract](docs/codex/local-v1-completion-contract.md) defines eight fixed,
 operator-visible outcomes and reports progress as an outcome count, not an elastic percentage.
 Enterprise/PIS artifacts remain preserved as deferred lineage and do not block this local release
-train. `LV1-000` remains in progress pending exact review. The
+train. `LV1-003` remains in progress after exact code-candidate review; live `O4` evidence remains
+separately unauthorized. The
 [Local v1.0 release disposition](docs/codex/local-v1-release-disposition.json) starts with all
 evidence and authority false or null; status prose cannot authorize release or UAT. The pivot
 grants no new runtime power, release authority, or UAT completion.
@@ -460,10 +461,11 @@ checked with `make control-mapping-readiness`.
 - [docs/codex/mission-command-runner-bridge-candidate-evaluation.md](docs/codex/mission-command-runner-bridge-candidate-evaluation.md) - design-only `MCC-007` evaluation of a fixed operator-managed Hermes bridge while implementation and runner lifecycle authority remain false.
 - [docs/codex/mission-command-runner-bridge-candidate-evaluation-internal-source-review.md](docs/codex/mission-command-runner-bridge-candidate-evaluation-internal-source-review.md) - zero-finding exact-candidate review permitting only preparation of a separate runner-bridge capability decision.
 - [docs/codex/mission-command-runner-bridge-capability-decision.md](docs/codex/mission-command-runner-bridge-capability-decision.md) - revised fixed Hermes/Node bridge topology and combined-candidate exact-review requirement while all runtime authority remains false.
-- [docs/codex/mission-command-runner-bridge-authorization-record.md](docs/codex/mission-command-runner-bridge-authorization-record.md) - review-needed disposition recording that prior code authority does not cover the revised combined candidate and that live Hermes, Docker, O4 evidence, release, and UAT authority remain false.
+- [docs/codex/local-v1-lv1-003-exact-review.md](docs/codex/local-v1-lv1-003-exact-review.md) - zero-finding Sol xhigh exact-candidate review of the 32-path fixed runner-bridge candidate, granting code-only authority while all live authority remains false.
+- [docs/codex/mission-command-runner-bridge-authorization-record.md](docs/codex/mission-command-runner-bridge-authorization-record.md) - candidate-bound code-only disposition for the exact reviewed commit, tree, decision digest, path inventory, and full finding lineage; live Hermes, Docker, O4 evidence, release, and UAT authority remain false.
 - `make mission-command-control-plane-plan-check` - validate mission admission authority while rejecting runner bridge, host control, provider authority, and tool-surface expansion.
 - `make mission-command-runner-bridge-decision-check` - validate the closed MCC-007 selection, pinned artifacts, 24-tool boundary, and post-review implementation stop line.
-- `make mission-command-runner-bridge-authorization-check` - validate the MCC-007 prior-review lineage, current decision digest, review-needed disposition, and false code/live authority.
+- `make mission-command-runner-bridge-authorization-check` - validate the MCC-007 exact reviewed commit, parent, tree, decision digest, 32-path inventory, finding lineage, code-only disposition, and false live authority.
 - `make mission-command-runner-bridge-profile-check` - run only the non-live decision,
   authorization, immutable-profile, bridge, and Compose-overlay contract tests.
 - `make mission-command-runner-bridge-implementation-check` - run the non-live Node client,

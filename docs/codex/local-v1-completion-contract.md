@@ -112,13 +112,14 @@ that recovery task. The subsequent bounded projection-and-review recovery produc
 exact run above. Those failed-attempt stop lines remain historical evidence; they did not authorize
 or prove the later successful run. No additional LV1-002 retry is needed or justified.
 
-The active action is `LV1-003`: review the combined decision and smallest fixed runner-bridge
-implementation required by `O4`. `MCC-007` current code implementation is not authorized: the prior
-code-only authorization does not cover the revised decision or combined candidate. The exact
-review-needed disposition is
+The active action is `LV1-003`: prepare the separately gated live evidence required by `O4`.
+`MCC-007` exact reviewed candidate is authorized for code use only. Independent Sol xhigh review of
+candidate `da5fd021bddb48ad663aa0a409da036bc854b516` returned `GO` with zero Critical, High, Medium,
+or Low findings after the complete remediation lineage recorded in
+`docs/codex/local-v1-lv1-003-exact-review.md`. The candidate-bound authorization is
 `docs/codex/mission-command-runner-bridge-authorization-record.md`. Live Hermes execution, Docker
-lifecycle action, and `O4` evidence execution remain separately unauthorized until a clean exact
-implementation candidate receives `GO` and a separate live-evidence authorization is recorded.
+lifecycle action, and `O4` evidence execution remain separately unauthorized until a distinct
+live-evidence authorization is recorded.
 
 The current implementation candidate is
 `docs/codex/local-v1-golden-path.md`, validated by `make local-v1-golden-path-check`. Its two

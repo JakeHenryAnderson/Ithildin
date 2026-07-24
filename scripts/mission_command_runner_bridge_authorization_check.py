@@ -17,10 +17,14 @@ from scripts import mission_command_runner_bridge_decision_check as decision_che
 ROOT = Path(__file__).resolve().parents[1]
 TARGET = "mission-command-runner-bridge-authorization-check"
 AUTHORIZATION = "docs/codex/mission-command-runner-bridge-authorization-record.md"
+REVIEW_DOCUMENT = "docs/codex/local-v1-lv1-003-exact-review.md"
 START = "<!-- mission-command-runner-bridge-authorization:start -->"
 END = "<!-- mission-command-runner-bridge-authorization:end -->"
 PREVIOUS_REVIEWED_COMMIT = "6cc8a4f1f9deceee231b185cf0d7f0acd63bb313"
 PREVIOUS_REVIEWED_TREE = "542f6d3b146b8bb5fa07f7cd73f80329d6de8ab6"
+REVIEWED_COMMIT = "da5fd021bddb48ad663aa0a409da036bc854b516"
+REVIEWED_PARENT = "ef226b28ba4806bfa3fb5ccfb0121afc5e9ae53b"
+REVIEWED_TREE = "f489dee60235d04eb8bc64cc6bb55e8534db1f8e"
 PREVIOUS_DECISION_DIGEST = (
     "sha256:3edb0ce71c01e9e3763a622642ab531b64bfa1d001575e9cad9a601f05101b98"
 )
@@ -28,6 +32,74 @@ CURRENT_DECISION_DIGEST = (
     "sha256:2a5792c80b672e9e44b24e9ef1e7201990386c90c89e496f17ac2073e04efc72"
 )
 ALLOWED_RUNTIME_PATHS = decision_check.IMPLEMENTATION_PATHS
+REVIEWED_PATH_INVENTORY = [
+    "Makefile",
+    "README.md",
+    "apps/mcp-server/src/ithildin_mcp_server/node_bridge.py",
+    "apps/node/src/ithildin_node/client.py",
+    "apps/node/src/ithildin_node/fixed_runner_bridge.py",
+    "apps/node/src/ithildin_node/service.py",
+    "deploy/hermes-node-bridge/Dockerfile",
+    "deploy/hermes-node-bridge/README.md",
+    "deploy/hermes-node-bridge/compose.yaml",
+    "deploy/hermes-node-bridge/config.yaml",
+    "deploy/hermes-node-bridge/fixed-instruction.md",
+    "deploy/hermes-node-bridge/profile.json",
+    "docs/codex/local-v1-completion-contract.md",
+    "docs/codex/local-v1-golden-path.md",
+    "docs/codex/mission-command-runner-bridge-authorization-record.md",
+    "docs/codex/mission-command-runner-bridge-capability-decision.md",
+    "scripts/local_v1_constrained_mission_journey.py",
+    "scripts/local_v1_constrained_mission_journey_check.py",
+    "scripts/local_v1_contract_check.py",
+    "scripts/local_v1_golden_path_check.py",
+    "scripts/mission_command_runner_bridge_authorization_check.py",
+    "scripts/mission_command_runner_bridge_decision_check.py",
+    "tests/test_api_service.py",
+    "tests/test_local_v1_constrained_mission_journey.py",
+    "tests/test_local_v1_contract.py",
+    "tests/test_local_v1_golden_path.py",
+    "tests/test_mission_command_runner_bridge_authorization_check.py",
+    "tests/test_mission_command_runner_bridge_decision_check.py",
+    "tests/test_node_client.py",
+    "tests/test_node_fixed_runner_bridge.py",
+    "tests/test_node_mcp_bridge.py",
+    "tests/test_node_service.py",
+]
+REVIEW_LINEAGE = [
+    {
+        "stage": "initial_dirty_audit",
+        "critical": 0,
+        "high": 3,
+        "medium": 1,
+        "low": 1,
+        "disposition": "NO_GO",
+    },
+    {
+        "stage": "first_exact_review",
+        "critical": 0,
+        "high": 2,
+        "medium": 1,
+        "low": 1,
+        "disposition": "NO_GO",
+    },
+    {
+        "stage": "exact_rereview",
+        "critical": 0,
+        "high": 0,
+        "medium": 1,
+        "low": 0,
+        "disposition": "NO_GO",
+    },
+    {
+        "stage": "final_exact_review",
+        "critical": 0,
+        "high": 0,
+        "medium": 0,
+        "low": 0,
+        "disposition": "GO",
+    },
+]
 FORBIDDEN_RUNTIME_PATHS = [
     "pyproject.toml",
     "uv.lock",
@@ -37,13 +109,14 @@ FORBIDDEN_RUNTIME_PATHS = [
     "tool-manifests.lock.json",
 ]
 TRUE_FIELDS = (
-    "exact_implementation_review_required",
-    "separate_live_evidence_authorization_required",
-)
-FALSE_FIELDS = (
     "code_implementation_authorized",
     "runtime_adapter_code_authorized",
     "runner_bridge_code_authorized",
+    "exact_implementation_review_required",
+    "exact_implementation_review_complete",
+    "separate_live_evidence_authorization_required",
+)
+FALSE_FIELDS = (
     "live_hermes_execution_authorized",
     "docker_lifecycle_authorized",
     "o4_evidence_execution_authorized",
@@ -80,15 +153,18 @@ EXPECTED_KEYS = {
     "previous_reviewed_candidate_tree",
     "previous_decision_sha256",
     "current_decision_sha256",
+    "reviewed_candidate_commit",
+    "reviewed_candidate_parent",
+    "reviewed_candidate_tree",
+    "review_document",
+    "reviewer",
     "review_disposition",
-    "superseded_candidate_critical_findings",
-    "superseded_candidate_high_findings",
-    "superseded_candidate_medium_findings",
-    "superseded_candidate_low_findings",
+    "review_lineage",
     *TRUE_FIELDS,
     *FALSE_FIELDS,
     "allowed_runtime_paths",
     "forbidden_runtime_paths",
+    "reviewed_path_inventory",
 }
 
 
@@ -100,6 +176,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     failures: list[str] = []
     authorization_text = _read(repo_root / AUTHORIZATION, failures)
     decision_text = _read(repo_root / decision_check.DECISION, failures)
+    review_text = _read(repo_root / REVIEW_DOCUMENT, failures)
     try:
         authorization = _contract(authorization_text)
     except AuthorizationContractError as exc:
@@ -145,7 +222,60 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     if ancestry.returncode != 0:
         failures.append("reviewed decision candidate is not an ancestor of HEAD")
 
+    reviewed_tree = _git(
+        repo_root,
+        ["show", "-s", "--format=%T", REVIEWED_COMMIT],
+        failures,
+    )
+    if reviewed_tree != REVIEWED_TREE:
+        failures.append("exact reviewed implementation tree does not match authorization")
+    reviewed_parent = _git(
+        repo_root,
+        ["show", "-s", "--format=%P", REVIEWED_COMMIT],
+        failures,
+    )
+    if reviewed_parent != REVIEWED_PARENT:
+        failures.append("exact reviewed implementation parent does not match authorization")
+    reviewed_decision = _git(
+        repo_root,
+        ["show", f"{REVIEWED_COMMIT}:{decision_check.DECISION}"],
+        failures,
+        strip=False,
+    )
+    if reviewed_decision and _digest(reviewed_decision) != CURRENT_DECISION_DIGEST:
+        failures.append(
+            "exact reviewed implementation decision digest does not match authorization"
+        )
+    reviewed_paths = _git(
+        repo_root,
+        ["diff-tree", "--no-commit-id", "--name-only", "-r", REVIEWED_COMMIT],
+        failures,
+    ).splitlines()
+    if reviewed_paths != REVIEWED_PATH_INVENTORY:
+        failures.append("exact reviewed implementation path inventory does not match authorization")
+    candidate_ancestry = subprocess.run(
+        [
+            "git",
+            "-C",
+            str(repo_root),
+            "merge-base",
+            "--is-ancestor",
+            REVIEWED_COMMIT,
+            "HEAD",
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    if candidate_ancestry.returncode != 0:
+        failures.append("exact reviewed implementation candidate is not an ancestor of HEAD")
+
+    authorized_runtime_matches_reviewed_candidate = _validate_authorized_runtime_state(
+        repo_root,
+        failures,
+    )
     _validate_text(authorization_text, failures)
+    _validate_review_text(review_text, failures)
     _validate_wiring(repo_root, failures)
     return {
         "schema_version": "1",
@@ -153,7 +283,10 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "failures": failures,
         "tool_count": authorization.get("tool_count"),
         "reviewed_candidate_commit": authorization.get(
-            "previous_reviewed_candidate_commit"
+            "reviewed_candidate_commit"
+        ),
+        "authorized_runtime_matches_reviewed_candidate": (
+            authorized_runtime_matches_reviewed_candidate
         ),
         "code_implementation_authorized": authorization.get(
             "code_implementation_authorized"
@@ -184,20 +317,23 @@ def _validate_contract(
         "document_type": "runner_bridge_authorization_record",
         "schema_version": "1",
         "ticket_id": "MCC-007",
-        "decision": "combined_candidate_exact_review_required",
+        "decision": "exact_candidate_go_code_only",
         "tool_count": 24,
         "authority_source": "user_local_v1_to_uat_direction_and_standing_delegation",
         "previous_reviewed_candidate_commit": PREVIOUS_REVIEWED_COMMIT,
         "previous_reviewed_candidate_tree": PREVIOUS_REVIEWED_TREE,
         "previous_decision_sha256": PREVIOUS_DECISION_DIGEST,
         "current_decision_sha256": CURRENT_DECISION_DIGEST,
-        "review_disposition": "REVIEW_REQUIRED",
-        "superseded_candidate_critical_findings": 0,
-        "superseded_candidate_high_findings": 3,
-        "superseded_candidate_medium_findings": 1,
-        "superseded_candidate_low_findings": 1,
+        "reviewed_candidate_commit": REVIEWED_COMMIT,
+        "reviewed_candidate_parent": REVIEWED_PARENT,
+        "reviewed_candidate_tree": REVIEWED_TREE,
+        "review_document": REVIEW_DOCUMENT,
+        "reviewer": "independent GPT-5.6 Sol xhigh",
+        "review_disposition": "GO_CODE_ONLY",
+        "review_lineage": REVIEW_LINEAGE,
         "allowed_runtime_paths": ALLOWED_RUNTIME_PATHS,
         "forbidden_runtime_paths": FORBIDDEN_RUNTIME_PATHS,
+        "reviewed_path_inventory": REVIEWED_PATH_INVENTORY,
     }
     if set(authorization) != EXPECTED_KEYS:
         failures.append("runner-bridge authorization contract fields are not closed")
@@ -236,16 +372,127 @@ def _reject_duplicates(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
 
 def _validate_text(text: str, failures: list[str]) -> None:
     for token in (
-        "does not authorize the current code, deployment profile, evidence harness",
+        "authorizes only the exact-reviewed code candidate",
         "It does not authorize a live",
-        "three High, one Medium, and one Low",
-        "prior code-only authorization does not cover",
+        "`0/3/1/1`",
+        "`0/2/1/1`",
+        "`0/0/1/0`",
+        "`0/0/0/0`",
+        "`GO_CODE_ONLY`",
+        "Any staged, unstaged, deleted, renamed, or",
+        "untracked runtime-path delta invalidates code authority",
         "If an implementation owner needs any unauthorized path or power",
-        "live-evidence authorization",
+        "separate live-evidence",
         "Sol Ultra remains prohibited",
     ):
         if token not in text:
             failures.append(f"runner-bridge authorization is missing required token: {token}")
+
+
+def _validate_review_text(text: str, failures: list[str]) -> None:
+    for token in (
+        "Status: `GO`",
+        REVIEWED_COMMIT,
+        REVIEWED_PARENT,
+        REVIEWED_TREE,
+        CURRENT_DECISION_DIGEST,
+        "independent GPT-5.6 Sol xhigh",
+        "Initial audit | Dirty worktree candidate | 0 | 3 | 1 | 1 | `NO-GO`",
+        "First exact review | First bounded exact candidate | 0 | 2 | 1 | 1 | `NO-GO`",
+        "Exact rereview | Remediated exact candidate | 0 | 0 | 1 | 0 | `NO-GO`",
+        f"Final exact review | Candidate `{REVIEWED_COMMIT}` | 0 | 0 | 0 | 0 | `GO`",
+        "exact 32-path candidate",
+        "`LV1-003` remains `in_progress`",
+        "`O4` remains `not_started`",
+        "release outcomes remain `1/8`",
+        "critical-path milestones remain `3/8`",
+        "separately reviewed live-evidence authorization",
+        "All live Hermes/provider, Docker lifecycle",
+    ):
+        if token not in text:
+            failures.append(f"runner-bridge exact review is missing required token: {token}")
+    for path in REVIEWED_PATH_INVENTORY:
+        if text.count(f"`{path}`") != 1:
+            failures.append(
+                f"runner-bridge exact review must name reviewed path exactly once: {path}"
+            )
+
+
+def _validate_authorized_runtime_state(
+    repo_root: Path,
+    failures: list[str],
+    *,
+    reviewed_commit: str = REVIEWED_COMMIT,
+) -> bool:
+    initial_failure_count = len(failures)
+    cached = subprocess.run(
+        [
+            "git",
+            "-C",
+            str(repo_root),
+            "diff",
+            "--cached",
+            "--quiet",
+            "--no-ext-diff",
+            reviewed_commit,
+            "--",
+            *ALLOWED_RUNTIME_PATHS,
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    if cached.returncode == 1:
+        failures.append(
+            "authorized runtime index differs from exact reviewed implementation candidate"
+        )
+    elif cached.returncode != 0:
+        failures.append("authorized runtime index comparison failed")
+
+    worktree = subprocess.run(
+        [
+            "git",
+            "-C",
+            str(repo_root),
+            "diff",
+            "--quiet",
+            "--no-ext-diff",
+            "--",
+            *ALLOWED_RUNTIME_PATHS,
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    if worktree.returncode == 1:
+        failures.append(
+            "authorized runtime worktree differs from the reviewed index state"
+        )
+    elif worktree.returncode != 0:
+        failures.append("authorized runtime worktree comparison failed")
+
+    untracked = subprocess.run(
+        [
+            "git",
+            "-C",
+            str(repo_root),
+            "ls-files",
+            "--others",
+            "--exclude-standard",
+            "--",
+            *ALLOWED_RUNTIME_PATHS,
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    if untracked.returncode != 0:
+        failures.append("authorized runtime untracked-path comparison failed")
+    elif untracked.stdout.splitlines():
+        failures.append(
+            "authorized runtime paths contain untracked files outside the exact reviewed candidate"
+        )
+    return len(failures) == initial_failure_count
 
 
 def _validate_wiring(repo_root: Path, failures: list[str]) -> None:
@@ -325,6 +572,8 @@ def render_report(report: dict[str, Any]) -> str:
         f"tool_count: {report['tool_count']}",
         "code_implementation_authorized: "
         f"{str(report['code_implementation_authorized']).lower()}",
+        "authorized_runtime_matches_reviewed_candidate: "
+        f"{str(report['authorized_runtime_matches_reviewed_candidate']).lower()}",
         "live_hermes_execution_authorized: "
         f"{str(report['live_hermes_execution_authorized']).lower()}",
         f"docker_lifecycle_authorized: {str(report['docker_lifecycle_authorized']).lower()}",

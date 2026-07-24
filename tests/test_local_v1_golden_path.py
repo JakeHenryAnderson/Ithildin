@@ -27,7 +27,7 @@ def test_live_local_v1_golden_path_is_valid_and_fail_closed() -> None:
     assert report["tool_count"] == 24
     assert report["two_leg_path"] is True
     assert report["real_hermes_through_node_claimed"] is False
-    assert report["mcc_007_implementation_authorized"] is False
+    assert report["mcc_007_implementation_authorized"] is True
     assert report["runtime_authority_granted"] is False
     assert report["release_authority_granted"] is False
     assert report["uat_complete"] is False
@@ -82,14 +82,14 @@ def test_golden_path_rejects_integrated_runner_and_authority_claims() -> None:
     drifted = (
         _golden()
         + "\nA real Hermes-through-Node mission is proven.\n"
-        + "MCC-007 implementation is authorized.\n"
+        + "MCC-007 live execution is authorized.\n"
         + "Human UAT is complete.\n"
     )
 
     failures = local_v1_golden_path_check.validate_golden_text(drifted)
 
     assert any("real Hermes-through-Node mission is proven" in failure for failure in failures)
-    assert any("MCC-007 implementation is authorized" in failure for failure in failures)
+    assert any("MCC-007 live execution is authorized" in failure for failure in failures)
     assert any("human UAT is complete" in failure for failure in failures)
 
 

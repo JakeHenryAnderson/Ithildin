@@ -137,7 +137,7 @@ def test_local_v1_contract_rejects_authority_and_outcome_drift() -> None:
         encoding="utf-8"
     )
     drifted = re.sub(
-        r"`MCC-007` current code implementation is not authorized",
+        r"`MCC-007` exact reviewed candidate is authorized for code use only",
         "`MCC-007` has unrestricted implementation authority",
         contract,
     ).replace("| `O8` |", "| `O7` |", 1)

@@ -73,8 +73,7 @@ REQUIRED_PHRASES = (
     "Leg A — real agent compatibility",
     "Leg B — synthetic Node and Mission Command evidence",
     "does not claim or demonstrate a real Hermes-through-Node mission",
-    "combined fixed-bridge implementation candidate exists but remains unreviewed and "
-    "unauthorized",
+    "exact-reviewed fixed-bridge implementation candidate is authorized for code use only",
     "bounded 24-tool surface",
     "does not sandbox the host",
     "control arbitrary processes",
@@ -122,7 +121,7 @@ REQUIRED_PHRASES = (
     "What This Path Does Not Prove",
     "does not qualify a release candidate",
     "complete human UAT",
-    "The unreviewed runtime seam remains `LV1-003`",
+    "The live runtime seam remains `LV1-003`",
 )
 
 ORDERED_COMMANDS = (
@@ -142,9 +141,9 @@ ORDERED_COMMANDS = (
 
 FORBIDDEN_CLAIMS = (
     "real Hermes-through-Node mission is proven",
-    "MCC-007 is authorized",
-    "MCC-007 implementation is authorized",
-    "runner bridge is authorized",
+    "MCC-007 live execution is authorized",
+    "MCC-007 O4 evidence is authorized",
+    "runner lifecycle is authorized",
     "human UAT is complete",
     "Local v1.0 is accepted",
     "release candidate qualified",
@@ -283,8 +282,8 @@ def build_report(repo_root: Path, *, golden_override: str | None = None) -> dict
     for phrase in (
         "All runtime, release, promotion, credential-custody, external-system, and UAT authorities",
         "remain false",
-        "`MCC-007` current code implementation is not authorized",
-        "prior code-only authorization does not cover the revised decision",
+        "`MCC-007` exact reviewed candidate is authorized for code use only",
+        "docs/codex/local-v1-lv1-003-exact-review.md",
         "Live Hermes execution, Docker lifecycle action, and `O4` evidence "
         "execution remain separately unauthorized",
     ):
