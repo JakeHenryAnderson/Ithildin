@@ -23,7 +23,7 @@ IMPLEMENTATION_PATHS = [
     "apps/node/src/ithildin_node/client.py",
     "apps/node/src/ithildin_node/service.py",
     "apps/node/src/ithildin_node/fixed_runner_bridge.py",
-    "apps/mcp-server/src/ithildin_node_mcp_bridge",
+    "apps/mcp-server/src/ithildin_mcp_server/node_bridge.py",
     "deploy/hermes-node-bridge",
     "tests/test_node_client.py",
     "tests/test_node_service.py",
@@ -140,6 +140,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     evaluation_text = _read(evaluation_path, failures)
     review_text = _read(review_path, failures)
     hermes_dockerfile = _read(repo_root / "deploy/hermes-poc/Dockerfile", failures)
+    pyproject = _read(repo_root / "pyproject.toml", failures)
     try:
         decision = _contract(decision_text)
     except DecisionContractError as exc:
@@ -159,11 +160,13 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "hermes_oci_index_digest": HERMES_DIGEST,
         "hermes_version": "0.18.2 (2026.7.7.2)",
         "hermes_upstream_commit": "0512f06a",
-        "bridge_source_identity": "repo_owned_ithildin_node_mcp_bridge_same_candidate",
+        "bridge_source_identity": (
+            "repo_owned_ithildin_mcp_server_node_bridge_same_candidate"
+        ),
         "bridge_entrypoint": [
             "/opt/ithildin/.venv/bin/python",
             "-m",
-            "ithildin_node_mcp_bridge",
+            "ithildin_mcp_server.node_bridge",
         ],
         "bridge_arguments": [],
         "model_provider": "custom",
@@ -284,6 +287,11 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     _validate_text(decision_text, evaluation_text, review_text, failures)
     if f"FROM nousresearch/hermes-agent@{HERMES_DIGEST}" not in hermes_dockerfile:
         failures.append("reviewed Hermes Dockerfile does not bind the selected OCI index")
+    package_mapping = (
+        'ithildin_mcp_server = "apps/mcp-server/src/ithildin_mcp_server"'
+    )
+    if package_mapping not in pyproject:
+        failures.append("existing MCP server package mapping is unavailable for the bridge")
     _validate_wiring(repo_root, failures)
     return {
         "schema_version": "1",

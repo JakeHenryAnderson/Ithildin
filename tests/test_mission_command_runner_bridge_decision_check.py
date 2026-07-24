@@ -138,12 +138,31 @@ def test_runner_bridge_decision_requires_exact_release_wiring(tmp_path: Path) ->
     assert any("release-check dependency" in failure for failure in report["failures"])
 
 
+def test_runner_bridge_decision_requires_existing_package_mapping(tmp_path: Path) -> None:
+    repo = _copy_inputs(tmp_path)
+    pyproject_path = repo / "pyproject.toml"
+    pyproject_path.write_text(
+        pyproject_path.read_text(encoding="utf-8").replace(
+            'ithildin_mcp_server = "apps/mcp-server/src/ithildin_mcp_server"',
+            'ithildin_mcp_server = "apps/mcp-server/src/substituted"',
+            1,
+        ),
+        encoding="utf-8",
+    )
+
+    report = decision_check.build_report(repo)
+
+    assert report["valid"] is False
+    assert any("package mapping is unavailable" in failure for failure in report["failures"])
+
+
 def _copy_inputs(tmp_path: Path) -> Path:
     paths = (
         decision_check.DECISION,
         decision_check.EVALUATION,
         decision_check.EVALUATION_REVIEW,
         "deploy/hermes-poc/Dockerfile",
+        "pyproject.toml",
         "tool-manifests.lock.json",
         "Makefile",
         "README.md",
