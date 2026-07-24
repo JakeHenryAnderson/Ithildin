@@ -37,22 +37,16 @@ def test_golden_path_contract_stage_allows_reviewed_completion_and_future_progre
     contract = (ROOT / local_v1_golden_path_check.CONTRACT_REL).read_text(
         encoding="utf-8"
     )
-    completed = (
+    future_progress = (
         contract.replace(
-            "Critical-path milestones complete: `1/8`",
-            "Critical-path milestones complete: `2/8`",
+            "Critical-path milestones complete: `3/8`",
+            "Critical-path milestones complete: `4/8`",
             1,
         )
-        .replace("Active next action: `LV1-001`", "Active next action: `LV1-002`", 1)
-        .replace(
-            "| `LV1-001` | Golden local path assembly | `in_progress` |",
-            "| `LV1-001` | Golden local path assembly | `complete` |",
-            1,
-        )
-        .replace("Release outcomes complete: `0/8`", "Release outcomes complete: `3/8`", 1)
+        .replace("Active next action: `LV1-003`", "Active next action: `LV1-004`", 1)
     )
 
-    assert local_v1_golden_path_check._validate_contract_stage(completed) == []  # noqa: SLF001
+    assert local_v1_golden_path_check._validate_contract_stage(future_progress) == []  # noqa: SLF001
 
 
 def test_golden_path_contract_stage_rejects_stale_completion_status() -> None:
@@ -61,11 +55,11 @@ def test_golden_path_contract_stage_rejects_stale_completion_status() -> None:
     )
     in_progress = (
         contract.replace(
-            "Critical-path milestones complete: `2/8`",
+            "Critical-path milestones complete: `3/8`",
             "Critical-path milestones complete: `1/8`",
             1,
         )
-        .replace("Active next action: `LV1-002`", "Active next action: `LV1-001`", 1)
+        .replace("Active next action: `LV1-003`", "Active next action: `LV1-001`", 1)
         .replace(
             "| `LV1-001` | Golden local path assembly | `complete` |",
             "| `LV1-001` | Golden local path assembly | `in_progress` |",

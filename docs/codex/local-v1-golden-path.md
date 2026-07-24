@@ -160,9 +160,11 @@ and the shared fixture filesystem is not a non-bypass boundary.
 
 ## 3. Leg B — Authenticated Node Onboarding Candidate And Synthetic Evidence
 
-The normal local stack now has an explicit optional onboarding candidate. This sequence is
-implemented but is **not yet recorded as an observed integrated journey** and therefore does not
-close `LV1-002` or `O3`.
+The normal local stack has an explicit optional onboarding candidate. The sequence below is
+implemented and was recorded as an observed integrated synthetic journey at exact runtime-evidence
+candidate `fabdba7ee81d4ecca4353559dd109ff0008d8091`. That evidence closes `LV1-002` and `O3`; it
+does not prove a governed tool call, a real agent mission, configuration enforcement, runner or
+model-provider health, failure/recovery behavior, release readiness, or human UAT.
 
 With the signer initialized before the API started, open **Nodes** in Command Center. Enter a
 bounded display name, explicitly select an active workspace, and issue one short-lived code.
@@ -205,8 +207,9 @@ make node-service-stop
 
 The optional profile has no environment, host mount, published port, Docker socket, Linux
 capability, runner lifecycle, self-update, or arbitrary host control. The status command is a safe
-client summary; it is not runner or model-provider health. This candidate sequence must be observed
-and recorded separately before `LV1-002` or `O3` can complete.
+client summary; it is not runner or model-provider health. The exact observed journey, evidence
+hashes, independent review, cleanup receipts, and remaining nonclaims are recorded in
+`docs/codex/local-v1-lv1-002-exact-review.md`.
 
 ### Deliberate synthetic journey and evidence
 

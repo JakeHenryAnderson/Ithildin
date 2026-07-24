@@ -4,10 +4,10 @@ Status: active fixed-scope delivery contract.
 
 - Active delivery target: `Ithildin Local v1.0`
 - Current governed tool count: `24`
-- Release outcomes complete: `0/8`
-- Critical-path milestones complete: `2/8`
-- Latest completed milestone: `LV1-001`
-- Active next action: `LV1-002`
+- Release outcomes complete: `1/8`
+- Critical-path milestones complete: `3/8`
+- Latest completed milestone: `LV1-002`
+- Active next action: `LV1-003`
 - Local-v1 release gate: `blocked`
 - Human UAT: `not_started`
 - Release acceptance: `false`
@@ -42,7 +42,7 @@ integrated outcome.
 | --- | --- | --- | --- |
 | `O1` | Fresh local installation | `not_started` | From documented prerequisites, an operator initializes isolated local state, starts Gateway and Command Center, verifies health, and stops cleanly without using undocumented review machinery. |
 | `O2` | Real agent connection | `not_started` | A pinned operator-managed agent uses the existing MCP surface and the operator can distinguish allowed, denied, and approval-required activity. |
-| `O3` | Authenticated Node | `not_started` | One optional local Node enrolls with a one-time code, receives Gateway-derived identity and workspace assignment, consumes signed configuration, reports bounded connectivity, and can be revoked. |
+| `O3` | Authenticated Node | `complete` | One optional local Node enrolls with a one-time code, receives Gateway-derived identity and workspace assignment, consumes signed configuration, reports bounded connectivity, and can be revoked. |
 | `O4` | One real constrained mission | `not_started` | A server-owned mission reaches an operator-managed runner through the authenticated Node path and performs a governed operation with server-derived identity and workspace boundaries. |
 | `O5` | Failure and recovery scenario | `not_started` | One coherent scenario demonstrates restart continuity, replay rejection, partition failure, revocation, stale-configuration rejection, and documented manual rollback. |
 | `O6` | Perceivable Command Center | `not_started` | A first-time operator can find the mission, understand what happened and why, inspect approval/evidence, and distinguish Gateway, Node, runner, and model-provider truth with accessible interaction. |
@@ -76,7 +76,7 @@ authorized, implemented, and evidenced.
 | --- | --- | --- | --- |
 | `LV1-000` | Product-control pivot | `complete` | This contract, navigation, count-based status, fail-closed Local-v1 gate topology, disposition binding, and drift tests pass exact independent review. No release outcome closes. |
 | `LV1-001` | Golden local path assembly | `complete` | Assemble a reproducible operator-facing install/start/exercise/evidence/stop path from existing Gateway, UI, real Hermes MCP, and synthetic authenticated Node/Mission Command parts while preserving their truth separation. |
-| `LV1-002` | Authenticated Node journey | `in_progress` | Close the enrollment, signed-configuration, identity, connectivity, and revocation experience required by `O3`. |
+| `LV1-002` | Authenticated Node journey | `complete` | Close the enrollment, signed-configuration, identity, connectivity, and revocation experience required by `O3`. |
 | `LV1-003` | Real constrained mission seam | `not_started` | Make and review the bounded capability decision required before implementing the smallest fixed runner bridge and closing `O4`. |
 | `LV1-004` | Failure and recovery | `not_started` | Bind the integrated restart/replay/partition/revocation/stale-configuration/rollback scenario required by `O5`. |
 | `LV1-005` | Command Center comprehension | `not_started` | Close the golden-path information architecture, truth-source separation, evidence navigation, and accessibility criteria required by `O6`. |
@@ -94,10 +94,11 @@ Critical, High, Medium, or Low findings. The durable disposition is
 `docs/codex/local-v1-lv1-001-exact-review.md`. Completing this assembly milestone does not assert
 that a human operator has executed the walkthrough or close a release outcome.
 
-The active action is `LV1-002`: close the explicit authenticated Node enrollment,
-signed-configuration, identity, connectivity, and revocation journey required by `O3`. Its safe
-local onboarding implementation is in progress; no integrated operator observation or `O3`
-completion is declared.
+`LV1-002` and `O3` are complete. Exact runtime-evidence candidate
+`fabdba7ee81d4ecca4353559dd109ff0008d8091` passed the bounded synthetic authenticated Node journey
+and its success-only checker. Independent Sol xhigh review returned `GO` with zero Critical, High,
+Medium, or Low findings. The durable review and evidence binding is
+`docs/codex/local-v1-lv1-002-exact-review.md`.
 The deliberate live journey reached the repository's repeated-gate stop condition at exact
 candidate `f1fd02821706af691c0c933457f9fb6e5ce05af5`; see
 `docs/codex/local-v1-lv1-002-repeated-live-gate-disposition.md`. A fourth attempt is not authorized
@@ -106,11 +107,14 @@ The subsequently resumed fresh recovery added exact-reviewed closed diagnostics 
 new local-only retry at candidate `7f7b5fde932fd678afd465924e7dcbe936fbcfb2`. That retry failed
 closed before enrollment with only the authenticated system-status probe invalid; cleanup completed
 and all authority remained false. See
-`docs/codex/local-v1-lv1-002-fresh-recovery-disposition.md`. No additional retry is authorized in
-that recovery task. `LV1-002` and `O3` remain incomplete, and any resumption requires the new bounded
-projection-and-review recovery described in that disposition rather than another blind retry.
-`MCC-007` remains a later, separate bounded capability decision for `LV1-003`; this contract does
-not authorize its implementation.
+`docs/codex/local-v1-lv1-002-fresh-recovery-disposition.md`. No additional retry was authorized in
+that recovery task. The subsequent bounded projection-and-review recovery produced the successful
+exact run above. Those failed-attempt stop lines remain historical evidence; they did not authorize
+or prove the later successful run. No additional LV1-002 retry is needed or justified.
+
+The active action is `LV1-003`: make and review the bounded capability decision for the smallest
+fixed runner bridge required by `O4`. `MCC-007` remains a later, separate bounded capability
+decision for `LV1-003`; this contract does not authorize its implementation.
 
 The current implementation candidate is
 `docs/codex/local-v1-golden-path.md`, validated by `make local-v1-golden-path-check`. Its two
