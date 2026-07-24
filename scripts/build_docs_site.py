@@ -301,6 +301,7 @@ DEFAULT_DOCS = [
     "docs/codex/mission-command-control-plane-authorization-record.md",
     "docs/codex/mission-command-runner-bridge-candidate-evaluation.md",
     "docs/codex/mission-command-runner-bridge-candidate-evaluation-internal-source-review.md",
+    "docs/codex/mission-command-runner-bridge-capability-decision.md",
     "docs/codex/track-b-node-capability-decision.md",
     "docs/codex/track-b-node-architecture.md",
     "docs/codex/track-b-node-implementation-plan.md",

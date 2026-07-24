@@ -77,7 +77,7 @@ authorized, implemented, and evidenced.
 | `LV1-000` | Product-control pivot | `complete` | This contract, navigation, count-based status, fail-closed Local-v1 gate topology, disposition binding, and drift tests pass exact independent review. No release outcome closes. |
 | `LV1-001` | Golden local path assembly | `complete` | Assemble a reproducible operator-facing install/start/exercise/evidence/stop path from existing Gateway, UI, real Hermes MCP, and synthetic authenticated Node/Mission Command parts while preserving their truth separation. |
 | `LV1-002` | Authenticated Node journey | `complete` | Close the enrollment, signed-configuration, identity, connectivity, and revocation experience required by `O3`. |
-| `LV1-003` | Real constrained mission seam | `not_started` | Make and review the bounded capability decision required before implementing the smallest fixed runner bridge and closing `O4`. |
+| `LV1-003` | Real constrained mission seam | `in_progress` | Make and review the bounded capability decision required before implementing the smallest fixed runner bridge and closing `O4`. |
 | `LV1-004` | Failure and recovery | `not_started` | Bind the integrated restart/replay/partition/revocation/stale-configuration/rollback scenario required by `O5`. |
 | `LV1-005` | Command Center comprehension | `not_started` | Close the golden-path information architecture, truth-source separation, evidence navigation, and accessibility criteria required by `O6`. |
 | `LV1-006` | Local operations | `not_started` | Close installation hardening, backup/restore, update/rollback, diagnostics, data ownership, and cleanup required by `O1` and `O7`. |
@@ -114,7 +114,10 @@ or prove the later successful run. No additional LV1-002 retry is needed or just
 
 The active action is `LV1-003`: make and review the bounded capability decision for the smallest
 fixed runner bridge required by `O4`. `MCC-007` remains a later, separate bounded capability
-decision for `LV1-003`; this contract does not authorize its implementation.
+decision for `LV1-003`; its closed profile is selected pending exact review in
+`docs/codex/mission-command-runner-bridge-capability-decision.md`; this contract does not authorize
+its implementation. Implementation authority may rise only through the separately reviewed,
+candidate-bound authorization gate named by that decision.
 
 The current implementation candidate is
 `docs/codex/local-v1-golden-path.md`, validated by `make local-v1-golden-path-check`. Its two

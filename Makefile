@@ -17,7 +17,7 @@ NODE_RELEASE_BUNDLE ?= var/node-release-artifact/node-release-$(NODE_RELEASE_VER
 .PHONY: command-center-closure-review-history-check
 .PHONY: enterprise-current-checkpoint enterprise-progress-model enterprise-status-export enterprise-status-export-check technical-mvp-ticket-map technical-mvp-execution-board roadmap-status technical-mvp-operator-trial-readiness development-efficiency-status live-demo-environment-diagnostics
 .PHONY: dev-check capability-check evidence-check docs-check quick-check readiness-check smart-check smart-handoff-check progress-check validation-decision validation-decision-run validation-plan validation-recommendation validation-timing artifact-freshness-check status-now release-check-profile release-check-slice release-check-impact release-check-transcript-summary packet-check-recursion-guard
-.PHONY: hermes-governance-poc-plan-check mission-command-control-plane-plan-check track-b-node-decision-check track-b-node-configuration-decision-check track-b-node-governed-access-decision-check track-b-node-manual-rollback-decision-check track-b-node-configuration-trust-rotation-decision-check track-b-node-version-posture-decision-check track-b-node-identity-key-rotation-decision-check track-b-node-service-lifecycle-decision-check track-b-node-release-artifact-decision-check track-b-node-evidence-check track-b-node-configuration-evidence-check track-b-node-governed-access-evidence-check track-b-node-configuration-trust-rotation-evidence-check track-b-node-version-posture-evidence-check track-b-node-identity-key-rotation-evidence-check track-b-node-service-lifecycle-evidence-check track-b-node-release-artifact-evidence-check node-configuration-keygen node-configuration-signing-status node-configuration-signing-ready node-service-image node-service-compose-check node-service-enroll node-service-status node-service-up node-service-stop node-release-image node-release-artifact-keygen node-release-artifact-sign node-release-artifact-verify
+.PHONY: hermes-governance-poc-plan-check mission-command-control-plane-plan-check mission-command-runner-bridge-decision-check track-b-node-decision-check track-b-node-configuration-decision-check track-b-node-governed-access-decision-check track-b-node-manual-rollback-decision-check track-b-node-configuration-trust-rotation-decision-check track-b-node-version-posture-decision-check track-b-node-identity-key-rotation-decision-check track-b-node-service-lifecycle-decision-check track-b-node-release-artifact-decision-check track-b-node-evidence-check track-b-node-configuration-evidence-check track-b-node-governed-access-evidence-check track-b-node-configuration-trust-rotation-evidence-check track-b-node-version-posture-evidence-check track-b-node-identity-key-rotation-evidence-check track-b-node-service-lifecycle-evidence-check track-b-node-release-artifact-evidence-check node-configuration-keygen node-configuration-signing-status node-configuration-signing-ready node-service-image node-service-compose-check node-service-enroll node-service-status node-service-up node-service-stop node-release-image node-release-artifact-keygen node-release-artifact-sign node-release-artifact-verify
 .PHONY: hermes-poc-image hermes-poc-config-check hermes-poc-run hermes-poc-stop
 .PHONY: mission-command-control-plane-poc mission-command-control-plane-poc-check mission-command-control-plane-focused-gates
 .PHONY: local-v1-contract-check local-v1-golden-path-check local-v1-inner-check local-v1-milestone-check local-v1-runtime-trust-check local-v1-hermes-evidence-check local-v1-node-journey local-v1-node-journey-check local-v1-ui-production-build local-v1-candidate-inventory local-v1-candidate-check local-v1-release-check
@@ -43,6 +43,9 @@ hermes-governance-poc-plan-check:
 
 mission-command-control-plane-plan-check:
 	uv run python scripts/mission_command_control_plane_plan_check.py
+
+mission-command-runner-bridge-decision-check:
+	uv run python scripts/mission_command_runner_bridge_decision_check.py
 
 mission-command-control-plane-poc:
 	uv run --offline python scripts/mission_command_control_plane_poc.py --replace
@@ -86,6 +89,7 @@ local-v1-inner-check:
 local-v1-milestone-check:
 	$(MAKE) local-v1-inner-check
 	$(MAKE) local-v1-golden-path-check
+	$(MAKE) mission-command-runner-bridge-decision-check
 	$(MAKE) agent-workflow-check
 	uv run pytest \
 		tests/test_release_readiness.py::test_release_packet_review_docs_exist \
@@ -2271,6 +2275,7 @@ release-check: release-context manifest-lock-check release-guardrails release-ev
 release-check: hermes-governance-poc-plan-check
 release-check: compliance-mapping-template-compatibility-check
 release-check: mission-command-control-plane-plan-check
+release-check: mission-command-runner-bridge-decision-check
 release-check: track-b-node-decision-check
 release-check: track-b-node-configuration-decision-check
 release-check: track-b-node-governed-access-decision-check
