@@ -269,7 +269,9 @@ def isolated_roots(
         (REPO_ROOT / "workspaces/local.yaml").read_text()
     )
     (tmp_path / "deploy/docker-compose.yml").write_text("services: {}\n")
-    compose_plugin = tmp_path / "synthetic-docker-compose"
+    compose_plugin_directory = tmp_path / "synthetic-compose-plugin-dir"
+    compose_plugin_directory.mkdir(mode=0o700)
+    compose_plugin = compose_plugin_directory / "docker-compose"
     compose_plugin.write_text("#!/bin/sh\nexit 0\n")
     compose_plugin.chmod(0o700)
     reports = tmp_path / "var/local-v1-node-journey"
@@ -278,6 +280,11 @@ def isolated_roots(
     monkeypatch.setattr(journey, "REPORT_BASE", reports)
     monkeypatch.setattr(journey, "RUNTIME_BASE", runtime)
     monkeypatch.setattr(journey, "COMPOSE_FILE", tmp_path / "deploy/docker-compose.yml")
+    monkeypatch.setattr(
+        journey,
+        "COMPOSE_PLUGIN_EXTRA_DIR_CANDIDATES",
+        (compose_plugin_directory,),
+    )
     monkeypatch.setattr(checker, "ROOT", tmp_path)
     monkeypatch.setattr(checker, "REPORT_BASE", reports)
     monkeypatch.setattr(
@@ -304,7 +311,6 @@ def run_fake(
         api_factory=api_factory,  # type: ignore[arg-type]
         ui_factory=ui_factory,  # type: ignore[arg-type]
         daemon_probe=lambda: "unix:///var/run/docker.sock",
-        compose_plugin_candidates=(journey.ROOT / "synthetic-docker-compose",),
         now=NOW,
         poll_seconds=0.01,
     ).report_root
@@ -668,10 +674,7 @@ def test_isolated_docker_environment_has_no_home_or_inherited_credentials(
     try:
         runtime_anchor.mkdir("docker-config")
         state = _minimal_state(report_anchor, runtime_anchor)
-        journey._install_compose_plugin(
-            state,
-            (journey.ROOT / "synthetic-docker-compose",),
-        )
+        journey._write_isolated_docker_config(state)
         environment = journey._isolated_docker_environment(
             state,
             "unix:///var/run/docker.sock",
@@ -681,66 +684,97 @@ def test_isolated_docker_environment_has_no_home_or_inherited_credentials(
         assert "DOCKER_AUTH_CONFIG" not in environment
         config = Path(environment["DOCKER_CONFIG"])
         assert stat.S_IMODE(config.stat().st_mode) == 0o700
-        assert {path.name for path in config.iterdir()} == {"cli-plugins"}
-        assert (
-            config / "cli-plugins/docker-compose"
-        ).readlink() == journey.ROOT / "synthetic-docker-compose"
-        assert not (config / "config.json").exists()
+        assert {path.name for path in config.iterdir()} == {"config.json"}
+        config_document = json.loads((config / "config.json").read_text())
+        assert config_document == {
+            "cliPluginsExtraDirs": [
+                str(journey.ROOT / "synthetic-compose-plugin-dir")
+            ]
+        }
+        assert stat.S_IMODE((config / "config.json").stat().st_mode) == 0o600
+        assert "auths" not in config_document
+        assert "credsStore" not in config_document
+        assert "credHelpers" not in config_document
         assert not (config / "contexts").exists()
         assert "do-not-copy" not in str(list(config.rglob("*")))
+        (config / "config.json").write_text(
+            '{"auths":{"registry.example":{"auth":"hostile"}}}'
+        )
+        (config / "config.json").chmod(0o600)
+        with pytest.raises(journey.JourneyError, match="docker_config_not_isolated"):
+            journey._isolated_docker_environment(
+                state,
+                "unix:///var/run/docker.sock",
+            )
     finally:
         runtime_anchor.remove_tree()
         report_anchor.remove_tree()
 
 
-def test_compose_plugin_selection_is_exact_regular_executable_and_unambiguous(
+def test_compose_plugin_extra_dirs_are_closed_local_and_not_user_widened(
     tmp_path: Path,
 ) -> None:
     missing = tmp_path / "missing"
-    with pytest.raises(journey.JourneyError, match="compose_plugin_unavailable"):
-        journey._select_compose_plugin((missing,))
+    assert (
+        journey._verified_compose_plugin_extra_dirs(
+            (missing,),
+            allowlist=frozenset({missing}),
+        )
+        == ()
+    )
+
+    valid = tmp_path / "valid"
+    valid.mkdir(mode=0o700)
+    valid_plugin = valid / "docker-compose"
+    valid_plugin.write_text("#!/bin/sh\nexit 0\n")
+    valid_plugin.chmod(0o700)
+    assert journey._verified_compose_plugin_extra_dirs(
+        (valid,),
+        allowlist=frozenset({valid}),
+    ) == (valid,)
+
+    with pytest.raises(
+        journey.JourneyError,
+        match="compose_plugin_directory_not_allowlisted",
+    ):
+        journey._verified_compose_plugin_extra_dirs(
+            (valid,),
+            allowlist=frozenset(),
+        )
 
     non_executable = tmp_path / "non-executable"
-    non_executable.write_text("not executable")
-    non_executable.chmod(0o600)
-    with pytest.raises(journey.JourneyError, match="compose_plugin_candidate_invalid"):
-        journey._select_compose_plugin((non_executable,))
-
-    executable = tmp_path / "docker-compose"
-    executable.write_text("#!/bin/sh\nexit 0\n")
-    executable.chmod(0o700)
-    assert journey._select_compose_plugin((executable,)) == executable
-
-    malicious_link = tmp_path / "linked-compose"
-    malicious_link.symlink_to(executable)
-    with pytest.raises(journey.JourneyError, match="compose_plugin_candidate_invalid"):
-        journey._select_compose_plugin((malicious_link,))
-
-    second = tmp_path / "second-compose"
-    second.write_text("#!/bin/sh\nexit 0\n")
-    second.chmod(0o700)
-    with pytest.raises(journey.JourneyError, match="compose_plugin_ambiguous"):
-        journey._select_compose_plugin((executable, second))
-
-
-def test_missing_compose_plugin_fails_before_any_docker_command(
-    isolated_roots: tuple[Path, Path],
-) -> None:
-    executor = FakeExecutor()
-    with pytest.raises(journey.JourneyError, match="compose_plugin_unavailable"):
-        journey.run_live_journey(
-            executor=executor,
-            api_factory=FakeApi,  # type: ignore[arg-type]
-            ui_factory=FakeUi,  # type: ignore[arg-type]
-            daemon_probe=lambda: "unix:///var/run/docker.sock",
-            compose_plugin_candidates=(journey.ROOT / "missing-compose-plugin",),
-            now=NOW,
+    non_executable.mkdir(mode=0o700)
+    (non_executable / "docker-compose").write_text("not executable")
+    with pytest.raises(journey.JourneyError, match="compose_plugin_directory_invalid"):
+        journey._verified_compose_plugin_extra_dirs(
+            (non_executable,),
+            allowlist=frozenset({non_executable}),
         )
-    assert executor.commands == []
+
+    widened = tmp_path / "widened"
+    widened.mkdir(mode=0o777)
+    widened.chmod(0o777)
+    widened_plugin = widened / "docker-compose"
+    widened_plugin.write_text("#!/bin/sh\nexit 0\n")
+    widened_plugin.chmod(0o700)
+    with pytest.raises(journey.JourneyError, match="compose_plugin_directory_invalid"):
+        journey._verified_compose_plugin_extra_dirs(
+            (widened,),
+            allowlist=frozenset({widened}),
+        )
+
+    malicious_link = tmp_path / "linked-dir"
+    malicious_link.symlink_to(valid, target_is_directory=True)
+    with pytest.raises(journey.JourneyError, match="compose_plugin_directory_invalid"):
+        journey._verified_compose_plugin_extra_dirs(
+            (malicious_link,),
+            allowlist=frozenset({malicious_link}),
+        )
 
 
 def test_compose_version_failure_has_stable_preflight_error(
     isolated_roots: tuple[Path, Path],
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     class ComposeVersionFailExecutor(FakeExecutor):
         def run(
@@ -756,8 +790,15 @@ def test_compose_version_failure_has_stable_preflight_error(
             return super().run(command, input_text=input_text, timeout=timeout)
 
     executor = ComposeVersionFailExecutor()
+    monkeypatch.setattr(journey, "COMPOSE_PLUGIN_EXTRA_DIR_CANDIDATES", ())
     with pytest.raises(journey.JourneyError, match="compose_plugin_execution_failed"):
-        run_fake(executor=executor)
+        journey.run_live_journey(
+            executor=executor,
+            api_factory=FakeApi,  # type: ignore[arg-type]
+            ui_factory=FakeUi,  # type: ignore[arg-type]
+            daemon_probe=lambda: "unix:///var/run/docker.sock",
+            now=NOW,
+        )
     commands = [command for command, _ in executor.commands]
     assert ("docker", "compose", "version") in commands
     assert not any(len(command) > 10 for command in commands)

@@ -61,12 +61,8 @@ STACK_DIAGNOSTIC_FORMAT = (
     "{{.Service}}\t{{.State}}\t{{.Health}}\t{{.ExitCode}}"
 )
 MAX_STACK_DIAGNOSTIC_BYTES = 1024
-COMPOSE_PLUGIN_CANDIDATES = (
-    Path("/Applications/Docker.app/Contents/Resources/cli-plugins/docker-compose"),
-    Path("/usr/local/lib/docker/cli-plugins/docker-compose"),
-    Path("/usr/local/libexec/docker/cli-plugins/docker-compose"),
-    Path("/usr/lib/docker/cli-plugins/docker-compose"),
-    Path("/usr/libexec/docker/cli-plugins/docker-compose"),
+COMPOSE_PLUGIN_EXTRA_DIR_CANDIDATES = (
+    Path("/Applications/Docker.app/Contents/Resources/cli-plugins"),
 )
 
 _SAFE_ID = re.compile(r"^[A-Za-z0-9_.:@-]{1,128}$")
@@ -231,19 +227,6 @@ class AnchoredRunDirectory:
 
     def write_text(self, relative: str, content: str, *, mode: int) -> None:
         self.write_bytes(relative, content.encode("utf-8"), mode=mode)
-
-    def symlink(self, relative: str, target: Path) -> None:
-        if not target.is_absolute():
-            raise JourneyError("runtime_symlink_target_invalid")
-        self.validate()
-        parent_descriptor, name = self._open_parent(relative)
-        try:
-            os.symlink(str(target), name, dir_fd=parent_descriptor)
-        except OSError as exc:
-            raise JourneyError("runtime_symlink_create_failed") from exc
-        finally:
-            os.close(parent_descriptor)
-        self.validate()
 
     def file_path(self, relative: str) -> Path:
         _safe_relative_parts(relative)
@@ -941,7 +924,7 @@ class JourneyState:
     owned_image_references: set[str] = field(default_factory=set)
     created_images: dict[str, str] = field(default_factory=dict)
     image_reconciliation_ambiguous: bool = False
-    compose_plugin_path: Path | None = None
+    compose_plugin_extra_dirs: tuple[Path, ...] = ()
     failure_diagnostic: JsonObject | None = None
     safe_observations: JsonObject = field(default_factory=dict)
 
@@ -988,7 +971,6 @@ def run_live_journey(
     api_factory: type[LocalApi] = LocalApi,
     ui_factory: type[LocalUi] = LocalUi,
     daemon_probe: Callable[[], str] | None = None,
-    compose_plugin_candidates: tuple[Path, ...] | None = None,
     now: datetime | None = None,
 ) -> JourneyRunResult:
     effective_now = now or datetime.now(UTC)
@@ -1034,10 +1016,7 @@ def run_live_journey(
     api: LocalApi | None = None
     try:
         _prepare_isolated_runtime(state, admin_token)
-        _install_compose_plugin(
-            state,
-            compose_plugin_candidates or COMPOSE_PLUGIN_CANDIDATES,
-        )
+        _write_isolated_docker_config(state)
         environment = _isolated_docker_environment(state, docker_endpoint)
         delegate = executor or SubprocessExecutor(environment)
         command_executor = AnchoredExecutor(
@@ -1281,40 +1260,57 @@ def _prepare_isolated_runtime(state: JourneyState, admin_token: str) -> None:
     )
 
 
-def _select_compose_plugin(candidates: tuple[Path, ...]) -> Path:
-    executable_targets: dict[tuple[int, int], Path] = {}
+def _verified_compose_plugin_extra_dirs(
+    candidates: tuple[Path, ...],
+    *,
+    allowlist: frozenset[Path],
+) -> tuple[Path, ...]:
+    verified: list[Path] = []
     for candidate in candidates:
-        if not candidate.is_absolute():
-            raise JourneyError("compose_plugin_candidate_invalid")
+        if not candidate.is_absolute() or candidate not in allowlist:
+            raise JourneyError("compose_plugin_directory_not_allowlisted")
         try:
             details = candidate.lstat()
         except OSError:
             continue
+        plugin = candidate / "docker-compose"
+        try:
+            plugin_details = plugin.lstat()
+        except OSError as exc:
+            raise JourneyError("compose_plugin_directory_invalid") from exc
         if (
-            not stat.S_ISREG(details.st_mode)
-            or details.st_mode & 0o111 == 0
-            or not os.access(candidate, os.X_OK)
+            not stat.S_ISDIR(details.st_mode)
+            or details.st_mode & 0o022 != 0
+            or candidate.is_symlink()
+            or not stat.S_ISREG(plugin_details.st_mode)
+            or plugin_details.st_mode & 0o111 == 0
+            or plugin_details.st_mode & 0o022 != 0
+            or plugin.is_symlink()
+            or not os.access(plugin, os.X_OK)
         ):
-            raise JourneyError("compose_plugin_candidate_invalid")
-        executable_targets.setdefault((details.st_dev, details.st_ino), candidate)
-    if not executable_targets:
-        raise JourneyError("compose_plugin_unavailable")
-    if len(executable_targets) != 1:
-        raise JourneyError("compose_plugin_ambiguous")
-    return next(iter(executable_targets.values()))
+            raise JourneyError("compose_plugin_directory_invalid")
+        verified.append(candidate)
+    return tuple(verified)
 
 
-def _install_compose_plugin(
+def _write_isolated_docker_config(
     state: JourneyState,
-    candidates: tuple[Path, ...],
 ) -> None:
-    selected = _select_compose_plugin(candidates)
-    state.runtime_anchor.mkdir("docker-config/cli-plugins")
-    state.runtime_anchor.symlink(
-        "docker-config/cli-plugins/docker-compose",
-        selected,
+    selected = _verified_compose_plugin_extra_dirs(
+        COMPOSE_PLUGIN_EXTRA_DIR_CANDIDATES,
+        allowlist=frozenset(COMPOSE_PLUGIN_EXTRA_DIR_CANDIDATES),
     )
-    state.compose_plugin_path = selected
+    state.runtime_anchor.write_text(
+        "docker-config/config.json",
+        json.dumps(
+            {"cliPluginsExtraDirs": [str(path) for path in selected]},
+            separators=(",", ":"),
+            sort_keys=True,
+        )
+        + "\n",
+        mode=0o600,
+    )
+    state.compose_plugin_extra_dirs = selected
 
 
 def _isolated_docker_environment(
@@ -1323,18 +1319,29 @@ def _isolated_docker_environment(
 ) -> dict[str, str]:
     state.runtime_anchor.validate()
     config_path = state.runtime_anchor.file_path("docker-config")
-    plugin_directory = config_path / "cli-plugins"
-    plugin_link = plugin_directory / "docker-compose"
+    config_file = config_path / "config.json"
+    expected_config = {
+        "cliPluginsExtraDirs": [
+            str(path) for path in state.compose_plugin_extra_dirs
+        ]
+    }
+    expected_text = (
+        json.dumps(expected_config, separators=(",", ":"), sort_keys=True) + "\n"
+    )
+    try:
+        config_text = config_file.read_text()
+        parsed_config = json.loads(config_text)
+    except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+        raise JourneyError("docker_config_not_isolated") from exc
     if (
-        state.compose_plugin_path is None
-        or stat.S_IMODE(config_path.stat().st_mode) != 0o700
-        or {path.name for path in config_path.iterdir()} != {"cli-plugins"}
-        or plugin_directory.is_symlink()
-        or not plugin_directory.is_dir()
-        or stat.S_IMODE(plugin_directory.stat().st_mode) != 0o700
-        or {path.name for path in plugin_directory.iterdir()} != {"docker-compose"}
-        or not plugin_link.is_symlink()
-        or plugin_link.readlink() != state.compose_plugin_path
+        stat.S_IMODE(config_path.stat().st_mode) != 0o700
+        or {path.name for path in config_path.iterdir()} != {"config.json"}
+        or config_file.is_symlink()
+        or not config_file.is_file()
+        or stat.S_IMODE(config_file.stat().st_mode) != 0o600
+        or config_text != expected_text
+        or parsed_config != expected_config
+        or set(parsed_config) != {"cliPluginsExtraDirs"}
     ):
         raise JourneyError("docker_config_not_isolated")
     environment = {
