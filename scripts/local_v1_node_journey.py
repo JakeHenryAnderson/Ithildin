@@ -1168,11 +1168,13 @@ def _probe_stack_cycle(api: LocalApi, ui: LocalUi) -> StackProbeCycle:
 
     try:
         status = api.get("/system/status")
-        if status.get("status") == "ok":
-            system_probe = "probe_ready"
-            ready_status = status
     except JourneyError as exc:
         system_probe = _classify_probe_error(exc, ui=False)
+    else:
+        if status.get("status") == "ok":
+            _validate_system_status_trust(status)
+            system_probe = "probe_ready"
+            ready_status = status
 
     try:
         ui_health = ui.health()
@@ -1203,6 +1205,23 @@ def _classify_probe_error(error: JourneyError, *, ui: bool) -> str:
     ):
         return "probe_rejected"
     return "probe_invalid"
+
+
+def _validate_system_status_trust(status: JsonObject) -> None:
+    if status.get("tool_count") != 24:
+        raise JourneyError("governed_tool_count_changed")
+    runtime_candidate = status.get("runtime_candidate")
+    if (
+        not isinstance(runtime_candidate, dict)
+        or runtime_candidate.get("posture") != "unreviewed_local"
+    ):
+        raise JourneyError("runtime_candidate_authority_unexpected")
+    storage = status.get("storage")
+    if not isinstance(storage, dict) or storage.get("runtime_backend") != "sqlite":
+        raise JourneyError("storage_backend_not_sqlite")
+    postgres = storage.get("postgres")
+    if not isinstance(postgres, dict) or postgres.get("configured") is not False:
+        raise JourneyError("postgres_dsn_unexpected")
 
 
 def _collect_stack_diagnostic(
@@ -1348,11 +1367,16 @@ def _classify_stack_service(state: str, health: str, exit_code: int) -> str:
         return "service_exited_zero" if exit_code == 0 else "service_exited_nonzero"
     if state == "dead":
         return "service_dead_zero" if exit_code == 0 else "service_dead_nonzero"
+    if state == "restarting":
+        return (
+            "service_restarting_zero"
+            if exit_code == 0
+            else "service_restarting_nonzero"
+        )
     if exit_code != 0:
         raise JourneyError("compose_stack_diagnostic_output_rejected")
     classification = {
         "created": "service_created",
-        "restarting": "service_restarting",
         "paused": "service_paused",
         "removing": "service_removing",
     }.get(state)
@@ -1410,20 +1434,7 @@ def _start_normal_stack(
     ui_health = last_probe.ui_health
     if status is None or ui_health is None:
         raise JourneyError("compose_stack_health_timeout")
-    if status.get("tool_count") != 24:
-        raise JourneyError("governed_tool_count_changed")
-    runtime_candidate = status.get("runtime_candidate")
-    if (
-        not isinstance(runtime_candidate, dict)
-        or runtime_candidate.get("posture") != "unreviewed_local"
-    ):
-        raise JourneyError("runtime_candidate_authority_unexpected")
-    storage = status.get("storage")
-    if not isinstance(storage, dict) or storage.get("runtime_backend") != "sqlite":
-        raise JourneyError("storage_backend_not_sqlite")
-    postgres = storage.get("postgres")
-    if not isinstance(postgres, dict) or postgres.get("configured") is not False:
-        raise JourneyError("postgres_dsn_unexpected")
+    _validate_system_status_trust(status)
     state.node_image_build_attempted = True
     state.owned_image_references.add(state.compose.node_image)
     node_build_result: CommandResult | None = None

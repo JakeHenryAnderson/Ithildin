@@ -1050,18 +1050,41 @@ def test_ready_system_response_preserves_immediate_trust_failures(
     status_document: JsonObject,
     failure_code: str,
 ) -> None:
+    class UnavailableUi(FakeUi):
+        calls = 0
+
+        def health(self) -> JsonObject:
+            type(self).calls += 1
+            raise journey.JourneyError("ui_unavailable")
+
     api_type = type(
         "TrustMismatchApi",
         (FakeApi,),
         {"system_status_document": status_document},
     )
+    executor = FakeExecutor()
     with pytest.raises(journey.JourneyError, match=failure_code):
-        run_fake(api_factory=api_type)
+        run_fake(
+            executor=executor,
+            api_factory=api_type,
+            ui_factory=UnavailableUi,
+        )
     report = load_run_report(journey.REPORT_BASE / RUN_ID)
     assert report["failure"] == {
         "code": failure_code,
         "details_recorded": False,
     }
+    assert report["cleanup"]["outcome"] == "completed"  # type: ignore[index]
+    assert report["cleanup"]["recovery_required"] is False  # type: ignore[index]
+    assert report["cleanup"]["runtime_state_removed"] is True  # type: ignore[index]
+    tails = [
+        command[10:]
+        for command, _ in executor.commands
+        if len(command) > 10
+    ]
+    assert not any(tail[:1] == ("ps",) for tail in tails)
+    assert not any("enroll" in tail for tail in tails)
+    assert UnavailableUi.calls == 0
 
 
 def test_stack_reason_inference_is_closed_and_does_not_guess_root_cause() -> None:
@@ -1107,7 +1130,8 @@ def test_stack_reason_inference_is_closed_and_does_not_guess_root_cause() -> Non
         ("exited", "", 0, "service_exited_zero"),
         ("exited", "", 23, "service_exited_nonzero"),
         ("created", "", 0, "service_created"),
-        ("restarting", "", 0, "service_restarting"),
+        ("restarting", "", 0, "service_restarting_zero"),
+        ("restarting", "", 137, "service_restarting_nonzero"),
         ("paused", "", 0, "service_paused"),
         ("dead", "", 0, "service_dead_zero"),
         ("dead", "", 137, "service_dead_nonzero"),
@@ -1135,6 +1159,7 @@ def test_stack_diagnostic_classification_is_closed(
         "authorization=DO_NOT_REFLECT",
         "ithildin-api\tunknown\t\t0\n",
         "ithildin-api\texited\thealthy\t1\n",
+        "ithildin-api\trestarting\thealthy\t1\n",
         "ithildin-api\trunning\thealthy\t999\n",
         "x" * (journey.MAX_STACK_DIAGNOSTIC_BYTES + 1),
         "ithildin-api\trünning\thealthy\t0\n",
@@ -1245,6 +1270,17 @@ def test_stack_diagnostic_validator_rejects_contradictory_closed_fields() -> Non
     hostile["collection_status"] = "inconclusive"
     with pytest.raises(evidence.EvidenceValidationError, match="contradictory"):
         evidence.validate_stack_diagnostic(hostile)
+
+    restarting = copy.deepcopy(diagnostic)
+    assert isinstance(restarting["probes"], dict)
+    assert isinstance(restarting["services"], dict)
+    restarting["probes"]["ui"] = "probe_ready"
+    restarting["services"]["ithildin-api"] = "service_restarting_nonzero"
+    restarting["reason_code"] = "stack_api_service_not_ready"
+    evidence.validate_stack_diagnostic(restarting)
+    restarting["services"]["ithildin-api"] = "service_restarting"
+    with pytest.raises(evidence.EvidenceValidationError, match="services are invalid"):
+        evidence.validate_stack_diagnostic(restarting)
 
 
 def test_checker_requires_exact_candidate_run_and_fresh_time(
