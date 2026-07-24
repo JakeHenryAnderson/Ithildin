@@ -74,6 +74,12 @@ _COMMIT = re.compile(r"^[0-9a-f]{40}$")
 _DIGEST = re.compile(r"^sha256:[0-9a-f]{64}$")
 _NODE_ID = re.compile(r"^node_[0-9a-f]{32}$")
 _RUN_ID = re.compile(r"^[0-9]{8}T[0-9]{6}Z-[0-9a-f]{8}$")
+_SYSTEM_STATUS_TEXT = re.compile(r"^[a-z][a-z0-9_.-]{0,63}$")
+_SYSTEM_STATUS_SECRET_TEXT = re.compile(
+    r"(?:authorization|bearer|credential|enrollment|password|private[_-]?key|"
+    r"secret|signature|token)",
+    re.IGNORECASE,
+)
 
 
 class JourneyError(RuntimeError):
@@ -628,6 +634,11 @@ class LocalApi:
             raise JourneyError("gateway_response_invalid") from exc
         if not isinstance(document, dict):
             raise JourneyError("gateway_response_invalid")
+        if path == "/system/status":
+            return _project_system_status(
+                cast(JsonObject, document),
+                secrets_to_reject=(self._admin_token,),
+            )
         try:
             reject_secret_fields(
                 document,
@@ -636,6 +647,68 @@ class LocalApi:
         except EvidenceValidationError as exc:
             raise JourneyError("gateway_response_contains_secret_fields") from exc
         return cast(JsonObject, document)
+
+
+def _project_system_status(
+    document: JsonObject,
+    *,
+    secrets_to_reject: tuple[str, ...] = (),
+) -> JsonObject:
+    """Return only the fixed trust fields consumed by the Local-v1 journey."""
+
+    status = _projected_system_status_text(
+        document.get("status"),
+        secrets_to_reject=secrets_to_reject,
+    )
+    tool_count = document.get("tool_count")
+    runtime_candidate = document.get("runtime_candidate")
+    storage = document.get("storage")
+    if (
+        not isinstance(tool_count, int)
+        or isinstance(tool_count, bool)
+        or tool_count < 0
+        or not isinstance(runtime_candidate, dict)
+        or not isinstance(storage, dict)
+    ):
+        raise JourneyError("gateway_system_status_invalid")
+    posture = _projected_system_status_text(
+        runtime_candidate.get("posture"),
+        secrets_to_reject=secrets_to_reject,
+    )
+    runtime_backend = _projected_system_status_text(
+        storage.get("runtime_backend"),
+        secrets_to_reject=secrets_to_reject,
+    )
+    postgres = storage.get("postgres")
+    if not isinstance(postgres, dict):
+        raise JourneyError("gateway_system_status_invalid")
+    configured = postgres.get("configured")
+    if not isinstance(configured, bool):
+        raise JourneyError("gateway_system_status_invalid")
+    return {
+        "status": status,
+        "tool_count": tool_count,
+        "runtime_candidate": {"posture": posture},
+        "storage": {
+            "runtime_backend": runtime_backend,
+            "postgres": {"configured": configured},
+        },
+    }
+
+
+def _projected_system_status_text(
+    value: object,
+    *,
+    secrets_to_reject: tuple[str, ...],
+) -> str:
+    if (
+        not isinstance(value, str)
+        or not _SYSTEM_STATUS_TEXT.fullmatch(value)
+        or _SYSTEM_STATUS_SECRET_TEXT.search(value)
+        or any(secret and secret in value for secret in secrets_to_reject)
+    ):
+        raise JourneyError("gateway_system_status_invalid")
+    return value
 
 
 class LocalUi:

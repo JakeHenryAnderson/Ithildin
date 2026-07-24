@@ -811,6 +811,253 @@ def test_local_api_recursively_rejects_secret_shaped_response_fields(
         journey.LocalApi("safe-but-private").get("/healthz", admin=False)
 
 
+def test_system_status_uses_closed_projection_before_generic_secret_guard(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    production_status: JsonObject = {
+        "status": "ok",
+        "tool_count": 24,
+        "runtime_candidate": {
+            "posture": "unreviewed_local",
+            "promotion_allowed": False,
+            "signature": "ignored-signature-value",
+            "signing_key_id": "ignored-key-id",
+        },
+        "storage": {
+            "runtime_backend": "sqlite",
+            "postgres": {
+                "configured": False,
+                "dsn_source": "/run/ignored/postgres-dsn",
+            },
+            "database_path": "/app/var/db/ithildin.sqlite3",
+        },
+        "security": {
+            "admin_token": {
+                "configured": True,
+                "source": "environment",
+                "value_recorded": False,
+            },
+            "dev_admin_token": {
+                "allowed": False,
+                "signature": "ignored-security-signature",
+            },
+        },
+        "paths": {
+            "manifest_lock": "/app/tool-manifests.lock.json",
+            "configuration_public_key": "/app/var/keys/public.pem",
+        },
+        "signatures": {
+            "manifest_key_id": "ignored-manifest-key",
+            "configuration_key_id": "ignored-configuration-key",
+        },
+    }
+
+    class Response:
+        status = 200
+        headers = Message()
+
+        def __enter__(self) -> Response:
+            return self
+
+        def __exit__(
+            self,
+            exc_type: type[BaseException] | None,
+            exc: BaseException | None,
+            traceback: TracebackType | None,
+        ) -> None:
+            del exc_type, exc, traceback
+
+        def read(self, size: int) -> bytes:
+            del size
+            return json.dumps(production_status).encode()
+
+    monkeypatch.setattr(journey.urllib.request, "urlopen", lambda *a, **k: Response())
+    projected = journey.LocalApi("safe-private-admin").get("/system/status")
+    assert projected == {
+        "status": "ok",
+        "tool_count": 24,
+        "runtime_candidate": {"posture": "unreviewed_local"},
+        "storage": {
+            "runtime_backend": "sqlite",
+            "postgres": {"configured": False},
+        },
+    }
+    serialized = json.dumps(projected)
+    for ignored in (
+        "admin_token",
+        "dev_admin_token",
+        "ignored-signature-value",
+        "ignored-key-id",
+        "/app/var/db/ithildin.sqlite3",
+    ):
+        assert ignored not in serialized
+
+
+@pytest.mark.parametrize(
+    ("path", "value"),
+    [
+        (("status",), "bearer_secret_do_not_reflect"),
+        (("tool_count",), "password_do_not_reflect"),
+        (("runtime_candidate",), "private_key_do_not_reflect"),
+        (("runtime_candidate", "posture"), "admin_token_do_not_reflect"),
+        (("storage",), "credential_do_not_reflect"),
+        (("storage", "runtime_backend"), "secret_backend_do_not_reflect"),
+        (("storage", "postgres"), "enrollment_code_do_not_reflect"),
+        (("storage", "postgres", "configured"), "token_do_not_reflect"),
+        (("status",), 7),
+        (("tool_count",), True),
+        (("runtime_candidate",), []),
+        (("runtime_candidate", "posture"), {}),
+        (("storage",), []),
+        (("storage", "runtime_backend"), []),
+        (("storage", "postgres"), []),
+        (("storage", "postgres", "configured"), 1),
+    ],
+)
+def test_system_status_projection_rejects_hostile_required_fields_without_reflection(
+    path: tuple[str, ...],
+    value: object,
+) -> None:
+    document: JsonObject = {
+        "status": "ok",
+        "tool_count": 24,
+        "runtime_candidate": {"posture": "unreviewed_local"},
+        "storage": {
+            "runtime_backend": "sqlite",
+            "postgres": {"configured": False},
+        },
+    }
+    target: object = document
+    for part in path[:-1]:
+        assert isinstance(target, dict)
+        target = target[part]
+    assert isinstance(target, dict)
+    target[path[-1]] = value
+    with pytest.raises(journey.JourneyError) as captured:
+        journey._project_system_status(document)
+    assert captured.value.code == "gateway_system_status_invalid"
+    assert "do_not_reflect" not in str(captured.value).lower()
+
+
+def test_system_status_projection_rejects_opaque_admin_secret_in_required_field() -> None:
+    opaque_secret = "opaquesensitivevalue"
+    document: JsonObject = {
+        "status": opaque_secret,
+        "tool_count": 24,
+        "runtime_candidate": {"posture": "unreviewed_local"},
+        "storage": {
+            "runtime_backend": "sqlite",
+            "postgres": {"configured": False},
+        },
+    }
+    with pytest.raises(journey.JourneyError) as captured:
+        journey._project_system_status(
+            document,
+            secrets_to_reject=(opaque_secret,),
+        )
+    assert captured.value.code == "gateway_system_status_invalid"
+    assert opaque_secret not in str(captured.value)
+
+
+def test_system_status_oversize_and_http_error_do_not_reflect_secret_material(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    secret = "SYSTEM_STATUS_SECRET_DO_NOT_REFLECT"
+
+    class OversizedResponse:
+        status = 200
+        headers = Message()
+
+        def __enter__(self) -> OversizedResponse:
+            return self
+
+        def __exit__(
+            self,
+            exc_type: type[BaseException] | None,
+            exc: BaseException | None,
+            traceback: TracebackType | None,
+        ) -> None:
+            del exc_type, exc, traceback
+
+        def read(self, size: int) -> bytes:
+            del size
+            return (secret.encode() + b"x" * 262_145)
+
+    monkeypatch.setattr(
+        journey.urllib.request,
+        "urlopen",
+        lambda *a, **k: OversizedResponse(),
+    )
+    with pytest.raises(journey.JourneyError) as oversized:
+        journey.LocalApi("safe-private-admin").get("/system/status")
+    assert oversized.value.code == "gateway_response_too_large"
+    assert secret not in str(oversized.value)
+
+    def reject(*args: object, **kwargs: object) -> object:
+        del args, kwargs
+        raise urllib.error.HTTPError(
+            journey.HOST_API_URL + "/system/status",
+            503,
+            secret,
+            Message(),
+            io.BytesIO(secret.encode()),
+        )
+
+    monkeypatch.setattr(journey.urllib.request, "urlopen", reject)
+    with pytest.raises(journey.JourneyError) as rejected:
+        journey.LocalApi("safe-private-admin").get("/system/status")
+    assert rejected.value.code == "gateway_http_503"
+    assert secret not in str(rejected.value)
+
+
+def test_system_status_projection_failure_is_absent_from_reports_and_cli(
+    isolated_roots: tuple[Path, Path],
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    secret = "admin_token_do_not_reflect"
+
+    class ProjectionFailureApi(FakeApi):
+        def get(self, path: str, *, admin: bool = True) -> JsonObject:
+            if path == "/system/status":
+                return journey._project_system_status(
+                    {
+                        "status": "ok",
+                        "tool_count": 24,
+                        "runtime_candidate": {"posture": secret},
+                        "storage": {
+                            "runtime_backend": "sqlite",
+                            "postgres": {"configured": False},
+                        },
+                    }
+                )
+            return super().get(path, admin=admin)
+
+    with pytest.raises(journey.JourneyError) as failed:
+        run_fake(api_factory=ProjectionFailureApi)
+    assert failed.value.code == "compose_stack_health_timeout"
+    report_root = journey.REPORT_BASE / RUN_ID
+    emitted = (
+        (report_root / journey.REPORT_JSON).read_text()
+        + (report_root / journey.REPORT_MARKDOWN).read_text()
+    )
+    assert secret not in emitted
+    assert "gateway_system_status_invalid" not in emitted
+
+    def fail_cli(**kwargs: object) -> journey.JourneyRunResult:
+        del kwargs
+        raise journey.JourneyError("gateway_system_status_invalid")
+
+    monkeypatch.setattr(journey, "run_live_journey", fail_cli)
+    monkeypatch.setattr("sys.argv", ["local_v1_node_journey.py"])
+    assert journey.main() == 1
+    output = capsys.readouterr()
+    assert secret not in output.out + output.err
+    assert output.err.strip() == (
+        "Local-v1 Node journey failed closed: gateway_system_status_invalid"
+    )
+
+
 def test_local_ui_http_rejection_has_closed_probe_category(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
