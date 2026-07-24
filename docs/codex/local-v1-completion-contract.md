@@ -98,6 +98,11 @@ The active action is `LV1-002`: close the explicit authenticated Node enrollment
 signed-configuration, identity, connectivity, and revocation journey required by `O3`. Its safe
 local onboarding implementation is in progress; no integrated operator observation or `O3`
 completion is declared.
+The deliberate live journey reached the repository's repeated-gate stop condition at exact
+candidate `f1fd02821706af691c0c933457f9fb6e5ce05af5`; see
+`docs/codex/local-v1-lv1-002-repeated-live-gate-disposition.md`. A fourth attempt is not authorized
+in that recovery sprint. `LV1-002` and `O3` remain incomplete, all execution and release authorities
+remain false, and resumption requires a fresh bounded recovery task rather than another blind retry.
 `MCC-007` remains a later, separate bounded capability decision for `LV1-003`; this contract does
 not authorize its implementation.
 
