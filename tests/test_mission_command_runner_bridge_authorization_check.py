@@ -76,4 +76,52 @@ def test_authorization_rejects_decision_substitution() -> None:
         authorization, decision, failures
     )
 
+    assert any("current runner-bridge decision" in failure for failure in failures)
+
+
+def test_authorization_rejects_coupled_current_decision_and_digest_substitution() -> None:
+    text = Path(authorization_check.AUTHORIZATION).read_text(encoding="utf-8")
+    decision = (
+        Path(authorization_check.decision_check.DECISION).read_text(encoding="utf-8")
+        + "\nsubstituted\n"
+    )
+    substituted_digest = authorization_check._digest(decision)  # noqa: SLF001
+    authorization = authorization_check._contract(  # noqa: SLF001
+        text.replace(authorization_check.DECISION_DIGEST, substituted_digest, 1)
+    )
+    failures: list[str] = []
+
+    authorization_check._validate_contract(  # noqa: SLF001
+        authorization, decision, failures
+    )
+
+    assert any("current runner-bridge decision" in failure for failure in failures)
     assert any("decision_sha256" in failure for failure in failures)
+
+
+def test_authorization_requires_own_make_target_definition(tmp_path: Path) -> None:
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    mutated = makefile.replace(
+        "mission-command-runner-bridge-authorization-check:\n"
+        "\tuv run python scripts/mission_command_runner_bridge_authorization_check.py\n",
+        "renamed-runner-bridge-authorization-check:\n"
+        "\tuv run python scripts/mission_command_runner_bridge_authorization_check.py\n",
+        1,
+    )
+    root = tmp_path
+    for relative in (
+        "README.md",
+        "scripts/build_docs_site.py",
+        "scripts/review_docs.py",
+        "docs/codex/review-docs-index.md",
+    ):
+        source = Path(relative)
+        destination = root / relative
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        destination.write_text(source.read_text(encoding="utf-8"), encoding="utf-8")
+    (root / "Makefile").write_text(mutated, encoding="utf-8")
+    failures: list[str] = []
+
+    authorization_check._validate_wiring(root, failures)  # noqa: SLF001
+
+    assert any("exactly one Make target definition" in failure for failure in failures)

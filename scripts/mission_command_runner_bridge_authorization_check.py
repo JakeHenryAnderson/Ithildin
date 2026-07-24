@@ -158,6 +158,8 @@ def _validate_contract(
     decision_text: str,
     failures: list[str],
 ) -> None:
+    if _digest(decision_text) != DECISION_DIGEST:
+        failures.append("current runner-bridge decision does not match reviewed digest")
     expected: dict[str, object] = {
         "document_type": "runner_bridge_authorization_record",
         "schema_version": "1",
@@ -167,7 +169,7 @@ def _validate_contract(
         "authority_source": "user_local_v1_to_uat_direction_and_standing_delegation",
         "reviewed_candidate_commit": REVIEWED_COMMIT,
         "reviewed_candidate_tree": REVIEWED_TREE,
-        "decision_sha256": _digest(decision_text),
+        "decision_sha256": DECISION_DIGEST,
         "review_disposition": "GO",
         "critical_findings": 0,
         "high_findings": 0,
@@ -226,6 +228,13 @@ def _validate_text(text: str, failures: list[str]) -> None:
 
 def _validate_wiring(repo_root: Path, failures: list[str]) -> None:
     makefile = _read(repo_root / "Makefile", failures)
+    target_definitions = sum(
+        line.startswith(f"{TARGET}:") for line in makefile.splitlines()
+    )
+    if target_definitions != 1:
+        failures.append(
+            "runner-bridge authorization check must have exactly one Make target definition"
+        )
     milestone_body = decision_check._target_body(  # noqa: SLF001
         makefile, "local-v1-milestone-check"
     )
