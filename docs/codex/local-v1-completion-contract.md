@@ -101,8 +101,14 @@ completion is declared.
 The deliberate live journey reached the repository's repeated-gate stop condition at exact
 candidate `f1fd02821706af691c0c933457f9fb6e5ce05af5`; see
 `docs/codex/local-v1-lv1-002-repeated-live-gate-disposition.md`. A fourth attempt is not authorized
-in that recovery sprint. `LV1-002` and `O3` remain incomplete, all execution and release authorities
-remain false, and resumption requires a fresh bounded recovery task rather than another blind retry.
+in that recovery sprint.
+The subsequently resumed fresh recovery added exact-reviewed closed diagnostics and authorized one
+new local-only retry at candidate `7f7b5fde932fd678afd465924e7dcbe936fbcfb2`. That retry failed
+closed before enrollment with only the authenticated system-status probe invalid; cleanup completed
+and all authority remained false. See
+`docs/codex/local-v1-lv1-002-fresh-recovery-disposition.md`. No additional retry is authorized in
+that recovery task. `LV1-002` and `O3` remain incomplete, and any resumption requires the new bounded
+projection-and-review recovery described in that disposition rather than another blind retry.
 `MCC-007` remains a later, separate bounded capability decision for `LV1-003`; this contract does
 not authorize its implementation.
 
