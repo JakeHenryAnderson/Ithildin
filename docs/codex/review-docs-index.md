@@ -44,6 +44,7 @@ externally closed.
 - [MCC-007 Fixed Hermes Runner-Bridge Candidate Evaluation](mission-command-runner-bridge-candidate-evaluation.md)
 - [MCC-007 Fixed Hermes Runner-Bridge Candidate Evaluation Internal Source Review](mission-command-runner-bridge-candidate-evaluation-internal-source-review.md)
 - [MCC-007 Fixed Hermes Runner-Bridge Capability Decision](mission-command-runner-bridge-capability-decision.md)
+- [MCC-007 Fixed Hermes Runner-Bridge Authorization Record](mission-command-runner-bridge-authorization-record.md)
 
 ## Track B Node Signed Configuration
 

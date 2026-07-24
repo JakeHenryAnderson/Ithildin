@@ -11,8 +11,9 @@ components. It is intentionally a **two-leg path**:
   configuration, governed access, and Mission Command recovery evidence produced by isolated POCs.
 
 The legs are not an integrated runner path. This walkthrough does not claim or demonstrate a real
-Hermes-through-Node mission. `MCC-007` remains deferred to the separate `LV1-003` capability
-decision; nothing here authorizes its implementation.
+Hermes-through-Node mission. The separate exact-candidate authorization record now permits only
+bounded `MCC-007` code implementation for `LV1-003`; this walkthrough does not implement or exercise
+that seam, and live Hermes/O4 evidence authority remains false.
 
 ## Prerequisites And Trust Ceiling
 
@@ -366,13 +367,14 @@ checker reports malformed/stale evidence.
 ## What This Path Does Not Prove
 
 - It does not prove a real Hermes-through-Node mission or close Local-v1 outcome `O4`.
-- It does not authorize or implement `MCC-007`, a runner bridge, generic process control, or
-  arbitrary host control.
+- It does not implement or exercise `MCC-007`, a runner bridge, generic process control, or
+  arbitrary host control; the separate authorization record permits only reviewed code changes.
 - It does not prove production identity/storage, production deployment, remote hosting, whole-host
   isolation, filesystem non-bypass, compliance, SIEM custody, or public security-product claims.
 - It does not qualify a release candidate, complete human UAT, accept Local v1.0, or grant runtime,
   release, promotion, credential-custody, or external-system authority.
 
-The deferred runtime seam remains `LV1-003`: a separately reviewed capability decision for the
-smallest fixed runner bridge. Until that gate exists and passes, Leg A and Leg B remain deliberately
-separate.
+The unimplemented runtime seam remains `LV1-003`: the separately reviewed capability decision and
+code-only authorization now define the smallest fixed runner bridge. Leg A and Leg B remain
+deliberately separate until a clean implementation candidate, harness review, and separate live
+authorization permit an `O4` evidence run.

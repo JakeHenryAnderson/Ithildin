@@ -27,7 +27,7 @@ def test_live_local_v1_golden_path_is_valid_and_fail_closed() -> None:
     assert report["tool_count"] == 24
     assert report["two_leg_path"] is True
     assert report["real_hermes_through_node_claimed"] is False
-    assert report["mcc_007_implementation_authorized"] is False
+    assert report["mcc_007_implementation_authorized"] is True
     assert report["runtime_authority_granted"] is False
     assert report["release_authority_granted"] is False
     assert report["uat_complete"] is False

@@ -5,8 +5,14 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import sys
 from pathlib import Path
 from typing import Any
+
+if __package__ in {None, ""}:
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from scripts import mission_command_runner_bridge_authorization_check  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[1]
 GOLDEN_PATH_REL = Path("docs/codex/local-v1-golden-path.md")
@@ -67,7 +73,8 @@ REQUIRED_PHRASES = (
     "Leg A — real agent compatibility",
     "Leg B — synthetic Node and Mission Command evidence",
     "does not claim or demonstrate a real Hermes-through-Node mission",
-    "`MCC-007` remains deferred",
+    "separate exact-candidate authorization record now permits only bounded "
+    "`MCC-007` code implementation",
     "bounded 24-tool surface",
     "does not sandbox the host",
     "control arbitrary processes",
@@ -115,7 +122,7 @@ REQUIRED_PHRASES = (
     "What This Path Does Not Prove",
     "does not qualify a release candidate",
     "complete human UAT",
-    "The deferred runtime seam remains `LV1-003`",
+    "The unimplemented runtime seam remains `LV1-003`",
 )
 
 ORDERED_COMMANDS = (
@@ -192,6 +199,14 @@ def main() -> int:
 
 def build_report(repo_root: Path, *, golden_override: str | None = None) -> dict[str, Any]:
     failures: list[str] = []
+    authorization_report = mission_command_runner_bridge_authorization_check.build_report(
+        repo_root
+    )
+    if not authorization_report["valid"]:
+        failures.extend(
+            f"MCC-007 authorization: {failure}"
+            for failure in authorization_report["failures"]
+        )
     golden = (
         golden_override
         if golden_override is not None
@@ -268,7 +283,10 @@ def build_report(repo_root: Path, *, golden_override: str | None = None) -> dict
     for phrase in (
         "All runtime, release, promotion, credential-custody, external-system, and UAT authorities",
         "remain false",
-        "this contract does not authorize its implementation",
+        "`MCC-007` bounded code implementation is authorized only by the "
+        "exact-candidate authorization",
+        "Live Hermes execution, Docker lifecycle action, and `O4` evidence "
+        "execution remain separately unauthorized",
     ):
         if phrase not in normalized_contract:
             failures.append(f"Local-v1 contract lost authority ceiling phrase: {phrase}")
@@ -288,7 +306,10 @@ def build_report(repo_root: Path, *, golden_override: str | None = None) -> dict
         "tool_count": tool_count,
         "two_leg_path": True,
         "real_hermes_through_node_claimed": False,
-        "mcc_007_implementation_authorized": False,
+        "mcc_007_implementation_authorized": authorization_report[
+            "code_implementation_authorized"
+        ]
+        is True,
         "runtime_authority_granted": False,
         "release_authority_granted": False,
         "uat_complete": False,
@@ -493,7 +514,8 @@ def render_report(report: dict[str, Any]) -> str:
         f"tool_count: {report.get('tool_count', 'unknown')}",
         "two_leg_path: true",
         "real_hermes_through_node_claimed: false",
-        "mcc_007_implementation_authorized: false",
+        "mcc_007_implementation_authorized: "
+        f"{str(report['mcc_007_implementation_authorized']).lower()}",
         "runtime_authority_granted: false",
         "release_authority_granted: false",
         "uat_complete: false",
