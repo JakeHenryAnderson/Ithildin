@@ -2,6 +2,10 @@
 
 Status: checked enterprise roadmap control board for the v1.0 enterprise-grade target.
 
+Local v1.0 is the active delivery target. This enterprise board is historical/deferred lineage and
+is not the active delivery forecast. The external PIS wait remains valid for its own lane but does
+not block `docs/codex/local-v1-completion-contract.md`.
+
 This board defines the path from the current local-preview technical MVP to a future
 enterprise-grade Ithildin product. It is a roadmap and control surface, not an approval that the
 current build is production ready. Every runtime authority increase remains gated by proposal,

@@ -1,0 +1,61 @@
+{
+  "schema_version": "1",
+  "record_type": "ithildin_local_v1_release_disposition",
+  "record_status": "uninitialized",
+  "candidate": {
+    "frozen_commit": null,
+    "identity_evidence_path": null,
+    "identity_evidence_sha256": null,
+    "clean_tree_observed": false,
+    "clean_tree_observation_method": null,
+    "clean_tree_observation_commit": null
+  },
+  "candidate_gate": {
+    "passed": false,
+    "candidate_commit": null,
+    "transcript_path": null,
+    "transcript_sha256": null
+  },
+  "independent_review": {
+    "completed": false,
+    "reviewed_candidate_commit": null,
+    "disposition": null,
+    "record_path": null,
+    "record_sha256": null,
+    "critical_findings": null,
+    "high_findings": null,
+    "medium_findings": null,
+    "low_findings": null
+  },
+  "human_uat": {
+    "completed": false,
+    "tested_candidate_commit": null,
+    "result": null,
+    "record_path": null,
+    "record_sha256": null
+  },
+  "human_acceptance": {
+    "accepted": false,
+    "accepted_candidate_commit": null,
+    "record_path": null,
+    "record_sha256": null
+  },
+  "disposition_lineage": {
+    "disposition_parent_commit": null,
+    "declared_candidate_descendants": [],
+    "allowed_descendant_purposes": [
+      "candidate_gate_record",
+      "independent_review_record",
+      "human_uat_record",
+      "human_acceptance_record"
+    ]
+  },
+  "authority": {
+    "candidate_qualified": false,
+    "release_allowed": false,
+    "promotion_allowed": false,
+    "production_allowed": false,
+    "uat_authority_inherited": false,
+    "new_governed_powers_allowed": false
+  }
+}

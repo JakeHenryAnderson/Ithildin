@@ -6,6 +6,9 @@ externally closed.
 
 ## Start Here
 
+- [Ithildin Local v1.0 Completion Contract](local-v1-completion-contract.md) - active delivery target.
+- [Local v1.0 Release Disposition](local-v1-release-disposition.json) - false/null candidate,
+  review, UAT, acceptance, and authority bindings until evidence is recorded.
 - [README](../../README.md) - current local-preview posture, commands, and warning labels.
 - [Local Preview Release Guide](local-preview-release.md) - operator setup and handoff flow.
 - [v0.4 Boundary Charter](v0.4-boundary-charter.md) - what v0.4 may change and what remains

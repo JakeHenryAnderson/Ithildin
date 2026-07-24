@@ -296,6 +296,8 @@ REVIEW_DOCS = [
     "docs/codex/v1.0-rc-roadmap.md",
     "docs/codex/v1.0-rc-status.md",
     "docs/codex/v1.0-progress-assessment.md",
+    "docs/codex/local-v1-completion-contract.md",
+    "docs/codex/local-v1-release-disposition.json",
     "docs/codex/technical-mvp-ticket-map.md",
     "docs/codex/technical-mvp-execution-board.md",
     "docs/codex/enterprise-roadmap-control-board.md",

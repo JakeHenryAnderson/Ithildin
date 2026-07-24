@@ -20,6 +20,7 @@ NODE_RELEASE_BUNDLE ?= var/node-release-artifact/node-release-$(NODE_RELEASE_VER
 .PHONY: hermes-governance-poc-plan-check mission-command-control-plane-plan-check track-b-node-decision-check track-b-node-configuration-decision-check track-b-node-governed-access-decision-check track-b-node-manual-rollback-decision-check track-b-node-configuration-trust-rotation-decision-check track-b-node-version-posture-decision-check track-b-node-identity-key-rotation-decision-check track-b-node-service-lifecycle-decision-check track-b-node-release-artifact-decision-check track-b-node-evidence-check track-b-node-configuration-evidence-check track-b-node-governed-access-evidence-check track-b-node-configuration-trust-rotation-evidence-check track-b-node-version-posture-evidence-check track-b-node-identity-key-rotation-evidence-check track-b-node-service-lifecycle-evidence-check track-b-node-release-artifact-evidence-check node-configuration-keygen node-configuration-signing-status node-service-image node-service-compose-check node-release-image node-release-artifact-keygen node-release-artifact-sign node-release-artifact-verify
 .PHONY: hermes-poc-image hermes-poc-config-check hermes-poc-run hermes-poc-stop
 .PHONY: mission-command-control-plane-poc mission-command-control-plane-poc-check mission-command-control-plane-focused-gates
+.PHONY: local-v1-contract-check local-v1-inner-check local-v1-milestone-check local-v1-runtime-trust-check local-v1-hermes-evidence-check local-v1-ui-production-build local-v1-candidate-inventory local-v1-candidate-check local-v1-release-check
 
 test:
 	uv run pytest
@@ -57,6 +58,97 @@ mission-command-control-plane-focused-gates:
 		tests/test_mission_database_migration.py \
 		tests/test_mission_command_control_plane_poc_evidence.py \
 		-q
+
+local-v1-contract-check:
+	uv run python scripts/local_v1_contract_check.py
+
+local-v1-inner-check:
+	$(MAKE) local-v1-contract-check
+	$(MAKE) manifest-lock-check
+	$(MAKE) tool-surface-invariant-gate
+	$(MAKE) no-new-powers-guardrail
+	uv run pytest tests/test_local_v1_contract.py -q
+
+local-v1-milestone-check:
+	$(MAKE) local-v1-inner-check
+	$(MAKE) agent-workflow-check
+	uv run pytest \
+		tests/test_release_readiness.py::test_release_packet_review_docs_exist \
+		tests/test_docs_site.py \
+		-q
+	$(MAKE) docs-site
+
+local-v1-runtime-trust-check:
+	uv run pytest \
+		tests/test_api_service.py \
+		tests/test_approval_workflow.py \
+		tests/test_audit_writer.py \
+		tests/test_redaction.py \
+		tests/test_security_regressions.py \
+		tests/test_mission_database_migration.py \
+		tests/test_storage_schema_import.py \
+		tests/test_nodes.py \
+		tests/test_node_client.py \
+		tests/test_node_configuration.py \
+		tests/test_node_configuration_trust.py \
+		tests/test_node_governed_access.py \
+		tests/test_node_release_artifact.py \
+		tests/test_node_service.py \
+		tests/test_node_versions.py \
+		-q
+
+local-v1-hermes-evidence-check:
+	uv run python scripts/hermes_poc_evidence_check.py
+
+local-v1-ui-production-build:
+	npm run build --prefix apps/ui
+
+local-v1-candidate-inventory:
+	$(MAKE) local-v1-contract-check
+	$(MAKE) release-context
+	$(MAKE) manifest-lock-check
+	$(MAKE) release-guardrails
+	$(MAKE) tool-surface-invariant-gate
+	$(MAKE) no-new-powers-guardrail
+	$(MAKE) policy-test
+	$(MAKE) policy-parity
+	$(MAKE) filesystem-contract-check
+	$(MAKE) release-evidence-gate
+	$(MAKE) evidence-contracts-check
+	$(MAKE) determinism-check
+	$(MAKE) adversarial-corpus-check
+	$(MAKE) resource-limit-check
+	$(MAKE) local-v1-runtime-trust-check
+	$(MAKE) hermes-governance-poc-plan-check
+	$(MAKE) local-v1-hermes-evidence-check
+	$(MAKE) track-b-node-evidence-check
+	$(MAKE) track-b-node-configuration-evidence-check
+	$(MAKE) track-b-node-governed-access-evidence-check
+	$(MAKE) track-b-node-configuration-trust-rotation-evidence-check
+	$(MAKE) track-b-node-version-posture-evidence-check
+	$(MAKE) track-b-node-identity-key-rotation-evidence-check
+	$(MAKE) track-b-node-service-lifecycle-evidence-check
+	$(MAKE) track-b-node-release-artifact-evidence-check
+	$(MAKE) mission-command-control-plane-plan-check
+	$(MAKE) mission-command-control-plane-poc-check
+	$(MAKE) mission-command-control-plane-focused-gates
+	$(MAKE) test-fast
+	$(MAKE) lint
+	$(MAKE) typecheck
+	$(MAKE) ui-test
+	$(MAKE) local-v1-ui-production-build
+	$(MAKE) docs-site
+	$(MAKE) agent-workflow-check
+
+local-v1-candidate-check:
+	uv run python scripts/local_v1_contract_check.py --require-candidate
+	@test -z "$$(git status --porcelain=v1 --untracked-files=normal)" || \
+		(echo "Local-v1 candidate gate requires a clean checkout" >&2; exit 1)
+	@echo "candidate_commit=$$(git rev-parse HEAD)"
+	@echo "candidate_tree_clean=true"
+	$(MAKE) local-v1-milestone-check
+	$(MAKE) local-v1-candidate-inventory
+	@echo "local_v1_candidate_gate_returncode=0"
 
 track-b-node-decision-check:
 	uv run python scripts/track_b_node_decision_check.py
@@ -2250,6 +2342,10 @@ release-check: enterprise-review-handoff-drill-check
 release-check: docs-claims-public-preview-disposition-closure-check
 
 release-check: mission-control-display-disposition-closure-check
+
+local-v1-release-check:
+	$(MAKE) local-v1-milestone-check
+	uv run python scripts/local_v1_contract_check.py --require-release
 
 .PHONY: docs-claims-public-preview-disposition-closure-check
 

@@ -3,6 +3,10 @@
 Status: checked operator checkpoint for the current v1.0 local-preview and enterprise-readiness
 handoff state.
 
+Local v1.0 is the active delivery target. This checkpoint is historical/deferred enterprise
+lineage; its external PIS wait does not block the Local-v1 critical path. Active delivery status is
+the fixed outcome count in `docs/codex/local-v1-completion-contract.md`.
+
 Current governed tool count: `24`.
 
 Current selected capability: `not selected`.
@@ -44,7 +48,7 @@ close enterprise lanes, approve runtime behavior, or approve public/security-pro
   proxy disposition with no findings. That is not external review and does not approve live
   VM/container runtime behavior.
 
-The canonical next action is
+The canonical next action for this historical/deferred enterprise lane is
 `await_external_operator_target_and_signed_receipt_inputs_before_separate_collection_action_authority`.
 It carries no action commands and no review send set. The historical prerequisite surface can still
 be validated with:

@@ -2,10 +2,10 @@
 
 Status: checked technical-MVP execution board and batch-control map.
 
-This board is the compact source of truth for the current technical MVP path. It does not replace
-the detailed ticket map, release evidence, or review packets. It exists so the next sprint can move
-specific boxes from blocked, ready, or observed to done with a named proof command instead of
-running the full release ceremony after every small edit.
+Local v1.0 is the active delivery target. This board is historical/deferred technical-MVP lineage,
+not the active source of delivery status. Use `docs/codex/local-v1-completion-contract.md` for the
+fixed outcome count and critical path. The board remains available to preserve earlier proof and
+authority context.
 
 Current governed tool count: `24`
 Current selected capability: `not selected`
@@ -14,7 +14,7 @@ Technical MVP state: `operator_trial_observed`
 Current enterprise next action: `await_external_operator_target_and_signed_receipt_inputs_before_separate_collection_action_authority`
 Active resume checkpoint: `ENT-001`
 
-## Active Resume Scope
+## Historical Resume Scope
 
 The paused umbrella goal now waits for external target identity and signed receipts before any
 separate operational collection-action authority decision. This resume slice does not add dependencies or runtime

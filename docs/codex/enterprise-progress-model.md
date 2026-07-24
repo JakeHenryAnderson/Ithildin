@@ -2,6 +2,11 @@
 
 Status: checked progress model for the v1.0 local-preview and enterprise-readiness path.
 
+Local v1.0 is the active delivery target. This percentage model is historical/deferred enterprise
+lineage, not the active forecast. Active progress is the fixed completed-outcome count in
+`docs/codex/local-v1-completion-contract.md`; the denominator changes only through its scope-change
+protocol.
+
 This model turns the current checkpoint, v1.0 progress assessment, enterprise runway, and enterprise
 gap matrix into a single operator-readable ladder. It is an estimation aid only. It is not a release
 approval, external review result, production deployment claim, sandbox claim, SIEM custody claim,
@@ -21,7 +26,7 @@ compliance claim, or permission to add runtime powers.
 - Runtime changes: blocked.
 - Public/security-product positioning: blocked.
 
-## Progress Ladder
+## Historical Enterprise Progress Ladder
 
 | Checkpoint | Approximate band | Current status | What moves it |
 | --- | ---: | --- | --- |
@@ -87,10 +92,11 @@ These lanes remain planning-only or blocked:
 They require separate decision records and external/source review before stronger claims or runtime
 behavior can be added.
 
-## Current Best Next Action
+## Deferred Enterprise Lane Next Action
 
-The best next action is to wait for external target identity and signed environment receipts before
-a separate operational collection-action authority decision. The canonical state is
+Within this deferred enterprise lane, the next action remains to wait for external target identity
+and signed environment receipts before a separate operational collection-action authority
+decision. It is not the active Local-v1 repository action. The canonical enterprise state is
 `await_external_operator_target_and_signed_receipt_inputs_before_separate_collection_action_authority`.
 There is no current review send set and no repository action command. This does not approve PIS-003
 implementation, dependency changes, production identity, runtime Postgres, schema migrations,

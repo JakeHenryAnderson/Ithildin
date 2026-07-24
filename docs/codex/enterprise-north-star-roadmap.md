@@ -3,6 +3,11 @@
 Status: checked north-star map for the path from v1.0 local-preview RC toward a future enterprise
 control-plane product.
 
+Local v1.0 is the active delivery target. This enterprise roadmap is historical/deferred lineage
+and no longer supplies the active delivery forecast or next in-repository action. Use
+`docs/codex/local-v1-completion-contract.md` for the fixed outcome count and critical path. The
+external PIS wait remains valid for its lane but does not block Local v1.0.
+
 Current governed tool count: `24`.
 
 Current selected capability: `not selected`.
@@ -19,8 +24,8 @@ approve public/security-product positioning.
 
 ## Read This First
 
-Use this file as the operator-facing index when deciding where Ithildin is and what should happen
-next. The canonical source documents remain:
+Use this file as the enterprise-lineage index. For active Local-v1 delivery decisions, start with
+`docs/codex/local-v1-completion-contract.md`. The canonical enterprise source documents remain:
 
 - `docs/codex/v1.0-rc-status.md`
 - `docs/codex/v1.0-progress-assessment.md`
@@ -69,7 +74,7 @@ The historical enterprise handoff set is:
 | `erg_005_trusted_host_promotion` | `staging_only_source_findings_dispositioned` | `make trusted-host-promotion-runtime-source-review-bundle-check` | evidence-complete staging-only source review | production host promotion, direct host writes, overwrite/delete/move behavior, automatic promotion |
 | `enterprise_architecture_lanes` | `planning_only_or_blocked` | `make enterprise-readiness-gap-matrix-check` | architecture decision records only | production identity, runtime Postgres, SIEM adapters, compliance automation, public positioning |
 
-## Immediate Operator Sequence
+## Deferred Enterprise Operator Sequence
 
 1. Validate the durable reviewed-candidate history without representing it as current-source
    evidence:

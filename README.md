@@ -2,9 +2,18 @@
 
 Ithildin is a local-first governed MCP/tool gateway for AI agents.
 
-**Current status:** v0.8 roadmap/product-risk consultation after v0.6/v0.7 focused
-source-review lane closure for the v0.1 local-preview runtime boundary; some generated paths retain
-historical v0.2 names.
+**Current status:** Local v1.0 fixed-outcome release train. Historical review lineage remains the
+v0.8 roadmap/product-risk consultation after v0.6/v0.7 focused source-review lane closure for the
+v0.1 local-preview runtime boundary; some generated paths retain historical v0.2 names.
+
+Active delivery target: **Ithildin Local v1.0**. The authoritative
+[Local v1.0 completion contract](docs/codex/local-v1-completion-contract.md) defines eight fixed,
+operator-visible outcomes and reports progress as an outcome count, not an elastic percentage.
+Enterprise/PIS artifacts remain preserved as deferred lineage and do not block this local release
+train. `LV1-000` remains in progress pending exact review. The
+[Local v1.0 release disposition](docs/codex/local-v1-release-disposition.json) starts with all
+evidence and authority false or null; status prose cannot authorize release or UAT. The pivot
+grants no new runtime power, release authority, or UAT completion.
 
 Ithildin is a local-preview mediation layer for AI-agent tool use. It is not a sandbox, EDR/MDM
 agent, SIEM, production identity system, hosted MCP platform, compliance audit system, or immutable
@@ -49,6 +58,12 @@ policy, approval, execution, and evidence.
 A security-conscious developer can run Ithildin locally, connect an MCP-capable agent, expose a few
 safe file/git/http tools, require approval for writes, and inspect a locally verifiable
 tamper-evident audit log.
+
+Local v1.0 extends that target into one reproducible self-hosted, single-operator journey across the
+Gateway, optional authenticated Node, constrained mission, Command Center, failure/recovery
+evidence, and local operations. It keeps Gateway truth separate from Node connectivity,
+runner-reported state, and model-provider state. It does not sandbox the host or govern activity
+that an agent performs outside Ithildin.
 
 ## Strategic Direction
 
@@ -228,6 +243,17 @@ checked with `make control-mapping-readiness`.
   slice categories without running the slow release gate.
 - `make release-check-slice ARGS="--category enterprise"` - plan a focused subset of `release-check`
   targets by profile category; add `--run` only when you intentionally want to execute that slice.
+- `make local-v1-contract-check` - validate the fixed eight-outcome Local-v1 product contract,
+  status counts, exact 24-tool boundary, deferred enterprise posture, and gate wiring.
+- `make local-v1-inner-check` - run the normal Local-v1 inner loop: contract tests, manifest lock,
+  tool-surface invariant, and no-new-powers guardrail.
+- `make local-v1-milestone-check` - run the Local-v1 batch checkpoint, adding workflow and docs-site
+  validation without rebuilding the historical enterprise release graph.
+- `make local-v1-candidate-check` - after outcomes O1-O7 close, run the explicit fixed Local-v1
+  target inventory for the clean frozen candidate without inheriting the
+  enterprise/PIS graph or reproducing live POCs.
+- `make local-v1-release-check` - validate the bound historical candidate disposition and fail
+  closed until all eight outcomes, genuine human UAT, and explicit acceptance are recorded.
 - `make packet-check-recursion-guard` - fail fast if a generated packet check imports known
   high-level status/export builders that can recursively rebuild the packet graph.
 - `make lint` - run Python lint checks.
