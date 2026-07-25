@@ -4,6 +4,7 @@ import hashlib
 import json
 import os
 import subprocess
+import sys
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import cast
@@ -226,6 +227,7 @@ class FakeExecutor:
         self.hermes_timeouts: list[float] = []
         self.images: dict[str, str] = {}
         self.bound_image_ids: set[str] = set()
+        self.bound_container_ids: set[str] = set()
         self.remaining_image_ids: set[str] = set()
         self.retain_ids_after_removal: set[str] = set()
         self.image_id_probe_modes: dict[str, str] = {}
@@ -250,12 +252,21 @@ class FakeExecutor:
             ),
         )
         self.base_diagnostic_failure: str | None = None
+        self.api_container_id = "a" * 64
+        self.api_container_query_result: producer.CommandResult | None = None
+        self.api_container_query_failure: str | None = None
+        self.api_container_inspect_result: producer.CommandResult | None = None
+        self.api_container_inspect_failure: str | None = None
         self.interrupt_on: str | None = None
         self.enrollment_failure: str | None = None
 
     def bind_image_identity(self, image_id: str) -> None:
         assert producer._DIGEST.fullmatch(image_id)  # noqa: SLF001
         self.bound_image_ids.add(image_id)
+
+    def bind_container_identity(self, container_id: str) -> None:
+        assert producer._CONTAINER_ID.fullmatch(container_id)  # noqa: SLF001
+        self.bound_container_ids.add(container_id)
 
     def run(
         self,
@@ -269,6 +280,7 @@ class FakeExecutor:
             command,
             hermes=False,
             inspected_image_ids=frozenset(self.bound_image_ids),
+            bound_container_ids=frozenset(self.bound_container_ids),
         )
         self.commands.append(command)
         self.inputs.append(input_text)
@@ -314,6 +326,46 @@ class FakeExecutor:
             if self.base_diagnostic_failure == "interruption":
                 raise producer.ProducerSignal("synthetic")
             return self.base_diagnostic_result
+        if command == plan.api_container_id_query():
+            if self.api_container_query_failure == "error":
+                raise producer.ProducerError("subprocess_unavailable")
+            if self.api_container_query_failure == "timeout":
+                raise producer.ProducerError("subprocess_unavailable")
+            if self.api_container_query_failure == "interruption":
+                raise producer.ProducerSignal("synthetic")
+            return self.api_container_query_result or producer.CommandResult(
+                0,
+                self.api_container_id + "\n",
+            )
+        for container_id in self.bound_container_ids:
+            if command == plan.api_container_state_inspect(container_id):
+                if self.api_container_inspect_failure == "error":
+                    raise producer.ProducerError("subprocess_unavailable")
+                if self.api_container_inspect_failure == "timeout":
+                    raise producer.ProducerError("subprocess_unavailable")
+                if self.api_container_inspect_failure == "interruption":
+                    raise producer.ProducerSignal("synthetic")
+                return (
+                    self.api_container_inspect_result
+                    or producer.CommandResult(
+                        0,
+                        "\t".join(
+                            (
+                                container_id,
+                                plan.project,
+                                "ithildin-api",
+                                "exited",
+                                "false",
+                                "1",
+                                "false",
+                                "false",
+                                "false",
+                                "absent",
+                            )
+                        )
+                        + "\n",
+                    )
+                )
         if command == plan.compose(
             "up",
             "--detach",
@@ -1231,6 +1283,563 @@ def test_base_start_diagnostic_command_is_exactly_allowlisted() -> None:
                 mutation,
                 hermes=False,
             )
+
+
+def _enable_api_exited_diagnostic(executor: FakeExecutor) -> None:
+    executor.base_start_returncode = 1
+    executor.base_diagnostic_result = producer.CommandResult(
+        0,
+        (
+            "ithildin-api\texited\t\t1\n"
+            "ithildin-ui\trunning\t\t0\n"
+        ),
+    )
+
+
+def test_api_container_state_diagnostic_is_exact_closed_and_id_free(
+    fake_stack: tuple[
+        FakeRuntimeFactory,
+        FakeExecutorFactory,
+        FakeApiFactory,
+        FakeProvider,
+        FakeAssembler,
+    ],
+) -> None:
+    runtime, executors, apis, provider, assembler = fake_stack
+    executor = executors.executor
+    _enable_api_exited_diagnostic(executor)
+    plan = producer.ComposePlan(
+        "20260724T180000Z-1234abcd",
+        runtime.runtime.path,
+    )
+
+    with pytest.raises(
+        producer.ProducerError,
+        match="base_services_start_failed",
+    ):
+        producer.run_producer(
+            gate=AllowGate(),
+            runtime_factory=runtime,
+            executor_factory=executors,
+            api_factory=apis,
+            provider=provider,
+            assembler=assembler,
+            candidate=(COMMIT, TREE),
+            environment={},
+            now=datetime(2026, 7, 24, 18, 0, tzinfo=UTC),
+        )
+
+    encoded = runtime.receipts.files["diagnostic.json"].decode()
+    diagnostic = json.loads(encoded)
+    nested = diagnostic["base_service_start_diagnostic"][
+        "api_container_state_diagnostic"
+    ]
+    assert nested == {
+        "collection_status": "complete",
+        "collection_reason_code": "api_container_state_collected",
+        "cause_code": "api_application_exit_nonzero_no_engine_error",
+        "health_status": "absent",
+    }
+    assert executor.api_container_id not in encoded
+    sequence = [
+        plan.compose(
+            "up",
+            "--detach",
+            "--wait",
+            "ithildin-api",
+            "ithildin-ui",
+        ),
+        plan.base_service_start_diagnostic(),
+        plan.api_container_id_query(),
+        plan.api_container_state_inspect(executor.api_container_id),
+    ]
+    indexes = [executor.commands.index(command) for command in sequence]
+    assert indexes == sorted(indexes)
+    assert all(executor.commands.count(command) == 1 for command in sequence)
+    assert executor.timeouts[indexes[2:][0]] == 10.0
+    assert executor.timeouts[indexes[3:][0]] == 10.0
+    assert sum(
+        "down" in command for command in executor.commands
+    ) == 1
+    assert diagnostic["primary_failure_code"] == "base_services_start_failed"
+    assert diagnostic["outward_failure_code"] == "base_services_start_failed"
+
+
+@pytest.mark.parametrize(
+    ("case", "status", "reason"),
+    [
+        ("missing", "inconclusive", "api_container_id_missing"),
+        (
+            "lone_lf",
+            "output_rejected",
+            "api_container_state_output_rejected",
+        ),
+        (
+            "multiple",
+            "output_rejected",
+            "api_container_id_ambiguous",
+        ),
+        (
+            "short",
+            "output_rejected",
+            "api_container_state_output_rejected",
+        ),
+        (
+            "extra_lf",
+            "output_rejected",
+            "api_container_state_output_rejected",
+        ),
+        (
+            "crlf",
+            "output_rejected",
+            "api_container_state_output_rejected",
+        ),
+        (
+            "stderr",
+            "inconclusive",
+            "api_container_state_command_failed",
+        ),
+        ("rc", "inconclusive", "api_container_state_command_failed"),
+        ("timeout", "inconclusive", "api_container_state_command_failed"),
+        (
+            "oversize",
+            "output_rejected",
+            "api_container_state_output_rejected",
+        ),
+        (
+            "nonascii",
+            "output_rejected",
+            "api_container_state_output_rejected",
+        ),
+        (
+            "control",
+            "output_rejected",
+            "api_container_state_output_rejected",
+        ),
+        (
+            "secret",
+            "output_rejected",
+            "api_container_state_output_rejected",
+        ),
+    ],
+)
+def test_api_container_id_query_hostile_results_are_closed(
+    fake_stack: tuple[
+        FakeRuntimeFactory,
+        FakeExecutorFactory,
+        FakeApiFactory,
+        FakeProvider,
+        FakeAssembler,
+    ],
+    case: str,
+    status: str,
+    reason: str,
+) -> None:
+    runtime, executors, apis, provider, assembler = fake_stack
+    executor = executors.executor
+    _enable_api_exited_diagnostic(executor)
+    other = "b" * 64
+    if case == "missing":
+        executor.api_container_query_result = producer.CommandResult(0, "")
+    elif case == "lone_lf":
+        executor.api_container_query_result = producer.CommandResult(0, "\n")
+    elif case == "multiple":
+        executor.api_container_query_result = producer.CommandResult(
+            0,
+            executor.api_container_id + "\n" + other + "\n",
+        )
+    elif case == "short":
+        executor.api_container_query_result = producer.CommandResult(
+            0,
+            "a" * 63,
+        )
+    elif case == "extra_lf":
+        executor.api_container_query_result = producer.CommandResult(
+            0,
+            executor.api_container_id + "\n\n",
+        )
+    elif case == "crlf":
+        executor.api_container_query_result = producer.CommandResult(
+            0,
+            executor.api_container_id + "\r\n",
+        )
+    elif case == "stderr":
+        executor.api_container_query_result = producer.CommandResult(
+            0,
+            executor.api_container_id,
+            "completed",
+            "safe error\n",
+        )
+    elif case == "rc":
+        executor.api_container_query_result = producer.CommandResult(2, "")
+    elif case == "timeout":
+        executor.api_container_query_failure = "timeout"
+    elif case == "oversize":
+        executor.api_container_query_result = producer.CommandResult(
+            0,
+            "x" * (producer.MAX_API_CONTAINER_DIAGNOSTIC_BYTES + 1),
+        )
+    elif case == "nonascii":
+        executor.api_container_query_result = producer.CommandResult(0, "é")
+    elif case == "control":
+        executor.api_container_query_result = producer.CommandResult(0, "\x00")
+    else:
+        executor.api_container_query_result = producer.CommandResult(
+            0,
+            "Bearer token-value",
+        )
+
+    with pytest.raises(
+        producer.ProducerError,
+        match="base_services_start_failed",
+    ):
+        producer.run_producer(
+            gate=AllowGate(),
+            runtime_factory=runtime,
+            executor_factory=executors,
+            api_factory=apis,
+            provider=provider,
+            assembler=assembler,
+            candidate=(COMMIT, TREE),
+            environment={},
+            now=datetime(2026, 7, 24, 18, 0, tzinfo=UTC),
+        )
+
+    encoded = runtime.receipts.files["diagnostic.json"].decode()
+    nested = json.loads(encoded)["base_service_start_diagnostic"][
+        "api_container_state_diagnostic"
+    ]
+    assert nested["collection_status"] == status
+    assert nested["collection_reason_code"] == reason
+    assert nested["cause_code"] == "api_exit_cause_inconclusive"
+    assert nested["health_status"] == "absent"
+    assert executor.bound_container_ids == set()
+    assert not any(
+        command[3:5] == ("container", "inspect")
+        for command in executor.commands
+        if len(command) >= 5
+    )
+    assert "token-value" not in encoded
+
+
+@pytest.mark.parametrize(
+    ("case", "status", "reason", "cause", "health"),
+    [
+        (
+            "oom",
+            "complete",
+            "api_container_state_collected",
+            "api_exit_oom_killed",
+            "unhealthy",
+        ),
+        (
+            "runtime_error",
+            "complete",
+            "api_container_state_collected",
+            "api_container_runtime_error_present",
+            "absent",
+        ),
+        (
+            "zero_exit",
+            "complete",
+            "api_container_state_collected",
+            "api_unexpected_zero_exit",
+            "absent",
+        ),
+        (
+            "zero_exit_oom",
+            "complete",
+            "api_container_state_collected",
+            "api_state_inconsistent",
+            "absent",
+        ),
+        (
+            "zero_exit_runtime_error",
+            "complete",
+            "api_container_state_collected",
+            "api_state_inconsistent",
+            "absent",
+        ),
+        (
+            "inconsistent",
+            "complete",
+            "api_container_state_collected",
+            "api_state_inconsistent",
+            "healthy",
+        ),
+        (
+            "wrong_label",
+            "output_rejected",
+            "api_container_state_output_rejected",
+            "api_exit_cause_inconclusive",
+            "absent",
+        ),
+        (
+            "unknown_enum",
+            "output_rejected",
+            "api_container_state_output_rejected",
+            "api_exit_cause_inconclusive",
+            "absent",
+        ),
+        (
+            "stderr",
+            "inconclusive",
+            "api_container_state_command_failed",
+            "api_exit_cause_inconclusive",
+            "absent",
+        ),
+        (
+            "timeout",
+            "inconclusive",
+            "api_container_state_command_failed",
+            "api_exit_cause_inconclusive",
+            "absent",
+        ),
+        (
+            "oversize",
+            "output_rejected",
+            "api_container_state_output_rejected",
+            "api_exit_cause_inconclusive",
+            "absent",
+        ),
+        (
+            "rc",
+            "inconclusive",
+            "api_container_state_command_failed",
+            "api_exit_cause_inconclusive",
+            "absent",
+        ),
+        (
+            "nonascii",
+            "output_rejected",
+            "api_container_state_output_rejected",
+            "api_exit_cause_inconclusive",
+            "absent",
+        ),
+        (
+            "control",
+            "output_rejected",
+            "api_container_state_output_rejected",
+            "api_exit_cause_inconclusive",
+            "absent",
+        ),
+        (
+            "secret",
+            "output_rejected",
+            "api_container_state_output_rejected",
+            "api_exit_cause_inconclusive",
+            "absent",
+        ),
+    ],
+)
+def test_api_container_state_hostile_and_cause_classification_is_closed(
+    fake_stack: tuple[
+        FakeRuntimeFactory,
+        FakeExecutorFactory,
+        FakeApiFactory,
+        FakeProvider,
+        FakeAssembler,
+    ],
+    case: str,
+    status: str,
+    reason: str,
+    cause: str,
+    health: str,
+) -> None:
+    runtime, executors, apis, provider, assembler = fake_stack
+    executor = executors.executor
+    _enable_api_exited_diagnostic(executor)
+    plan = producer.ComposePlan(
+        "20260724T180000Z-1234abcd",
+        runtime.runtime.path,
+    )
+    fields = [
+        executor.api_container_id,
+        plan.project,
+        "ithildin-api",
+        "exited",
+        "false",
+        "1",
+        "false",
+        "false",
+        "false",
+        "absent",
+    ]
+    if case == "oom":
+        fields[6] = "true"
+        fields[9] = "unhealthy"
+    elif case == "runtime_error":
+        fields[8] = "true"
+    elif case == "zero_exit":
+        fields[5] = "0"
+    elif case == "zero_exit_oom":
+        fields[5] = "0"
+        fields[6] = "true"
+    elif case == "zero_exit_runtime_error":
+        fields[5] = "0"
+        fields[8] = "true"
+    elif case == "inconsistent":
+        fields[3] = "running"
+        fields[4] = "true"
+        fields[9] = "healthy"
+    elif case == "wrong_label":
+        fields[1] = "other-project"
+    elif case == "unknown_enum":
+        fields[3] = "unknown"
+    elif case == "stderr":
+        executor.api_container_inspect_result = producer.CommandResult(
+            0,
+            "\t".join(fields),
+            "completed",
+            "safe error\n",
+        )
+    elif case == "timeout":
+        executor.api_container_inspect_failure = "timeout"
+    elif case == "oversize":
+        executor.api_container_inspect_result = producer.CommandResult(
+            0,
+            "x" * (producer.MAX_API_CONTAINER_DIAGNOSTIC_BYTES + 1),
+        )
+    elif case == "rc":
+        executor.api_container_inspect_result = producer.CommandResult(2, "")
+    elif case == "nonascii":
+        executor.api_container_inspect_result = producer.CommandResult(0, "é")
+    elif case == "control":
+        executor.api_container_inspect_result = producer.CommandResult(
+            0,
+            "\x00",
+        )
+    elif case == "secret":
+        executor.api_container_inspect_result = producer.CommandResult(
+            0,
+            "Bearer token-value",
+        )
+    if (
+        executor.api_container_inspect_result is None
+        and executor.api_container_inspect_failure is None
+    ):
+        executor.api_container_inspect_result = producer.CommandResult(
+            0,
+            "\t".join(fields) + "\n",
+        )
+
+    with pytest.raises(
+        producer.ProducerError,
+        match="base_services_start_failed",
+    ):
+        producer.run_producer(
+            gate=AllowGate(),
+            runtime_factory=runtime,
+            executor_factory=executors,
+            api_factory=apis,
+            provider=provider,
+            assembler=assembler,
+            candidate=(COMMIT, TREE),
+            environment={},
+            now=datetime(2026, 7, 24, 18, 0, tzinfo=UTC),
+        )
+
+    encoded = runtime.receipts.files["diagnostic.json"].decode()
+    nested = json.loads(encoded)["base_service_start_diagnostic"][
+        "api_container_state_diagnostic"
+    ]
+    assert nested == {
+        "collection_status": status,
+        "collection_reason_code": reason,
+        "cause_code": cause,
+        "health_status": health,
+    }
+    assert executor.api_container_id not in encoded
+    assert "token-value" not in encoded
+    assert sum(
+        "down" in command for command in executor.commands
+    ) == 1
+
+
+def test_api_container_commands_require_exact_binding_and_scalar_template() -> None:
+    plan = producer.ComposePlan(
+        "20260724T180000Z-1234abcd",
+        producer.RUNTIME_BASE / "20260724T180000Z-1234abcd",
+    )
+    container_id = "a" * 64
+    producer._validate_command(  # noqa: SLF001
+        plan.api_container_id_query(),
+        hermes=False,
+    )
+    with pytest.raises(
+        producer.ProducerError,
+        match="subprocess_command_not_allowed",
+    ):
+        producer._validate_command(  # noqa: SLF001
+            plan.api_container_state_inspect(container_id),
+            hermes=False,
+        )
+    producer._validate_command(  # noqa: SLF001
+        plan.api_container_state_inspect(container_id),
+        hermes=False,
+        bound_container_ids=frozenset({container_id}),
+    )
+    template = producer.API_CONTAINER_STATE_FORMAT
+    assert '{{ne .State.Error ""}}' in template
+    assert "{{.State.Error}}" not in template
+    assert "Health.Log" not in template
+    assert "{{json" not in template
+    assert ".Config.Env" not in template
+    assert ".Mounts" not in template
+    for mutation in (
+        (*plan.api_container_id_query(), "ithildin-ui"),
+        (
+            *plan.api_container_state_inspect(container_id)[:-2],
+            "{{json .State}}",
+            container_id,
+        ),
+    ):
+        with pytest.raises(
+            producer.ProducerError,
+            match="subprocess_command_not_allowed",
+        ):
+            producer._validate_command(  # noqa: SLF001
+                mutation,
+                hermes=False,
+                bound_container_ids=frozenset({container_id}),
+            )
+
+
+@pytest.mark.parametrize(
+    ("stdout_bytes", "stderr_bytes", "classification"),
+    [
+        (256, 256, "completed"),
+        (256, 257, "output_rejected"),
+    ],
+)
+def test_api_container_diagnostic_subprocess_enforces_combined_stream_cap(
+    stdout_bytes: int,
+    stderr_bytes: int,
+    classification: str,
+) -> None:
+    command = (
+        sys.executable,
+        "-c",
+        (
+            "import os;"
+            f"os.write(1,b'x'*{stdout_bytes});"
+            f"os.write(2,b'y'*{stderr_bytes})"
+        ),
+    )
+
+    result = producer.SubprocessExecutor(
+        dict(os.environ)
+    )._run_bounded_api_container_diagnostic(  # noqa: SLF001
+        command,
+        timeout=10.0,
+    )
+
+    assert result.classification == classification
+    if classification == "completed":
+        assert len(result.stdout) + len(result.stderr) == 512
+    else:
+        assert result.stdout == ""
+        assert result.stderr == ""
 
 
 def test_bridge_build_failure_cleans_exact_bound_base_images_and_preserves_primary(

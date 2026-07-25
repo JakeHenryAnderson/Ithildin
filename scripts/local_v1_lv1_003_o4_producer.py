@@ -13,6 +13,7 @@ import json
 import os
 import re
 import secrets
+import selectors
 import signal
 import socket
 import stat
@@ -54,8 +55,16 @@ MAX_SNAPSHOT_BYTES = 64 * 1_048_576
 NODE_TMPFS = ("/tmp:size=16m,mode=0700,uid=10002,gid=10002",)
 MAX_RECOVERY_RECEIPT_BYTES = 4096
 MAX_BASE_SERVICE_START_DIAGNOSTIC_BYTES = 1024
+MAX_API_CONTAINER_DIAGNOSTIC_BYTES = 512
 BASE_SERVICE_START_DIAGNOSTIC_FORMAT = (
     "{{.Service}}\t{{.State}}\t{{.Health}}\t{{.ExitCode}}"
+)
+API_CONTAINER_STATE_FORMAT = (
+    "{{.Id}}\t{{index .Config.Labels \"com.docker.compose.project\"}}\t"
+    "{{index .Config.Labels \"com.docker.compose.service\"}}\t"
+    "{{.State.Status}}\t{{.State.Running}}\t{{.State.ExitCode}}\t"
+    "{{.State.OOMKilled}}\t{{.State.Dead}}\t{{ne .State.Error \"\"}}\t"
+    "{{if .State.Health}}{{.State.Health.Status}}{{else}}absent{{end}}"
 )
 HERMES_TIMEOUT_SECONDS = 920.0
 NODE_SYNCHRONIZATION_SECONDS = 90.0
@@ -79,6 +88,7 @@ _IMAGE_REFERENCE = re.compile(
 )
 _COMPOSE_VERSION_LABEL = re.compile(r"^[0-9A-Za-z][0-9A-Za-z.+-]{0,31}$")
 _ABSENT_IMAGE_ID_STDOUTS = frozenset({"", "\n"})
+_CONTAINER_ID = re.compile(r"^[0-9a-f]{64}$")
 _AMBIENT_AUTHORITY = re.compile(
     r"^(?:DOCKER_HOST|DOCKER_CONTEXT|DOCKER_CONFIG|COMPOSE_PROJECT_NAME|"
     r"HTTP_PROXY|HTTPS_PROXY|ALL_PROXY|NO_PROXY|AWS_.*|AZURE_.*|GOOGLE_.*|"
@@ -161,6 +171,8 @@ class HermesResult:
 
 class Executor(Protocol):
     def bind_image_identity(self, image_id: str) -> None: ...
+
+    def bind_container_identity(self, container_id: str) -> None: ...
 
     def run(
         self,
@@ -801,6 +813,24 @@ class ComposePlan:
             "ithildin-ui",
         )
 
+    def api_container_id_query(self) -> tuple[str, ...]:
+        return self.compose("ps", "--all", "--quiet", "ithildin-api")
+
+    def api_container_state_inspect(
+        self,
+        container_id: str,
+    ) -> tuple[str, ...]:
+        return (
+            "docker",
+            "--config",
+            str(self.runtime / "docker-config"),
+            "container",
+            "inspect",
+            "--format",
+            API_CONTAINER_STATE_FORMAT,
+            container_id,
+        )
+
 
 @dataclass(frozen=True)
 class BoundImageIdentity:
@@ -895,6 +925,13 @@ class AnchoredExecutor:
         self._validate()
         try:
             self._delegate.bind_image_identity(image_id)
+        finally:
+            self._validate()
+
+    def bind_container_identity(self, container_id: str) -> None:
+        self._validate()
+        try:
+            self._delegate.bind_container_identity(container_id)
         finally:
             self._validate()
 
@@ -1026,11 +1063,17 @@ class SubprocessExecutor:
     def __init__(self, environment: dict[str, str]) -> None:
         self._environment = dict(environment)
         self._bound_image_ids: set[str] = set()
+        self._bound_container_ids: set[str] = set()
 
     def bind_image_identity(self, image_id: str) -> None:
         if not _DIGEST.fullmatch(image_id):
             raise ProducerError("image_identity_binding_invalid")
         self._bound_image_ids.add(image_id)
+
+    def bind_container_identity(self, container_id: str) -> None:
+        if not _CONTAINER_ID.fullmatch(container_id):
+            raise ProducerError("container_identity_binding_invalid")
+        self._bound_container_ids.add(container_id)
 
     def run(
         self,
@@ -1043,6 +1086,7 @@ class SubprocessExecutor:
             command,
             hermes=False,
             inspected_image_ids=frozenset(self._bound_image_ids),
+            bound_container_ids=frozenset(self._bound_container_ids),
         )
         is_id_probe = (
             len(command) == 8
@@ -1055,6 +1099,19 @@ class SubprocessExecutor:
         is_base_start_diagnostic = (
             command == command_plan.base_service_start_diagnostic()
         )
+        is_api_container_diagnostic = (
+            command == command_plan.api_container_id_query()
+            or command
+            in {
+                command_plan.api_container_state_inspect(container_id)
+                for container_id in self._bound_container_ids
+            }
+        )
+        if is_api_container_diagnostic:
+            return self._run_bounded_api_container_diagnostic(
+                command,
+                timeout=timeout,
+            )
         try:
             completed = subprocess.run(
                 command,
@@ -1096,6 +1153,85 @@ class SubprocessExecutor:
             classification,
             completed.stderr if is_base_start_diagnostic else "",
         )
+
+    def _run_bounded_api_container_diagnostic(
+        self,
+        command: tuple[str, ...],
+        *,
+        timeout: float,
+    ) -> CommandResult:
+        process: subprocess.Popen[bytes] | None = None
+        selector = selectors.DefaultSelector()
+        streams: dict[str, bytearray] = {
+            "stdout": bytearray(),
+            "stderr": bytearray(),
+        }
+        try:
+            process = subprocess.Popen(
+                command,
+                cwd=ROOT,
+                stdin=subprocess.DEVNULL,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                env=self._environment,
+            )
+            if process.stdout is None or process.stderr is None:
+                raise ProducerError("subprocess_unavailable")
+            selector.register(process.stdout, selectors.EVENT_READ, "stdout")
+            selector.register(process.stderr, selectors.EVENT_READ, "stderr")
+            deadline = time.monotonic() + min(timeout, 10.0)
+            total = 0
+            while selector.get_map():
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    process.kill()
+                    process.wait()
+                    return CommandResult(1, "", "timeout")
+                events = selector.select(remaining)
+                if not events:
+                    if process.poll() is None:
+                        continue
+                    break
+                for key, _ in events:
+                    maximum = (
+                        MAX_API_CONTAINER_DIAGNOSTIC_BYTES + 1 - total
+                    )
+                    chunk = os.read(key.fd, max(1, maximum))
+                    if not chunk:
+                        selector.unregister(key.fileobj)
+                        continue
+                    streams[cast(str, key.data)].extend(chunk)
+                    total += len(chunk)
+                    if total > MAX_API_CONTAINER_DIAGNOSTIC_BYTES:
+                        process.kill()
+                        process.wait()
+                        return CommandResult(1, "", "output_rejected")
+            returncode = process.wait(
+                timeout=max(0.0, deadline - time.monotonic())
+            )
+            try:
+                stdout = streams["stdout"].decode("utf-8", errors="strict")
+                stderr = streams["stderr"].decode("utf-8", errors="strict")
+            except UnicodeError:
+                return CommandResult(1, "", "output_rejected")
+            return CommandResult(returncode, stdout, "completed", stderr)
+        except subprocess.TimeoutExpired:
+            if process is not None:
+                process.kill()
+                process.wait()
+            return CommandResult(1, "", "timeout")
+        except OSError as exc:
+            if process is not None and process.poll() is None:
+                process.kill()
+                process.wait()
+            raise ProducerError("subprocess_unavailable") from exc
+        finally:
+            selector.close()
+            if process is not None:
+                if process.stdout is not None:
+                    process.stdout.close()
+                if process.stderr is not None:
+                    process.stderr.close()
 
     def run_hermes(
         self,
@@ -2251,6 +2387,220 @@ def _collect_base_service_start_diagnostic(
         return _base_service_start_diagnostic_fallback(output_rejected=True)
 
 
+def _api_container_state_fallback(
+    *,
+    collection_status: str,
+    collection_reason_code: str,
+) -> JsonObject:
+    return {
+        "collection_status": collection_status,
+        "collection_reason_code": collection_reason_code,
+        "cause_code": "api_exit_cause_inconclusive",
+        "health_status": "absent",
+    }
+
+
+def _validate_api_container_diagnostic_safety(
+    result: CommandResult,
+) -> None:
+    if result.classification == "output_rejected":
+        raise ProducerError("api_container_state_output_rejected")
+    try:
+        combined = (result.stdout + result.stderr).encode(
+            "utf-8",
+            errors="strict",
+        )
+    except UnicodeError as exc:
+        raise ProducerError("api_container_state_output_rejected") from exc
+    if len(combined) > MAX_API_CONTAINER_DIAGNOSTIC_BYTES:
+        raise ProducerError("api_container_state_output_rejected")
+    for text in (result.stdout, result.stderr):
+        if any(
+            (ord(character) < 32 and character not in {"\t", "\n"})
+            or ord(character) == 127
+            or ord(character) > 126
+            for character in text
+        ) or re.search(
+            r"(?i)(?:authorization|bearer[ \t]|credential|enrollment[_ -]?code|"
+            r"password|private[_ -]?key|prompt|raw[_ -]?output|secret|token)",
+            text,
+        ):
+            raise ProducerError("api_container_state_output_rejected")
+
+
+def _parse_exact_api_container_id(stdout: str) -> tuple[str, str | None]:
+    if stdout == "":
+        return "missing", None
+    candidate = stdout[:-1] if stdout.endswith("\n") else stdout
+    if "\n" not in candidate and _CONTAINER_ID.fullmatch(candidate):
+        return "bound", candidate
+    lines = stdout.splitlines()
+    if (
+        len(lines) > 1
+        and all(_CONTAINER_ID.fullmatch(line) is not None for line in lines)
+    ):
+        return "ambiguous", None
+    raise ProducerError("api_container_state_output_rejected")
+
+
+def _parse_bool(value: str) -> bool:
+    if value == "true":
+        return True
+    if value == "false":
+        return False
+    raise ProducerError("api_container_state_output_rejected")
+
+
+def _parse_api_container_state(
+    state: ProducerState,
+    *,
+    container_id: str,
+    stdout: str,
+) -> JsonObject:
+    candidate = stdout[:-1] if stdout.endswith("\n") else stdout
+    if "\n" in candidate:
+        raise ProducerError("api_container_state_output_rejected")
+    fields = candidate.split("\t")
+    if len(fields) != 10:
+        raise ProducerError("api_container_state_output_rejected")
+    (
+        observed_id,
+        project,
+        service,
+        status,
+        raw_running,
+        raw_exit_code,
+        raw_oom_killed,
+        raw_dead,
+        raw_error_present,
+        health,
+    ) = fields
+    if (
+        observed_id != container_id
+        or project != state.plan.project
+        or service != "ithildin-api"
+        or status
+        not in {
+            "created",
+            "running",
+            "paused",
+            "restarting",
+            "removing",
+            "exited",
+            "dead",
+        }
+        or health not in {"absent", "starting", "healthy", "unhealthy"}
+        or not re.fullmatch(r"(?:0|[1-9][0-9]{0,2})", raw_exit_code)
+    ):
+        raise ProducerError("api_container_state_output_rejected")
+    exit_code = int(raw_exit_code)
+    if exit_code > 255:
+        raise ProducerError("api_container_state_output_rejected")
+    running = _parse_bool(raw_running)
+    oom_killed = _parse_bool(raw_oom_killed)
+    dead = _parse_bool(raw_dead)
+    error_present = _parse_bool(raw_error_present)
+    inconsistent = (
+        status != "exited"
+        or running
+        or dead
+        or (exit_code == 0 and (oom_killed or error_present))
+    )
+    if inconsistent:
+        cause_code = "api_state_inconsistent"
+    elif exit_code == 0:
+        cause_code = "api_unexpected_zero_exit"
+    elif oom_killed:
+        cause_code = "api_exit_oom_killed"
+    elif error_present:
+        cause_code = "api_container_runtime_error_present"
+    else:
+        cause_code = "api_application_exit_nonzero_no_engine_error"
+    return {
+        "collection_status": "complete",
+        "collection_reason_code": "api_container_state_collected",
+        "cause_code": cause_code,
+        "health_status": health,
+    }
+
+
+def _collect_api_container_state_diagnostic(
+    state: ProducerState,
+    executor: Executor,
+) -> JsonObject:
+    try:
+        query = executor.run(
+            state.plan.api_container_id_query(),
+            timeout=10.0,
+        )
+    except (Exception, KeyboardInterrupt, ProducerSignal):
+        return _api_container_state_fallback(
+            collection_status="inconclusive",
+            collection_reason_code="api_container_state_command_failed",
+        )
+    try:
+        _validate_api_container_diagnostic_safety(query)
+        if (
+            query.returncode != 0
+            or query.stderr
+            or query.classification != "completed"
+        ):
+            return _api_container_state_fallback(
+                collection_status="inconclusive",
+                collection_reason_code="api_container_state_command_failed",
+            )
+        identity_status, container_id = _parse_exact_api_container_id(
+            query.stdout
+        )
+    except ProducerError:
+        return _api_container_state_fallback(
+            collection_status="output_rejected",
+            collection_reason_code="api_container_state_output_rejected",
+        )
+    if identity_status == "missing":
+        return _api_container_state_fallback(
+            collection_status="inconclusive",
+            collection_reason_code="api_container_id_missing",
+        )
+    if identity_status == "ambiguous" or container_id is None:
+        return _api_container_state_fallback(
+            collection_status="output_rejected",
+            collection_reason_code="api_container_id_ambiguous",
+        )
+    try:
+        executor.bind_container_identity(container_id)
+        inspected = executor.run(
+            state.plan.api_container_state_inspect(container_id),
+            timeout=10.0,
+        )
+    except (Exception, KeyboardInterrupt, ProducerSignal):
+        return _api_container_state_fallback(
+            collection_status="inconclusive",
+            collection_reason_code="api_container_state_command_failed",
+        )
+    try:
+        _validate_api_container_diagnostic_safety(inspected)
+        if (
+            inspected.returncode != 0
+            or inspected.stderr
+            or inspected.classification != "completed"
+        ):
+            return _api_container_state_fallback(
+                collection_status="inconclusive",
+                collection_reason_code="api_container_state_command_failed",
+            )
+        return _parse_api_container_state(
+            state,
+            container_id=container_id,
+            stdout=inspected.stdout,
+        )
+    except ProducerError:
+        return _api_container_state_fallback(
+            collection_status="output_rejected",
+            collection_reason_code="api_container_state_output_rejected",
+        )
+
+
 def _start_and_enroll(state: ProducerState, executor: Executor, api: Api) -> str:
     start = executor.run(
         state.plan.compose(
@@ -2265,6 +2615,16 @@ def _start_and_enroll(state: ProducerState, executor: Executor, api: Api) -> str
         state.base_service_start_diagnostic = (
             _collect_base_service_start_diagnostic(state, executor)
         )
+        services = state.base_service_start_diagnostic.get("services")
+        if (
+            state.base_service_start_diagnostic.get("collection_status")
+            == "complete"
+            and isinstance(services, dict)
+            and services.get("ithildin-api") == "service_exited_nonzero"
+        ):
+            state.base_service_start_diagnostic[
+                "api_container_state_diagnostic"
+            ] = _collect_api_container_state_diagnostic(state, executor)
         raise ProducerError("base_services_start_failed")
     _require_success(start, "base_services_start_failed")
     health = api.get("/healthz", admin=False)
@@ -3172,6 +3532,7 @@ def _validate_command(
     *,
     hermes: bool,
     inspected_image_ids: frozenset[str] = frozenset(),
+    bound_container_ids: frozenset[str] = frozenset(),
 ) -> None:
     if len(command) < 3 or command[:2] != ("docker", "--config"):
         raise ProducerError("subprocess_command_not_allowed")
@@ -3186,6 +3547,7 @@ def _validate_command(
     allowed, hermes_command = _exact_command_vocabulary(
         plan,
         inspected_image_ids=inspected_image_ids,
+        bound_container_ids=bound_container_ids,
     )
     if hermes:
         if command == hermes_command:
@@ -3199,6 +3561,7 @@ def _exact_command_vocabulary(
     plan: ComposePlan,
     *,
     inspected_image_ids: frozenset[str],
+    bound_container_ids: frozenset[str],
 ) -> tuple[set[tuple[str, ...]], tuple[str, ...]]:
     allowed = {
         plan.daemon_version(),
@@ -3249,6 +3612,7 @@ def _exact_command_vocabulary(
         ),
         plan.compose("up", "--detach", "--wait", "ithildin-api", "ithildin-ui"),
         plan.base_service_start_diagnostic(),
+        plan.api_container_id_query(),
         plan.compose(
             "--profile",
             "node",
@@ -3325,6 +3689,9 @@ def _exact_command_vocabulary(
             allowed.add(plan.image_remove(image_id))
             allowed.add(plan.image_ancestor_containers(image_id))
             allowed.add(plan.image_id_inspect(image_id))
+    for container_id in bound_container_ids:
+        if _CONTAINER_ID.fullmatch(container_id):
+            allowed.add(plan.api_container_state_inspect(container_id))
     hermes_command = plan.compose(
         "--profile",
         "hermes-node-bridge",
