@@ -1,116 +1,76 @@
-# Local v1 LV1-003 O4 Attempt 003 Image Recovery Authorization
+# Local v1 LV1-003 O4 Attempt 003 Image Recovery Authority Closure
 
-Status: `AUTHORIZE_ATTEMPT_003_IMAGE_RECOVERY_ONE_SHOT_IMMEDIATE_CHILD`
+Status: `ATTEMPT_003_IMAGE_RECOVERY_CLOSED_NO_AUTHORITY`
 
-This is a recovery-only authorization. It is not Attempt 004 and does not reopen O4 execution,
-release, promotion, production, or UAT authority.
+The one-shot recovery authorized for Attempt 003 is consumed and closed. The exact recovery
+candidate was commit `2051a136e13bacbee4e3fcec332fc4ef78698e73`, tree
+`e0cb7285e720c38a1e071536d7bd25e2bc7caa4e`. Its fixed Make target exited `0` with stable output
+`image_recovery_status: completed`.
 
-## Exact Candidate Binding
+The original authorization was prepared from commit
+`e703237fb22355c1ebc5aee509b6301970812dc3`, tree
+`2fd7bdd86b2e2d37ecf7d1b9607c988fef6b5446`. Those values are historical identity only and grant
+no current authority.
 
-The authorization parent is commit `e703237fb22355c1ebc5aee509b6301970812dc3`, tree
-`2fd7bdd86b2e2d37ecf7d1b9607c988fef6b5446`. The exact Attempt 003 closure bindings are:
+## Exact Closure Bindings
+
+The pre-recovery Attempt 003 closure remains bound by:
 
 - JSON:
   `sha256:2dec56200e564decd398fd5c0e1539e60e1c87ebaf453c7093346ca61155db8a`
 - Markdown:
   `sha256:b91cc06f5e88b35a4df18299405c60fa3868303d40c17d900ee101720feffe56`
 
-No future child commit or tree is stated. The static gate derives authority only for a clean,
-single-parent immediate child whose committed diff is exactly the five-path recovery allowlist.
-All other paths remain byte-identical to the parent.
+The post-recovery closure is bound by:
 
-## Fixed Operator Entry Point
+- JSON:
+  `sha256:88a47a8ee15dab08dc508487758564a448cfe4cc9d65c0adce39a2da1fdd8450`
+- Markdown:
+  `sha256:69071ab5b0a0c00390726c639d633c0a83e1c93b9fb0c9f91fc835429180a930`
 
-The only operator command is:
+No future child commit or tree is stated. The closure gate validates only a clean, single-parent
+immediate child of the exact recovery candidate whose committed diff equals the exact six-path
+closure allowlist. The Make target and all non-closure paths remain byte-identical to the recovery
+candidate.
 
-```text
-make local-v1-lv1-003-o4-image-recovery-run
-```
+## Durable Consumption Receipt
 
-Its exact no-argument module command is
-`uv run python -m scripts.local_v1_lv1_003_o4_image_recovery`. Arguments, stdin data, concurrent
-invocations, and automatic retries are unauthorized. The Make target remains outside release,
-milestone, static, producer, and O4-authorization dependencies.
+The owner-only `0700` runtime base must contain exactly one retained entry:
+`var/local-v1-lv1-003-o4-runtime/attempt-003-image-recovery-001-consumed.json`.
+The exact owner-only `0600` regular file is 336 bytes with digest
+`sha256:df7ce1a69c5fc3b27011f788f846bb5b385ed6f3d348ceb6c78d12de9366ca3c`.
 
-Before any Docker socket, metadata, resource, or image inspection and before any Docker mutation,
-the fixed process must consume the recovery budget durably. It descriptor-anchors the repository,
-`var`, and the existing owner-only `0700` `var/local-v1-lv1-003-o4-runtime` directory; requires that
-runtime base to be empty; and atomically creates
-`attempt-003-image-recovery-001-consumed.json` with `O_EXCL` and no-follow flags.
+Its canonical content binds recovery ID
+`LV1-003-O4-ATTEMPT-003-IMAGE-RECOVERY-001`, candidate
+`2051a136e13bacbee4e3fcec332fc4ef78698e73`, tree
+`e0cb7285e720c38a1e071536d7bd25e2bc7caa4e`, status
+`consumed_before_docker_inspection`, and retry false. The closure gate validates the repository,
+`var`, runtime base, sole entry, file identity, owner, group, mode, size, digest, and content with
+descriptor-anchored no-follow reads. Missing, extra, tampered, symlink, or special entries fail
+closed.
 
-The exact owner-only `0600` receipt contains only the recovery ID, dynamically derived current
-candidate commit and tree, status `consumed_before_docker_inspection`, and retry false. The process
-fsyncs the file and runtime directory before continuing. Any existing receipt or any other runtime
-entry permanently refuses concurrent or subsequent recovery start. The receipt remains after every
-preflight, inspection, removal, postverification, interruption, or local-runtime failure and is not
-successful O4 evidence. Receipt deletion is not authorized.
+The receipt remains durable consumption evidence. It is not successful O4 evidence. Receipt
+deletion or mutation is not authorized.
 
-## Exact Recovery Target
+## Point-In-Time Recovery Result
 
-The recovery process is bound to Compose project `ithildin-local-v1-o4-6460809b`, run
-`20260725T125344Z-6460809b`, platform `linux/arm64`, and Compose version label `5.1.4`.
-It may inspect only the exact project resources, exact run image references, exact image IDs, and
-ancestor-container relationships needed for this recovery.
+The one bounded mutation removed the three exact image IDs. Separate read-only postverification
+then observed the three exact IDs absent, all four exact run tags absent, and exact-project label
+queries empty for containers, volumes, and networks.
 
-The three removal targets, in fixed order, are:
+These are exact-run-scoped point-in-time postconditions only. They are not ongoing live truth,
+general Docker absence, Docker non-bypass, filesystem non-bypass, or proof against later or
+adversarial same-user mutation.
 
-1. `ithildin/api-o4:6460809b` —
-   `sha256:19dc658884e9298b7966e5fb10c80874afaa33956e565b55dd0a30e8a02bd5d6`
-2. `ithildin/ui-o4:6460809b` —
-   `sha256:4b530eb0fc350c433089d88ddd75d03042e633a5b23a0fdeaaeb77c58f75b6b7`
-3. `ithildin/node-o4:6460809b` —
-   `sha256:0d85000f6172508554524f276d4051170e53a6c3fc79cbc5dc1b0c051b682c81`
+## Closed Authority
 
-Each image must have exactly its one stated tag, the exact project label, its exact service label,
-Compose version label `5.1.4`, and zero ancestor containers. The Hermes reference
-`ithildin/hermes-node-bridge-o4:6460809b` and exact-project containers, volumes, and networks must
-remain absent.
+The recovery budget is zero, retry is false, and every recovery authority is false. All 19 O4
+authority fields remain false. The governed tool count remains 24.
 
-## Runtime Boundary
+The retained Make target and module are historical implementation only. Running
+`make local-v1-lv1-003-o4-image-recovery-run` or
+`uv run python -m scripts.local_v1_lv1_003_o4_image_recovery` against the closure candidate must
+refuse before receipt mutation, Docker inspection, or Docker mutation.
 
-The fixed process rejects ambient Docker host/context/config, Compose project, proxy, registry,
-cloud, model-provider, and credential authority. It proves one unique default local Docker socket
-and uses an owner-only temporary Docker configuration containing no authentication or credential
-helper configuration.
-
-Immediately before mutation, the same process revalidates every full ID, sole tag, required label,
-platform, ancestor-container absence, Hermes-tag absence, and exact-project resource absence. Any
-missing target, drift, ambiguity, extra tag, label mismatch, platform mismatch, container
-reference, resource presence, query error, or forbidden output stops before mutation.
-
-The only mutation command is one non-force command:
-
-```text
-docker --config <owner-only-empty-config> image rm <api-full-id> <ui-full-id> <node-full-id>
-```
-
-All three explicit full IDs must occur exactly once and in fixed order. Force, prune, tag-based
-removal, project-resource mutation, arbitrary Docker arguments, and raw subprocess output are
-forbidden. A nonzero, timeout, unavailable, or ambiguous removal result is a stable recovery
-failure and grants no retry. Once a removal call may have started, the process always attempts the
-same bounded read-only postverification before returning failure.
-
-After the command, read-only checks must prove the three IDs and three tags absent, Hermes still
-absent, and exact-project containers, volumes, and networks still absent. Success is reported only
-when all postconditions pass. Output is limited to stable secret-free status or error codes.
-
-## Authority And Evidence Limits
-
-The recovery budget is one and retry is false. Only
-`durable_consumption_receipt_authorized`, `recovery_inspection_authorized`, and
-`exact_image_removal_authorized` are true. All 19 O4 authority fields remain false. The filesystem
-authority is limited to creating and fsyncing that one exact receipt in the already-existing empty
-runtime base. This record does not authorize receipt removal, other filesystem mutation, Docker
-lifecycle generally, provider or Hermes access, project resource mutation, arbitrary host control,
-new governed powers, or a new governed tool.
-
-Separate Docker CLI inspection and removal cannot prove absence of same-host, same-user mutation in
-the interval between calls. The single fixed process minimizes that TOCTOU interval but does not
-claim atomic inspection/removal, Docker non-bypass, general Docker absence, or adversarial
-same-user exclusion.
-
-The durable receipt prevents a cooperative second invocation from consuming the same budget, but it
-is not claimed atomic with Docker action, tamper-proof, filesystem non-bypass, or proof against an
-adversarial same-user process.
-
-This recovery creates no successful O4 evidence and does not complete release or UAT.
+This closure is not Attempt 004, successful O4 execution, successful O4 evidence, release,
+promotion, production authorization, or UAT completion. It authorizes no further recovery action.

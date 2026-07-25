@@ -32,11 +32,17 @@ ATTEMPT_003_CLOSURE_JSON = Path(
 ATTEMPT_003_CLOSURE_DOCUMENT = Path(
     "docs/codex/local-v1-lv1-003-o4-attempt-003-closure.md"
 )
+RECOVERY_CLOSURE_JSON = Path(
+    "docs/codex/local-v1-lv1-003-o4-image-recovery-closure.json"
+)
+RECOVERY_CLOSURE_DOCUMENT = Path(
+    "docs/codex/local-v1-lv1-003-o4-image-recovery-closure.md"
+)
 AUTHORIZATION_JSON_DIGEST = (
-    "sha256:0a86f86ae937e42ae5c1fa305110a0414b7e64ac6ac6d9445ba56b360d87bed0"
+    "sha256:103576d2db0b9fe177f935c8e075217c0786a93be34097eca66f906a11faa1aa"
 )
 AUTHORIZATION_DOCUMENT_DIGEST = (
-    "sha256:3a75abd79550b6687f1c5afbc100e4a9ed2318ad59068819ee4df06fd6b28cf1"
+    "sha256:7812616aff873ec22426eeb84759889827cbc3fadf98045fc5675b99a0432715"
 )
 ATTEMPT_003_CLOSURE_JSON_DIGEST = (
     "sha256:2dec56200e564decd398fd5c0e1539e60e1c87ebaf453c7093346ca61155db8a"
@@ -44,8 +50,16 @@ ATTEMPT_003_CLOSURE_JSON_DIGEST = (
 ATTEMPT_003_CLOSURE_DOCUMENT_DIGEST = (
     "sha256:b91cc06f5e88b35a4df18299405c60fa3868303d40c17d900ee101720feffe56"
 )
-PARENT_COMMIT = "e703237fb22355c1ebc5aee509b6301970812dc3"
-PARENT_TREE = "2fd7bdd86b2e2d37ecf7d1b9607c988fef6b5446"
+RECOVERY_CLOSURE_JSON_DIGEST = (
+    "sha256:88a47a8ee15dab08dc508487758564a448cfe4cc9d65c0adce39a2da1fdd8450"
+)
+RECOVERY_CLOSURE_DOCUMENT_DIGEST = (
+    "sha256:69071ab5b0a0c00390726c639d633c0a83e1c93b9fb0c9f91fc835429180a930"
+)
+AUTHORIZATION_ORIGIN_COMMIT = "e703237fb22355c1ebc5aee509b6301970812dc3"
+AUTHORIZATION_ORIGIN_TREE = "2fd7bdd86b2e2d37ecf7d1b9607c988fef6b5446"
+PARENT_COMMIT = "2051a136e13bacbee4e3fcec332fc4ef78698e73"
+PARENT_TREE = "e0cb7285e720c38a1e071536d7bd25e2bc7caa4e"
 RUN_ID = "20260725T125344Z-6460809b"
 PROJECT = "ithildin-local-v1-o4-6460809b"
 HERMES_REFERENCE = "ithildin/hermes-node-bridge-o4:6460809b"
@@ -57,12 +71,17 @@ MODULE_COMMAND = "uv run python -m scripts.local_v1_lv1_003_o4_image_recovery"
 RECOVERY_ID = "LV1-003-O4-ATTEMPT-003-IMAGE-RECOVERY-001"
 RUNTIME_BASE = Path("var/local-v1-lv1-003-o4-runtime")
 CONSUMPTION_RECEIPT = "attempt-003-image-recovery-001-consumed.json"
+CONSUMPTION_RECEIPT_SIZE = 336
+CONSUMPTION_RECEIPT_DIGEST = (
+    "sha256:df7ce1a69c5fc3b27011f788f846bb5b385ed6f3d348ceb6c78d12de9366ca3c"
+)
 MAX_READ_OUTPUT_BYTES = 1_048_576
 
 CANDIDATE_PATH_ALLOWLIST = [
-    "Makefile",
     AUTHORIZATION_JSON.as_posix(),
     AUTHORIZATION_DOCUMENT.as_posix(),
+    RECOVERY_CLOSURE_JSON.as_posix(),
+    RECOVERY_CLOSURE_DOCUMENT.as_posix(),
     "scripts/local_v1_lv1_003_o4_image_recovery.py",
     "tests/test_local_v1_lv1_003_o4_image_recovery.py",
 ]
@@ -88,9 +107,9 @@ O4_AUTHORITY_FIELDS = {
     "uat_complete",
 }
 RECOVERY_AUTHORITY = {
-    "durable_consumption_receipt_authorized": True,
-    "recovery_inspection_authorized": True,
-    "exact_image_removal_authorized": True,
+    "durable_consumption_receipt_authorized": False,
+    "recovery_inspection_authorized": False,
+    "exact_image_removal_authorized": False,
     "force_image_removal_authorized": False,
     "image_prune_authorized": False,
     "tag_based_image_removal_authorized": False,
@@ -284,15 +303,19 @@ def _digest(path: Path) -> str:
     return "sha256:" + hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def _load_authorization(repo_root: Path, failures: list[str]) -> dict[str, Any]:
-    path = repo_root / AUTHORIZATION_JSON
+def _load_json_record(
+    repo_root: Path,
+    path: Path,
+    label: str,
+    failures: list[str],
+) -> dict[str, Any]:
     try:
-        raw = json.loads(path.read_text(encoding="utf-8"))
+        raw = json.loads((repo_root / path).read_text(encoding="utf-8"))
     except (OSError, UnicodeError, json.JSONDecodeError):
-        failures.append("image recovery authorization JSON is unavailable or invalid")
+        failures.append(f"image recovery {label} is unavailable or invalid")
         return {}
     if not isinstance(raw, dict):
-        failures.append("image recovery authorization JSON is not an object")
+        failures.append(f"image recovery {label} is not an object")
         return {}
     return cast(dict[str, Any], raw)
 
@@ -319,6 +342,16 @@ def _validate_authorization(
             ATTEMPT_003_CLOSURE_DOCUMENT_DIGEST,
             "Attempt 003 closure document",
         ),
+        (
+            RECOVERY_CLOSURE_JSON,
+            RECOVERY_CLOSURE_JSON_DIGEST,
+            "closure JSON",
+        ),
+        (
+            RECOVERY_CLOSURE_DOCUMENT,
+            RECOVERY_CLOSURE_DOCUMENT_DIGEST,
+            "closure document",
+        ),
     ):
         try:
             observed = _digest(repo_root / path)
@@ -330,23 +363,27 @@ def _validate_authorization(
     expected_scalars = {
         "schema_version": "1",
         "record_type": "local_v1_lv1_003_o4_image_recovery_authorization",
-        "record_status": (
-            "AUTHORIZE_ATTEMPT_003_IMAGE_RECOVERY_ONE_SHOT_IMMEDIATE_CHILD"
-        ),
+        "record_status": "ATTEMPT_003_IMAGE_RECOVERY_CLOSED_NO_AUTHORITY",
         "ticket_id": "LV1-003",
         "outcome_id": "O4",
         "recovery_id": RECOVERY_ID,
-        "candidate_parent_commit": PARENT_COMMIT,
-        "candidate_parent_tree": PARENT_TREE,
+        "authorization_origin_parent_commit": AUTHORIZATION_ORIGIN_COMMIT,
+        "authorization_origin_parent_tree": AUTHORIZATION_ORIGIN_TREE,
+        "recovery_candidate_commit": PARENT_COMMIT,
+        "recovery_candidate_tree": PARENT_TREE,
         "attempt_003_closure_json": ATTEMPT_003_CLOSURE_JSON.as_posix(),
         "attempt_003_closure_json_sha256": ATTEMPT_003_CLOSURE_JSON_DIGEST,
         "attempt_003_closure_document": ATTEMPT_003_CLOSURE_DOCUMENT.as_posix(),
         "attempt_003_closure_document_sha256": (
             ATTEMPT_003_CLOSURE_DOCUMENT_DIGEST
         ),
+        "recovery_closure_json": RECOVERY_CLOSURE_JSON.as_posix(),
+        "recovery_closure_json_sha256": RECOVERY_CLOSURE_JSON_DIGEST,
+        "recovery_closure_document": RECOVERY_CLOSURE_DOCUMENT.as_posix(),
+        "recovery_closure_document_sha256": RECOVERY_CLOSURE_DOCUMENT_DIGEST,
         "operator_command": f"make {RUN_TARGET}",
         "module_command": MODULE_COMMAND,
-        "recovery_attempt_budget": 1,
+        "recovery_attempt_budget": 0,
         "retry_authorized": False,
     }
     for key, expected in expected_scalars.items():
@@ -355,6 +392,8 @@ def _validate_authorization(
     binding = authorization.get("candidate_binding")
     if binding != {
         "mode": "dynamic_clean_single_parent_immediate_child",
+        "candidate_parent_commit": PARENT_COMMIT,
+        "candidate_parent_tree": PARENT_TREE,
         "candidate_commit": None,
         "candidate_tree": None,
         "changed_paths_must_equal_allowlist": True,
@@ -365,28 +404,40 @@ def _validate_authorization(
         failures.append("image recovery candidate path allowlist is not exact")
     if authorization.get("recovery_authority") != RECOVERY_AUTHORITY:
         failures.append("image recovery authority is not exact")
-    if authorization.get("consumption_contract") != {
-        "runtime_base": RUNTIME_BASE.as_posix(),
-        "receipt_name": CONSUMPTION_RECEIPT,
-        "receipt_mode": "0600",
-        "receipt_create_flags": "O_WRONLY|O_CREAT|O_EXCL|O_NOFOLLOW|O_CLOEXEC",
-        "receipt_fields": [
-            "schema_version",
-            "record_type",
-            "recovery_id",
-            "candidate_commit",
-            "candidate_tree",
-            "status",
-            "retry_authorized",
-        ],
-        "receipt_status": "consumed_before_docker_inspection",
-        "file_fsync_required": True,
-        "directory_fsync_required": True,
-        "prior_or_additional_runtime_entry_refuses": True,
-        "receipt_removal_authorized": False,
-        "durable_receipt_is_success_evidence": False,
+    if authorization.get("recovery_outcome") != {
+        "exit_code": 0,
+        "stable_output": "image_recovery_status: completed",
+        "exact_image_removal_succeeded": True,
+        "o4_execution_succeeded": False,
+        "successful_o4_evidence_created": False,
     }:
-        failures.append("image recovery consumption contract is not exact")
+        failures.append("image recovery outcome is not exact")
+    if authorization.get("durable_consumption_receipt") != {
+        "path": (RUNTIME_BASE / CONSUMPTION_RECEIPT).as_posix(),
+        "runtime_base_mode": "0700",
+        "runtime_base_entries": [CONSUMPTION_RECEIPT],
+        "receipt_mode": "0600",
+        "receipt_size_bytes": CONSUMPTION_RECEIPT_SIZE,
+        "receipt_sha256": CONSUMPTION_RECEIPT_DIGEST,
+        "receipt_candidate_commit": PARENT_COMMIT,
+        "receipt_candidate_tree": PARENT_TREE,
+        "receipt_status": "consumed_before_docker_inspection",
+        "receipt_retry_authorized": False,
+        "receipt_retained": True,
+        "receipt_removal_authorized": False,
+    }:
+        failures.append("image recovery durable receipt record is not exact")
+    if authorization.get("point_in_time_post_recovery_observation") != {
+        "three_exact_image_ids_absent": True,
+        "four_exact_image_references_absent": True,
+        "exact_project_label_container_count": 0,
+        "exact_project_label_volume_count": 0,
+        "exact_project_label_network_count": 0,
+        "ongoing_live_truth_claimed": False,
+        "general_docker_absence_claimed": False,
+        "docker_non_bypass_claimed": False,
+    }:
+        failures.append("image recovery point-in-time observation is not exact")
     o4_authority = authorization.get("o4_authority")
     if (
         not isinstance(o4_authority, dict)
@@ -394,25 +445,6 @@ def _validate_authorization(
         or any(value is not False for value in o4_authority.values())
     ):
         failures.append("image recovery must keep all 19 O4 authority fields false")
-    target = authorization.get("recovery_target")
-    expected_targets = [
-        {
-            "service": item.service,
-            "reference": item.reference,
-            "image_id": item.image_id,
-        }
-        for item in IMAGE_TARGETS
-    ]
-    if (
-        not isinstance(target, dict)
-        or target.get("run_id") != RUN_ID
-        or target.get("compose_project") != PROJECT
-        or target.get("compose_version_label") != COMPOSE_VERSION
-        or target.get("platform") != "linux/arm64"
-        or target.get("hermes_reference_required_absent") != HERMES_REFERENCE
-        or target.get("images") != expected_targets
-    ):
-        failures.append("image recovery target is not exact")
     document = repo_root / AUTHORIZATION_DOCUMENT
     try:
         normalized = " ".join(document.read_text(encoding="utf-8").split())
@@ -420,32 +452,138 @@ def _validate_authorization(
         failures.append("image recovery authorization document is unavailable")
         return
     for phrase in (
-        "Status: `AUTHORIZE_ATTEMPT_003_IMAGE_RECOVERY_ONE_SHOT_IMMEDIATE_CHILD`",
+        "Status: `ATTEMPT_003_IMAGE_RECOVERY_CLOSED_NO_AUTHORITY`",
         "not Attempt 004",
         PARENT_COMMIT,
         PARENT_TREE,
+        AUTHORIZATION_ORIGIN_COMMIT,
+        AUTHORIZATION_ORIGIN_TREE,
         ATTEMPT_003_CLOSURE_JSON_DIGEST,
         ATTEMPT_003_CLOSURE_DOCUMENT_DIGEST,
-        "exactly the five-path recovery allowlist",
+        RECOVERY_CLOSURE_JSON_DIGEST,
+        RECOVERY_CLOSURE_DOCUMENT_DIGEST,
+        "exact six-path closure allowlist",
         f"make {RUN_TARGET}",
         MODULE_COMMAND,
-        PROJECT,
-        HERMES_REFERENCE,
-        "one non-force command",
-        "Only `durable_consumption_receipt_authorized`, "
-        "`recovery_inspection_authorized`, and `exact_image_removal_authorized` are true",
+        CONSUMPTION_RECEIPT_DIGEST,
+        "The recovery budget is zero, retry is false, and every recovery authority is false",
         "All 19 O4 authority fields remain false",
-        "same-host, same-user mutation",
-        "does not claim atomic inspection/removal",
         CONSUMPTION_RECEIPT,
         "consumed_before_docker_inspection",
-        "fsyncs the file and runtime directory",
-        "Receipt deletion is not authorized",
-        "always attempts the same bounded read-only postverification",
+        "Receipt deletion or mutation is not authorized",
+        "point-in-time postconditions only",
+        "refuse before receipt mutation, Docker inspection, or Docker mutation",
     ):
         if phrase not in normalized:
             failures.append(
                 f"image recovery authorization document is missing phrase: {phrase}"
+            )
+
+
+def _validate_recovery_closure(
+    repo_root: Path,
+    closure: dict[str, Any],
+    failures: list[str],
+) -> None:
+    expected_scalars = {
+        "schema_version": "1",
+        "record_type": "local_v1_lv1_003_o4_image_recovery_closure",
+        "record_status": "RECOVERY_COMPLETED_EXACT_IMAGE_REMOVAL_CLOSED",
+        "ticket_id": "LV1-003",
+        "outcome_id": "O4",
+        "recovery_id": RECOVERY_ID,
+        "recovery_candidate_commit": PARENT_COMMIT,
+        "recovery_candidate_tree": PARENT_TREE,
+        "operator_command": f"make {RUN_TARGET}",
+        "module_command": MODULE_COMMAND,
+        "exit_code": 0,
+        "stable_output": "image_recovery_status: completed",
+        "recovery_attempt_budget": 0,
+        "retry_authorized": False,
+    }
+    for key, expected in expected_scalars.items():
+        if closure.get(key) != expected:
+            failures.append(f"image recovery closure {key} is not exact")
+    if closure.get("tracked_closure_scope") != CANDIDATE_PATH_ALLOWLIST:
+        failures.append("image recovery closure scope is not exact")
+    if closure.get("recovery_authority") != RECOVERY_AUTHORITY:
+        failures.append("image recovery closure authority is not exact")
+    o4_authority = closure.get("o4_authority")
+    if (
+        not isinstance(o4_authority, dict)
+        or set(o4_authority) != O4_AUTHORITY_FIELDS
+        or any(value is not False for value in o4_authority.values())
+    ):
+        failures.append("image recovery closure must keep all 19 O4 fields false")
+    binding = closure.get("candidate_binding")
+    if binding != {
+        "mode": "dynamic_clean_single_parent_immediate_child",
+        "candidate_parent_commit": PARENT_COMMIT,
+        "candidate_parent_tree": PARENT_TREE,
+        "candidate_commit": None,
+        "candidate_tree": None,
+        "future_self_reference_claimed": False,
+    }:
+        failures.append("image recovery closure candidate binding is not exact")
+    receipt = closure.get("durable_consumption_receipt")
+    if (
+        not isinstance(receipt, dict)
+        or receipt.get("path") != (RUNTIME_BASE / CONSUMPTION_RECEIPT).as_posix()
+        or receipt.get("runtime_base_mode") != "0700"
+        or receipt.get("runtime_base_entries") != [CONSUMPTION_RECEIPT]
+        or receipt.get("receipt_mode") != "0600"
+        or receipt.get("receipt_size_bytes") != CONSUMPTION_RECEIPT_SIZE
+        or receipt.get("receipt_sha256") != CONSUMPTION_RECEIPT_DIGEST
+        or receipt.get("receipt_candidate_commit") != PARENT_COMMIT
+        or receipt.get("receipt_candidate_tree") != PARENT_TREE
+        or receipt.get("receipt_status") != "consumed_before_docker_inspection"
+        or receipt.get("receipt_retry_authorized") is not False
+        or receipt.get("receipt_retained") is not True
+        or receipt.get("receipt_removal_authorized") is not False
+    ):
+        failures.append("image recovery closure durable receipt is not exact")
+    observation = closure.get("point_in_time_post_recovery_observation")
+    if (
+        not isinstance(observation, dict)
+        or observation.get("image_ids_absent")
+        != [target.image_id for target in IMAGE_TARGETS]
+        or observation.get("image_references_absent")
+        != [*(target.reference for target in IMAGE_TARGETS), HERMES_REFERENCE]
+        or observation.get("compose_project") != PROJECT
+        or observation.get("exact_project_label_containers") != 0
+        or observation.get("exact_project_label_volumes") != 0
+        or observation.get("exact_project_label_networks") != 0
+        or observation.get("ongoing_live_truth_claimed") is not False
+        or observation.get("general_docker_absence_claimed") is not False
+        or observation.get("docker_non_bypass_claimed") is not False
+    ):
+        failures.append("image recovery closure point-in-time observation is not exact")
+    try:
+        normalized = " ".join(
+            (repo_root / RECOVERY_CLOSURE_DOCUMENT)
+            .read_text(encoding="utf-8")
+            .split()
+        )
+    except (OSError, UnicodeError):
+        failures.append("image recovery closure document is unavailable")
+        return
+    for phrase in (
+        "Status: `RECOVERY_COMPLETED_EXACT_IMAGE_REMOVAL_CLOSED`",
+        PARENT_COMMIT,
+        PARENT_TREE,
+        "image_recovery_status: completed",
+        CONSUMPTION_RECEIPT,
+        CONSUMPTION_RECEIPT_DIGEST,
+        "point-in-time postconditions",
+        "not ongoing live truth",
+        "whose committed diff is exactly:",
+        "The recovery budget is zero",
+        "all 19 O4 authority fields remain false",
+        "governed tool count remains 24",
+    ):
+        if phrase not in normalized:
+            failures.append(
+                f"image recovery closure document is missing phrase: {phrase}"
             )
 
 
@@ -506,9 +644,22 @@ def _validate_makefile(repo_root: Path, failures: list[str]) -> None:
 
 def build_report(repo_root: Path = ROOT) -> dict[str, Any]:
     failures: list[str] = []
-    authorization = _load_authorization(repo_root, failures)
+    authorization = _load_json_record(
+        repo_root,
+        AUTHORIZATION_JSON,
+        "authorization JSON",
+        failures,
+    )
+    closure = _load_json_record(
+        repo_root,
+        RECOVERY_CLOSURE_JSON,
+        "closure JSON",
+        failures,
+    )
     _validate_authorization(repo_root, authorization, failures)
+    _validate_recovery_closure(repo_root, closure, failures)
     _validate_makefile(repo_root, failures)
+    _validate_consumption_receipt(repo_root, failures)
     head = _git(repo_root, ("rev-parse", "HEAD"), failures)
     tree = _git(repo_root, ("show", "-s", "--format=%T", "HEAD"), failures)
     parents = _git(repo_root, ("show", "-s", "--format=%P", "HEAD"), failures).split()
@@ -545,10 +696,10 @@ def build_report(repo_root: Path = ROOT) -> dict[str, Any]:
         "record_status": authorization.get("record_status"),
         "candidate_commit": head if valid else None,
         "candidate_tree": tree if valid else None,
-        "recovery_attempt_budget": 1 if valid else 0,
+        "recovery_attempt_budget": 0,
         "retry_authorized": False,
-        "recovery_inspection_authorized": valid,
-        "exact_image_removal_authorized": valid,
+        "recovery_inspection_authorized": False,
+        "exact_image_removal_authorized": False,
         "o4_authority": {field: False for field in sorted(O4_AUTHORITY_FIELDS)},
         "release_allowed": False,
         "uat_complete": False,
@@ -660,6 +811,75 @@ def _consumption_receipt_bytes(candidate_commit: str, candidate_tree: str) -> by
         )
         + "\n"
     ).encode("utf-8")
+
+
+def _validate_consumption_receipt(
+    repo_root: Path,
+    failures: list[str],
+) -> None:
+    repository = var = runtime = receipt = -1
+    try:
+        repository, var, runtime = _open_runtime_base(repo_root)
+        if sorted(os.listdir(runtime)) != [CONSUMPTION_RECEIPT]:
+            failures.append("image recovery retained receipt is not the sole entry")
+            return
+        before = os.stat(
+            CONSUMPTION_RECEIPT,
+            dir_fd=runtime,
+            follow_symlinks=False,
+        )
+        if (
+            not stat.S_ISREG(before.st_mode)
+            or stat.S_IMODE(before.st_mode) != 0o600
+            or before.st_uid != os.geteuid()
+            or before.st_gid != os.getegid()
+            or before.st_size != CONSUMPTION_RECEIPT_SIZE
+        ):
+            failures.append("image recovery retained receipt posture is not exact")
+            return
+        flags = (
+            os.O_RDONLY
+            | getattr(os, "O_CLOEXEC", 0)
+            | getattr(os, "O_NOFOLLOW", 0)
+            | getattr(os, "O_NONBLOCK", 0)
+        )
+        receipt = os.open(CONSUMPTION_RECEIPT, flags, dir_fd=runtime)
+        opened = os.fstat(receipt)
+        if (
+            not _same_inode(before, opened)
+            or not stat.S_ISREG(opened.st_mode)
+            or stat.S_IMODE(opened.st_mode) != 0o600
+            or opened.st_uid != os.geteuid()
+            or opened.st_gid != os.getegid()
+            or opened.st_size != CONSUMPTION_RECEIPT_SIZE
+        ):
+            failures.append("image recovery retained receipt identity is not exact")
+            return
+        payload = b""
+        while len(payload) <= CONSUMPTION_RECEIPT_SIZE:
+            chunk = os.read(receipt, CONSUMPTION_RECEIPT_SIZE + 1 - len(payload))
+            if not chunk:
+                break
+            payload += chunk
+        after = os.fstat(receipt)
+        expected = _consumption_receipt_bytes(PARENT_COMMIT, PARENT_TREE)
+        if (
+            not _same_inode(opened, after)
+            or after.st_size != CONSUMPTION_RECEIPT_SIZE
+            or len(payload) != CONSUMPTION_RECEIPT_SIZE
+            or payload != expected
+            or "sha256:" + hashlib.sha256(payload).hexdigest()
+            != CONSUMPTION_RECEIPT_DIGEST
+        ):
+            failures.append("image recovery retained receipt content is not exact")
+    except RecoveryError:
+        failures.append("image recovery retained receipt runtime posture is not exact")
+    except (OSError, UnicodeError):
+        failures.append("image recovery retained receipt is unavailable")
+    finally:
+        for descriptor in (receipt, runtime, var, repository):
+            if descriptor >= 0:
+                os.close(descriptor)
 
 
 def consume_recovery_budget(
@@ -867,6 +1087,9 @@ def run_live_recovery(environment: dict[str, str] | None = None) -> None:
         report["valid"] is not True
         or not isinstance(report["candidate_commit"], str)
         or not isinstance(report["candidate_tree"], str)
+        or report["recovery_attempt_budget"] != 1
+        or report["recovery_inspection_authorized"] is not True
+        or report["exact_image_removal_authorized"] is not True
     ):
         raise RecoveryError("image_recovery_not_authorized")
     consume_recovery_budget(

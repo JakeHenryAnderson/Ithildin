@@ -1,47 +1,24 @@
 {
   "schema_version": "1",
-  "record_type": "local_v1_lv1_003_o4_image_recovery_authorization",
-  "record_status": "ATTEMPT_003_IMAGE_RECOVERY_CLOSED_NO_AUTHORITY",
+  "record_type": "local_v1_lv1_003_o4_image_recovery_closure",
+  "record_status": "RECOVERY_COMPLETED_EXACT_IMAGE_REMOVAL_CLOSED",
   "ticket_id": "LV1-003",
   "outcome_id": "O4",
   "recovery_id": "LV1-003-O4-ATTEMPT-003-IMAGE-RECOVERY-001",
-  "authorization_origin_parent_commit": "e703237fb22355c1ebc5aee509b6301970812dc3",
-  "authorization_origin_parent_tree": "2fd7bdd86b2e2d37ecf7d1b9607c988fef6b5446",
   "recovery_candidate_commit": "2051a136e13bacbee4e3fcec332fc4ef78698e73",
   "recovery_candidate_tree": "e0cb7285e720c38a1e071536d7bd25e2bc7caa4e",
-  "attempt_003_closure_json": "docs/codex/local-v1-lv1-003-o4-attempt-003-closure.json",
-  "attempt_003_closure_json_sha256": "sha256:2dec56200e564decd398fd5c0e1539e60e1c87ebaf453c7093346ca61155db8a",
-  "attempt_003_closure_document": "docs/codex/local-v1-lv1-003-o4-attempt-003-closure.md",
-  "attempt_003_closure_document_sha256": "sha256:b91cc06f5e88b35a4df18299405c60fa3868303d40c17d900ee101720feffe56",
-  "recovery_closure_json": "docs/codex/local-v1-lv1-003-o4-image-recovery-closure.json",
-  "recovery_closure_json_sha256": "sha256:88a47a8ee15dab08dc508487758564a448cfe4cc9d65c0adce39a2da1fdd8450",
-  "recovery_closure_document": "docs/codex/local-v1-lv1-003-o4-image-recovery-closure.md",
-  "recovery_closure_document_sha256": "sha256:69071ab5b0a0c00390726c639d633c0a83e1c93b9fb0c9f91fc835429180a930",
-  "candidate_binding": {
-    "mode": "dynamic_clean_single_parent_immediate_child",
-    "candidate_parent_commit": "2051a136e13bacbee4e3fcec332fc4ef78698e73",
-    "candidate_parent_tree": "e0cb7285e720c38a1e071536d7bd25e2bc7caa4e",
-    "candidate_commit": null,
-    "candidate_tree": null,
-    "changed_paths_must_equal_allowlist": true,
-    "future_self_reference_claimed": false
-  },
-  "candidate_path_allowlist": [
-    "docs/codex/local-v1-lv1-003-o4-image-recovery-authorization.json",
-    "docs/codex/local-v1-lv1-003-o4-image-recovery-authorization.md",
-    "docs/codex/local-v1-lv1-003-o4-image-recovery-closure.json",
-    "docs/codex/local-v1-lv1-003-o4-image-recovery-closure.md",
-    "scripts/local_v1_lv1_003_o4_image_recovery.py",
-    "tests/test_local_v1_lv1_003_o4_image_recovery.py"
-  ],
   "operator_command": "make local-v1-lv1-003-o4-image-recovery-run",
   "module_command": "uv run python -m scripts.local_v1_lv1_003_o4_image_recovery",
-  "recovery_outcome": {
-    "exit_code": 0,
-    "stable_output": "image_recovery_status: completed",
+  "exit_code": 0,
+  "stable_output": "image_recovery_status: completed",
+  "recovery_result": {
     "exact_image_removal_succeeded": true,
     "o4_execution_succeeded": false,
-    "successful_o4_evidence_created": false
+    "successful_o4_evidence_created": false,
+    "release_allowed": false,
+    "promotion_allowed": false,
+    "production_authorized": false,
+    "uat_complete": false
   },
   "durable_consumption_receipt": {
     "path": "var/local-v1-lv1-003-o4-runtime/attempt-003-image-recovery-001-consumed.json",
@@ -52,6 +29,8 @@
     "receipt_mode": "0600",
     "receipt_size_bytes": 336,
     "receipt_sha256": "sha256:df7ce1a69c5fc3b27011f788f846bb5b385ed6f3d348ceb6c78d12de9366ca3c",
+    "receipt_record_type": "local_v1_lv1_003_o4_image_recovery_consumption",
+    "receipt_recovery_id": "LV1-003-O4-ATTEMPT-003-IMAGE-RECOVERY-001",
     "receipt_candidate_commit": "2051a136e13bacbee4e3fcec332fc4ef78698e73",
     "receipt_candidate_tree": "e0cb7285e720c38a1e071536d7bd25e2bc7caa4e",
     "receipt_status": "consumed_before_docker_inspection",
@@ -60,15 +39,42 @@
     "receipt_removal_authorized": false
   },
   "point_in_time_post_recovery_observation": {
-    "three_exact_image_ids_absent": true,
-    "four_exact_image_references_absent": true,
-    "exact_project_label_container_count": 0,
-    "exact_project_label_volume_count": 0,
-    "exact_project_label_network_count": 0,
+    "observation_scope": "exact_run_scoped_read_only_post_recovery",
+    "image_ids_absent": [
+      "sha256:19dc658884e9298b7966e5fb10c80874afaa33956e565b55dd0a30e8a02bd5d6",
+      "sha256:4b530eb0fc350c433089d88ddd75d03042e633a5b23a0fdeaaeb77c58f75b6b7",
+      "sha256:0d85000f6172508554524f276d4051170e53a6c3fc79cbc5dc1b0c051b682c81"
+    ],
+    "image_references_absent": [
+      "ithildin/api-o4:6460809b",
+      "ithildin/ui-o4:6460809b",
+      "ithildin/node-o4:6460809b",
+      "ithildin/hermes-node-bridge-o4:6460809b"
+    ],
+    "compose_project": "ithildin-local-v1-o4-6460809b",
+    "exact_project_label_containers": 0,
+    "exact_project_label_volumes": 0,
+    "exact_project_label_networks": 0,
     "ongoing_live_truth_claimed": false,
     "general_docker_absence_claimed": false,
     "docker_non_bypass_claimed": false
   },
+  "candidate_binding": {
+    "mode": "dynamic_clean_single_parent_immediate_child",
+    "candidate_parent_commit": "2051a136e13bacbee4e3fcec332fc4ef78698e73",
+    "candidate_parent_tree": "e0cb7285e720c38a1e071536d7bd25e2bc7caa4e",
+    "candidate_commit": null,
+    "candidate_tree": null,
+    "future_self_reference_claimed": false
+  },
+  "tracked_closure_scope": [
+    "docs/codex/local-v1-lv1-003-o4-image-recovery-authorization.json",
+    "docs/codex/local-v1-lv1-003-o4-image-recovery-authorization.md",
+    "docs/codex/local-v1-lv1-003-o4-image-recovery-closure.json",
+    "docs/codex/local-v1-lv1-003-o4-image-recovery-closure.md",
+    "scripts/local_v1_lv1_003_o4_image_recovery.py",
+    "tests/test_local_v1_lv1_003_o4_image_recovery.py"
+  ],
   "recovery_attempt_budget": 0,
   "retry_authorized": false,
   "recovery_authority": {

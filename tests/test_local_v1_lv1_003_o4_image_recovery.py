@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+import shutil
 import subprocess
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
@@ -42,8 +43,17 @@ def _exact_child(tmp_path: Path) -> tuple[Path, str, str]:
         "commit",
         "-q",
         "-m",
-        "test: exact Attempt 003 image recovery child",
+        "test: exact Attempt 003 image recovery closure child",
     )
+    runtime = repo / recovery.RUNTIME_BASE
+    runtime.mkdir(parents=True, mode=0o700)
+    runtime.chmod(0o700)
+    source_receipt = (
+        Path.cwd() / recovery.RUNTIME_BASE / recovery.CONSUMPTION_RECEIPT
+    )
+    destination_receipt = runtime / recovery.CONSUMPTION_RECEIPT
+    shutil.copy2(source_receipt, destination_receipt)
+    destination_receipt.chmod(0o600)
     return (
         repo,
         _git(repo, "rev-parse", "HEAD"),
@@ -152,7 +162,7 @@ class FakeExecutor:
         return recovery.CommandResult(self.removal_returncode, "")
 
 
-def test_exact_committed_child_derives_recovery_only_authority(
+def test_exact_committed_child_derives_clean_closed_recovery_record(
     tmp_path: Path,
 ) -> None:
     repo, commit, tree = _exact_child(tmp_path)
@@ -163,15 +173,19 @@ def test_exact_committed_child_derives_recovery_only_authority(
     assert report["valid"] is True
     assert report["candidate_commit"] == commit
     assert report["candidate_tree"] == tree
-    assert report["recovery_attempt_budget"] == 1
+    assert report["recovery_attempt_budget"] == 0
     assert report["retry_authorized"] is False
-    assert report["recovery_inspection_authorized"] is True
-    assert report["exact_image_removal_authorized"] is True
+    assert report["recovery_inspection_authorized"] is False
+    assert report["exact_image_removal_authorized"] is False
     assert set(report["o4_authority"]) == recovery.O4_AUTHORITY_FIELDS
     assert not any(report["o4_authority"].values())
     assert report["release_allowed"] is False
     assert report["uat_complete"] is False
-    recovery.assert_recovery_authorized(repo)
+    with pytest.raises(
+        recovery.RecoveryError,
+        match="image_recovery_not_authorized",
+    ):
+        recovery.assert_recovery_authorized(repo)
 
 
 def test_dirty_uncommitted_candidate_fails_closed() -> None:
@@ -182,6 +196,63 @@ def test_dirty_uncommitted_candidate_fails_closed() -> None:
     assert report["recovery_inspection_authorized"] is False
     assert report["exact_image_removal_authorized"] is False
     assert not any(report["o4_authority"].values())
+
+
+@pytest.mark.parametrize(
+    "posture",
+    [
+        "missing",
+        "tampered",
+        "wrong_mode",
+        "symlink",
+        "special",
+        "extra_entry",
+        "wrong_candidate",
+    ],
+)
+def test_closure_child_rejects_hostile_retained_receipt(
+    tmp_path: Path,
+    posture: str,
+) -> None:
+    repo, _, _ = _exact_child(tmp_path)
+    runtime = repo / recovery.RUNTIME_BASE
+    receipt = runtime / recovery.CONSUMPTION_RECEIPT
+    if posture == "missing":
+        receipt.unlink()
+    elif posture == "tampered":
+        receipt.write_bytes(
+            receipt.read_bytes().replace(
+                b'"retry_authorized":false',
+                b'"retry_authorized":true ',
+            )
+        )
+    elif posture == "wrong_mode":
+        receipt.chmod(0o644)
+    elif posture == "symlink":
+        receipt.unlink()
+        receipt.symlink_to("/dev/null")
+    elif posture == "special":
+        receipt.unlink()
+        os.mkfifo(receipt, 0o600)
+    elif posture == "extra_entry":
+        (runtime / "unexpected").write_text("x\n", encoding="utf-8")
+    else:
+        receipt.write_bytes(
+            recovery._consumption_receipt_bytes(  # noqa: SLF001
+                "a" * 40,
+                recovery.PARENT_TREE,
+            )
+        )
+        receipt.chmod(0o600)
+
+    report = recovery.build_report(repo)
+
+    assert report["valid"] is False
+    assert report["recovery_attempt_budget"] == 0
+    assert report["recovery_inspection_authorized"] is False
+    assert report["exact_image_removal_authorized"] is False
+    assert not any(report["o4_authority"].values())
+    assert any("retained receipt" in failure for failure in report["failures"])
 
 
 def test_fixed_plan_constructs_one_non_force_full_id_removal(tmp_path: Path) -> None:
@@ -330,22 +401,22 @@ def test_successful_remove_with_failed_postcondition_is_not_success(
             "candidate_commit", "a" * 40
         ),
         lambda value: value["candidate_path_allowlist"].pop(),  # type: ignore[union-attr]
-        lambda value: value.__setitem__("recovery_attempt_budget", 2),
+        lambda value: value.__setitem__("recovery_attempt_budget", 1),
         lambda value: value.__setitem__("retry_authorized", True),
         lambda value: value["recovery_authority"].__setitem__(  # type: ignore[union-attr]
             "force_image_removal_authorized", True
         ),
         lambda value: value["recovery_authority"].__setitem__(  # type: ignore[union-attr]
-            "durable_consumption_receipt_authorized", False
+            "durable_consumption_receipt_authorized", True
         ),
-        lambda value: value["consumption_contract"].__setitem__(  # type: ignore[union-attr]
+        lambda value: value["durable_consumption_receipt"].__setitem__(  # type: ignore[union-attr]
             "receipt_removal_authorized", True
         ),
         lambda value: value["o4_authority"].__setitem__(  # type: ignore[union-attr]
             "docker_lifecycle_authorized", True
         ),
-        lambda value: value["recovery_target"]["images"][0].__setitem__(  # type: ignore[index,union-attr]
-            "image_id", "sha256:" + "0" * 64
+        lambda value: value["recovery_outcome"].__setitem__(  # type: ignore[union-attr]
+            "o4_execution_succeeded", True
         ),
     ],
 )
@@ -498,82 +569,31 @@ def test_hostile_runtime_posture_refuses_consumption(
         )
 
 
-@pytest.mark.parametrize(
-    "failure",
-    [
-        recovery.RecoveryError("simulated_preflight_failure"),
-        subprocess.TimeoutExpired(("docker", "image", "inspect"), 1.0),
-        RuntimeError("simulated crash"),
-    ],
-)
-def test_receipt_remains_after_post_consumption_failure(
-    tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
-    failure: BaseException,
-) -> None:
-    repo, commit, tree = _exact_child(tmp_path)
-    runtime = repo / recovery.RUNTIME_BASE
-    runtime.mkdir(parents=True, mode=0o700)
-    runtime.chmod(0o700)
-    monkeypatch.setattr(recovery, "ROOT", repo)
-    monkeypatch.setattr(
-        recovery.producer,
-        "_reject_ambient_authority",
-        lambda _: None,
-    )
-    monkeypatch.setattr(
-        recovery.producer,
-        "_prove_local_docker_socket",
-        lambda: "unix:///test/docker.sock",
-    )
-
-    def fail_execute(_: recovery.Executor, __: recovery.RecoveryPlan) -> None:
-        raise failure
-
-    monkeypatch.setattr(recovery, "execute_recovery", fail_execute)
-
-    with pytest.raises(
-        (recovery.RecoveryError, subprocess.TimeoutExpired, RuntimeError)
-    ):
-        recovery.run_live_recovery({"PATH": "/usr/bin:/bin"})
-
-    receipt = runtime / recovery.CONSUMPTION_RECEIPT
-    assert receipt.is_file()
-    assert stat_mode(receipt.stat().st_mode) == 0o600
-    receipt_record = json.loads(receipt.read_text(encoding="utf-8"))
-    assert receipt_record["status"] == "consumed_before_docker_inspection"
-    assert receipt_record["candidate_commit"] == commit
-    assert receipt_record["candidate_tree"] == tree
-    assert receipt_record["retry_authorized"] is False
-
-
-def test_receipt_precedes_local_socket_inspection_failure(
+def test_closed_live_entrypoint_refuses_before_receipt_or_docker(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     repo, _, _ = _exact_child(tmp_path)
-    runtime = repo / recovery.RUNTIME_BASE
-    runtime.mkdir(parents=True, mode=0o700)
-    runtime.chmod(0o700)
-    monkeypatch.setattr(recovery, "ROOT", repo)
-    monkeypatch.setattr(
-        recovery.producer,
-        "_reject_ambient_authority",
-        lambda _: None,
+    receipt = (
+        repo / recovery.RUNTIME_BASE / recovery.CONSUMPTION_RECEIPT
     )
+    before = receipt.read_bytes()
+    monkeypatch.setattr(recovery, "ROOT", repo)
 
-    def fail_socket() -> str:
-        raise recovery.producer.ProducerError("local_docker_socket_unavailable")
+    def forbidden(*_: object, **__: object) -> object:
+        raise AssertionError("closed recovery reached mutation or Docker")
 
-    monkeypatch.setattr(recovery.producer, "_prove_local_docker_socket", fail_socket)
+    monkeypatch.setattr(recovery, "consume_recovery_budget", forbidden)
+    monkeypatch.setattr(recovery.producer, "_reject_ambient_authority", forbidden)
+    monkeypatch.setattr(recovery.producer, "_prove_local_docker_socket", forbidden)
 
     with pytest.raises(
         recovery.RecoveryError,
-        match="local_docker_socket_unavailable",
+        match="image_recovery_not_authorized",
     ):
         recovery.run_live_recovery({"PATH": "/usr/bin:/bin"})
 
-    assert (runtime / recovery.CONSUMPTION_RECEIPT).is_file()
+    assert receipt.read_bytes() == before
 
 
 def test_make_target_is_fixed_and_outside_aggregate_dependencies() -> None:
@@ -599,44 +619,6 @@ def test_arguments_refuse_before_live_recovery(
     assert recovery.main(["unexpected"]) == 2
     assert called is False
     assert capsys.readouterr().out == "image_recovery_error: arguments_not_allowed\n"
-
-
-@pytest.mark.parametrize("failure_point", ["temporary_directory", "docker_config"])
-def test_tempfile_or_config_oserror_is_stable_and_receipt_remains(
-    tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
-    capsys: pytest.CaptureFixture[str],
-    failure_point: str,
-) -> None:
-    repo, _, _ = _exact_child(tmp_path)
-    runtime = repo / recovery.RUNTIME_BASE
-    runtime.mkdir(parents=True, mode=0o700)
-    runtime.chmod(0o700)
-    monkeypatch.setattr(recovery, "ROOT", repo)
-    monkeypatch.setattr(
-        recovery.producer,
-        "_reject_ambient_authority",
-        lambda _: None,
-    )
-    monkeypatch.setattr(
-        recovery.producer,
-        "_prove_local_docker_socket",
-        lambda: "unix:///test/docker.sock",
-    )
-
-    def unavailable(*_: object, **__: object) -> object:
-        raise OSError("simulated local runtime failure")
-
-    if failure_point == "temporary_directory":
-        monkeypatch.setattr(recovery.tempfile, "TemporaryDirectory", unavailable)
-    else:
-        monkeypatch.setattr(recovery, "_write_empty_docker_config", unavailable)
-
-    assert recovery.main([]) == 1
-    assert capsys.readouterr().out == (
-        "image_recovery_error: image_recovery_local_runtime_unavailable\n"
-    )
-    assert (runtime / recovery.CONSUMPTION_RECEIPT).is_file()
 
 
 def test_unicode_failure_has_stable_main_output(
