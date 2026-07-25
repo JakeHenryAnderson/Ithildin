@@ -40,6 +40,14 @@ ATTEMPT_DISPOSITION_DOCUMENT = Path(
 )
 AUTHORIZATION_TARGET = "local-v1-lv1-003-o4-execution-authorization-check"
 PRODUCER_STATIC_TARGET = "local-v1-lv1-003-o4-producer-static-check"
+PRODUCER_RUN_TARGET = "local-v1-lv1-003-o4-producer-run"
+PRODUCER_MODULE_INVOCATION = (
+    "uv run python -m scripts.local_v1_lv1_003_o4_producer"
+)
+FAILED_FILE_PATH_INVOCATION = (
+    "uv run python scripts/local_v1_lv1_003_o4_producer.py"
+)
+ENTRYPOINT_REPAIR_BASE_COMMIT = "148effd50c69b40a005f86f6217fc3db8b665a06"
 REVIEWED_IMPLEMENTATION_COMMIT = "5dab3654391c14fe214a9dfe302c099d0fe5fbf8"
 REVIEWED_IMPLEMENTATION_TREE = "f9a0cb66ac12e6e0ecca7fc23a0071be0dbe3075"
 CANDIDATE_PARENT_COMMIT = "86e75f0cf7f92ceb33218f2a66a00668f4da9e12"
@@ -54,8 +62,11 @@ CODE_AUTHORIZATION_RECORD_DIGEST = (
 CODE_AUTHORIZATION_ORIGIN_RECORD_DIGEST = (
     "sha256:f241034bc56219c29ecaa215cdbed1404516130b8093567611a8c56960b1a051"
 )
-PRODUCER_CONTRACT_DIGEST = (
+HISTORICAL_PRODUCER_CONTRACT_DIGEST = (
     "sha256:3c742762465380387153f5ee17686ed540354926c5364c9e73f15100d9bb30e1"
+)
+PRODUCER_CONTRACT_DIGEST = (
+    "sha256:ef13427da1991dc4f176fe91ca90da29ca8605bfa2435a15d1a7868fc76370b6"
 )
 PRODUCER_EXACT_REVIEW_DIGEST = (
     "sha256:5d023bb589636fc991a86768fb97f737cae2cdd58da369c94f99a99d20245c76"
@@ -202,6 +213,7 @@ TOP_LEVEL_FIELDS = {
     "attempted_authorization_contract_sha256",
     "attempt_invocation",
     "attempt_root_absence",
+    "producer_entrypoint_repair",
     "execution_candidate_binding_mode",
     "execution_attempt_budget",
     "attempt_consumed",
@@ -505,6 +517,17 @@ def _validate_contract(contract: JsonObject, failures: list[str]) -> None:
             "observation_method": "read_only_path_absence_check_after_failed_invocation",
             "absent_roots": cast(list[JsonValue], PRIOR_ATTEMPT_ROOTS),
         },
+        "producer_entrypoint_repair": {
+            "status": "IMPLEMENTED_PENDING_EXACT_REVIEW_NO_RETRY_AUTHORITY",
+            "base_closure_commit": ENTRYPOINT_REPAIR_BASE_COMMIT,
+            "live_make_target": PRODUCER_RUN_TARGET,
+            "module_invocation": PRODUCER_MODULE_INVOCATION,
+            "failed_file_path_invocation": FAILED_FILE_PATH_INVOCATION,
+            "failed_file_path_invocation_authorized": False,
+            "module_import_executes_main": False,
+            "independent_exact_review_required": True,
+            "separate_new_attempt_disposition_required": True,
+        },
         "execution_candidate_binding_mode": (
             "attempt_consumed_no_execution_candidate_authorized"
         ),
@@ -556,6 +579,13 @@ def _validate_document(document: str, failures: list[str]) -> None:
         "receipt, runtime, and constrained-journey report roots absent",
         "performed no runtime creation, Docker, Ollama or provider, API, Node, Hermes, "
         "credential, network journey, or evidence action",
+        "make local-v1-lv1-003-o4-producer-run",
+        "`uv run python -m scripts.local_v1_lv1_003_o4_producer`",
+        "failed command `uv run python scripts/local_v1_lv1_003_o4_producer.py` is not "
+        "an authorized future invocation",
+        "Importing that module does not execute its `main` function",
+        "requires independent exact review and a separate new-attempt disposition",
+        "not a dependency of release, milestone, or static checks",
         "one server-owned",
         "`synthetic_read_review_v1`",
         "`max_cycles=1`",
@@ -595,8 +625,16 @@ def _validate_producer_contract(
 ) -> None:
     normalized = " ".join(document.split())
     for phrase in (
-        "Status: `implementation_candidate_pending_exact_review_and_separate_live_disposition`",
+        "Status: `entrypoint_repair_candidate_pending_exact_review_and_separate_attempt_"
+        "disposition`",
         "candidate producer and reconciled assembler now implement this contract",
+        "Attempt 001 is consumed after the failed file-path invocation",
+        "make local-v1-lv1-003-o4-producer-run",
+        "`uv run python -m scripts.local_v1_lv1_003_o4_producer`",
+        "`uv run python scripts/local_v1_lv1_003_o4_producer.py` is not an authorized "
+        "future entrypoint",
+        "Importing the module does not execute `main`",
+        "current consumed Attempt 001 disposition refuses this repaired entrypoint",
         "remains unusable for live producer evidence until this producer-and-assembler "
         "candidate receives independent exact review",
         "before it creates a runtime directory or performs Docker, API, provider, network",
@@ -662,7 +700,7 @@ def _validate_disposition(
         "code_authorization_commit": CODE_AUTHORIZATION_COMMIT,
         "code_authorization_tree": CODE_AUTHORIZATION_TREE,
         "code_authorization_record_sha256": CODE_AUTHORIZATION_RECORD_DIGEST,
-        "producer_contract_sha256": PRODUCER_CONTRACT_DIGEST,
+        "producer_contract_sha256": HISTORICAL_PRODUCER_CONTRACT_DIGEST,
         "execution_candidate_binding": {
             "mode": "dynamic_current_head_after_all_checks",
             "required_parent_relation": "single_immediate_child_of_candidate_parent",
@@ -948,6 +986,49 @@ def _validate_wiring(repo_root: Path, failures: list[str]) -> None:
         )
         if target in release_header:
             failures.append(f"O4 execution target must not be wired into release-check: {target}")
+    run_occurrences = [
+        (line_number, line)
+        for line_number, line in enumerate(makefile.splitlines(), start=1)
+        if PRODUCER_RUN_TARGET in line
+    ]
+    allowed_occurrences = 0
+    for line_number, line in run_occurrences:
+        if line == f"{PRODUCER_RUN_TARGET}:":
+            allowed_occurrences += 1
+            continue
+        if line.startswith(".PHONY:"):
+            tokens = line.split()
+            if (
+                tokens.count(PRODUCER_RUN_TARGET) == 1
+                and line.count(PRODUCER_RUN_TARGET) == 1
+            ):
+                allowed_occurrences += 1
+                continue
+        failures.append(
+            "O4 live producer Make target token occurs outside its exact PHONY token "
+            f"or target header: line {line_number}"
+        )
+    if len(run_occurrences) != 2 or allowed_occurrences != 2:
+        failures.append("O4 live producer Make target occurrence allowlist is not exact")
+    run_definitions = sum(
+        line == f"{PRODUCER_RUN_TARGET}:" for line in makefile.splitlines()
+    )
+    if run_definitions != 1:
+        failures.append("O4 live producer Make target header is not unique and exact")
+    if _target_body(makefile, PRODUCER_RUN_TARGET).strip() != (
+        PRODUCER_MODULE_INVOCATION
+    ):
+        failures.append("O4 live producer Make target body is not exact")
+    for parent_target in (
+        "release-check",
+        "local-v1-milestone-check",
+        PRODUCER_STATIC_TARGET,
+        AUTHORIZATION_TARGET,
+    ):
+        if PRODUCER_RUN_TARGET in _target_body(makefile, parent_target):
+            failures.append(
+                f"O4 live producer target is wired into forbidden target: {parent_target}"
+            )
     if "local-v1-lv1-003-o4-execution-authorization.md" not in readme:
         failures.append("README does not navigate to the O4 execution authorization")
     if "local-v1-lv1-003-o4-producer-contract.md" not in readme:
@@ -956,6 +1037,12 @@ def _validate_wiring(repo_root: Path, failures: list[str]) -> None:
         failures.append("README does not document the O4 execution authorization check")
     if "local-v1-lv1-003-o4-producer-static-check" not in readme:
         failures.append("README does not document the O4 producer static check")
+    if PRODUCER_RUN_TARGET not in readme:
+        failures.append("README does not document the O4 live producer entrypoint")
+    if PRODUCER_MODULE_INVOCATION not in readme:
+        failures.append("README does not bind the O4 module invocation")
+    if "currently refuses because Attempt 001 is consumed" not in readme:
+        failures.append("README does not preserve the O4 consumed-attempt refusal")
 
 
 def _target_body(makefile: str, target: str) -> str:

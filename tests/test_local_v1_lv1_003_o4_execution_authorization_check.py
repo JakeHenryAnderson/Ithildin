@@ -4,6 +4,7 @@ import copy
 import json
 import shutil
 import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -155,6 +156,18 @@ def test_live_gate_refuses_consumed_attempt() -> None:
         (
             lambda value: value.__setitem__("retry_authorized", True),
             "retry_authorized",
+        ),
+        (
+            lambda value: value["producer_entrypoint_repair"].__setitem__(  # type: ignore[union-attr]
+                "module_invocation", gate.FAILED_FILE_PATH_INVOCATION
+            ),
+            "producer_entrypoint_repair",
+        ),
+        (
+            lambda value: value["producer_entrypoint_repair"].__setitem__(  # type: ignore[union-attr]
+                "failed_file_path_invocation_authorized", True
+            ),
+            "producer_entrypoint_repair",
         ),
         (
             lambda value: value["profile"].__setitem__(  # type: ignore[union-attr]
@@ -682,6 +695,123 @@ def test_make_wiring_is_non_live_and_not_a_release_dependency() -> None:
         makefile,
         gate.PRODUCER_STATIC_TARGET,
     )
+
+
+def test_module_entrypoint_imports_without_executing_main_or_creating_runtime() -> None:
+    assert not any((ROOT / relative).exists() for relative in gate.PRIOR_ATTEMPT_ROOTS)
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            (
+                "from scripts import local_v1_lv1_003_o4_producer as producer;"
+                "assert callable(producer.main)"
+            ),
+        ],
+        cwd=ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 0
+    assert result.stdout == ""
+    assert result.stderr == ""
+    assert not any((ROOT / relative).exists() for relative in gate.PRIOR_ATTEMPT_ROOTS)
+
+
+def test_live_module_make_target_is_exact_unique_and_not_transitively_wired() -> None:
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+
+    assert makefile.count(gate.PRODUCER_RUN_TARGET) == 2
+    assert sum(
+        line == f"{gate.PRODUCER_RUN_TARGET}:"
+        for line in makefile.splitlines()
+    ) == 1
+    assert gate._target_body(  # noqa: SLF001
+        makefile,
+        gate.PRODUCER_RUN_TARGET,
+    ).strip() == gate.PRODUCER_MODULE_INVOCATION
+    assert gate.FAILED_FILE_PATH_INVOCATION not in gate._target_body(  # noqa: SLF001
+        makefile,
+        gate.PRODUCER_RUN_TARGET,
+    )
+    for parent_target in (
+        "release-check",
+        "local-v1-milestone-check",
+        gate.PRODUCER_STATIC_TARGET,
+        gate.AUTHORIZATION_TARGET,
+    ):
+        assert gate.PRODUCER_RUN_TARGET not in gate._target_body(  # noqa: SLF001
+            makefile,
+            parent_target,
+        )
+    assert sum(
+        gate.PRODUCER_RUN_TARGET in line.split()
+        for line in makefile.splitlines()
+        if line.startswith(".PHONY:")
+    ) == 1
+
+
+@pytest.mark.parametrize(
+    "parent_target",
+    [
+        "release-check",
+        "local-v1-milestone-check",
+        gate.PRODUCER_STATIC_TARGET,
+        gate.AUTHORIZATION_TARGET,
+    ],
+)
+def test_live_module_make_token_rejects_forbidden_prerequisite_headers(
+    tmp_path: Path,
+    parent_target: str,
+) -> None:
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    drifted = makefile.replace(
+        f"{parent_target}:",
+        f"{parent_target}: {gate.PRODUCER_RUN_TARGET}",
+        1,
+    )
+    failures = _wiring_failures(tmp_path, drifted)
+
+    assert any("occurs outside its exact PHONY token" in value for value in failures)
+    assert any("occurrence allowlist is not exact" in value for value in failures)
+
+
+def test_live_module_make_token_rejects_recipe_reference(tmp_path: Path) -> None:
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    drifted = makefile.replace(
+        "test-fast:\n",
+        f"test-fast:\n\t$(MAKE) {gate.PRODUCER_RUN_TARGET}\n",
+        1,
+    )
+
+    failures = _wiring_failures(tmp_path, drifted)
+
+    assert any("occurs outside its exact PHONY token" in value for value in failures)
+
+
+def test_live_module_make_token_rejects_intermediate_alias_dependency(
+    tmp_path: Path,
+) -> None:
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    drifted = makefile + f"\no4-producer-alias: {gate.PRODUCER_RUN_TARGET}\n"
+
+    failures = _wiring_failures(tmp_path, drifted)
+
+    assert any("occurs outside its exact PHONY token" in value for value in failures)
+
+
+def _wiring_failures(tmp_path: Path, makefile: str) -> list[str]:
+    (tmp_path / "Makefile").write_text(makefile, encoding="utf-8")
+    (tmp_path / "README.md").write_text(
+        Path("README.md").read_text(encoding="utf-8"),
+        encoding="utf-8",
+    )
+    failures: list[str] = []
+    gate._validate_wiring(tmp_path, failures)  # noqa: SLF001
+    return failures
 
 
 def test_wiring_rejects_direct_release_dependency(tmp_path: Path) -> None:

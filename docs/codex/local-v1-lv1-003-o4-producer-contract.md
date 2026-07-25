@@ -1,12 +1,13 @@
 # Local v1 LV1-003 O4 Producer Contract
 
-Status: `implementation_candidate_pending_exact_review_and_separate_live_disposition`
+Status: `entrypoint_repair_candidate_pending_exact_review_and_separate_attempt_disposition`
 
 This contract defines the only acceptable live producer for the fixed `MCC-007` bridge. The
 candidate producer and reconciled assembler now implement this contract with injected, fake-tested
 external seams. That implementation does not authorize Docker, API, provider, network, credential,
-Hermes, Node, or `O4` execution. The separate execution-authorization contract remains
-`PREPARE_REVIEW` with attempt budget zero until exact review and a separate disposition.
+Hermes, Node, or `O4` execution. Attempt 001 is consumed after the failed file-path invocation, and
+the separate execution-authorization contract has attempt budget zero until a repaired candidate
+receives independent exact review and a separate new-attempt disposition.
 
 The candidate constrained-mission assembler now preserves the authoritative Gateway Agent Run
 status `active`, requires exactly two distinctly identified Gateway `tool.execution.completed`
@@ -16,11 +17,24 @@ and the separate execution gate binds that exact candidate with attempt budget o
 
 ## Entry Gate
 
+The only supported operator entrypoint is:
+
+```text
+make local-v1-lv1-003-o4-producer-run
+```
+
+Its exact live, gate-protected recipe is
+`uv run python -m scripts.local_v1_lv1_003_o4_producer`. The failed file-path command
+`uv run python scripts/local_v1_lv1_003_o4_producer.py` is not an authorized future entrypoint.
+Importing the module does not execute `main`.
+
 The producer must observe a clean candidate commit and tree, then call the execution-authorization
 validator before it creates a runtime directory or performs Docker, API, provider, network, or
 credential work. The validator must bind that exact commit/tree to an independent exact review and
 a separate post-review disposition with an attempt budget of exactly one. Refusal is a stable safe
-error and performs zero executor, API, provider, or runtime-filesystem calls.
+error and performs zero executor, API, provider, or runtime-filesystem calls. The current consumed
+Attempt 001 disposition refuses this repaired entrypoint; the Make target itself does not grant
+retry authority.
 
 ## Closed State Machine
 

@@ -33,6 +33,18 @@ absent. Attempt 001 therefore performed no runtime creation, Docker, Ollama or p
 Hermes, credential, network journey, or evidence action. This is a bounded observation about this
 failed invocation, not a general non-bypass claim.
 
+## Entrypoint Repair Candidate
+
+The operator-visible live, gate-protected entrypoint is now
+`make local-v1-lv1-003-o4-producer-run`, with the exact recipe
+`uv run python -m scripts.local_v1_lv1_003_o4_producer`. Importing that module does not execute its
+`main` function. The failed command `uv run python scripts/local_v1_lv1_003_o4_producer.py` is not
+an authorized future invocation.
+
+This repair does not restore the consumed attempt. It requires independent exact review and a
+separate new-attempt disposition before the Make target can pass the execution gate. The target is
+not a dependency of release, milestone, or static checks.
+
 ## Historical Attempt Ceiling
 
 The consumed authorization limited the producer to one uniquely named isolated Compose project and
