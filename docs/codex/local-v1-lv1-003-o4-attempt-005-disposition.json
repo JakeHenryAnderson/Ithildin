@@ -1,0 +1,161 @@
+{
+  "schema_version": "1",
+  "record_type": "local_v1_lv1_003_o4_attempt_disposition",
+  "record_status": "ATTEMPT_005_CONSUMED_API_EXIT_DIAGNOSTIC_REQUIRED_NO_LIVE_AUTHORITY",
+  "ticket_id": "LV1-003",
+  "outcome_id": "O4",
+  "attempt_id": "LV1-003-O4-ATTEMPT-005",
+  "attempted_candidate_commit": "affba0570ae15e897f92629966d445ad563ec5ff",
+  "attempted_candidate_tree": "8b262e7efa55db72b5402f6924ec938e2d06d85f",
+  "operator_command": "make local-v1-lv1-003-o4-producer-run",
+  "module_command": "uv run python -m scripts.local_v1_lv1_003_o4_producer",
+  "run_id": "20260725T172408Z-b806c1bd",
+  "compose_project": "ithildin-local-v1-o4-b806c1bd",
+  "outward_failure_code": "base_services_start_failed",
+  "diagnostic_facts": {
+    "base_build_completed": true,
+    "bridge_build_completed": true,
+    "bound_image_identity_count": 4,
+    "bound_image_identities": [
+      {
+        "service": "ithildin-api",
+        "reference": "ithildin/api-o4:b806c1bd",
+        "image_id": "sha256:e4ca0c62c670f38f150bb09f42a356e0d5b2956cf7cb56a3bd729004a1ffcb33"
+      },
+      {
+        "service": "ithildin-ui",
+        "reference": "ithildin/ui-o4:b806c1bd",
+        "image_id": "sha256:a1e78335549b50210d6f607dc0335e0263d60fc2d9ff5e4e9ac6a303af3b9b38"
+      },
+      {
+        "service": "ithildin-node",
+        "reference": "ithildin/node-o4:b806c1bd",
+        "image_id": "sha256:a876ac0a41cd64e57c5b6f28839363d831187323733280929a74ffe27a0e8294"
+      },
+      {
+        "service": "hermes",
+        "reference": "ithildin/hermes-node-bridge-o4:b806c1bd",
+        "image_id": "sha256:702bd8613619440585ff6f2011c2e49fb07aed587223eab9d2298604e775ebf9"
+      }
+    ],
+    "highest_completed_stage": 7,
+    "primary_failure_code": "base_services_start_failed",
+    "cleanup_failure_codes": [],
+    "outward_failure_code": "base_services_start_failed",
+    "diagnostic_recovery_required": false,
+    "base_service_start_diagnostic": {
+      "collection_status": "complete",
+      "reason_code": "base_service_start_state_collected",
+      "services": {
+        "ithildin-api": "service_exited_nonzero",
+        "ithildin-ui": "service_created"
+      }
+    }
+  },
+  "in_run_cleanup_result": {
+    "cleanup_succeeded": true,
+    "evidence_source": "reviewed_bounded_diagnostic",
+    "cleanup_failure_codes": [],
+    "recovery_required": false,
+    "scope": "exact_bound_attempt_005_resources",
+    "generic_docker_absence_claimed": false,
+    "ongoing_live_truth_claimed": false
+  },
+  "point_in_time_post_attempt_observation": {
+    "observation_scope": "exact_run_scoped_read_only_post_failure",
+    "all_four_run_references_absent": true,
+    "all_four_exact_image_ids_absent": true,
+    "exact_project_label_containers": 0,
+    "exact_project_label_volumes": 0,
+    "exact_project_label_networks": 0,
+    "runtime_run_directory_absent": true,
+    "runtime_plaintext_absent": true,
+    "runtime_base_entries": [
+      "attempt-003-image-recovery-001-consumed.json"
+    ],
+    "ongoing_live_truth_claimed": false,
+    "general_docker_absence_claimed": false
+  },
+  "retained_receipt": {
+    "receipt_root": "var/local-v1-lv1-003-o4-receipts/20260725T172408Z-b806c1bd",
+    "receipt_root_mode": "0700",
+    "receipt_entries": [
+      "candidate",
+      "candidate-manifest.json",
+      "diagnostic.json",
+      "disposition.json"
+    ],
+    "disposition_path": "var/local-v1-lv1-003-o4-receipts/20260725T172408Z-b806c1bd/disposition.json",
+    "disposition_mode": "0600",
+    "disposition_size_bytes": 128,
+    "disposition_sha256": "sha256:5a84070039cc153416cf6fcc3a12c9f13bbd921befa97ee4b33a861a309b9d7a",
+    "diagnostic_path": "var/local-v1-lv1-003-o4-receipts/20260725T172408Z-b806c1bd/diagnostic.json",
+    "diagnostic_mode": "0600",
+    "diagnostic_size_bytes": 7059,
+    "diagnostic_sha256": "sha256:e4064aacddd05b2e835fcb7064ace5b88be1e3dab8328a7ebb888da899114738",
+    "candidate_manifest_path": "var/local-v1-lv1-003-o4-receipts/20260725T172408Z-b806c1bd/candidate-manifest.json",
+    "candidate_manifest_mode": "0600",
+    "candidate_manifest_size_bytes": 96772,
+    "candidate_manifest_sha256": "sha256:dddff25f5969763100f54963dfba8f3f1d74ee16f6bc5ef580d4797ae6a75a0f",
+    "candidate_snapshot_path": "var/local-v1-lv1-003-o4-receipts/20260725T172408Z-b806c1bd/candidate",
+    "candidate_snapshot_mode": "0500",
+    "candidate_snapshot_file_count": 664,
+    "published_report_base_exists": false
+  },
+  "runtime_posture": {
+    "run_directory_exists": false,
+    "runtime_plaintext_exists": false,
+    "runtime_base_exists": true,
+    "runtime_base_mode": "0700",
+    "runtime_base_entries": [
+      "attempt-003-image-recovery-001-consumed.json"
+    ],
+    "recovery_consumption_receipt_mode": "0600",
+    "recovery_consumption_receipt_size_bytes": 336,
+    "recovery_consumption_receipt_sha256": "sha256:df7ce1a69c5fc3b27011f788f846bb5b385ed6f3d348ceb6c78d12de9366ca3c"
+  },
+  "tracked_closure_scope": [
+    "Makefile",
+    "README.md",
+    "docs/codex/local-v1-lv1-003-o4-attempt-005-disposition.json",
+    "docs/codex/local-v1-lv1-003-o4-attempt-005-disposition.md",
+    "docs/codex/local-v1-lv1-003-o4-execution-authorization.json",
+    "docs/codex/local-v1-lv1-003-o4-execution-authorization.md",
+    "scripts/local_v1_lv1_003_o4_execution_authorization_check.py",
+    "tests/test_local_v1_lv1_003_o4_execution_authorization_check.py"
+  ],
+  "attempt_contract": {
+    "attempt_consumed": true,
+    "execution_attempt_budget": 0,
+    "retry_authorized": false,
+    "automatic_retry_authorized": false,
+    "post_failure_execution_authorized": false,
+    "image_recovery_required": false,
+    "image_recovery_authorized": false,
+    "evidence_deletion_authorized": false,
+    "separate_reviewed_producer_repair_required": true,
+    "separate_new_attempt_disposition_required": true
+  },
+  "next_action": "prepare_separate_reviewed_api_exit_diagnostic_repair_without_assigning_cause",
+  "authority": {
+    "producer_code_authorized": false,
+    "docker_lifecycle_authorized": false,
+    "live_hermes_execution_authorized": false,
+    "model_provider_access_authorized": false,
+    "o4_evidence_execution_authorized": false,
+    "credential_custody_authorized": false,
+    "runner_lifecycle_authority": false,
+    "arbitrary_host_control_authorized": false,
+    "generic_process_control_authorized": false,
+    "shell_execution_authorized": false,
+    "docker_socket_authorized": false,
+    "network_non_bypass_claimed": false,
+    "filesystem_non_bypass_claimed": false,
+    "new_governed_power_authorized": false,
+    "new_governed_tool": false,
+    "release_allowed": false,
+    "promotion_allowed": false,
+    "production_authorized": false,
+    "uat_complete": false
+  }
+}

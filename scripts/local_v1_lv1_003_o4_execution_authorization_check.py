@@ -40,6 +40,8 @@ ATTEMPT_003_CLOSURE_JSON = Path("docs/codex/local-v1-lv1-003-o4-attempt-003-clos
 ATTEMPT_003_CLOSURE_DOCUMENT = Path("docs/codex/local-v1-lv1-003-o4-attempt-003-closure.md")
 ATTEMPT_004_DISPOSITION_JSON = Path("docs/codex/local-v1-lv1-003-o4-attempt-004-disposition.json")
 ATTEMPT_004_DISPOSITION_DOCUMENT = Path("docs/codex/local-v1-lv1-003-o4-attempt-004-disposition.md")
+ATTEMPT_005_DISPOSITION_JSON = Path("docs/codex/local-v1-lv1-003-o4-attempt-005-disposition.json")
+ATTEMPT_005_DISPOSITION_DOCUMENT = Path("docs/codex/local-v1-lv1-003-o4-attempt-005-disposition.md")
 IMAGE_RECOVERY_AUTHORIZATION = Path(
     "docs/codex/local-v1-lv1-003-o4-image-recovery-authorization.json"
 )
@@ -57,8 +59,7 @@ PRODUCER_STATIC_TARGET = "local-v1-lv1-003-o4-producer-static-check"
 PRODUCER_RUN_TARGET = "local-v1-lv1-003-o4-producer-run"
 PRODUCER_MODULE_INVOCATION = "uv run python -m scripts.local_v1_lv1_003_o4_producer"
 PRODUCER_RUN_COMMENT = (
-    "# LIVE, gate-protected Attempt 005 entrypoint. Exact clean child, "
-    "one supervised invocation, no retry."
+    "# LIVE, gate-protected entrypoint. Attempt 005 is consumed; current closure always refuses."
 )
 FAILED_FILE_PATH_INVOCATION = "uv run python scripts/local_v1_lv1_003_o4_producer.py"
 ENTRYPOINT_REPAIR_BASE_COMMIT = "148effd50c69b40a005f86f6217fc3db8b665a06"
@@ -192,8 +193,18 @@ DIAGNOSTIC_REPAIR_REVIEW_DIGEST = (
     "sha256:f4307fb338c82b6513228641c9437d08c33c948d05b1689102a574b39e60f716"
 )
 ATTEMPT_005_ID = "LV1-003-O4-ATTEMPT-005"
-CANDIDATE_PARENT_COMMIT = DIAGNOSTIC_REPAIR_COMMIT
-CANDIDATE_PARENT_TREE = DIAGNOSTIC_REPAIR_TREE
+ATTEMPT_005_CANDIDATE_COMMIT = "affba0570ae15e897f92629966d445ad563ec5ff"
+ATTEMPT_005_CANDIDATE_TREE = "8b262e7efa55db72b5402f6924ec938e2d06d85f"
+CANDIDATE_PARENT_COMMIT = ATTEMPT_005_CANDIDATE_COMMIT
+CANDIDATE_PARENT_TREE = ATTEMPT_005_CANDIDATE_TREE
+ATTEMPT_005_RUN_ID = "20260725T172408Z-b806c1bd"
+ATTEMPT_005_PROJECT = "ithildin-local-v1-o4-b806c1bd"
+ATTEMPT_005_DISPOSITION_JSON_DIGEST = (
+    "sha256:58b0791858ff96469fa1ea103358ab60d3167cb4bcf50f62e68f73f4d9258a61"
+)
+ATTEMPT_005_DISPOSITION_DOCUMENT_DIGEST = (
+    "sha256:829355ea19705fb0aa01e1fbf3f9e3933f7541b8eb5da4758ccf9e869432533c"
+)
 ATTEMPT_002_RECEIPT_BASE = Path("var/local-v1-lv1-003-o4-receipts")
 ATTEMPT_002_RECEIPT_ROOT = ATTEMPT_002_RECEIPT_BASE / ATTEMPT_002_RUN_ID
 ATTEMPT_002_DISPOSITION_RECEIPT = ATTEMPT_002_RECEIPT_ROOT / "disposition.json"
@@ -222,6 +233,8 @@ ATTEMPT_003_SNAPSHOT_ROOT = ATTEMPT_003_RECEIPT_ROOT / "candidate"
 ATTEMPT_003_RUNTIME_ROOT = ATTEMPT_002_RUNTIME_BASE / ATTEMPT_003_RUN_ID
 ATTEMPT_004_RECEIPT_ROOT = ATTEMPT_002_RECEIPT_BASE / ATTEMPT_004_RUN_ID
 ATTEMPT_004_RUNTIME_ROOT = ATTEMPT_002_RUNTIME_BASE / ATTEMPT_004_RUN_ID
+ATTEMPT_005_RECEIPT_ROOT = ATTEMPT_002_RECEIPT_BASE / ATTEMPT_005_RUN_ID
+ATTEMPT_005_RUNTIME_ROOT = ATTEMPT_002_RUNTIME_BASE / ATTEMPT_005_RUN_ID
 IMAGE_RECOVERY_CONSUMPTION_RECEIPT_NAME = "attempt-003-image-recovery-001-consumed.json"
 IMAGE_RECOVERY_CONSUMPTION_RECEIPT = (
     ATTEMPT_002_RUNTIME_BASE / IMAGE_RECOVERY_CONSUMPTION_RECEIPT_NAME
@@ -261,6 +274,22 @@ ATTEMPT_004_MANIFEST_RECEIPT_DIGEST = (
 )
 ATTEMPT_004_MANIFEST_SIZE = 96772
 ATTEMPT_004_SNAPSHOT_FILE_COUNT = 664
+ATTEMPT_005_DISPOSITION_BYTES = (
+    b'{"failure_code":"base_services_start_failed","release_allowed":false,'
+    b'"status":"quarantined_not_published","uat_complete":false}\n'
+)
+ATTEMPT_005_DISPOSITION_RECEIPT_DIGEST = (
+    "sha256:5a84070039cc153416cf6fcc3a12c9f13bbd921befa97ee4b33a861a309b9d7a"
+)
+ATTEMPT_005_DIAGNOSTIC_RECEIPT_DIGEST = (
+    "sha256:e4064aacddd05b2e835fcb7064ace5b88be1e3dab8328a7ebb888da899114738"
+)
+ATTEMPT_005_DIAGNOSTIC_SIZE = 7059
+ATTEMPT_005_MANIFEST_RECEIPT_DIGEST = (
+    "sha256:dddff25f5969763100f54963dfba8f3f1d74ee16f6bc5ef580d4797ae6a75a0f"
+)
+ATTEMPT_005_MANIFEST_SIZE = 96772
+ATTEMPT_005_SNAPSHOT_FILE_COUNT = 664
 MAX_RETAINED_SNAPSHOT_FILE_BYTES = 16 * 1_048_576
 MAX_RETAINED_SNAPSHOT_BYTES = 64 * 1_048_576
 EVIDENCE_IGNORE_PATTERNS = [
@@ -334,6 +363,16 @@ ATTEMPT_005_CONTROL_PATH_ALLOWLIST = [
     "Makefile",
     "README.md",
     DIAGNOSTIC_REPAIR_REVIEW.as_posix(),
+    CONTRACT.as_posix(),
+    DOCUMENT.as_posix(),
+    "scripts/local_v1_lv1_003_o4_execution_authorization_check.py",
+    "tests/test_local_v1_lv1_003_o4_execution_authorization_check.py",
+]
+ATTEMPT_005_CLOSURE_CONTROL_PATH_ALLOWLIST = [
+    "Makefile",
+    "README.md",
+    ATTEMPT_005_DISPOSITION_JSON.as_posix(),
+    ATTEMPT_005_DISPOSITION_DOCUMENT.as_posix(),
     CONTRACT.as_posix(),
     DOCUMENT.as_posix(),
     "scripts/local_v1_lv1_003_o4_execution_authorization_check.py",
@@ -546,6 +585,16 @@ TOP_LEVEL_FIELDS = {
     "attempt_005_candidate_parent_tree",
     "attempt_005_operator_command",
     "attempt_005_module_command",
+    "attempt_005_attempted_candidate_commit",
+    "attempt_005_attempted_candidate_tree",
+    "attempt_005_failure_code",
+    "attempt_005_cleanup_failure_codes",
+    "attempt_005_run_id",
+    "attempt_005_compose_project",
+    "attempt_005_disposition_json",
+    "attempt_005_disposition_json_sha256",
+    "attempt_005_disposition_document",
+    "attempt_005_disposition_document_sha256",
     "attempt_005_execution_authorized",
     "attempt_005_automatic_retry_authorized",
     "attempt_002_id",
@@ -731,23 +780,18 @@ HISTORICAL_TRUE_AUTHORITY_FIELDS = {
 HISTORICAL_AUTHORITY: JsonObject = {
     key: key in HISTORICAL_TRUE_AUTHORITY_FIELDS for key in AUTHORITY_FIELDS
 }
-TRUE_AUTHORITY_FIELDS = HISTORICAL_TRUE_AUTHORITY_FIELDS
+TRUE_AUTHORITY_FIELDS: set[str] = set()
 CLOSED_AUTHORITY: JsonObject = {key: False for key in AUTHORITY_FIELDS}
 ATTEMPT_002_AUTHORITY: JsonObject = {
     key: key in HISTORICAL_TRUE_AUTHORITY_FIELDS for key in AUTHORITY_FIELDS
 }
 ATTEMPT_003_AUTHORITY: JsonObject = {key: False for key in AUTHORITY_FIELDS}
 ATTEMPT_004_AUTHORITY: JsonObject = {key: False for key in AUTHORITY_FIELDS}
-EXPECTED_AUTHORITY: JsonObject = HISTORICAL_AUTHORITY
+EXPECTED_AUTHORITY: JsonObject = CLOSED_AUTHORITY
 
 
 class O4ExecutionAuthorizationError(RuntimeError):
     """Raised when a live producer asks for unavailable authority."""
-
-
-def _authority_value(contract: JsonObject, field: str) -> bool:
-    authority = contract.get("authority")
-    return isinstance(authority, dict) and authority.get(field) is True
 
 
 def build_report(repo_root: Path) -> dict[str, Any]:
@@ -837,6 +881,14 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         repo_root / DIAGNOSTIC_REPAIR_REVIEW,
         failures,
     )
+    attempt_005_disposition = _read_contract(
+        repo_root / ATTEMPT_005_DISPOSITION_JSON,
+        failures,
+    )
+    attempt_005_disposition_document = _read_text(
+        repo_root / ATTEMPT_005_DISPOSITION_DOCUMENT,
+        failures,
+    )
     _validate_contract(contract, failures)
     _validate_document(document, failures)
     _validate_producer_contract(producer_contract, contract, failures)
@@ -885,6 +937,11 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         failures,
     )
     _validate_diagnostic_repair_review(diagnostic_repair_review, failures)
+    _validate_attempt_005_disposition(
+        attempt_005_disposition,
+        attempt_005_disposition_document,
+        failures,
+    )
     _validate_retained_attempt_evidence(repo_root, failures)
     _validate_evidence_ignore_patterns(repo_root, failures)
     _validate_bound_documents(repo_root, failures)
@@ -898,10 +955,10 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     execution_checkout = _validate_execution_checkout(
         repo_root,
         failures,
-        candidate_parent_commit=DIAGNOSTIC_REPAIR_COMMIT,
-        candidate_parent_tree=DIAGNOSTIC_REPAIR_TREE,
+        candidate_parent_commit=ATTEMPT_005_CANDIDATE_COMMIT,
+        candidate_parent_tree=ATTEMPT_005_CANDIDATE_TREE,
         reviewed_commit=DIAGNOSTIC_REPAIR_COMMIT,
-        control_paths=ATTEMPT_005_CONTROL_PATH_ALLOWLIST,
+        control_paths=ATTEMPT_005_CLOSURE_CONTROL_PATH_ALLOWLIST,
         repair_paths=DIAGNOSTIC_REPAIR_PATHS,
     )
     checkout_commit = execution_checkout[0] if execution_checkout is not None else None
@@ -915,8 +972,8 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "reviewed_implementation_commit": contract.get("reviewed_implementation_commit"),
         "code_authorization_commit": contract.get("code_authorization_commit"),
         "attempt_id": contract.get("attempt_005_id"),
-        "attempted_candidate_commit": checkout_commit,
-        "attempted_candidate_tree": checkout_tree,
+        "attempted_candidate_commit": contract.get("attempt_005_attempted_candidate_commit"),
+        "attempted_candidate_tree": contract.get("attempt_005_attempted_candidate_tree"),
         "attempt_002_attempted_candidate_commit": contract.get(
             "attempt_002_attempted_candidate_commit"
         ),
@@ -947,6 +1004,12 @@ def build_report(repo_root: Path) -> dict[str, Any]:
             "attempted_candidate_tree": contract.get("attempt_004_attempted_candidate_tree"),
             "attempt_consumed": True,
         },
+        "attempt_005_history": {
+            "attempt_id": contract.get("attempt_005_id"),
+            "attempted_candidate_commit": contract.get("attempt_005_attempted_candidate_commit"),
+            "attempted_candidate_tree": contract.get("attempt_005_attempted_candidate_tree"),
+            "attempt_consumed": True,
+        },
         "attempt_001_consumed": True,
         "attempt_002_consumed": True,
         "attempt_003_consumed": True,
@@ -956,15 +1019,11 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "retry_authorized": contract.get("retry_authorized"),
         "execution_checkout_commit": checkout_commit,
         "execution_checkout_tree": checkout_tree,
-        "execution_attempt_budget": contract.get("execution_attempt_budget") if valid else 0,
-        "live_execution_authorized": valid
-        and _authority_value(contract, "producer_code_authorized"),
-        "docker_lifecycle_authorized": valid
-        and _authority_value(contract, "docker_lifecycle_authorized"),
-        "provider_access_authorized": valid
-        and _authority_value(contract, "model_provider_access_authorized"),
-        "o4_evidence_execution_authorized": valid
-        and _authority_value(contract, "o4_evidence_execution_authorized"),
+        "execution_attempt_budget": 0,
+        "live_execution_authorized": False,
+        "docker_lifecycle_authorized": False,
+        "provider_access_authorized": False,
+        "o4_evidence_execution_authorized": False,
         "new_governed_tool": False,
         "release_allowed": False,
         "uat_complete": False,
@@ -994,7 +1053,7 @@ def _validate_contract(contract: JsonObject, failures: list[str]) -> None:
     expected = {
         "schema_version": "1",
         "record_type": "local_v1_lv1_003_o4_execution_authorization",
-        "record_status": "AUTHORIZE_ATTEMPT_005_SUPERVISED_ONE_ATTEMPT_IMMEDIATE_CHILD",
+        "record_status": "ATTEMPT_005_CONSUMED_API_EXIT_DIAGNOSTIC_REQUIRED_NO_LIVE_AUTHORITY",
         "ticket_id": "LV1-003",
         "outcome_id": "O4",
         "producer_contract_path": PRODUCER_CONTRACT.as_posix(),
@@ -1140,7 +1199,17 @@ def _validate_contract(contract: JsonObject, failures: list[str]) -> None:
         "attempt_005_candidate_parent_tree": DIAGNOSTIC_REPAIR_TREE,
         "attempt_005_operator_command": ATTEMPT_002_OPERATOR_COMMAND,
         "attempt_005_module_command": PRODUCER_MODULE_INVOCATION,
-        "attempt_005_execution_authorized": True,
+        "attempt_005_attempted_candidate_commit": ATTEMPT_005_CANDIDATE_COMMIT,
+        "attempt_005_attempted_candidate_tree": ATTEMPT_005_CANDIDATE_TREE,
+        "attempt_005_failure_code": "base_services_start_failed",
+        "attempt_005_cleanup_failure_codes": [],
+        "attempt_005_run_id": ATTEMPT_005_RUN_ID,
+        "attempt_005_compose_project": ATTEMPT_005_PROJECT,
+        "attempt_005_disposition_json": ATTEMPT_005_DISPOSITION_JSON.as_posix(),
+        "attempt_005_disposition_json_sha256": ATTEMPT_005_DISPOSITION_JSON_DIGEST,
+        "attempt_005_disposition_document": ATTEMPT_005_DISPOSITION_DOCUMENT.as_posix(),
+        "attempt_005_disposition_document_sha256": ATTEMPT_005_DISPOSITION_DOCUMENT_DIGEST,
+        "attempt_005_execution_authorized": False,
         "attempt_005_automatic_retry_authorized": False,
         "attempt_002_id": ATTEMPT_002_ID,
         "attempt_002_candidate_parent_commit": ENTRYPOINT_REPAIR_COMMIT,
@@ -1154,13 +1223,13 @@ def _validate_contract(contract: JsonObject, failures: list[str]) -> None:
         "attempt_002_compose_project": ATTEMPT_002_PROJECT,
         "attempt_002_execution_authorized": False,
         "attempt_002_automatic_retry_authorized": False,
-        "execution_candidate_binding_mode": "dynamic_current_head_after_all_checks",
-        "execution_attempt_budget": 1,
-        "attempt_consumed": False,
+        "execution_candidate_binding_mode": "none_attempt_closed",
+        "execution_attempt_budget": 0,
+        "attempt_consumed": True,
         "retry_authorized": False,
         "attempt_custody": "central_manager_supervised_local_invocation",
         "persistent_cross_process_budget_consumption_claimed": False,
-        "immediate_post_attempt_disposition_recorded": False,
+        "immediate_post_attempt_disposition_recorded": True,
         "prior_attempt_detection_roots": PRIOR_ATTEMPT_ROOTS,
         "external_preflight_requirements": EXTERNAL_PREFLIGHT,
     }
@@ -1191,14 +1260,14 @@ def _validate_contract(contract: JsonObject, failures: list[str]) -> None:
 def _validate_document(document: str, failures: list[str]) -> None:
     normalized = " ".join(document.split())
     for phrase in (
-        "Status: `AUTHORIZE_ATTEMPT_005_SUPERVISED_ONE_ATTEMPT_IMMEDIATE_CHILD`",
+        "Status: `ATTEMPT_005_CONSUMED_API_EXIT_DIAGNOSTIC_REQUIRED_NO_LIVE_AUTHORITY`",
         REVIEWED_IMPLEMENTATION_COMMIT,
         CANDIDATE_PARENT_COMMIT,
         HISTORICAL_CANDIDATE_PARENT_COMMIT,
         CODE_AUTHORIZATION_COMMIT,
         "all inherited Attempt 001 lineage with explicit `attempt_001_*` keys",
         "Those fields are historical only",
-        "public current-attempt fields now bind the dynamically derived Attempt 005 child",
+        "public current-attempt fields bind the consumed Attempt 005 candidate",
         ATTEMPT_001_CANDIDATE_COMMIT,
         ATTEMPT_001_CANDIDATE_TREE,
         ATTEMPT_001_COMMAND,
@@ -1302,12 +1371,23 @@ def _validate_document(document: str, failures: list[str]) -> None:
         "fixed Compose `ps --all` diagnostic",
         "Combined output is bounded to 1,024 bytes",
         ATTEMPT_005_ID,
-        "exact seven-path control allowlist",
-        "execution attempt budget is one",
-        "`attempt_consumed` is false",
-        "Any invocation outcome consumes Attempt 005",
-        "119-byte disposition, 6,885-byte diagnostic, 96,772-byte manifest, and 664-file snapshot",
-        "only the prior 336-byte Attempt 003 image-recovery consumption receipt",
+        ATTEMPT_005_CANDIDATE_COMMIT,
+        ATTEMPT_005_CANDIDATE_TREE,
+        ATTEMPT_005_RUN_ID,
+        ATTEMPT_005_PROJECT,
+        "primary and outward failure was `base_services_start_failed`",
+        "API as `service_exited_nonzero`",
+        "UI as `service_created`",
+        "assigns no root cause",
+        "successful in-run cleanup for the exact bound Attempt 005 resources",
+        "point-in-time exact-run observations",
+        "128-byte disposition, a 7,059-byte diagnostic, a 96,772-byte candidate manifest",
+        "read-only 664-file exact candidate snapshot",
+        ATTEMPT_005_DISPOSITION_JSON.as_posix(),
+        "all four retained Attempt 002 through Attempt 005 receipt roots",
+        "only the prior 336-byte",
+        "exact eight-path closure allowlist",
+        "separate reviewed API-exit diagnostic repair",
         "one server-owned",
         "`synthetic_read_review_v1`",
         "`max_cycles=1`",
@@ -1327,12 +1407,11 @@ def _validate_document(document: str, failures: list[str]) -> None:
         "private recovery receipt is quarantined staged material, not successful published "
         "evidence",
         "There is no automatic retry",
-        "Exactly five authority fields are true only for the one dynamically validated",
-        "remaining 14 authority fields are false",
-        "Attempt 005 is unconsumed with budget one",
+        "all 19 authority fields are false",
+        "Attempt 005 budget is zero",
         "24-tool/no-new-powers boundary is unchanged",
         "governed tool count remains exactly 24",
-        "Attempts 001 through 004 are consumed",
+        "Attempts 001 through 005 are consumed",
     ):
         if phrase not in normalized:
             failures.append(f"O4 execution authorization doc is missing phrase: {phrase}")
@@ -2417,6 +2496,238 @@ def _validate_attempt_004_disposition(
         failures.append("O4 Attempt 004 disposition document digest is invalid")
 
 
+def _validate_attempt_005_disposition(
+    disposition: JsonObject,
+    document: str,
+    failures: list[str],
+) -> None:
+    expected_fields = {
+        "schema_version",
+        "record_type",
+        "record_status",
+        "ticket_id",
+        "outcome_id",
+        "attempt_id",
+        "attempted_candidate_commit",
+        "attempted_candidate_tree",
+        "operator_command",
+        "module_command",
+        "run_id",
+        "compose_project",
+        "outward_failure_code",
+        "diagnostic_facts",
+        "in_run_cleanup_result",
+        "point_in_time_post_attempt_observation",
+        "retained_receipt",
+        "runtime_posture",
+        "tracked_closure_scope",
+        "attempt_contract",
+        "next_action",
+        "authority",
+    }
+    if set(disposition) != expected_fields:
+        failures.append("O4 Attempt 005 disposition fields are not closed")
+    expected_scalars = {
+        "schema_version": "1",
+        "record_type": "local_v1_lv1_003_o4_attempt_disposition",
+        "record_status": ("ATTEMPT_005_CONSUMED_API_EXIT_DIAGNOSTIC_REQUIRED_NO_LIVE_AUTHORITY"),
+        "ticket_id": "LV1-003",
+        "outcome_id": "O4",
+        "attempt_id": ATTEMPT_005_ID,
+        "attempted_candidate_commit": ATTEMPT_005_CANDIDATE_COMMIT,
+        "attempted_candidate_tree": ATTEMPT_005_CANDIDATE_TREE,
+        "operator_command": ATTEMPT_002_OPERATOR_COMMAND,
+        "module_command": PRODUCER_MODULE_INVOCATION,
+        "run_id": ATTEMPT_005_RUN_ID,
+        "compose_project": ATTEMPT_005_PROJECT,
+        "outward_failure_code": "base_services_start_failed",
+        "next_action": (
+            "prepare_separate_reviewed_api_exit_diagnostic_repair_without_assigning_cause"
+        ),
+    }
+    for key, expected in expected_scalars.items():
+        if not _exact_json_equal(disposition.get(key), expected):
+            failures.append(f"O4 Attempt 005 disposition {key} is not exact")
+    expected_identities = [
+        {
+            "service": "ithildin-api",
+            "reference": "ithildin/api-o4:b806c1bd",
+            "image_id": ("sha256:e4ca0c62c670f38f150bb09f42a356e0d5b2956cf7cb56a3bd729004a1ffcb33"),
+        },
+        {
+            "service": "ithildin-ui",
+            "reference": "ithildin/ui-o4:b806c1bd",
+            "image_id": ("sha256:a1e78335549b50210d6f607dc0335e0263d60fc2d9ff5e4e9ac6a303af3b9b38"),
+        },
+        {
+            "service": "ithildin-node",
+            "reference": "ithildin/node-o4:b806c1bd",
+            "image_id": ("sha256:a876ac0a41cd64e57c5b6f28839363d831187323733280929a74ffe27a0e8294"),
+        },
+        {
+            "service": "hermes",
+            "reference": "ithildin/hermes-node-bridge-o4:b806c1bd",
+            "image_id": ("sha256:702bd8613619440585ff6f2011c2e49fb07aed587223eab9d2298604e775ebf9"),
+        },
+    ]
+    if not _exact_json_equal(
+        disposition.get("diagnostic_facts"),
+        {
+            "base_build_completed": True,
+            "bridge_build_completed": True,
+            "bound_image_identity_count": 4,
+            "bound_image_identities": expected_identities,
+            "highest_completed_stage": 7,
+            "primary_failure_code": "base_services_start_failed",
+            "cleanup_failure_codes": [],
+            "outward_failure_code": "base_services_start_failed",
+            "diagnostic_recovery_required": False,
+            "base_service_start_diagnostic": {
+                "collection_status": "complete",
+                "reason_code": "base_service_start_state_collected",
+                "services": {
+                    "ithildin-api": "service_exited_nonzero",
+                    "ithildin-ui": "service_created",
+                },
+            },
+        },
+    ):
+        failures.append("O4 Attempt 005 disposition diagnostic facts are not exact")
+    if not _exact_json_equal(
+        disposition.get("in_run_cleanup_result"),
+        {
+            "cleanup_succeeded": True,
+            "evidence_source": "reviewed_bounded_diagnostic",
+            "cleanup_failure_codes": [],
+            "recovery_required": False,
+            "scope": "exact_bound_attempt_005_resources",
+            "generic_docker_absence_claimed": False,
+            "ongoing_live_truth_claimed": False,
+        },
+    ):
+        failures.append("O4 Attempt 005 in-run cleanup result is not exact")
+    if not _exact_json_equal(
+        disposition.get("point_in_time_post_attempt_observation"),
+        {
+            "observation_scope": "exact_run_scoped_read_only_post_failure",
+            "all_four_run_references_absent": True,
+            "all_four_exact_image_ids_absent": True,
+            "exact_project_label_containers": 0,
+            "exact_project_label_volumes": 0,
+            "exact_project_label_networks": 0,
+            "runtime_run_directory_absent": True,
+            "runtime_plaintext_absent": True,
+            "runtime_base_entries": [IMAGE_RECOVERY_CONSUMPTION_RECEIPT_NAME],
+            "ongoing_live_truth_claimed": False,
+            "general_docker_absence_claimed": False,
+        },
+    ):
+        failures.append("O4 Attempt 005 point-in-time observation is not exact")
+    receipt_root = f"{ATTEMPT_002_RECEIPT_BASE.as_posix()}/{ATTEMPT_005_RUN_ID}"
+    if not _exact_json_equal(
+        disposition.get("retained_receipt"),
+        {
+            "receipt_root": receipt_root,
+            "receipt_root_mode": "0700",
+            "receipt_entries": [
+                "candidate",
+                "candidate-manifest.json",
+                "diagnostic.json",
+                "disposition.json",
+            ],
+            "disposition_path": f"{receipt_root}/disposition.json",
+            "disposition_mode": "0600",
+            "disposition_size_bytes": len(ATTEMPT_005_DISPOSITION_BYTES),
+            "disposition_sha256": ATTEMPT_005_DISPOSITION_RECEIPT_DIGEST,
+            "diagnostic_path": f"{receipt_root}/diagnostic.json",
+            "diagnostic_mode": "0600",
+            "diagnostic_size_bytes": ATTEMPT_005_DIAGNOSTIC_SIZE,
+            "diagnostic_sha256": ATTEMPT_005_DIAGNOSTIC_RECEIPT_DIGEST,
+            "candidate_manifest_path": f"{receipt_root}/candidate-manifest.json",
+            "candidate_manifest_mode": "0600",
+            "candidate_manifest_size_bytes": ATTEMPT_005_MANIFEST_SIZE,
+            "candidate_manifest_sha256": ATTEMPT_005_MANIFEST_RECEIPT_DIGEST,
+            "candidate_snapshot_path": f"{receipt_root}/candidate",
+            "candidate_snapshot_mode": "0500",
+            "candidate_snapshot_file_count": ATTEMPT_005_SNAPSHOT_FILE_COUNT,
+            "published_report_base_exists": False,
+        },
+    ):
+        failures.append("O4 Attempt 005 retained receipt record is not exact")
+    if not _exact_json_equal(
+        disposition.get("runtime_posture"),
+        {
+            "run_directory_exists": False,
+            "runtime_plaintext_exists": False,
+            "runtime_base_exists": True,
+            "runtime_base_mode": "0700",
+            "runtime_base_entries": [IMAGE_RECOVERY_CONSUMPTION_RECEIPT_NAME],
+            "recovery_consumption_receipt_mode": "0600",
+            "recovery_consumption_receipt_size_bytes": len(
+                IMAGE_RECOVERY_CONSUMPTION_RECEIPT_BYTES
+            ),
+            "recovery_consumption_receipt_sha256": (IMAGE_RECOVERY_CONSUMPTION_RECEIPT_DIGEST),
+        },
+    ):
+        failures.append("O4 Attempt 005 runtime posture is not exact")
+    if not _exact_json_equal(
+        disposition.get("attempt_contract"),
+        {
+            "attempt_consumed": True,
+            "execution_attempt_budget": 0,
+            "retry_authorized": False,
+            "automatic_retry_authorized": False,
+            "post_failure_execution_authorized": False,
+            "image_recovery_required": False,
+            "image_recovery_authorized": False,
+            "evidence_deletion_authorized": False,
+            "separate_reviewed_producer_repair_required": True,
+            "separate_new_attempt_disposition_required": True,
+        },
+    ):
+        failures.append("O4 Attempt 005 disposition attempt contract is not exact")
+    if not _exact_json_equal(
+        disposition.get("tracked_closure_scope"),
+        ATTEMPT_005_CLOSURE_CONTROL_PATH_ALLOWLIST,
+    ):
+        failures.append("O4 Attempt 005 tracked closure scope is not exact")
+    if not _exact_json_equal(disposition.get("authority"), CLOSED_AUTHORITY):
+        failures.append("O4 Attempt 005 disposition authority is not closed")
+    normalized = " ".join(document.split())
+    for phrase in (
+        "Status: `ATTEMPT_005_CONSUMED_API_EXIT_DIAGNOSTIC_REQUIRED_NO_LIVE_AUTHORITY`",
+        ATTEMPT_005_ID,
+        ATTEMPT_005_CANDIDATE_COMMIT,
+        ATTEMPT_005_CANDIDATE_TREE,
+        ATTEMPT_005_RUN_ID,
+        ATTEMPT_005_PROJECT,
+        "primary and outward failure code was `base_services_start_failed`",
+        "`ithildin-api` as `service_exited_nonzero`",
+        "`ithildin-ui` as `service_created`",
+        "do not state why the API exited",
+        "`cleanup_failure_codes` is empty",
+        "`recovery_required` is false",
+        "successful in-run cleanup for the exact bound Attempt 005 resources",
+        "separate read-only, exact-run-scoped postcheck",
+        "not ongoing live truth",
+        "no image recovery is required or authorized",
+        ATTEMPT_005_DISPOSITION_RECEIPT_DIGEST,
+        ATTEMPT_005_DIAGNOSTIC_RECEIPT_DIGEST,
+        ATTEMPT_005_MANIFEST_RECEIPT_DIGEST,
+        "exactly 664 files",
+        "Attempts 002 through 005 retained receipts",
+        "sole runtime-base entry",
+        "exactly these eight paths",
+        "all 19 authority fields are false",
+        "separate reviewed API-exit diagnostic repair",
+        "assigns no cause",
+    ):
+        if phrase not in normalized:
+            failures.append(f"O4 Attempt 005 disposition doc is missing phrase: {phrase}")
+    if _digest(document) != ATTEMPT_005_DISPOSITION_DOCUMENT_DIGEST:
+        failures.append("O4 Attempt 005 disposition document digest is invalid")
+
+
 def _directory_open_flags() -> int:
     flags = os.O_RDONLY
     if hasattr(os, "O_CLOEXEC"):
@@ -2940,6 +3251,11 @@ def _validate_attempt_002_runtime_posture_from_descriptor(
             {ATTEMPT_002_RUNTIME_BASE.as_posix(): 0o700},
             "O4 Attempt 004 runtime run directory or plaintext",
         ),
+        (
+            ATTEMPT_005_RUNTIME_ROOT,
+            {ATTEMPT_002_RUNTIME_BASE.as_posix(): 0o700},
+            "O4 Attempt 005 runtime run directory or plaintext",
+        ),
         (ATTEMPT_002_REPORT_BASE, {}, "O4 published report base"),
     ):
         _validate_repo_relative_absence(
@@ -2967,9 +3283,11 @@ def _validate_attempt_002_runtime_posture(
         os.close(repository_descriptor)
 
 
-def _validate_attempt_004_diagnostic_bytes(
+def _validate_attempt_diagnostic_bytes(
     document: bytes,
     failures: list[str],
+    *,
+    attempt: int,
 ) -> None:
     try:
         diagnostic = json.loads(
@@ -2977,9 +3295,9 @@ def _validate_attempt_004_diagnostic_bytes(
             object_pairs_hook=_reject_duplicates,
         )
     except (UnicodeError, json.JSONDecodeError, ValueError):
-        failures.append("O4 Attempt 004 failure diagnostic is ambiguous")
+        failures.append(f"O4 Attempt {attempt:03d} failure diagnostic is ambiguous")
         return
-    if not isinstance(diagnostic, dict) or set(diagnostic) != {
+    expected_fields = {
         "base_build_completed",
         "bound_inspected_image_identities",
         "bridge_build_completed",
@@ -2990,10 +3308,13 @@ def _validate_attempt_004_diagnostic_bytes(
         "record_type",
         "recovery_required",
         "schema_version",
-    }:
-        failures.append("O4 Attempt 004 failure diagnostic fields are not exact")
+    }
+    if attempt == 5:
+        expected_fields.add("base_service_start_diagnostic")
+    if not isinstance(diagnostic, dict) or set(diagnostic) != expected_fields:
+        failures.append(f"O4 Attempt {attempt:03d} failure diagnostic fields are not exact")
         return
-    expected_scalars = {
+    historical_scalars: JsonObject = {
         "schema_version": "1",
         "record_type": "local_v1_lv1_003_o4_producer_failure_diagnostic",
         "base_build_completed": True,
@@ -3004,12 +3325,36 @@ def _validate_attempt_004_diagnostic_bytes(
         "primary_failure_code": "base_services_start_failed",
         "recovery_required": True,
     }
-    for key, expected in expected_scalars.items():
-        if not _exact_json_equal(diagnostic.get(key), expected):
-            failures.append(f"O4 Attempt 004 failure diagnostic {key} is not exact")
+    current_scalars: JsonObject = {
+        "schema_version": "1",
+        "record_type": "local_v1_lv1_003_o4_producer_failure_diagnostic",
+        "base_build_completed": True,
+        "bridge_build_completed": True,
+        "cleanup_failure_codes": [],
+        "highest_completed_stage": 7,
+        "outward_failure_code": "base_services_start_failed",
+        "primary_failure_code": "base_services_start_failed",
+        "recovery_required": False,
+    }
+    expected_scalars = current_scalars if attempt == 5 else historical_scalars
+    for key, expected_value in expected_scalars.items():
+        if not _exact_json_equal(diagnostic.get(key), expected_value):
+            failures.append(f"O4 Attempt {attempt:03d} failure diagnostic {key} is not exact")
+    if attempt == 5 and not _exact_json_equal(
+        diagnostic.get("base_service_start_diagnostic"),
+        {
+            "collection_status": "complete",
+            "reason_code": "base_service_start_state_collected",
+            "services": {
+                "ithildin-api": "service_exited_nonzero",
+                "ithildin-ui": "service_created",
+            },
+        },
+    ):
+        failures.append("O4 Attempt 005 base-service diagnostic is not exact")
     identities = diagnostic.get("bound_inspected_image_identities")
     if not isinstance(identities, list) or len(identities) != 4:
-        failures.append("O4 Attempt 004 bound diagnostic identities are not exact")
+        failures.append(f"O4 Attempt {attempt:03d} bound diagnostic identities are not exact")
         return
     observed = [
         (
@@ -3022,7 +3367,7 @@ def _validate_attempt_004_diagnostic_bytes(
         for identity in identities
         if isinstance(identity, dict)
     ]
-    expected = [
+    historical_expected = [
         (
             "ithildin-api",
             "ithildin/api-o4:329e129a",
@@ -3052,8 +3397,39 @@ def _validate_attempt_004_diagnostic_bytes(
             "linux/arm64",
         ),
     ]
-    if observed != expected:
-        failures.append("O4 Attempt 004 bound diagnostic image identities differ")
+    current_expected = [
+        (
+            "ithildin-api",
+            "ithildin/api-o4:b806c1bd",
+            "sha256:e4ca0c62c670f38f150bb09f42a356e0d5b2956cf7cb56a3bd729004a1ffcb33",
+            ATTEMPT_005_PROJECT,
+            "linux/arm64",
+        ),
+        (
+            "ithildin-ui",
+            "ithildin/ui-o4:b806c1bd",
+            "sha256:a1e78335549b50210d6f607dc0335e0263d60fc2d9ff5e4e9ac6a303af3b9b38",
+            ATTEMPT_005_PROJECT,
+            "linux/arm64",
+        ),
+        (
+            "ithildin-node",
+            "ithildin/node-o4:b806c1bd",
+            "sha256:a876ac0a41cd64e57c5b6f28839363d831187323733280929a74ffe27a0e8294",
+            ATTEMPT_005_PROJECT,
+            "linux/arm64",
+        ),
+        (
+            "hermes",
+            "ithildin/hermes-node-bridge-o4:b806c1bd",
+            "sha256:702bd8613619440585ff6f2011c2e49fb07aed587223eab9d2298604e775ebf9",
+            ATTEMPT_005_PROJECT,
+            "linux/arm64",
+        ),
+    ]
+    expected_identities = current_expected if attempt == 5 else historical_expected
+    if observed != expected_identities:
+        failures.append(f"O4 Attempt {attempt:03d} bound diagnostic image identities differ")
 
 
 def _validate_retained_attempt_receipt(
@@ -3072,6 +3448,7 @@ def _validate_retained_attempt_receipt(
     snapshot_file_count: int,
     diagnostic_size: int | None = None,
     diagnostic_digest: str | None = None,
+    diagnostic_attempt: int | None = None,
 ) -> None:
     receipt_root = _open_owned_child_directory(
         receipt_base,
@@ -3142,7 +3519,14 @@ def _validate_retained_attempt_receipt(
         elif diagnostic_bytes is None:
             failures.append(f"{label} failure diagnostic is unavailable")
         else:
-            _validate_attempt_004_diagnostic_bytes(diagnostic_bytes, failures)
+            if diagnostic_attempt is None:
+                failures.append(f"{label} diagnostic attempt identity is unavailable")
+            else:
+                _validate_attempt_diagnostic_bytes(
+                    diagnostic_bytes,
+                    failures,
+                    attempt=diagnostic_attempt,
+                )
     if manifest_bytes is None or snapshot is None:
         if snapshot is not None:
             os.close(snapshot)
@@ -3242,7 +3626,14 @@ def _validate_retained_attempt_evidence(
         return
     try:
         try:
-            expected_runs = sorted([ATTEMPT_002_RUN_ID, ATTEMPT_003_RUN_ID, ATTEMPT_004_RUN_ID])
+            expected_runs = sorted(
+                [
+                    ATTEMPT_002_RUN_ID,
+                    ATTEMPT_003_RUN_ID,
+                    ATTEMPT_004_RUN_ID,
+                    ATTEMPT_005_RUN_ID,
+                ]
+            )
             if sorted(os.listdir(receipt_base)) != expected_runs:
                 failures.append("O4 retained receipt base entries are not exact")
         except OSError:
@@ -3290,6 +3681,24 @@ def _validate_retained_attempt_evidence(
             snapshot_file_count=ATTEMPT_004_SNAPSHOT_FILE_COUNT,
             diagnostic_size=ATTEMPT_004_DIAGNOSTIC_SIZE,
             diagnostic_digest=ATTEMPT_004_DIAGNOSTIC_RECEIPT_DIGEST,
+            diagnostic_attempt=4,
+        )
+        _validate_retained_attempt_receipt(
+            repo_root,
+            receipt_base,
+            failures,
+            label="O4 Attempt 005",
+            run_id=ATTEMPT_005_RUN_ID,
+            disposition_bytes=ATTEMPT_005_DISPOSITION_BYTES,
+            disposition_digest=ATTEMPT_005_DISPOSITION_RECEIPT_DIGEST,
+            manifest_size=ATTEMPT_005_MANIFEST_SIZE,
+            manifest_digest=ATTEMPT_005_MANIFEST_RECEIPT_DIGEST,
+            candidate_commit=ATTEMPT_005_CANDIDATE_COMMIT,
+            candidate_tree=ATTEMPT_005_CANDIDATE_TREE,
+            snapshot_file_count=ATTEMPT_005_SNAPSHOT_FILE_COUNT,
+            diagnostic_size=ATTEMPT_005_DIAGNOSTIC_SIZE,
+            diagnostic_digest=ATTEMPT_005_DIAGNOSTIC_RECEIPT_DIGEST,
+            diagnostic_attempt=5,
         )
     finally:
         os.close(receipt_base)
@@ -3424,6 +3833,16 @@ def _validate_bound_documents(repo_root: Path, failures: list[str]) -> None:
             DIAGNOSTIC_REPAIR_REVIEW,
             DIAGNOSTIC_REPAIR_REVIEW_DIGEST,
             "diagnostic repair exact review",
+        ),
+        (
+            ATTEMPT_005_DISPOSITION_JSON,
+            ATTEMPT_005_DISPOSITION_JSON_DIGEST,
+            "Attempt 005 disposition JSON",
+        ),
+        (
+            ATTEMPT_005_DISPOSITION_DOCUMENT,
+            ATTEMPT_005_DISPOSITION_DOCUMENT_DIGEST,
+            "Attempt 005 disposition document",
         ),
     ):
         if _file_digest(repo_root / path, failures) != expected:
@@ -3625,15 +4044,16 @@ def _validate_wiring(repo_root: Path, failures: list[str]) -> None:
     if PRODUCER_MODULE_INVOCATION not in readme:
         failures.append("README does not bind the O4 module invocation")
     for phrase in (
-        "one-shot Attempt 005 authorization",
-        "one attempt budget",
-        "diagnostic-repair review lineage",
-        "retained Attempt 001-004 and recovery evidence",
-        "Attempt 005 permits exactly one central-manager-supervised invocation",
-        "no automatic retry",
+        "consumed Attempt 005 closure",
+        "zero attempt budget",
+        "retained Attempt 001-005 and recovery evidence",
+        "successful exact-run cleanup evidence",
+        "bounded API-exit state without a guessed cause",
+        "Attempt 005 is consumed",
+        "current closure always refuses before live work",
         "It is not part of release, milestone, or static checks",
         "producer contract itself grants no execution authority",
-        "separate Attempt 005 gate grants one supervised invocation only",
+        "consumed Attempt 005 closure grants none",
     ):
         if phrase not in readme:
             failures.append(f"README is missing current O4 Attempt 005 guidance: {phrase}")
@@ -3668,6 +4088,7 @@ def _validate_git_bindings(repo_root: Path, failures: list[str]) -> None:
         (ATTEMPT_004_CANDIDATE_COMMIT, ATTEMPT_004_CANDIDATE_TREE),
         (ATTEMPT_004_CLOSURE_COMMIT, ATTEMPT_004_CLOSURE_TREE),
         (DIAGNOSTIC_REPAIR_COMMIT, DIAGNOSTIC_REPAIR_TREE),
+        (ATTEMPT_005_CANDIDATE_COMMIT, ATTEMPT_005_CANDIDATE_TREE),
     ):
         tree = _git(repo_root, ["show", "-s", "--format=%T", commit], failures)
         if tree != expected_tree:
@@ -3715,6 +4136,13 @@ def _validate_git_bindings(repo_root: Path, failures: list[str]) -> None:
     ).split()
     if diagnostic_repair_parents != [ATTEMPT_004_CLOSURE_COMMIT]:
         failures.append("O4 diagnostic repair parent is not exact")
+    attempt_005_parents = _git(
+        repo_root,
+        ["show", "-s", "--format=%P", ATTEMPT_005_CANDIDATE_COMMIT],
+        failures,
+    ).split()
+    if attempt_005_parents != [DIAGNOSTIC_REPAIR_COMMIT]:
+        failures.append("O4 Attempt 005 candidate parent is not exact")
     runtime_native_changed = _git(
         repo_root,
         [
@@ -3746,6 +4174,19 @@ def _validate_git_bindings(repo_root: Path, failures: list[str]) -> None:
     ).splitlines()
     if diagnostic_repair_changed != DIAGNOSTIC_REPAIR_PATHS:
         failures.append("O4 diagnostic repair changed paths are not exact")
+    attempt_005_changed = _git(
+        repo_root,
+        [
+            "diff-tree",
+            "--no-commit-id",
+            "--name-only",
+            "-r",
+            ATTEMPT_005_CANDIDATE_COMMIT,
+        ],
+        failures,
+    ).splitlines()
+    if attempt_005_changed != ATTEMPT_005_CONTROL_PATH_ALLOWLIST:
+        failures.append("O4 Attempt 005 authorization changed paths are not exact")
     historical = _git(
         repo_root,
         [
