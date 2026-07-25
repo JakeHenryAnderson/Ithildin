@@ -397,13 +397,35 @@ def test_operator_profile_fixes_runner_without_lifecycle_or_host_control() -> No
     assert "name" not in compose
     assert "volumes" not in compose
     dockerfile = Path("deploy/hermes-node-bridge/Dockerfile").read_text(encoding="utf-8")
-    assert "uv sync --frozen --no-dev --no-editable" in dockerfile
-    assert (
-        "import ithildin_mcp_server.node_bridge, ithildin_schemas" in dockerfile
+    pinned = (
+        "nousresearch/hermes-agent@sha256:"
+        "6705aac1f41c5faca559858611ce696b760d858b73fa3b51be11599c73ba1ffc"
     )
-    assert dockerfile.index("USER 10000:10000") < dockerfile.index(
+    assert dockerfile.count(f"FROM {pinned}") == 2
+    assert "ghcr.io/astral-sh/uv:" not in dockerfile
+    assert "/src/.venv" not in dockerfile
+    assert "ENV UV_PROJECT_ENVIRONMENT=/opt/ithildin/.venv" in dockerfile
+    assert (
+        "uv sync --frozen --no-dev --no-editable --python /usr/bin/python3"
+        in dockerfile
+    )
+    assert dockerfile.count("sys.version_info >= (3, 12)") == 2
+    assert dockerfile.count("sys.prefix == '/opt/ithildin/.venv'") == 2
+    assert (
+        'COPY --from=bridge-build /opt/ithildin/.venv '
+        "/opt/ithildin/.venv"
+    ) in dockerfile
+    assert (
+        dockerfile.count(
+            "import ithildin_mcp_server.node_bridge, ithildin_schemas"
+        )
+        == 2
+    )
+    assert dockerfile.index("USER 10000:10000") < dockerfile.rindex(
         "import ithildin_mcp_server.node_bridge, ithildin_schemas"
     )
+    assert 'ENTRYPOINT ["/opt/hermes/.venv/bin/hermes"]' in dockerfile
+    assert "COPY --from=bridge-build /opt/hermes" not in dockerfile
     serialized = canonical_json(compose)
     for forbidden in (
         "/var/run/docker.sock",
@@ -414,3 +436,74 @@ def test_operator_profile_fixes_runner_without_lifecycle_or_host_control() -> No
         "KUBECONFIG",
     ):
         assert forbidden not in serialized
+
+
+def _validate_runtime_native_bridge_dockerfile(dockerfile: str) -> None:
+    pinned = (
+        "nousresearch/hermes-agent@sha256:"
+        "6705aac1f41c5faca559858611ce696b760d858b73fa3b51be11599c73ba1ffc"
+    )
+    assert dockerfile.count(f"FROM {pinned}") == 2
+    assert "ghcr.io/astral-sh/uv:" not in dockerfile
+    assert "/src/.venv" not in dockerfile
+    assert dockerfile.count("/opt/ithildin/.venv") >= 8
+    assert "ENV UV_PROJECT_ENVIRONMENT=/opt/ithildin/.venv" in dockerfile
+    assert (
+        "uv sync --frozen --no-dev --no-editable --python /usr/bin/python3"
+        in dockerfile
+    )
+    assert dockerfile.count("sys.version_info >= (3, 12)") == 2
+    assert dockerfile.count("sys.prefix == '/opt/ithildin/.venv'") == 2
+    assert dockerfile.count("readlink -f /usr/bin/python3") == 1
+    assert (
+        'COPY --from=bridge-build /opt/ithildin/.venv '
+        "/opt/ithildin/.venv"
+    ) in dockerfile
+    assert 'ENTRYPOINT ["/opt/hermes/.venv/bin/hermes"]' in dockerfile
+    assert "COPY --from=bridge-build /opt/hermes" not in dockerfile
+
+
+@pytest.mark.parametrize(
+    ("original", "replacement"),
+    [
+        (
+            "FROM nousresearch/hermes-agent@sha256:"
+            "6705aac1f41c5faca559858611ce696b760d858b73fa3b51be11599c73ba1ffc "
+            "AS bridge-build",
+            "FROM ghcr.io/astral-sh/uv:python3.12-bookworm-slim AS bridge-build",
+        ),
+        (
+            "ENV UV_PROJECT_ENVIRONMENT=/opt/ithildin/.venv",
+            "ENV UV_PROJECT_ENVIRONMENT=/src/.venv",
+        ),
+        ("--python /usr/bin/python3", "--python python3"),
+        (
+            "sys.prefix == '/opt/ithildin/.venv'",
+            "sys.prefix == '/src/.venv'",
+        ),
+        (
+            "COPY --from=bridge-build /opt/ithildin/.venv "
+            "/opt/ithildin/.venv",
+            "COPY --from=bridge-build /opt/ithildin/.venv /tmp/.venv",
+        ),
+        (
+            'ENTRYPOINT ["/opt/hermes/.venv/bin/hermes"]',
+            "COPY --from=bridge-build /opt/hermes /opt/hermes\n"
+            'ENTRYPOINT ["/opt/hermes/.venv/bin/hermes"]',
+        ),
+    ],
+)
+def test_runtime_native_bridge_dockerfile_hostile_drift_fails_static_contract(
+    original: str,
+    replacement: str,
+) -> None:
+    dockerfile = Path("deploy/hermes-node-bridge/Dockerfile").read_text(
+        encoding="utf-8"
+    )
+    _validate_runtime_native_bridge_dockerfile(dockerfile)
+    assert original in dockerfile
+
+    with pytest.raises(AssertionError):
+        _validate_runtime_native_bridge_dockerfile(
+            dockerfile.replace(original, replacement, 1)
+        )

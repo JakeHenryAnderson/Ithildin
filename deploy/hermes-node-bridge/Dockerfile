@@ -1,12 +1,17 @@
-FROM ghcr.io/astral-sh/uv:python3.12-bookworm-slim@sha256:e5b65587bce7de595f299855d7385fe7fca39b8a74baa261ba1b7147afa78e58 AS bridge-build
+FROM nousresearch/hermes-agent@sha256:6705aac1f41c5faca559858611ce696b760d858b73fa3b51be11599c73ba1ffc AS bridge-build
 
 WORKDIR /src
 COPY pyproject.toml uv.lock README.md ./
 COPY apps ./apps
 COPY packages ./packages
-RUN uv sync --frozen --no-dev --no-editable \
-    && mkdir -p /opt/ithildin \
-    && cp -a /src/.venv /opt/ithildin/.venv
+ENV UV_PROJECT_ENVIRONMENT=/opt/ithildin/.venv
+RUN /usr/bin/python3 -c \
+        "import sys; assert sys.version_info >= (3, 12), sys.version" \
+    && uv sync --frozen --no-dev --no-editable --python /usr/bin/python3 \
+    && test "$(readlink -f /opt/ithildin/.venv/bin/python)" = \
+        "$(readlink -f /usr/bin/python3)" \
+    && /opt/ithildin/.venv/bin/python -c \
+        "import sys; assert sys.prefix == '/opt/ithildin/.venv'; import ithildin_mcp_server.node_bridge, ithildin_schemas"
 
 FROM nousresearch/hermes-agent@sha256:6705aac1f41c5faca559858611ce696b760d858b73fa3b51be11599c73ba1ffc
 
@@ -20,5 +25,5 @@ COPY deploy/hermes-node-bridge/config.yaml /opt/data/config.yaml
 WORKDIR /opt/data/scratch
 USER 10000:10000
 RUN /opt/ithildin/.venv/bin/python -c \
-    "import ithildin_mcp_server.node_bridge, ithildin_schemas"
+    "import sys; assert sys.version_info >= (3, 12); assert sys.prefix == '/opt/ithildin/.venv'; assert __import__('os').path.realpath(sys.executable) == __import__('os').path.realpath('/usr/bin/python3'); import ithildin_mcp_server.node_bridge, ithildin_schemas"
 ENTRYPOINT ["/opt/hermes/.venv/bin/hermes"]

@@ -73,6 +73,7 @@ _DIGEST = re.compile(r"^sha256:[0-9a-f]{64}$")
 _IMAGE_REFERENCE = re.compile(
     r"^ithildin/(?:api|ui|node|hermes-node-bridge)-o4:[0-9a-f]{8}$"
 )
+_COMPOSE_VERSION_LABEL = re.compile(r"^[0-9A-Za-z][0-9A-Za-z.+-]{0,31}$")
 _AMBIENT_AUTHORITY = re.compile(
     r"^(?:DOCKER_HOST|DOCKER_CONTEXT|DOCKER_CONFIG|COMPOSE_PROJECT_NAME|"
     r"HTTP_PROXY|HTTPS_PROXY|ALL_PROXY|NO_PROXY|AWS_.*|AZURE_.*|GOOGLE_.*|"
@@ -143,6 +144,7 @@ class ProducerSignal(BaseException):
 class CommandResult:
     returncode: int
     stdout: str
+    classification: str = "completed"
 
 
 @dataclass(frozen=True)
@@ -152,6 +154,8 @@ class HermesResult:
 
 
 class Executor(Protocol):
+    def bind_image_identity(self, image_id: str) -> None: ...
+
     def run(
         self,
         command: tuple[str, ...],
@@ -757,6 +761,41 @@ class ComposePlan:
             "rm", image_id,
         )
 
+    def image_ancestor_containers(self, image_id: str) -> tuple[str, ...]:
+        return (
+            "docker",
+            "--config",
+            str(self.runtime / "docker-config"),
+            "ps",
+            "--all",
+            "--quiet",
+            "--filter",
+            f"ancestor={image_id}",
+        )
+
+    def image_id_inspect(self, image_id: str) -> tuple[str, ...]:
+        return (
+            "docker",
+            "--config",
+            str(self.runtime / "docker-config"),
+            "image",
+            "inspect",
+            "--format",
+            "{{json .Id}}",
+            image_id,
+        )
+
+
+@dataclass(frozen=True)
+class BoundImageIdentity:
+    reference: str
+    image_id: str
+    project: str
+    service: str
+    compose_version: str
+    platform: str
+    layers: tuple[str, ...]
+
 
 @dataclass
 class ProducerState:
@@ -790,6 +829,9 @@ class ProducerState:
     clean_after_node_build: bool = False
     clean_before_bridge_build: bool = False
     clean_after_bridge_build: bool = False
+    base_build_completed: bool = False
+    bridge_build_completed: bool = False
+    bound_images: dict[str, BoundImageIdentity] = field(default_factory=dict)
     inspected_images: dict[str, str] = field(default_factory=dict)
     image_platform: str | None = None
     image_inventory: JsonObject | None = None
@@ -831,6 +873,13 @@ class AnchoredExecutor:
     ) -> None:
         self._delegate = delegate
         self._anchors = anchors
+
+    def bind_image_identity(self, image_id: str) -> None:
+        self._validate()
+        try:
+            self._delegate.bind_image_identity(image_id)
+        finally:
+            self._validate()
 
     def run(
         self,
@@ -959,7 +1008,12 @@ class SubprocessExecutor:
 
     def __init__(self, environment: dict[str, str]) -> None:
         self._environment = dict(environment)
-        self._inspected_image_ids: set[str] = set()
+        self._bound_image_ids: set[str] = set()
+
+    def bind_image_identity(self, image_id: str) -> None:
+        if not _DIGEST.fullmatch(image_id):
+            raise ProducerError("image_identity_binding_invalid")
+        self._bound_image_ids.add(image_id)
 
     def run(
         self,
@@ -971,7 +1025,13 @@ class SubprocessExecutor:
         _validate_command(
             command,
             hermes=False,
-            inspected_image_ids=frozenset(self._inspected_image_ids),
+            inspected_image_ids=frozenset(self._bound_image_ids),
+        )
+        is_id_probe = (
+            len(command) == 8
+            and command[3:7]
+            == ("image", "inspect", "--format", "{{json .Id}}")
+            and _DIGEST.fullmatch(command[7]) is not None
         )
         try:
             completed = subprocess.run(
@@ -979,7 +1039,7 @@ class SubprocessExecutor:
                 cwd=ROOT,
                 input=input_text,
                 stdout=subprocess.PIPE,
-                stderr=subprocess.DEVNULL,
+                stderr=subprocess.PIPE if is_id_probe else subprocess.DEVNULL,
                 text=True,
                 check=False,
                 timeout=timeout,
@@ -989,23 +1049,25 @@ class SubprocessExecutor:
             raise ProducerError("subprocess_unavailable") from exc
         if len(completed.stdout.encode("utf-8")) > MAX_LICENSE_BYTES:
             raise ProducerError("subprocess_output_too_large")
-        result = CommandResult(completed.returncode, completed.stdout)
-        if completed.returncode == 0 and command[3:6] == (
-            "image",
-            "inspect",
-            "--format",
-        ):
-            try:
-                inspected = json.loads(completed.stdout)
-            except json.JSONDecodeError:
-                inspected = None
-            if (
-                isinstance(inspected, dict)
-                and isinstance(inspected.get("Id"), str)
-                and _DIGEST.fullmatch(cast(str, inspected["Id"]))
-            ):
-                self._inspected_image_ids.add(cast(str, inspected["Id"]))
-        return result
+        classification = "completed"
+        if is_id_probe and completed.returncode != 0:
+            expected = {
+                f"Error response from daemon: No such image: {command[7]}",
+                f"Error: No such image: {command[7]}",
+            }
+            stderr = completed.stderr.strip() if completed.stderr else ""
+            classification = (
+                "image_not_found"
+                if completed.returncode == 1
+                and not completed.stdout
+                and stderr in expected
+                else "error"
+            )
+        return CommandResult(
+            completed.returncode,
+            completed.stdout,
+            classification,
+        )
 
     def run_hermes(
         self,
@@ -1501,6 +1563,7 @@ def run_producer(
     enrollment_code: str | None = None
     report_root: Path | None = None
     primary_error: BaseException | None = None
+    primary_failure_code: str | None = None
     executor: Executor | None = None
     api: Api | None = None
     snapshot: CandidateSnapshot | None = None
@@ -1594,6 +1657,7 @@ def run_producer(
             state.stage(15)
         except BaseException as exc:
             primary_error = exc
+            primary_failure_code = _normalized_error(exc).code
         finally:
             if _cleanup_once(state, executor, api) is None:
                 primary_error = ProducerError("recovery_required")
@@ -1628,11 +1692,22 @@ def run_producer(
         return report_root
     except BaseException as exc:
         normalized = _normalized_error(exc)
+        if (
+            primary_failure_code is None
+            and normalized.code != "recovery_required"
+        ):
+            primary_failure_code = normalized.code
         if state is None:
             if not runtime.remove():
                 normalized = ProducerError("recovery_required")
         elif state.cleanup_calls == 0 and _cleanup_once(state, executor, api) is None:
             normalized = ProducerError("recovery_required")
+        _write_failure_diagnostic(
+            receipts,
+            state=state,
+            outward_failure_code=normalized.code,
+            primary_failure_code=primary_failure_code,
+        )
         _quarantine_receipts(receipts, normalized.code)
         raise normalized from None
     finally:
@@ -1819,6 +1894,8 @@ def _build_images(state: ProducerState, executor: Executor) -> None:
         ),
         "base_image_build_failed",
     )
+    state.base_build_completed = True
+    _bind_built_images(state, executor, state.plan.images[:3])
     _observe_exact_source(state)
     state.clean_after_node_build = True
     state.clean_before_bridge_build = True
@@ -1835,46 +1912,114 @@ def _build_images(state: ProducerState, executor: Executor) -> None:
         ),
         "bridge_image_build_failed",
     )
+    state.bridge_build_completed = True
+    _bind_built_images(state, executor, state.plan.images[3:])
     _observe_exact_source(state)
     state.clean_after_bridge_build = True
+
+
+def _expected_image_service(state: ProducerState, reference: str) -> str:
+    try:
+        index = state.plan.images.index(reference)
+    except ValueError as exc:
+        raise ProducerError("image_reference_invalid") from exc
+    return ("ithildin-api", "ithildin-ui", "ithildin-node", "hermes")[index]
+
+
+def _inspect_exact_image_identity(
+    state: ProducerState,
+    executor: Executor,
+    reference: str,
+) -> BoundImageIdentity:
+    result = executor.run(state.plan.image_inspect(reference))
+    _require_success(result, "image_inspection_failed")
+    try:
+        raw = json.loads(result.stdout)
+    except (UnicodeError, json.JSONDecodeError) as exc:
+        raise ProducerError("image_inspection_invalid") from exc
+    if not isinstance(raw, dict):
+        raise ProducerError("image_inspection_invalid")
+    image_id = raw.get("Id")
+    os_name = raw.get("Os")
+    architecture = raw.get("Architecture")
+    rootfs = raw.get("RootFS")
+    layers = rootfs.get("Layers") if isinstance(rootfs, dict) else None
+    config = raw.get("Config")
+    labels = config.get("Labels") if isinstance(config, dict) else None
+    compose_version = (
+        labels.get("com.docker.compose.version")
+        if isinstance(labels, dict)
+        else None
+    )
+    expected_service = _expected_image_service(state, reference)
+    platform = f"{os_name}/{architecture}"
+    if (
+        reference not in state.plan.images
+        or raw.get("RepoTags") != [reference]
+        or not isinstance(image_id, str)
+        or not _DIGEST.fullmatch(image_id)
+        or platform not in {"linux/amd64", "linux/arm64"}
+        or not isinstance(layers, list)
+        or not layers
+        or any(
+            not isinstance(value, str) or not _DIGEST.fullmatch(value)
+            for value in layers
+        )
+        or not isinstance(labels, dict)
+        or labels.get("com.docker.compose.project") != state.plan.project
+        or labels.get("com.docker.compose.service") != expected_service
+        or not isinstance(compose_version, str)
+        or not _COMPOSE_VERSION_LABEL.fullmatch(compose_version)
+    ):
+        raise ProducerError("image_inspection_invalid")
+    return BoundImageIdentity(
+        reference=reference,
+        image_id=image_id,
+        project=state.plan.project,
+        service=expected_service,
+        compose_version=compose_version,
+        platform=platform,
+        layers=tuple(cast(list[str], layers)),
+    )
+
+
+def _bind_built_images(
+    state: ProducerState,
+    executor: Executor,
+    references: tuple[str, ...],
+) -> None:
+    for reference in references:
+        if reference in state.bound_images:
+            raise ProducerError("image_identity_rebound")
+        identity = _inspect_exact_image_identity(state, executor, reference)
+        if identity.image_id in {
+            bound.image_id for bound in state.bound_images.values()
+        }:
+            raise ProducerError("image_identity_duplicate")
+        executor.bind_image_identity(identity.image_id)
+        state.bound_images[reference] = identity
+        state.inspected_images[reference] = identity.image_id
+    if len({identity.platform for identity in state.bound_images.values()}) != 1:
+        raise ProducerError("image_platform_mismatch")
+    state.docker_ownership_proven = True
 
 
 def _image_inventory(state: ProducerState, executor: Executor) -> JsonObject:
     inventory: list[JsonObject] = []
     platforms: set[str] = set()
     for reference in state.plan.images:
-        result = executor.run(state.plan.image_inspect(reference))
-        _require_success(result, "image_inspection_failed")
-        try:
-            raw = json.loads(result.stdout)
-        except (UnicodeError, json.JSONDecodeError) as exc:
-            raise ProducerError("image_inspection_invalid") from exc
-        if not isinstance(raw, dict):
-            raise ProducerError("image_inspection_invalid")
-        image_id = raw.get("Id")
-        os_name = raw.get("Os")
-        architecture = raw.get("Architecture")
-        rootfs = raw.get("RootFS")
-        layers = rootfs.get("Layers") if isinstance(rootfs, dict) else None
-        platform = f"{os_name}/{architecture}"
-        if (
-            not isinstance(image_id, str)
-            or not _DIGEST.fullmatch(image_id)
-            or platform not in {"linux/amd64", "linux/arm64"}
-            or not isinstance(layers, list)
-            or not layers
-            or any(not isinstance(value, str) or not _DIGEST.fullmatch(value) for value in layers)
-        ):
-            raise ProducerError("image_inspection_invalid")
-        state.inspected_images[reference] = image_id
-        platforms.add(platform)
+        observed = _inspect_exact_image_identity(state, executor, reference)
+        bound = state.bound_images.get(reference)
+        if bound is None or observed != bound:
+            raise ProducerError("image_identity_drift")
+        platforms.add(observed.platform)
         inventory.append(
             {
                 "reference": reference,
-                "image_id": image_id,
-                "platform": platform,
-                "config_digest": image_id,
-                "ordered_layer_digests": layers,
+                "image_id": observed.image_id,
+                "platform": observed.platform,
+                "config_digest": observed.image_id,
+                "ordered_layer_digests": list(observed.layers),
             }
         )
     if len(platforms) != 1:
@@ -2312,6 +2457,31 @@ def _bind_node_receipt(state: ProducerState, executor: Executor) -> None:
     journey["handoff_nonce_digest"] = nonce_digest
 
 
+def _reconcile_bound_images_for_cleanup(
+    state: ProducerState,
+    executor: Executor,
+) -> None:
+    for reference in state.plan.images:
+        bound = state.bound_images.get(reference)
+        query = executor.run(state.plan.image_query(reference))
+        _require_success(query, "image_cleanup_reference_probe_failed")
+        if bound is None:
+            if query.stdout.strip():
+                raise ProducerError("unbound_image_reference_present")
+            continue
+        if query.stdout.split() != [bound.image_id]:
+            raise ProducerError("bound_image_reference_drift")
+        observed = _inspect_exact_image_identity(state, executor, reference)
+        if observed != bound:
+            raise ProducerError("bound_image_metadata_drift")
+        ancestors = executor.run(
+            state.plan.image_ancestor_containers(bound.image_id)
+        )
+        _require_success(ancestors, "image_ancestor_probe_failed")
+        if ancestors.stdout.strip():
+            raise ProducerError("image_ancestor_container_present")
+
+
 def _cleanup_once(
     state: ProducerState,
     executor: Executor | None,
@@ -2480,17 +2650,27 @@ def _cleanup_once(
             attempt(f"{resource}_absence_proof_failed", prove_resource_absent)
         cleanup["persistent_profile_volume_absent"] = cleanup["volumes_absent"]
 
-        if set(state.inspected_images) != set(state.plan.images) and state.mutated:
-            failures.append("image_identity_ambiguous")
-        for image_id in dict.fromkeys(state.inspected_images.values()):
+        images_reconciled = True
+        try:
+            _reconcile_bound_images_for_cleanup(state, executor)
+        except (ProducerError, OSError, KeyboardInterrupt, ProducerSignal):
+            failures.append("image_identity_reconciliation_failed")
+            images_reconciled = False
+        if images_reconciled:
+            for reference in state.plan.images:
+                bound = state.bound_images.get(reference)
+                if bound is None:
+                    continue
 
-            def remove_image(selected_image_id: str = image_id) -> None:
-                _require_success(
-                    executor.run(state.plan.image_remove(selected_image_id)),
-                    "owned_image_removal_failed",
-                )
+                def remove_image(
+                    selected_image_id: str = bound.image_id,
+                ) -> None:
+                    _require_success(
+                        executor.run(state.plan.image_remove(selected_image_id)),
+                        "owned_image_removal_failed",
+                    )
 
-            attempt("owned_image_removal_failed", remove_image)
+                attempt("owned_image_removal_failed", remove_image)
 
         image_proofs: list[bool] = []
         for reference in state.plan.images:
@@ -2503,8 +2683,35 @@ def _cleanup_once(
                 image_proofs.append(True)
 
             attempt("owned_image_absence_probe_failed", prove_image_absent)
-        cleanup["run_specific_images_absent"] = len(image_proofs) == len(
-            state.plan.images
+        image_id_proofs: list[bool] = []
+        for image_id in dict.fromkeys(
+            identity.image_id for identity in state.bound_images.values()
+        ):
+
+            def prove_image_id_absent(
+                selected_image_id: str = image_id,
+            ) -> None:
+                probe = executor.run(
+                    state.plan.image_id_inspect(selected_image_id)
+                )
+                if (
+                    probe.returncode == 1
+                    and not probe.stdout
+                    and probe.classification == "image_not_found"
+                ):
+                    image_id_proofs.append(True)
+                    return
+                if probe.returncode == 0 and probe.classification == "completed":
+                    raise ProducerError("owned_image_id_residue_detected")
+                raise ProducerError("owned_image_id_absence_probe_failed")
+
+            try:
+                prove_image_id_absent()
+            except ProducerError as exc:
+                failures.append(exc.code)
+        cleanup["run_specific_images_absent"] = (
+            len(image_proofs) == len(state.plan.images)
+            and len(image_id_proofs) == len(state.bound_images)
         )
 
     attempt("runtime_plaintext_removal_failed", remove_plaintext)
@@ -2927,6 +3134,8 @@ def _exact_command_vocabulary(
     for image_id in inspected_image_ids:
         if _DIGEST.fullmatch(image_id):
             allowed.add(plan.image_remove(image_id))
+            allowed.add(plan.image_ancestor_containers(image_id))
+            allowed.add(plan.image_id_inspect(image_id))
     hermes_command = plan.compose(
         "--profile",
         "hermes-node-bridge",
@@ -3174,6 +3383,59 @@ def _normalized_error(exc: BaseException) -> ProducerError:
     if isinstance(exc, (KeyboardInterrupt, ProducerSignal)):
         return ProducerError("interrupted")
     return ProducerError("unexpected_failure")
+
+
+def _write_failure_diagnostic(
+    receipts: PrivateDirectory,
+    *,
+    state: ProducerState | None,
+    outward_failure_code: str,
+    primary_failure_code: str | None,
+) -> None:
+    identities: list[JsonObject] = []
+    cleanup_failures: list[str] = []
+    if state is not None:
+        cleanup_failures = list(dict.fromkeys(state.cleanup_failures))
+        for reference in state.plan.images:
+            identity = state.bound_images.get(reference)
+            if identity is None:
+                continue
+            identities.append(
+                {
+                    "reference": identity.reference,
+                    "image_id": identity.image_id,
+                    "project": identity.project,
+                    "service": identity.service,
+                    "compose_version": identity.compose_version,
+                    "platform": identity.platform,
+                    "ordered_layer_digests": list(identity.layers),
+                }
+            )
+    diagnostic: JsonObject = {
+        "schema_version": "1",
+        "record_type": "local_v1_lv1_003_o4_producer_failure_diagnostic",
+        "outward_failure_code": outward_failure_code,
+        "primary_failure_code": primary_failure_code,
+        "cleanup_failure_codes": cast(list[Any], cleanup_failures),
+        "recovery_required": outward_failure_code == "recovery_required",
+        "highest_completed_stage": max(state.stages, default=0)
+        if state is not None
+        else 0,
+        "base_build_completed": state.base_build_completed
+        if state is not None
+        else False,
+        "bridge_build_completed": state.bridge_build_completed
+        if state is not None
+        else False,
+        "bound_inspected_image_identities": cast(list[Any], identities),
+    }
+    try:
+        receipts.write(
+            "diagnostic.json",
+            (canonical_json(diagnostic) + "\n").encode(),
+        )
+    except (OSError, ProducerError, KeyboardInterrupt, ProducerSignal):
+        pass
 
 
 def _quarantine_receipts(receipts: PrivateDirectory, code: str) -> None:

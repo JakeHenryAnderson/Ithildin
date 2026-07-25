@@ -224,10 +224,28 @@ class FakeExecutor:
         self.hermes_commands: list[tuple[str, ...]] = []
         self.hermes_timeouts: list[float] = []
         self.images: dict[str, str] = {}
+        self.bound_image_ids: set[str] = set()
+        self.remaining_image_ids: set[str] = set()
+        self.retain_ids_after_removal: set[str] = set()
+        self.image_id_probe_modes: dict[str, str] = {}
         self.hermes_result = producer.HermesResult("exit", 0)
         self.image_architectures: dict[str, str] = {}
+        self.image_extra_tags: set[str] = set()
+        self.image_project_labels: dict[str, str] = {}
+        self.image_service_labels: dict[str, str] = {}
+        self.image_compose_versions: dict[str, str] = {}
+        self.image_ancestor_containers: set[str] = set()
+        self.build_failure: str | None = None
+        self.base_failure_partial_reference = False
+        self.cleanup_drift: str | None = None
+        self.cleanup_phase = False
+        self.removal_failures: set[str] = set()
         self.interrupt_on: str | None = None
         self.enrollment_failure: str | None = None
+
+    def bind_image_identity(self, image_id: str) -> None:
+        assert producer._DIGEST.fullmatch(image_id)  # noqa: SLF001
+        self.bound_image_ids.add(image_id)
 
     def run(
         self,
@@ -240,7 +258,7 @@ class FakeExecutor:
         producer._validate_command(  # noqa: SLF001
             command,
             hermes=False,
-            inspected_image_ids=frozenset(self.images.values()),
+            inspected_image_ids=frozenset(self.bound_image_ids),
         )
         self.commands.append(command)
         self.inputs.append(input_text)
@@ -285,33 +303,138 @@ class FakeExecutor:
                 return producer.CommandResult(0, "")
         for reference in plan.images:
             if command == plan.image_query(reference):
+                if (
+                    self.cleanup_phase
+                    and self.cleanup_drift == "reference"
+                    and reference == plan.images[0]
+                ):
+                    return producer.CommandResult(0, "sha256:" + "f" * 64)
                 return producer.CommandResult(0, self.images.get(reference, ""))
             if command == plan.image_inspect(reference):
                 image_id = "sha256:" + str(plan.images.index(reference) + 1) * 64
                 self.images[reference] = image_id
+                service = (
+                    "ithildin-api",
+                    "ithildin-ui",
+                    "ithildin-node",
+                    "hermes",
+                )[plan.images.index(reference)]
+                tags = [reference]
+                if reference in self.image_extra_tags or (
+                    self.cleanup_phase
+                    and self.cleanup_drift == "extra_tag"
+                    and reference == plan.images[0]
+                ):
+                    tags.append("ithildin/forbidden:latest")
                 return producer.CommandResult(
                     0,
                     json.dumps(
                         {
                             "Id": image_id,
+                            "RepoTags": tags,
                             "Os": "linux",
                             "Architecture": self.image_architectures.get(
-                                reference, "arm64"
+                                reference,
+                                (
+                                    "amd64"
+                                    if self.cleanup_phase
+                                    and self.cleanup_drift == "platform"
+                                    and reference == plan.images[0]
+                                    else "arm64"
+                                ),
                             ),
                             "RootFS": {"Layers": ["sha256:" + "9" * 64]},
+                            "Config": {
+                                "Labels": {
+                                    "com.docker.compose.project": (
+                                        self.image_project_labels.get(
+                                            reference,
+                                            (
+                                                "other-project"
+                                                if self.cleanup_phase
+                                                and self.cleanup_drift == "label"
+                                                and reference == plan.images[0]
+                                                else plan.project
+                                            ),
+                                        )
+                                    ),
+                                    "com.docker.compose.service": (
+                                        self.image_service_labels.get(
+                                            reference, service
+                                        )
+                                    ),
+                                    "com.docker.compose.version": (
+                                        self.image_compose_versions.get(
+                                            reference, "5.1.4"
+                                        )
+                                    ),
+                                }
+                            },
                         }
                     ),
                 )
+            image_id = self.images.get(reference)
+            if (
+                image_id is not None
+                and command == plan.image_ancestor_containers(image_id)
+            ):
+                output = (
+                    "container-id\n"
+                    if reference in self.image_ancestor_containers
+                    or (
+                        self.cleanup_phase
+                        and self.cleanup_drift == "container"
+                        and reference == plan.images[0]
+                    )
+                    else ""
+                )
+                return producer.CommandResult(0, output)
+        for image_id in self.bound_image_ids:
+            if command == plan.image_id_inspect(image_id):
+                mode = self.image_id_probe_modes.get(image_id)
+                if mode == "error":
+                    return producer.CommandResult(2, "", "error")
+                if mode == "ambiguous":
+                    return producer.CommandResult(1, "", "error")
+                if (
+                    image_id in self.images.values()
+                    or image_id in self.remaining_image_ids
+                ):
+                    return producer.CommandResult(
+                        0,
+                        json.dumps(image_id),
+                    )
+                return producer.CommandResult(1, "", "image_not_found")
         if len(command) == 6 and command[3:5] == ("image", "rm"):
             image_id = command[5]
+            if image_id in self.removal_failures:
+                return producer.CommandResult(1, "")
             self.images = {
                 reference: current
                 for reference, current in self.images.items()
                 if current != image_id
             }
+            if image_id in self.retain_ids_after_removal:
+                self.remaining_image_ids.add(image_id)
+            else:
+                self.remaining_image_ids.discard(image_id)
             return producer.CommandResult(0, "")
         tail = command[max(i for i, value in enumerate(command) if value == "--file") + 2 :]
         if "build" in tail:
+            if (
+                self.build_failure == "base"
+                and "ithildin-api" in tail
+            ) or (
+                self.build_failure == "bridge"
+                and "hermes" in tail
+            ):
+                if (
+                    self.build_failure == "base"
+                    and self.base_failure_partial_reference
+                ):
+                    self.images[plan.images[0]] = "sha256:" + "1" * 64
+                self.cleanup_phase = True
+                return producer.CommandResult(1, "")
             return producer.CommandResult(0, "")
         if "enroll" in tail:
             if self.enrollment_failure == "nonzero":
@@ -825,6 +948,428 @@ def test_full_journey_unconfirmed_revocation_quarantines_recovery_identity(
         "ithildin-node",
         fixed=True,
     )
+
+
+def test_bridge_build_failure_cleans_exact_bound_base_images_and_preserves_primary(
+    fake_stack: tuple[
+        FakeRuntimeFactory,
+        FakeExecutorFactory,
+        FakeApiFactory,
+        FakeProvider,
+        FakeAssembler,
+    ],
+) -> None:
+    runtime, executors, apis, provider, assembler = fake_stack
+    executors.executor.build_failure = "bridge"
+
+    with pytest.raises(
+        producer.ProducerError,
+        match="bridge_image_build_failed",
+    ):
+        producer.run_producer(
+            gate=AllowGate(),
+            runtime_factory=runtime,
+            executor_factory=executors,
+            api_factory=apis,
+            provider=provider,
+            assembler=assembler,
+            candidate=(COMMIT, TREE),
+            environment={},
+            now=datetime(2026, 7, 24, 18, 0, tzinfo=UTC),
+        )
+
+    diagnostic = json.loads(runtime.receipts.files["diagnostic.json"])
+    assert diagnostic == {
+        "schema_version": "1",
+        "record_type": "local_v1_lv1_003_o4_producer_failure_diagnostic",
+        "outward_failure_code": "bridge_image_build_failed",
+        "primary_failure_code": "bridge_image_build_failed",
+        "cleanup_failure_codes": [],
+        "recovery_required": False,
+        "highest_completed_stage": 5,
+        "base_build_completed": True,
+        "bridge_build_completed": False,
+        "bound_inspected_image_identities": [
+            {
+                "reference": reference,
+                "image_id": "sha256:" + str(index) * 64,
+                "project": producer.ComposePlan(
+                    "20260724T180000Z-1234abcd",
+                    runtime.runtime.path,
+                ).project,
+                "service": service,
+                "compose_version": "5.1.4",
+                "platform": "linux/arm64",
+                "ordered_layer_digests": ["sha256:" + "9" * 64],
+            }
+            for index, (reference, service) in enumerate(
+                zip(
+                    producer.ComposePlan(
+                        "20260724T180000Z-1234abcd",
+                        runtime.runtime.path,
+                    ).images[:3],
+                    ("ithildin-api", "ithildin-ui", "ithildin-node"),
+                    strict=True,
+                ),
+                start=1,
+            )
+        ],
+    }
+    removals = [
+        command
+        for command in executors.executor.commands
+        if len(command) == 6 and command[3:5] == ("image", "rm")
+    ]
+    assert [command[-1] for command in removals] == [
+        "sha256:" + str(index) * 64 for index in range(1, 4)
+    ]
+    assert not any(
+        value in command
+        for command in removals
+        for value in ("--force", "-f", "prune")
+    )
+    disposition = json.loads(runtime.receipts.files["disposition.json"])
+    assert disposition["failure_code"] == "bridge_image_build_failed"
+
+
+def test_bridge_failure_cleanup_failure_is_recovery_with_separate_diagnostic(
+    fake_stack: tuple[
+        FakeRuntimeFactory,
+        FakeExecutorFactory,
+        FakeApiFactory,
+        FakeProvider,
+        FakeAssembler,
+    ],
+) -> None:
+    runtime, executors, apis, provider, assembler = fake_stack
+    executors.executor.build_failure = "bridge"
+    executors.executor.removal_failures.add("sha256:" + "1" * 64)
+
+    with pytest.raises(producer.ProducerError, match="recovery_required"):
+        producer.run_producer(
+            gate=AllowGate(),
+            runtime_factory=runtime,
+            executor_factory=executors,
+            api_factory=apis,
+            provider=provider,
+            assembler=assembler,
+            candidate=(COMMIT, TREE),
+            environment={},
+            now=datetime(2026, 7, 24, 18, 0, tzinfo=UTC),
+        )
+
+    diagnostic = json.loads(runtime.receipts.files["diagnostic.json"])
+    assert diagnostic["outward_failure_code"] == "recovery_required"
+    assert diagnostic["primary_failure_code"] == "bridge_image_build_failed"
+    assert diagnostic["recovery_required"] is True
+    assert diagnostic["cleanup_failure_codes"] == [
+        "owned_image_removal_failed",
+        "owned_image_absence_probe_failed",
+        "owned_image_id_residue_detected",
+    ]
+    assert len(diagnostic["bound_inspected_image_identities"]) == 3
+    assert executors.executor.images == {
+        producer.ComposePlan(
+            "20260724T180000Z-1234abcd",
+            runtime.runtime.path,
+        ).images[0]: "sha256:" + "1" * 64
+    }
+    assert sum(
+        "down" in command for command in executors.executor.commands
+    ) == 1
+    disposition = json.loads(runtime.receipts.files["disposition.json"])
+    assert disposition["failure_code"] == "recovery_required"
+
+
+def test_all_run_tags_absent_but_bound_full_id_remains_is_recovery_required(
+    fake_stack: tuple[
+        FakeRuntimeFactory,
+        FakeExecutorFactory,
+        FakeApiFactory,
+        FakeProvider,
+        FakeAssembler,
+    ],
+) -> None:
+    runtime, executors, apis, provider, assembler = fake_stack
+    retained = "sha256:" + "1" * 64
+    executors.executor.build_failure = "bridge"
+    executors.executor.retain_ids_after_removal.add(retained)
+
+    with pytest.raises(producer.ProducerError, match="recovery_required"):
+        producer.run_producer(
+            gate=AllowGate(),
+            runtime_factory=runtime,
+            executor_factory=executors,
+            api_factory=apis,
+            provider=provider,
+            assembler=assembler,
+            candidate=(COMMIT, TREE),
+            environment={},
+            now=datetime(2026, 7, 24, 18, 0, tzinfo=UTC),
+        )
+
+    assert executors.executor.images == {}
+    assert executors.executor.remaining_image_ids == {retained}
+    diagnostic = json.loads(runtime.receipts.files["diagnostic.json"])
+    assert diagnostic["primary_failure_code"] == "bridge_image_build_failed"
+    assert diagnostic["outward_failure_code"] == "recovery_required"
+    assert diagnostic["cleanup_failure_codes"] == [
+        "owned_image_id_residue_detected"
+    ]
+
+
+@pytest.mark.parametrize("probe_mode", ["error", "ambiguous"])
+def test_bound_id_absence_probe_error_or_ambiguous_outcome_fails_closed(
+    fake_stack: tuple[
+        FakeRuntimeFactory,
+        FakeExecutorFactory,
+        FakeApiFactory,
+        FakeProvider,
+        FakeAssembler,
+    ],
+    probe_mode: str,
+) -> None:
+    runtime, executors, apis, provider, assembler = fake_stack
+    image_id = "sha256:" + "1" * 64
+    executors.executor.build_failure = "bridge"
+    executors.executor.image_id_probe_modes[image_id] = probe_mode
+
+    with pytest.raises(producer.ProducerError, match="recovery_required"):
+        producer.run_producer(
+            gate=AllowGate(),
+            runtime_factory=runtime,
+            executor_factory=executors,
+            api_factory=apis,
+            provider=provider,
+            assembler=assembler,
+            candidate=(COMMIT, TREE),
+            environment={},
+            now=datetime(2026, 7, 24, 18, 0, tzinfo=UTC),
+        )
+
+    assert executors.executor.images == {}
+    assert executors.executor.remaining_image_ids == set()
+    diagnostic = json.loads(runtime.receipts.files["diagnostic.json"])
+    assert diagnostic["cleanup_failure_codes"] == [
+        "owned_image_id_absence_probe_failed"
+    ]
+
+
+@pytest.mark.parametrize(
+    "drift",
+    ["extra_tag", "label", "platform", "container", "reference"],
+)
+def test_cleanup_metadata_or_reference_drift_refuses_all_image_removal(
+    fake_stack: tuple[
+        FakeRuntimeFactory,
+        FakeExecutorFactory,
+        FakeApiFactory,
+        FakeProvider,
+        FakeAssembler,
+    ],
+    drift: str,
+) -> None:
+    runtime, executors, apis, provider, assembler = fake_stack
+    executors.executor.build_failure = "bridge"
+    executors.executor.cleanup_drift = drift
+
+    with pytest.raises(producer.ProducerError, match="recovery_required"):
+        producer.run_producer(
+            gate=AllowGate(),
+            runtime_factory=runtime,
+            executor_factory=executors,
+            api_factory=apis,
+            provider=provider,
+            assembler=assembler,
+            candidate=(COMMIT, TREE),
+            environment={},
+            now=datetime(2026, 7, 24, 18, 0, tzinfo=UTC),
+        )
+
+    diagnostic = json.loads(runtime.receipts.files["diagnostic.json"])
+    assert diagnostic["primary_failure_code"] == "bridge_image_build_failed"
+    assert diagnostic["outward_failure_code"] == "recovery_required"
+    assert "image_identity_reconciliation_failed" in diagnostic[
+        "cleanup_failure_codes"
+    ]
+    assert not any(
+        len(command) == 6 and command[3:5] == ("image", "rm")
+        for command in executors.executor.commands
+    )
+
+
+def test_base_build_partial_reference_remains_ambiguous_and_fail_closed(
+    fake_stack: tuple[
+        FakeRuntimeFactory,
+        FakeExecutorFactory,
+        FakeApiFactory,
+        FakeProvider,
+        FakeAssembler,
+    ],
+) -> None:
+    runtime, executors, apis, provider, assembler = fake_stack
+    executors.executor.build_failure = "base"
+    executors.executor.base_failure_partial_reference = True
+
+    with pytest.raises(producer.ProducerError, match="recovery_required"):
+        producer.run_producer(
+            gate=AllowGate(),
+            runtime_factory=runtime,
+            executor_factory=executors,
+            api_factory=apis,
+            provider=provider,
+            assembler=assembler,
+            candidate=(COMMIT, TREE),
+            environment={},
+            now=datetime(2026, 7, 24, 18, 0, tzinfo=UTC),
+        )
+
+    diagnostic = json.loads(runtime.receipts.files["diagnostic.json"])
+    assert diagnostic["primary_failure_code"] == "base_image_build_failed"
+    assert diagnostic["outward_failure_code"] == "recovery_required"
+    assert diagnostic["bound_inspected_image_identities"] == []
+    assert "image_identity_reconciliation_failed" in diagnostic[
+        "cleanup_failure_codes"
+    ]
+    assert not any(
+        len(command) == 6 and command[3:5] == ("image", "rm")
+        for command in executors.executor.commands
+    )
+
+
+def test_unexpected_failure_diagnostic_is_stable_and_never_reflects_raw_text(
+    fake_stack: tuple[
+        FakeRuntimeFactory,
+        FakeExecutorFactory,
+        FakeApiFactory,
+        FakeProvider,
+        FakeAssembler,
+    ],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    runtime, executors, apis, provider, assembler = fake_stack
+    raw = "Bearer secret-value /private/host/path provider-model-output"
+
+    def unexpected(
+        state: producer.ProducerState,
+        executor: producer.Executor,
+    ) -> None:
+        del state, executor
+        raise RuntimeError(raw)
+
+    monkeypatch.setattr(producer, "_build_images", unexpected)
+    with pytest.raises(producer.ProducerError, match="unexpected_failure"):
+        producer.run_producer(
+            gate=AllowGate(),
+            runtime_factory=runtime,
+            executor_factory=executors,
+            api_factory=apis,
+            provider=provider,
+            assembler=assembler,
+            candidate=(COMMIT, TREE),
+            environment={},
+            now=datetime(2026, 7, 24, 18, 0, tzinfo=UTC),
+        )
+
+    encoded = runtime.receipts.files["diagnostic.json"].decode()
+    diagnostic = json.loads(encoded)
+    assert diagnostic["outward_failure_code"] == "unexpected_failure"
+    assert diagnostic["primary_failure_code"] == "unexpected_failure"
+    assert raw not in encoded
+    assert "secret-value" not in encoded
+    assert "/private/host/path" not in encoded
+    assert "provider-model-output" not in encoded
+
+
+def test_raw_successful_inspect_does_not_authorize_unbound_id_commands(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    run_id = "20260724T180000Z-1234abcd"
+    runtime = tmp_path / run_id
+    monkeypatch.setattr(producer, "RUNTIME_BASE", tmp_path)
+    plan = producer.ComposePlan(run_id, runtime)
+    image_id = "sha256:" + "a" * 64
+    calls: list[tuple[str, ...]] = []
+
+    def fake_run(
+        command: tuple[str, ...],
+        **_: object,
+    ) -> subprocess.CompletedProcess[str]:
+        calls.append(command)
+        return subprocess.CompletedProcess(
+            command,
+            0,
+            json.dumps({"Id": image_id}),
+            "",
+        )
+
+    monkeypatch.setattr(producer.subprocess, "run", fake_run)
+    executor = producer.SubprocessExecutor({})
+
+    result = executor.run(plan.image_inspect(plan.images[0]))
+    assert result.returncode == 0
+    for forbidden in (
+        plan.image_remove(image_id),
+        plan.image_id_inspect(image_id),
+        plan.image_ancestor_containers(image_id),
+    ):
+        with pytest.raises(
+            producer.ProducerError,
+            match="subprocess_command_not_allowed",
+        ):
+            executor.run(forbidden)
+    assert calls == [plan.image_inspect(plan.images[0])]
+
+
+@pytest.mark.parametrize(
+    ("returncode", "stderr", "classification"),
+    [
+        (
+            1,
+            "Error response from daemon: No such image: {image_id}\n",
+            "image_not_found",
+        ),
+        (1, "Error response from daemon: permission denied\n", "error"),
+        (
+            2,
+            "Error response from daemon: No such image: {image_id}\n",
+            "error",
+        ),
+    ],
+)
+def test_bound_id_probe_classifies_only_exact_not_found_as_absent(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    returncode: int,
+    stderr: str,
+    classification: str,
+) -> None:
+    run_id = "20260724T180000Z-1234abcd"
+    runtime = tmp_path / run_id
+    monkeypatch.setattr(producer, "RUNTIME_BASE", tmp_path)
+    plan = producer.ComposePlan(run_id, runtime)
+    image_id = "sha256:" + "a" * 64
+    executor = producer.SubprocessExecutor({})
+    executor.bind_image_identity(image_id)
+
+    def fake_run(
+        command: tuple[str, ...],
+        **_: object,
+    ) -> subprocess.CompletedProcess[str]:
+        return subprocess.CompletedProcess(
+            command,
+            returncode,
+            "",
+            stderr.format(image_id=image_id),
+        )
+
+    monkeypatch.setattr(producer.subprocess, "run", fake_run)
+    result = executor.run(plan.image_id_inspect(image_id))
+
+    assert result.returncode == returncode
+    assert result.stdout == ""
+    assert result.classification == classification
 
 
 def test_subprocess_hermes_uses_devnull_for_both_streams(
