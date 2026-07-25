@@ -47,6 +47,12 @@ ATTEMPT_002_DISPOSITION_JSON = Path(
 ATTEMPT_002_DISPOSITION_DOCUMENT = Path(
     "docs/codex/local-v1-lv1-003-o4-attempt-002-disposition.md"
 )
+ATTEMPT_002_CLOSURE_JSON = Path(
+    "docs/codex/local-v1-lv1-003-o4-attempt-002-closure.json"
+)
+ATTEMPT_002_CLOSURE_DOCUMENT = Path(
+    "docs/codex/local-v1-lv1-003-o4-attempt-002-closure.md"
+)
 AUTHORIZATION_TARGET = "local-v1-lv1-003-o4-execution-authorization-check"
 PRODUCER_STATIC_TARGET = "local-v1-lv1-003-o4-producer-static-check"
 PRODUCER_RUN_TARGET = "local-v1-lv1-003-o4-producer-run"
@@ -112,6 +118,56 @@ ATTEMPT_002_DISPOSITION_DOCUMENT_DIGEST = (
 )
 ATTEMPT_002_ID = "LV1-003-O4-ATTEMPT-002"
 ATTEMPT_002_OPERATOR_COMMAND = f"make {PRODUCER_RUN_TARGET}"
+ATTEMPT_002_CLOSURE_JSON_DIGEST = (
+    "sha256:b5cd26f34f2f9df4e7be56284a597ac71e42f187871d1ab2affba508ac3b0cf9"
+)
+ATTEMPT_002_CLOSURE_DOCUMENT_DIGEST = (
+    "sha256:9d94b78873a030ab7f957e6dcd0ba722085abb5a54decd52710941bfa7faa947"
+)
+ATTEMPT_002_CANDIDATE_COMMIT = "02c78966f9096870e0f8744ba42116bb364ecfcd"
+ATTEMPT_002_CANDIDATE_TREE = "a26b90fee43120a0b9a34f09fc4b75f6fcf07e99"
+ATTEMPT_002_RUN_ID = "20260725T114755Z-c46245d0"
+ATTEMPT_002_PROJECT = "ithildin-local-v1-o4-c46245d0"
+ATTEMPT_002_RECEIPT_BASE = Path("var/local-v1-lv1-003-o4-receipts")
+ATTEMPT_002_RECEIPT_ROOT = ATTEMPT_002_RECEIPT_BASE / ATTEMPT_002_RUN_ID
+ATTEMPT_002_DISPOSITION_RECEIPT = ATTEMPT_002_RECEIPT_ROOT / "disposition.json"
+ATTEMPT_002_MANIFEST_RECEIPT = (
+    ATTEMPT_002_RECEIPT_ROOT / "candidate-manifest.json"
+)
+ATTEMPT_002_SNAPSHOT_ROOT = ATTEMPT_002_RECEIPT_ROOT / "candidate"
+ATTEMPT_002_RUNTIME_BASE = Path("var/local-v1-lv1-003-o4-runtime")
+ATTEMPT_002_RUNTIME_ROOT = ATTEMPT_002_RUNTIME_BASE / ATTEMPT_002_RUN_ID
+ATTEMPT_002_REPORT_ROOT = (
+    Path("var/local-v1-constrained-mission-journey") / ATTEMPT_002_RUN_ID
+)
+ATTEMPT_002_DISPOSITION_BYTES = (
+    b'{"failure_code":"fixed_compose_invalid","release_allowed":false,'
+    b'"status":"quarantined_not_published","uat_complete":false}\n'
+)
+ATTEMPT_002_DISPOSITION_RECEIPT_DIGEST = (
+    "sha256:653e7cb4a656db714769cad329b49c55a194bb5223c911274a57c4a7abbef44b"
+)
+ATTEMPT_002_MANIFEST_RECEIPT_DIGEST = (
+    "sha256:ac9a119a083a786cfcead9cd5600a43350bc78cd2f500ffcc59f4969e34f087b"
+)
+ATTEMPT_002_MANIFEST_SIZE = 96628
+ATTEMPT_002_SNAPSHOT_FILE_COUNT = 663
+MAX_RETAINED_SNAPSHOT_FILE_BYTES = 16 * 1_048_576
+MAX_RETAINED_SNAPSHOT_BYTES = 64 * 1_048_576
+EVIDENCE_IGNORE_PATTERNS = [
+    "var/local-v1-lv1-003-o4-receipts/*",
+    "var/local-v1-lv1-003-o4-runtime/*",
+    "var/local-v1-constrained-mission-journey/*",
+]
+CLOSURE_CONTROL_PATH_ALLOWLIST = [
+    ".gitignore",
+    ATTEMPT_002_CLOSURE_JSON.as_posix(),
+    ATTEMPT_002_CLOSURE_DOCUMENT.as_posix(),
+    CONTRACT.as_posix(),
+    DOCUMENT.as_posix(),
+    "scripts/local_v1_lv1_003_o4_execution_authorization_check.py",
+    "tests/test_local_v1_lv1_003_o4_execution_authorization_check.py",
+]
 HISTORICAL_CONTROL_PATH_ALLOWLIST = [
     CONTRACT.as_posix(),
     DOCUMENT.as_posix(),
@@ -257,11 +313,20 @@ TOP_LEVEL_FIELDS = {
     "attempt_002_disposition_json_sha256",
     "attempt_002_disposition_document",
     "attempt_002_disposition_document_sha256",
+    "attempt_002_closure_json",
+    "attempt_002_closure_json_sha256",
+    "attempt_002_closure_document",
+    "attempt_002_closure_document_sha256",
     "attempt_002_id",
     "attempt_002_candidate_parent_commit",
     "attempt_002_candidate_parent_tree",
     "attempt_002_operator_command",
     "attempt_002_module_command",
+    "attempt_002_attempted_candidate_commit",
+    "attempt_002_attempted_candidate_tree",
+    "attempt_002_failure_code",
+    "attempt_002_run_id",
+    "attempt_002_compose_project",
     "attempt_002_execution_authorized",
     "attempt_002_automatic_retry_authorized",
     "execution_candidate_binding_mode",
@@ -424,11 +489,12 @@ HISTORICAL_TRUE_AUTHORITY_FIELDS = {
 HISTORICAL_AUTHORITY: JsonObject = {
     key: key in HISTORICAL_TRUE_AUTHORITY_FIELDS for key in AUTHORITY_FIELDS
 }
-TRUE_AUTHORITY_FIELDS = set(HISTORICAL_TRUE_AUTHORITY_FIELDS)
+TRUE_AUTHORITY_FIELDS: set[str] = set()
 CLOSED_AUTHORITY: JsonObject = {key: False for key in AUTHORITY_FIELDS}
-EXPECTED_AUTHORITY: JsonObject = {
-    key: key in TRUE_AUTHORITY_FIELDS for key in AUTHORITY_FIELDS
+ATTEMPT_002_AUTHORITY: JsonObject = {
+    key: key in HISTORICAL_TRUE_AUTHORITY_FIELDS for key in AUTHORITY_FIELDS
 }
+EXPECTED_AUTHORITY: JsonObject = CLOSED_AUTHORITY
 
 
 class O4ExecutionAuthorizationError(RuntimeError):
@@ -462,6 +528,14 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         repo_root / ATTEMPT_002_DISPOSITION_DOCUMENT,
         failures,
     )
+    attempt_002_closure = _read_contract(
+        repo_root / ATTEMPT_002_CLOSURE_JSON,
+        failures,
+    )
+    attempt_002_closure_document = _read_text(
+        repo_root / ATTEMPT_002_CLOSURE_DOCUMENT,
+        failures,
+    )
     _validate_contract(contract, failures)
     _validate_document(document, failures)
     _validate_producer_contract(producer_contract, contract, failures)
@@ -477,9 +551,17 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         attempt_002_disposition_document,
         failures,
     )
+    _validate_attempt_002_closure(
+        attempt_002_closure,
+        attempt_002_closure_document,
+        failures,
+    )
+    _validate_retained_attempt_002_evidence(repo_root, failures)
+    _validate_evidence_ignore_patterns(repo_root, failures)
     _validate_bound_documents(repo_root, failures)
     _validate_git_bindings(repo_root, failures)
     _validate_attempted_candidate_binding(repo_root, failures)
+    _validate_attempt_002_candidate_binding(repo_root, failures)
     _validate_source_bindings(repo_root, contract, failures)
     _validate_current_license_discovery(repo_root, failures)
     code_report = code_authorization.build_report(repo_root)
@@ -492,17 +574,6 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     ):
         failures.append("reviewed runner-bridge code authority is not exact")
     _validate_wiring(repo_root, failures)
-    execution_checkout = _validate_execution_checkout(repo_root, failures)
-    _validate_prior_attempt_posture(repo_root, failures)
-    live_execution_authorized = (
-        not failures
-        and execution_checkout is not None
-        and _exact_json_equal(contract.get("authority"), EXPECTED_AUTHORITY)
-    )
-    checkout_commit: str | None = None
-    checkout_tree: str | None = None
-    if live_execution_authorized and execution_checkout is not None:
-        checkout_commit, checkout_tree = execution_checkout
     return {
         "schema_version": "1",
         "valid": not failures,
@@ -511,18 +582,34 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "reviewed_implementation_commit": contract.get("reviewed_implementation_commit"),
         "code_authorization_commit": contract.get("code_authorization_commit"),
         "attempt_id": contract.get("attempt_002_id"),
-        "attempted_candidate_commit": contract.get("attempted_candidate_commit"),
-        "attempted_candidate_tree": contract.get("attempted_candidate_tree"),
+        "attempted_candidate_commit": contract.get(
+            "attempt_002_attempted_candidate_commit"
+        ),
+        "attempted_candidate_tree": contract.get(
+            "attempt_002_attempted_candidate_tree"
+        ),
+        "attempt_002_attempted_candidate_commit": contract.get(
+            "attempt_002_attempted_candidate_commit"
+        ),
+        "attempt_002_attempted_candidate_tree": contract.get(
+            "attempt_002_attempted_candidate_tree"
+        ),
+        "attempt_001_history": {
+            "attempt_id": contract.get("attempt_id"),
+            "attempted_candidate_commit": contract.get("attempted_candidate_commit"),
+            "attempted_candidate_tree": contract.get("attempted_candidate_tree"),
+            "attempt_consumed": contract.get("attempt_consumed"),
+        },
         "attempt_001_consumed": contract.get("attempt_consumed"),
-        "attempt_consumed": False,
+        "attempt_consumed": True,
         "retry_authorized": False,
-        "execution_checkout_commit": checkout_commit,
-        "execution_checkout_tree": checkout_tree,
-        "execution_attempt_budget": 1 if live_execution_authorized else 0,
-        "live_execution_authorized": live_execution_authorized,
-        "docker_lifecycle_authorized": live_execution_authorized,
-        "provider_access_authorized": live_execution_authorized,
-        "o4_evidence_execution_authorized": live_execution_authorized,
+        "execution_checkout_commit": None,
+        "execution_checkout_tree": None,
+        "execution_attempt_budget": 0,
+        "live_execution_authorized": False,
+        "docker_lifecycle_authorized": False,
+        "provider_access_authorized": False,
+        "o4_evidence_execution_authorized": False,
         "new_governed_tool": False,
         "release_allowed": False,
         "uat_complete": False,
@@ -552,7 +639,7 @@ def _validate_contract(contract: JsonObject, failures: list[str]) -> None:
     expected = {
         "schema_version": "1",
         "record_type": "local_v1_lv1_003_o4_execution_authorization",
-        "record_status": "AUTHORIZED_ATTEMPT_002_SUPERVISED_ONE_ATTEMPT_CHILD",
+        "record_status": "ATTEMPT_002_CONSUMED_FIXED_COMPOSE_INVALID",
         "ticket_id": "LV1-003",
         "outcome_id": "O4",
         "producer_contract_path": PRODUCER_CONTRACT.as_posix(),
@@ -622,17 +709,28 @@ def _validate_contract(contract: JsonObject, failures: list[str]) -> None:
         "attempt_002_disposition_document_sha256": (
             ATTEMPT_002_DISPOSITION_DOCUMENT_DIGEST
         ),
+        "attempt_002_closure_json": ATTEMPT_002_CLOSURE_JSON.as_posix(),
+        "attempt_002_closure_json_sha256": ATTEMPT_002_CLOSURE_JSON_DIGEST,
+        "attempt_002_closure_document": ATTEMPT_002_CLOSURE_DOCUMENT.as_posix(),
+        "attempt_002_closure_document_sha256": (
+            ATTEMPT_002_CLOSURE_DOCUMENT_DIGEST
+        ),
         "attempt_002_id": ATTEMPT_002_ID,
         "attempt_002_candidate_parent_commit": ENTRYPOINT_REPAIR_COMMIT,
         "attempt_002_candidate_parent_tree": ENTRYPOINT_REPAIR_TREE,
         "attempt_002_operator_command": ATTEMPT_002_OPERATOR_COMMAND,
         "attempt_002_module_command": PRODUCER_MODULE_INVOCATION,
-        "attempt_002_execution_authorized": True,
+        "attempt_002_attempted_candidate_commit": ATTEMPT_002_CANDIDATE_COMMIT,
+        "attempt_002_attempted_candidate_tree": ATTEMPT_002_CANDIDATE_TREE,
+        "attempt_002_failure_code": "fixed_compose_invalid",
+        "attempt_002_run_id": ATTEMPT_002_RUN_ID,
+        "attempt_002_compose_project": ATTEMPT_002_PROJECT,
+        "attempt_002_execution_authorized": False,
         "attempt_002_automatic_retry_authorized": False,
         "execution_candidate_binding_mode": (
-            "attempt_002_dynamic_clean_single_immediate_child_after_all_checks"
+            "attempt_002_consumed_no_execution_candidate_authorized"
         ),
-        "execution_attempt_budget": 1,
+        "execution_attempt_budget": 0,
         "attempt_consumed": True,
         "retry_authorized": False,
         "attempt_custody": "central_manager_supervised_local_invocation",
@@ -662,13 +760,13 @@ def _validate_contract(contract: JsonObject, failures: list[str]) -> None:
     ):
         failures.append("O4 execution cleanup contract is invalid")
     if not _exact_json_equal(contract.get("authority"), EXPECTED_AUTHORITY):
-        failures.append("O4 Attempt 002 authority is not the exact five-bit disposition")
+        failures.append("O4 execution authority must be all false after Attempt 002")
 
 
 def _validate_document(document: str, failures: list[str]) -> None:
     normalized = " ".join(document.split())
     for phrase in (
-        "Status: `AUTHORIZED_ATTEMPT_002_SUPERVISED_ONE_ATTEMPT_CHILD`",
+        "Status: `ATTEMPT_002_CONSUMED_FIXED_COMPOSE_INVALID`",
         REVIEWED_IMPLEMENTATION_COMMIT,
         CANDIDATE_PARENT_COMMIT,
         CODE_AUTHORIZATION_COMMIT,
@@ -690,6 +788,22 @@ def _validate_document(document: str, failures: list[str]) -> None:
         "received independent exact review with zero Critical, High, Medium, or Low findings",
         ATTEMPT_002_DISPOSITION_JSON.as_posix(),
         "outside release, milestone, static, and authorization-check dependencies",
+        ATTEMPT_002_CANDIDATE_COMMIT,
+        ATTEMPT_002_CANDIDATE_TREE,
+        "Make exited `2`; the producer exited `1` with `fixed_compose_invalid`",
+        ATTEMPT_002_RUN_ID,
+        ATTEMPT_002_PROJECT,
+        "gate and runtime were entered",
+        "base-plus-overlay `tmpfs` list merge duplicated the `/tmp` mount target",
+        "No Docker mutation/build/resource creation, provider call, API start, Node enrollment, "
+        "Hermes invocation, credential output, or successful evidence occurred",
+        "found zero residue, but cleanup is not claimed",
+        "owner-only quarantined receipt and 663-file snapshot remain intentionally retained",
+        ATTEMPT_002_CLOSURE_JSON.as_posix(),
+        "validates that retained evidence directly and independently of Git ignore state",
+        "current closure repair scope is exactly seven tracked paths",
+        "three exact evidence-root child patterns",
+        "do not create a broad `var` ignore",
         "one server-owned",
         "`synthetic_read_review_v1`",
         "`max_cycles=1`",
@@ -709,14 +823,13 @@ def _validate_document(document: str, failures: list[str]) -> None:
         "private recovery receipt is quarantined staged material, not successful published "
         "evidence",
         "There is no automatic retry",
-        "exact five true authority fields for Attempt 002 only",
-        "remaining 14 fields are false",
+        "Every one of the 19 authority fields is false",
+        "attempt budget is zero",
         "governed tool count remains exactly 24",
-        "No future child commit or tree is stated here",
-        "effective budget of one only when current `HEAD` is a clean single-parent immediate child",
-        "No concurrent invocation, automatic retry, or post-attempt rerun is authorized",
-        "makes no atomic, tamper-proof, persistent cross-process budget-consumption claim",
-        "requires immediate post-attempt closure",
+        "future attempt requires a separately repaired overlay candidate, independent exact "
+        "review, and a separate new-attempt disposition",
+        "Fixing the overlay does not restore authority",
+        "Attempt 001 history remains unchanged",
     ):
         if phrase not in normalized:
             failures.append(f"O4 execution authorization doc is missing phrase: {phrase}")
@@ -1025,7 +1138,7 @@ def _validate_attempt_002_disposition(
             ),
             "prior_attempt_roots": cast(list[JsonValue], PRIOR_ATTEMPT_ROOTS),
         },
-        "authority": EXPECTED_AUTHORITY,
+        "authority": ATTEMPT_002_AUTHORITY,
     }
     if not _exact_json_equal(disposition, expected):
         failures.append("O4 Attempt 002 disposition is not closed and exact")
@@ -1055,6 +1168,858 @@ def _validate_attempt_002_disposition(
     ):
         if phrase not in normalized:
             failures.append(f"O4 Attempt 002 disposition doc is missing phrase: {phrase}")
+
+
+def _validate_attempt_002_closure(
+    closure: JsonObject,
+    document: str,
+    failures: list[str],
+) -> None:
+    expected: JsonObject = {
+        "schema_version": "1",
+        "record_type": "local_v1_lv1_003_o4_attempt_closure",
+        "record_status": "ATTEMPT_002_CONSUMED_FIXED_COMPOSE_INVALID",
+        "ticket_id": "LV1-003",
+        "outcome_id": "O4",
+        "attempt_id": ATTEMPT_002_ID,
+        "attempted_candidate_commit": ATTEMPT_002_CANDIDATE_COMMIT,
+        "attempted_candidate_tree": ATTEMPT_002_CANDIDATE_TREE,
+        "operator_command": ATTEMPT_002_OPERATOR_COMMAND,
+        "module_command": PRODUCER_MODULE_INVOCATION,
+        "make_exit_code": 2,
+        "producer_exit_code": 1,
+        "failure_code": "fixed_compose_invalid",
+        "run_id": ATTEMPT_002_RUN_ID,
+        "compose_project": ATTEMPT_002_PROJECT,
+        "execution_boundary": {
+            "gate_entered": True,
+            "producer_runtime_entered": True,
+            "runtime_directory_created": True,
+            "receipt_directory_created": True,
+            "candidate_snapshot_created": True,
+            "docker_daemon_version_queried": True,
+            "docker_compose_version_queried": True,
+            "base_compose_config_quiet_succeeded": True,
+            "fixed_compose_config_quiet_succeeded": False,
+        },
+        "diagnosis": {
+            "diagnosis_only_command_authorized": False,
+            "observed_error": (
+                "services.ithildin-node.tmpfs[1]: target /tmp already mounted as "
+                "services.ithildin-node.tmpfs[0]"
+            ),
+            "root_cause": "base_and_overlay_tmpfs_list_merge_duplicates_tmp_target",
+            "overlay_repair_included": False,
+        },
+        "external_action_observation": {
+            "docker_mutation_performed": False,
+            "image_build_performed": False,
+            "container_created": False,
+            "volume_created": False,
+            "network_created": False,
+            "image_created": False,
+            "ollama_or_provider_called": False,
+            "api_service_started": False,
+            "node_enrollment_performed": False,
+            "hermes_invoked": False,
+            "credential_output_emitted": False,
+            "successful_evidence_created": False,
+        },
+        "read_only_residue_observation": {
+            "exact_project_label_containers": 0,
+            "exact_project_label_volumes": 0,
+            "exact_project_label_networks": 0,
+            "exact_run_specific_images": 0,
+            "cleanup_completed_claimed": False,
+            "general_docker_absence_claimed": False,
+        },
+        "retained_receipt": {
+            "receipt_root": f"var/local-v1-lv1-003-o4-receipts/{ATTEMPT_002_RUN_ID}",
+            "receipt_root_mode": "0700",
+            "disposition_path": (
+                f"var/local-v1-lv1-003-o4-receipts/{ATTEMPT_002_RUN_ID}/"
+                "disposition.json"
+            ),
+            "disposition_mode": "0600",
+            "disposition_status": "quarantined_not_published",
+            "disposition_sha256": (
+                "sha256:653e7cb4a656db714769cad329b49c55a194bb5223c911274a57c4a7abbef44b"
+            ),
+            "candidate_manifest_path": (
+                f"var/local-v1-lv1-003-o4-receipts/{ATTEMPT_002_RUN_ID}/"
+                "candidate-manifest.json"
+            ),
+            "candidate_manifest_mode": "0600",
+            "candidate_manifest_size_bytes": 96628,
+            "candidate_manifest_sha256": (
+                "sha256:ac9a119a083a786cfcead9cd5600a43350bc78cd2f500ffcc59f4969e34f087b"
+            ),
+            "candidate_snapshot_path": (
+                f"var/local-v1-lv1-003-o4-receipts/{ATTEMPT_002_RUN_ID}/candidate"
+            ),
+            "candidate_snapshot_mode": "0500",
+            "candidate_snapshot_file_count": 663,
+            "published_report_root_exists": False,
+        },
+        "runtime_posture": {
+            "run_directory_exists": False,
+            "runtime_plaintext_exists": False,
+            "runtime_base_exists": True,
+            "runtime_base_mode": "0700",
+            "runtime_base_empty": True,
+        },
+        "tracked_closure_scope": cast(
+            list[JsonValue],
+            CLOSURE_CONTROL_PATH_ALLOWLIST,
+        ),
+        "attempt_contract": {
+            "attempt_consumed": True,
+            "retry_authorized": False,
+            "automatic_retry_authorized": False,
+            "post_failure_execution_authorized": False,
+            "separately_repaired_overlay_candidate_required": True,
+            "independent_exact_review_required": True,
+            "separate_new_attempt_disposition_required": True,
+        },
+        "authority": CLOSED_AUTHORITY,
+    }
+    if not _exact_json_equal(closure, expected):
+        failures.append("O4 Attempt 002 closure is not closed and exact")
+    normalized = " ".join(document.split())
+    for phrase in (
+        "Status: `ATTEMPT_002_CONSUMED_FIXED_COMPOSE_INVALID`",
+        ATTEMPT_002_CANDIDATE_COMMIT,
+        ATTEMPT_002_CANDIDATE_TREE,
+        ATTEMPT_002_OPERATOR_COMMAND,
+        PRODUCER_MODULE_INVOCATION,
+        "Make exited `2`",
+        "producer exited `1` with refusal code `fixed_compose_invalid`",
+        ATTEMPT_002_RUN_ID,
+        ATTEMPT_002_PROJECT,
+        "gate and producer runtime were entered",
+        "fixed-overlay Compose config validation failed",
+        "target /tmp already mounted",
+        "does not repair the overlay",
+        "No Docker mutation, image build, container, volume, network, or image creation occurred",
+        "zero containers, volumes, networks, and images",
+        "not a claim that cleanup ran",
+        "runtime run directory and runtime plaintext are absent",
+        "quarantined_not_published",
+        "sha256:653e7cb4a656db714769cad329b49c55a194bb5223c911274a57c4a7abbef44b",
+        "sha256:ac9a119a083a786cfcead9cd5600a43350bc78cd2f500ffcc59f4969e34f087b",
+        "contains 663 files",
+        "no-follow owner identity and exact modes, sizes, digests, manifest paths, "
+        "snapshot bytes, and directory contents",
+        "current closure repair scope is exactly seven tracked paths",
+        "three exact evidence-root child patterns",
+        "without using a broad `var` ignore",
+        "all 19 authority fields are false",
+        "separately repaired overlay candidate, independent exact review, and a separate "
+        "new-attempt disposition",
+    ):
+        if phrase not in normalized:
+            failures.append(f"O4 Attempt 002 closure doc is missing phrase: {phrase}")
+
+
+def _directory_open_flags() -> int:
+    flags = os.O_RDONLY
+    if hasattr(os, "O_CLOEXEC"):
+        flags |= os.O_CLOEXEC
+    if hasattr(os, "O_DIRECTORY"):
+        flags |= os.O_DIRECTORY
+    if hasattr(os, "O_NOFOLLOW"):
+        flags |= os.O_NOFOLLOW
+    return flags
+
+
+def _file_open_flags() -> int:
+    flags = os.O_RDONLY
+    if hasattr(os, "O_CLOEXEC"):
+        flags |= os.O_CLOEXEC
+    if hasattr(os, "O_NOFOLLOW"):
+        flags |= os.O_NOFOLLOW
+    return flags
+
+
+def _owned_exact_directory(details: os.stat_result, mode: int) -> bool:
+    return (
+        stat.S_ISDIR(details.st_mode)
+        and stat.S_IMODE(details.st_mode) == mode
+        and details.st_uid == os.geteuid()
+        and details.st_gid == os.getegid()
+    )
+
+
+def _owned_directory(details: os.stat_result, mode: int | None = None) -> bool:
+    return (
+        stat.S_ISDIR(details.st_mode)
+        and (mode is None or stat.S_IMODE(details.st_mode) == mode)
+        and details.st_uid == os.geteuid()
+        and details.st_gid == os.getegid()
+    )
+
+
+def _same_inode(left: os.stat_result, right: os.stat_result) -> bool:
+    return (left.st_dev, left.st_ino) == (right.st_dev, right.st_ino)
+
+
+def _open_owned_directory(
+    path: Path,
+    mode: int,
+    label: str,
+    failures: list[str],
+) -> int | None:
+    try:
+        before = path.lstat()
+        if not _owned_exact_directory(before, mode):
+            failures.append(f"{label} is not an owner-owned {mode:04o} directory")
+            return None
+        descriptor = os.open(path, _directory_open_flags())
+        after = os.fstat(descriptor)
+    except OSError:
+        failures.append(f"{label} is unavailable or not no-follow")
+        return None
+    if not _same_inode(before, after) or not _owned_exact_directory(after, mode):
+        os.close(descriptor)
+        failures.append(f"{label} changed while it was opened")
+        return None
+    return descriptor
+
+
+def _open_repository_root(
+    repo_root: Path,
+    failures: list[str],
+) -> int | None:
+    try:
+        descriptor = os.open(repo_root, _directory_open_flags())
+        details = os.fstat(descriptor)
+    except OSError:
+        failures.append("O4 repository root is unavailable or not no-follow")
+        return None
+    if not _owned_directory(details):
+        os.close(descriptor)
+        failures.append("O4 repository root is not an owner-owned directory")
+        return None
+    return descriptor
+
+
+def _open_owned_child_directory_optional_mode(
+    parent_descriptor: int,
+    name: str,
+    mode: int | None,
+    label: str,
+    failures: list[str],
+) -> int | None:
+    try:
+        before = os.stat(name, dir_fd=parent_descriptor, follow_symlinks=False)
+        if not _owned_directory(before, mode):
+            mode_text = "expected-mode" if mode is None else f"{mode:04o}"
+            failures.append(
+                f"{label} is not an owner-owned {mode_text} directory"
+            )
+            return None
+        descriptor = os.open(
+            name,
+            _directory_open_flags(),
+            dir_fd=parent_descriptor,
+        )
+        after = os.fstat(descriptor)
+    except OSError:
+        failures.append(f"{label} is unavailable or not no-follow")
+        return None
+    if not _same_inode(before, after) or not _owned_directory(after, mode):
+        os.close(descriptor)
+        failures.append(f"{label} changed while it was opened")
+        return None
+    return descriptor
+
+
+def _open_owned_child_directory(
+    parent_descriptor: int,
+    name: str,
+    mode: int,
+    label: str,
+    failures: list[str],
+) -> int | None:
+    return _open_owned_child_directory_optional_mode(
+        parent_descriptor,
+        name,
+        mode,
+        label,
+        failures,
+    )
+
+
+def _open_repo_relative_directory(
+    repository_descriptor: int,
+    relative: Path,
+    *,
+    expected_modes: dict[str, int],
+    label: str,
+    failures: list[str],
+) -> int | None:
+    if not _safe_snapshot_relative_path(relative.as_posix()):
+        failures.append(f"{label} path is not a safe repository-relative path")
+        return None
+    current = os.dup(repository_descriptor)
+    traversed: list[str] = []
+    for component in relative.parts:
+        traversed.append(component)
+        relative_component = "/".join(traversed)
+        child = _open_owned_child_directory_optional_mode(
+            current,
+            component,
+            expected_modes.get(relative_component),
+            f"{label} component {relative_component}",
+            failures,
+        )
+        os.close(current)
+        if child is None:
+            return None
+        current = child
+    return current
+
+
+def _validate_repo_relative_absence(
+    repository_descriptor: int,
+    relative: Path,
+    *,
+    expected_parent_modes: dict[str, int],
+    label: str,
+    failures: list[str],
+) -> None:
+    if not _safe_snapshot_relative_path(relative.as_posix()):
+        failures.append(f"{label} path is not a safe repository-relative path")
+        return
+    current = os.dup(repository_descriptor)
+    traversed: list[str] = []
+    try:
+        for component in relative.parts[:-1]:
+            traversed.append(component)
+            relative_component = "/".join(traversed)
+            try:
+                details = os.stat(
+                    component,
+                    dir_fd=current,
+                    follow_symlinks=False,
+                )
+            except FileNotFoundError:
+                return
+            except OSError:
+                failures.append(f"{label} ancestor is unavailable or ambiguous")
+                return
+            expected_mode = expected_parent_modes.get(relative_component)
+            if not _owned_directory(details, expected_mode):
+                failures.append(
+                    f"{label} ancestor is not an owner-owned directory: "
+                    f"{relative_component}"
+                )
+                return
+            child = _open_owned_child_directory_optional_mode(
+                current,
+                component,
+                expected_mode,
+                f"{label} ancestor {relative_component}",
+                failures,
+            )
+            if child is None:
+                return
+            os.close(current)
+            current = child
+        try:
+            os.stat(
+                relative.parts[-1],
+                dir_fd=current,
+                follow_symlinks=False,
+            )
+        except FileNotFoundError:
+            return
+        except OSError:
+            failures.append(f"{label} absence is unavailable or ambiguous")
+        else:
+            failures.append(f"{label} is present")
+    finally:
+        os.close(current)
+
+
+def _read_owned_child_file(
+    parent_descriptor: int,
+    name: str,
+    *,
+    mode: int,
+    size: int,
+    digest: str,
+    label: str,
+    failures: list[str],
+) -> bytes | None:
+    descriptor = -1
+    try:
+        before = os.stat(name, dir_fd=parent_descriptor, follow_symlinks=False)
+        if (
+            not stat.S_ISREG(before.st_mode)
+            or stat.S_IMODE(before.st_mode) != mode
+            or before.st_uid != os.geteuid()
+            or before.st_gid != os.getegid()
+            or before.st_size != size
+        ):
+            failures.append(f"{label} metadata is not exact")
+            return None
+        descriptor = os.open(name, _file_open_flags(), dir_fd=parent_descriptor)
+        opened = os.fstat(descriptor)
+        if not _same_inode(before, opened):
+            failures.append(f"{label} changed while it was opened")
+            return None
+        content = bytearray()
+        while len(content) <= size:
+            chunk = os.read(descriptor, min(65536, size + 1 - len(content)))
+            if not chunk:
+                break
+            content.extend(chunk)
+        after = os.fstat(descriptor)
+    except OSError:
+        failures.append(f"{label} is unavailable or not a no-follow regular file")
+        return None
+    finally:
+        if descriptor >= 0:
+            os.close(descriptor)
+    raw = bytes(content)
+    if (
+        not _same_inode(opened, after)
+        or opened.st_size != after.st_size
+        or len(raw) != size
+        or "sha256:" + hashlib.sha256(raw).hexdigest() != digest
+    ):
+        failures.append(f"{label} content or digest is not exact")
+        return None
+    return raw
+
+
+def _safe_snapshot_relative_path(relative: object) -> bool:
+    if not isinstance(relative, str) or not relative:
+        return False
+    path = Path(relative)
+    return (
+        not path.is_absolute()
+        and path.as_posix() == relative
+        and all(part not in {"", ".", ".."} for part in path.parts)
+    )
+
+
+def _candidate_snapshot_from_git(
+    repo_root: Path,
+    manifest_files: dict[str, JsonValue],
+    failures: list[str],
+) -> dict[str, tuple[int, str, bytes]]:
+    try:
+        listing_result = subprocess.run(
+            [
+                "git",
+                "-C",
+                str(repo_root),
+                "ls-tree",
+                "-rz",
+                "--full-tree",
+                ATTEMPT_002_CANDIDATE_COMMIT,
+            ],
+            check=False,
+            capture_output=True,
+        )
+    except OSError:
+        failures.append("O4 Attempt 002 candidate tree inventory is unavailable")
+        return {}
+    if listing_result.returncode != 0:
+        failures.append("O4 Attempt 002 candidate tree inventory is unavailable")
+        return {}
+    inventory: dict[str, tuple[str, str]] = {}
+    for record in listing_result.stdout.split(b"\0"):
+        if not record:
+            continue
+        try:
+            raw_metadata, raw_path = record.split(b"\t", 1)
+            raw_mode, raw_type, raw_oid = raw_metadata.decode("ascii").split(" ", 2)
+            relative = raw_path.decode("utf-8")
+        except (ValueError, UnicodeError):
+            failures.append("O4 Attempt 002 candidate tree inventory is ambiguous")
+            return {}
+        if relative in manifest_files:
+            if (
+                raw_type != "blob"
+                or raw_mode not in {"100644", "100755"}
+                or not re.fullmatch(r"[0-9a-f]{40}", raw_oid)
+            ):
+                failures.append(
+                    f"O4 Attempt 002 candidate snapshot source is invalid: {relative}"
+                )
+                continue
+            inventory[relative] = (raw_mode, raw_oid)
+    if set(inventory) != set(manifest_files):
+        failures.append("O4 Attempt 002 manifest paths do not match candidate blobs")
+        return {}
+    ordered = sorted(inventory)
+    batch_input = b"".join(
+        inventory[relative][1].encode("ascii") + b"\n" for relative in ordered
+    )
+    try:
+        batch_result = subprocess.run(
+            ["git", "-C", str(repo_root), "cat-file", "--batch"],
+            input=batch_input,
+            check=False,
+            capture_output=True,
+        )
+    except OSError:
+        failures.append("O4 Attempt 002 candidate blob content is unavailable")
+        return {}
+    if batch_result.returncode != 0:
+        failures.append("O4 Attempt 002 candidate blob content is unavailable")
+        return {}
+    cursor = 0
+    total = 0
+    expected: dict[str, tuple[int, str, bytes]] = {}
+    for relative in ordered:
+        header_end = batch_result.stdout.find(b"\n", cursor)
+        if header_end < 0:
+            failures.append("O4 Attempt 002 candidate blob batch is truncated")
+            return {}
+        header = batch_result.stdout[cursor:header_end].split()
+        cursor = header_end + 1
+        if (
+            len(header) != 3
+            or header[0].decode("ascii", errors="ignore")
+            != inventory[relative][1]
+            or header[1] != b"blob"
+        ):
+            failures.append("O4 Attempt 002 candidate blob batch is ambiguous")
+            return {}
+        try:
+            size = int(header[2])
+        except ValueError:
+            failures.append("O4 Attempt 002 candidate blob size is invalid")
+            return {}
+        if size < 0 or size > MAX_RETAINED_SNAPSHOT_FILE_BYTES:
+            failures.append(
+                f"O4 Attempt 002 candidate blob exceeds size ceiling: {relative}"
+            )
+            return {}
+        content = batch_result.stdout[cursor : cursor + size]
+        cursor += size
+        if len(content) != size or batch_result.stdout[cursor : cursor + 1] != b"\n":
+            failures.append("O4 Attempt 002 candidate blob batch is truncated")
+            return {}
+        cursor += 1
+        total += size
+        if total > MAX_RETAINED_SNAPSHOT_BYTES:
+            failures.append("O4 Attempt 002 candidate snapshot exceeds size ceiling")
+            return {}
+        snapshot_mode = 0o500 if inventory[relative][0] == "100755" else 0o400
+        expected[relative] = (
+            snapshot_mode,
+            "sha256:" + hashlib.sha256(content).hexdigest(),
+            content,
+        )
+    if cursor != len(batch_result.stdout):
+        failures.append("O4 Attempt 002 candidate blob batch has trailing output")
+        return {}
+    return expected
+
+
+def _validate_snapshot_directory(
+    descriptor: int,
+    expected: dict[str, tuple[int, str, bytes]],
+    failures: list[str],
+    *,
+    prefix: str = "",
+    seen: set[str] | None = None,
+) -> set[str]:
+    observed = set() if seen is None else seen
+    try:
+        names = sorted(os.listdir(descriptor))
+    except OSError:
+        failures.append("O4 Attempt 002 snapshot directory cannot be enumerated")
+        return observed
+    expected_directories = {
+        parent.as_posix()
+        for relative in expected
+        for parent in Path(relative).parents
+        if parent != Path(".")
+    }
+    for name in names:
+        if name in {"", ".", ".."} or "/" in name:
+            failures.append("O4 Attempt 002 snapshot contains an invalid entry name")
+            continue
+        relative = f"{prefix}/{name}" if prefix else name
+        try:
+            details = os.stat(name, dir_fd=descriptor, follow_symlinks=False)
+        except OSError:
+            failures.append(f"O4 Attempt 002 snapshot entry is unavailable: {relative}")
+            continue
+        if stat.S_ISDIR(details.st_mode):
+            if relative not in expected_directories:
+                failures.append(
+                    f"O4 Attempt 002 snapshot contains an extra directory: {relative}"
+                )
+            child = _open_owned_child_directory(
+                descriptor,
+                name,
+                0o500,
+                f"O4 Attempt 002 snapshot directory {relative}",
+                failures,
+            )
+            if child is None:
+                continue
+            try:
+                _validate_snapshot_directory(
+                    child,
+                    expected,
+                    failures,
+                    prefix=relative,
+                    seen=observed,
+                )
+            finally:
+                os.close(child)
+            continue
+        if not stat.S_ISREG(details.st_mode):
+            failures.append(
+                f"O4 Attempt 002 snapshot contains a symlink or special entry: {relative}"
+            )
+            continue
+        expectation = expected.get(relative)
+        if expectation is None:
+            failures.append(f"O4 Attempt 002 snapshot contains an extra file: {relative}")
+            continue
+        mode, digest, content = expectation
+        actual = _read_owned_child_file(
+            descriptor,
+            name,
+            mode=mode,
+            size=len(content),
+            digest=digest,
+            label=f"O4 Attempt 002 snapshot file {relative}",
+            failures=failures,
+        )
+        if actual is not None and actual != content:
+            failures.append(f"O4 Attempt 002 snapshot file content differs: {relative}")
+        observed.add(relative)
+    return observed
+
+
+def _validate_attempt_002_runtime_posture_from_descriptor(
+    repository_descriptor: int,
+    failures: list[str],
+) -> None:
+    runtime_base = _open_repo_relative_directory(
+        repository_descriptor,
+        ATTEMPT_002_RUNTIME_BASE,
+        expected_modes={ATTEMPT_002_RUNTIME_BASE.as_posix(): 0o700},
+        label="O4 Attempt 002 runtime base",
+        failures=failures,
+    )
+    if runtime_base is not None:
+        try:
+            if os.listdir(runtime_base):
+                failures.append("O4 Attempt 002 runtime base is not empty")
+        except OSError:
+            failures.append("O4 Attempt 002 runtime base cannot be enumerated")
+        finally:
+            os.close(runtime_base)
+    for path, parent_modes, label in (
+        (
+            ATTEMPT_002_RUNTIME_ROOT,
+            {ATTEMPT_002_RUNTIME_BASE.as_posix(): 0o700},
+            "O4 Attempt 002 runtime run directory or plaintext",
+        ),
+        (
+            ATTEMPT_002_REPORT_ROOT,
+            {},
+            "O4 Attempt 002 published report root",
+        ),
+    ):
+        _validate_repo_relative_absence(
+            repository_descriptor,
+            path,
+            expected_parent_modes=parent_modes,
+            label=label,
+            failures=failures,
+        )
+
+
+def _validate_attempt_002_runtime_posture(
+    repo_root: Path,
+    failures: list[str],
+) -> None:
+    repository_descriptor = _open_repository_root(repo_root, failures)
+    if repository_descriptor is None:
+        return
+    try:
+        _validate_attempt_002_runtime_posture_from_descriptor(
+            repository_descriptor,
+            failures,
+        )
+    finally:
+        os.close(repository_descriptor)
+
+
+def _validate_retained_attempt_002_evidence(
+    repo_root: Path,
+    failures: list[str],
+) -> None:
+    repository_descriptor = _open_repository_root(repo_root, failures)
+    if repository_descriptor is None:
+        return
+    _validate_attempt_002_runtime_posture_from_descriptor(
+        repository_descriptor,
+        failures,
+    )
+    receipt_base = _open_repo_relative_directory(
+        repository_descriptor,
+        ATTEMPT_002_RECEIPT_BASE,
+        expected_modes={ATTEMPT_002_RECEIPT_BASE.as_posix(): 0o700},
+        label="O4 Attempt 002 receipt base",
+        failures=failures,
+    )
+    os.close(repository_descriptor)
+    if receipt_base is None:
+        return
+    try:
+        if sorted(os.listdir(receipt_base)) != [ATTEMPT_002_RUN_ID]:
+            failures.append("O4 Attempt 002 receipt base entries are not exact")
+        receipt_root = _open_owned_child_directory(
+            receipt_base,
+            ATTEMPT_002_RUN_ID,
+            0o700,
+            "O4 Attempt 002 receipt root",
+            failures,
+        )
+    except OSError:
+        failures.append("O4 Attempt 002 receipt base cannot be enumerated")
+        receipt_root = None
+    finally:
+        os.close(receipt_base)
+    if receipt_root is None:
+        return
+    try:
+        try:
+            if sorted(os.listdir(receipt_root)) != [
+                "candidate",
+                "candidate-manifest.json",
+                "disposition.json",
+            ]:
+                failures.append("O4 Attempt 002 receipt root entries are not exact")
+        except OSError:
+            failures.append("O4 Attempt 002 receipt root cannot be enumerated")
+        disposition = _read_owned_child_file(
+            receipt_root,
+            "disposition.json",
+            mode=0o600,
+            size=len(ATTEMPT_002_DISPOSITION_BYTES),
+            digest=ATTEMPT_002_DISPOSITION_RECEIPT_DIGEST,
+            label="O4 Attempt 002 quarantine disposition",
+            failures=failures,
+        )
+        if (
+            disposition is not None
+            and disposition != ATTEMPT_002_DISPOSITION_BYTES
+        ):
+            failures.append("O4 Attempt 002 quarantine disposition content is not exact")
+        manifest_bytes = _read_owned_child_file(
+            receipt_root,
+            "candidate-manifest.json",
+            mode=0o600,
+            size=ATTEMPT_002_MANIFEST_SIZE,
+            digest=ATTEMPT_002_MANIFEST_RECEIPT_DIGEST,
+            label="O4 Attempt 002 candidate manifest",
+            failures=failures,
+        )
+        snapshot = _open_owned_child_directory(
+            receipt_root,
+            "candidate",
+            0o500,
+            "O4 Attempt 002 snapshot root",
+            failures,
+        )
+    finally:
+        os.close(receipt_root)
+    if manifest_bytes is None or snapshot is None:
+        if snapshot is not None:
+            os.close(snapshot)
+        return
+    try:
+        try:
+            manifest = json.loads(
+                manifest_bytes.decode("utf-8"),
+                object_pairs_hook=_reject_duplicates,
+            )
+        except (UnicodeError, json.JSONDecodeError, ValueError):
+            failures.append("O4 Attempt 002 candidate manifest is ambiguous")
+            return
+        if not isinstance(manifest, dict) or set(manifest) != {
+            "candidate_commit",
+            "candidate_tree",
+            "files",
+        }:
+            failures.append("O4 Attempt 002 candidate manifest fields are not exact")
+            return
+        if (
+            manifest.get("candidate_commit") != ATTEMPT_002_CANDIDATE_COMMIT
+            or manifest.get("candidate_tree") != ATTEMPT_002_CANDIDATE_TREE
+        ):
+            failures.append("O4 Attempt 002 candidate manifest identity is not exact")
+        raw_files = manifest.get("files")
+        if not isinstance(raw_files, dict) or len(raw_files) != (
+            ATTEMPT_002_SNAPSHOT_FILE_COUNT
+        ):
+            failures.append("O4 Attempt 002 candidate manifest file count is not exact")
+            return
+        manifest_files = cast(dict[str, JsonValue], raw_files)
+        for relative, value in manifest_files.items():
+            if (
+                not _safe_snapshot_relative_path(relative)
+                or not isinstance(value, dict)
+                or set(value) != {"mode", "sha256"}
+                or type(value.get("mode")) is not int
+                or value.get("mode") not in {0o400, 0o500}
+                or not isinstance(value.get("sha256"), str)
+                or re.fullmatch(
+                    r"sha256:[0-9a-f]{64}",
+                    cast(str, value.get("sha256")),
+                )
+                is None
+            ):
+                failures.append(
+                    f"O4 Attempt 002 candidate manifest entry is invalid: {relative}"
+                )
+        expected = _candidate_snapshot_from_git(repo_root, manifest_files, failures)
+        if len(expected) != ATTEMPT_002_SNAPSHOT_FILE_COUNT:
+            return
+        for relative, (mode, digest, _) in expected.items():
+            value = manifest_files[relative]
+            if (
+                not isinstance(value, dict)
+                or not _exact_json_equal(value.get("mode"), mode)
+                or not _exact_json_equal(value.get("sha256"), digest)
+            ):
+                failures.append(
+                    f"O4 Attempt 002 candidate manifest binding differs: {relative}"
+                )
+        observed = _validate_snapshot_directory(snapshot, expected, failures)
+        if observed != set(expected):
+            failures.append("O4 Attempt 002 snapshot file inventory is not exact")
+        if len(observed) != ATTEMPT_002_SNAPSHOT_FILE_COUNT:
+            failures.append("O4 Attempt 002 snapshot file count is not exact")
+    finally:
+        os.close(snapshot)
+
+
+def _validate_evidence_ignore_patterns(
+    repo_root: Path,
+    failures: list[str],
+) -> None:
+    document = _read_text(repo_root / ".gitignore", failures)
+    lines = document.splitlines()
+    for pattern in EVIDENCE_IGNORE_PATTERNS:
+        if lines.count(pattern) != 1:
+            failures.append(f"O4 evidence ignore pattern is not exact: {pattern}")
+    if any(line.strip() in {"var/*", "/var/*", "var/**", "/var/**"} for line in lines):
+        failures.append("O4 evidence ignore posture contains a broad var pattern")
 
 
 def _validate_bound_documents(repo_root: Path, failures: list[str]) -> None:
@@ -1090,6 +2055,16 @@ def _validate_bound_documents(repo_root: Path, failures: list[str]) -> None:
             ATTEMPT_002_DISPOSITION_DOCUMENT,
             ATTEMPT_002_DISPOSITION_DOCUMENT_DIGEST,
             "Attempt 002 disposition document",
+        ),
+        (
+            ATTEMPT_002_CLOSURE_JSON,
+            ATTEMPT_002_CLOSURE_JSON_DIGEST,
+            "Attempt 002 closure JSON",
+        ),
+        (
+            ATTEMPT_002_CLOSURE_DOCUMENT,
+            ATTEMPT_002_CLOSURE_DOCUMENT_DIGEST,
+            "Attempt 002 closure document",
         ),
     ):
         if _file_digest(repo_root / path, failures) != expected:
@@ -1413,6 +2388,35 @@ def _validate_attempted_candidate_binding(
         and _digest(historical_contract) != ATTEMPTED_AUTHORIZATION_CONTRACT_DIGEST
     ):
         failures.append("O4 Attempt 001 authorization contract digest is invalid")
+
+
+def _validate_attempt_002_candidate_binding(
+    repo_root: Path,
+    failures: list[str],
+) -> None:
+    tree = _git(
+        repo_root,
+        ["show", "-s", "--format=%T", ATTEMPT_002_CANDIDATE_COMMIT],
+        failures,
+    )
+    if tree != ATTEMPT_002_CANDIDATE_TREE:
+        failures.append("O4 Attempt 002 candidate tree is invalid")
+    ancestry = subprocess.run(
+        [
+            "git",
+            "-C",
+            str(repo_root),
+            "merge-base",
+            "--is-ancestor",
+            ATTEMPT_002_CANDIDATE_COMMIT,
+            "HEAD",
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    if ancestry.returncode != 0:
+        failures.append("O4 Attempt 002 candidate is not an ancestor of the closure")
 
 
 def _validate_recorded_root_absence(

@@ -1,9 +1,9 @@
 # Local v1 LV1-003 O4 Execution Authorization Gate
 
-Status: `AUTHORIZED_ATTEMPT_002_SUPERVISED_ONE_ATTEMPT_CHILD`
+Status: `ATTEMPT_002_CONSUMED_FIXED_COMPOSE_INVALID`
 
-This gate preserves the consumed Attempt 001 closure and separately authorizes at most one
-manager-supervised Attempt 002 invocation. Its machine contract is
+This gate preserves both consumed attempt histories and grants no further execution. Its machine
+contract is
 `docs/codex/local-v1-lv1-003-o4-execution-authorization.json`.
 
 The gate preserves the reviewed fixed bridge and bounded producer implementation at
@@ -47,6 +47,33 @@ This repair does not restore the consumed Attempt 001. The repaired candidate
 High, Medium, or Low findings. The distinct Attempt 002 disposition is
 `docs/codex/local-v1-lv1-003-o4-attempt-002-disposition.json`. The live Make target remains outside
 release, milestone, static, and authorization-check dependencies.
+
+## Attempt 002 Result
+
+Candidate `02c78966f9096870e0f8744ba42116bb364ecfcd`, tree
+`a26b90fee43120a0b9a34f09fc4b75f6fcf07e99`, was invoked through the exact operator and module
+commands. Make exited `2`; the producer exited `1` with `fixed_compose_invalid`. The exact run and
+project identities were `20260725T114755Z-c46245d0` and `ithildin-local-v1-o4-c46245d0`.
+
+The gate and runtime were entered, and private runtime, receipt, and candidate-snapshot material was
+created. Only Docker/Compose version queries and Compose config validation occurred. The base config
+passed; fixed-overlay config failed because the base-plus-overlay `tmpfs` list merge duplicated the
+`/tmp` mount target. No overlay repair is included here.
+
+No Docker mutation/build/resource creation, provider call, API start, Node enrollment, Hermes
+invocation, credential output, or successful evidence occurred. Exact project-label and run-image
+inspection found zero residue, but cleanup is not claimed.
+
+The runtime run directory and plaintext are absent; the empty owner-only runtime base remains. The
+owner-only quarantined receipt and 663-file snapshot remain intentionally retained. The disposition
+and candidate-manifest digests are bound in
+`docs/codex/local-v1-lv1-003-o4-attempt-002-closure.json`; no published report exists.
+
+The gate validates that retained evidence directly and independently of Git ignore state. It uses
+no-follow reads and requires exact owner identity, modes, sizes, digests, manifest paths, snapshot
+contents, an empty runtime base, and an absent published report. The current closure repair scope is
+exactly seven tracked paths, including `.gitignore`; its three exact evidence-root child patterns do
+not create a broad `var` ignore and do not suppress gate inspection.
 
 ## Historical Attempt Ceiling
 
@@ -116,19 +143,12 @@ the sole attempt; a routing failure consumes that attempt and permits no retry.
 ## Current Disposition
 
 `producer_code_authorized`, `docker_lifecycle_authorized`, `live_hermes_execution_authorized`,
-`model_provider_access_authorized`, and `o4_evidence_execution_authorized` are the exact five true
-authority fields for Attempt 002 only. The remaining 14 fields are false. Release, promotion,
-production, UAT, credential custody, runner lifecycle, arbitrary host control, generic process
-control, shell execution, Docker socket access, non-bypass claims, new powers, and new tools remain
-unauthorized. The governed tool count remains exactly 24.
+`model_provider_access_authorized`, and `o4_evidence_execution_authorized` are now false. Every one
+of the 19 authority fields is false, the attempt budget is zero, and retry is unauthorized. Release,
+promotion, production, UAT, credential custody, runner lifecycle, arbitrary host control, generic
+process control, shell execution, Docker socket access, non-bypass claims, new powers, and new tools
+remain unauthorized. The governed tool count remains exactly 24.
 
-No future child commit or tree is stated here. The gate grants an effective budget of one only when
-current `HEAD` is a clean single-parent immediate child of `88c707f1c90d5807a81412ea7790b3a0b94e2f85`
-with the exact seven-path control diff, runtime parity to
-`5dab3654391c14fe214a9dfe302c099d0fe5fbf8`, repaired-entrypoint parity to the parent, exact review
-and disposition digests, and safe empty-or-absent attempt roots. Otherwise the effective budget and
-all authority are false.
-
-No concurrent invocation, automatic retry, or post-attempt rerun is authorized. The gate makes no
-atomic, tamper-proof, persistent cross-process budget-consumption claim. Any Attempt 002 invocation
-requires immediate post-attempt closure before another run.
+A future attempt requires a separately repaired overlay candidate, independent exact review, and a
+separate new-attempt disposition. Fixing the overlay does not restore authority. Attempt 001
+history remains unchanged.
