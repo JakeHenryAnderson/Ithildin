@@ -20,12 +20,22 @@ COPY apps ./apps
 COPY packages ./packages
 
 RUN uv sync --frozen --no-dev \
+    && chmod -R a+rX /app/.venv /app/apps /app/packages \
     && groupadd --gid 10002 ithildin-node \
     && useradd --uid 10002 --gid ithildin-node --home-dir /nonexistent --no-create-home ithildin-node \
     && mkdir -p /var/lib/ithildin-node /tmp/ithildin-node \
     && chown -R 10002:10002 /var/lib/ithildin-node /tmp/ithildin-node
 
 USER 10002:10002
+
+RUN test -x /app \
+    && test -x /app/.venv \
+    && test -x /app/.venv/bin \
+    && test -x /app/apps \
+    && test -x /app/apps/node \
+    && test -x /app/.venv/bin/python \
+    && test -r /app/apps/node/src/ithildin_node/__main__.py \
+    && test -r /app/apps/node/src/ithildin_node/service.py
 
 ENTRYPOINT ["python", "-m", "ithildin_node"]
 CMD ["run", "--state", "/var/lib/ithildin-node/state.json", "--configuration", "/var/lib/ithildin-node/configuration.json", "--deployment-topology", "docker_sidecar"]
