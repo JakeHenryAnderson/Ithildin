@@ -1,9 +1,11 @@
 # Local v1 LV1-003 O4 Execution Authorization Gate
 
-Status: `ATTEMPT_003_CLOSED_RECOVERY_REQUIRED_NO_AUTHORITY`
+Status: `AUTHORIZE_ATTEMPT_004_SUPERVISED_ONE_ATTEMPT_IMMEDIATE_CHILD`
 
-This gate preserves all three consumed attempt histories and authorizes no execution, retry,
-recovery action, cleanup, or image removal. Its machine contract is
+This gate preserves all three consumed attempt histories, the consumed and closed Attempt 003 image
+recovery, and authorizes exactly one central-manager-supervised Attempt 004 invocation through
+`make local-v1-lv1-003-o4-producer-run`. It authorizes no concurrent invocation, automatic retry,
+recovery rerun, or post-attempt rerun. Its machine contract is
 `docs/codex/local-v1-lv1-003-o4-execution-authorization.json`.
 
 The gate preserves the reviewed fixed bridge and bounded producer implementation at
@@ -19,6 +21,14 @@ that child commit and tree only after every check passes; it contains no future 
 That authorization was exercised once by candidate
 `9a9e10a083ee9019b58d49d5099040e18bfbb7f2`, tree
 `aa3eecea481dd5c92925ceec3421c051c63cb3cf`, and is no longer live.
+
+The machine contract's generic `candidate_parent_commit` and `candidate_parent_tree` fields now
+refer only to the current Attempt 004 parent
+`49db93d80a71855d9ae223826a9849749377c376`, tree
+`23950855584316daba76acd65be0bfdfd20fbcb9`. The older
+`86e75f0cf7f92ceb33218f2a66a00668f4da9e12`, tree
+`11d9a752b8e08b483e1d8b9a347a06b5d8bf9af7`, remains explicit historical post-review lineage and
+code-authorization identity only; it is not the current execution candidate parent.
 
 ## Attempt 001 Result
 
@@ -118,9 +128,79 @@ Docker absence, completed cleanup, or authority to remove an image.
 
 The owner-only Attempt 003 receipt retains a 119-byte exact quarantine disposition, a 96,628-byte
 manifest bound to the attempted commit/tree, and a 663-file exact candidate snapshot. The runtime
-base is empty `0700`, and the report base is absent. The validator directly and independently
+run directory was absent and the runtime base was empty `0700` at closure, before the separately
+authorized recovery. The report base remains absent. The validator directly and independently
 validates the exact Attempt 002 and Attempt 003 retained receipts and rejects any missing, changed,
 unknown, extra, symlink, or special run, file, directory, manifest, or snapshot entry.
+
+## Attempt 003 Image Recovery Closure
+
+The one-shot image recovery was consumed by exact recovery candidate
+`2051a136e13bacbee4e3fcec332fc4ef78698e73`, tree
+`e0cb7285e720c38a1e071536d7bd25e2bc7caa4e`, and durably closed at commit
+`bdde370917f11fd9763954a53885d81a4a28b864`, tree
+`465de2881a782e30af0696b8bb534161a0336acd`. The durable recovery closure is
+`docs/codex/local-v1-lv1-003-o4-image-recovery-closure.json`.
+
+The owner-only `0700` runtime base now contains exactly one retained entry:
+`var/local-v1-lv1-003-o4-runtime/attempt-003-image-recovery-001-consumed.json`. That owner-only
+`0600` regular file is exactly 336 bytes with digest
+`sha256:df7ce1a69c5fc3b27011f788f846bb5b385ed6f3d348ceb6c78d12de9366ca3c`.
+It binds recovery ID `LV1-003-O4-ATTEMPT-003-IMAGE-RECOVERY-001`, the exact recovery candidate,
+status `consumed_before_docker_inspection`, and retry false.
+
+The validator requires that exact receipt and rejects a missing, changed, extra, symlink, or special
+runtime entry with descriptor-anchored no-follow reads. The receipt remains durable consumption
+evidence, not successful O4 evidence. Receipt deletion or mutation is not authorized.
+
+The successful recovery result removed the three exact Attempt 003 image IDs and separately
+observed the three IDs, four run references, and exact-project containers, volumes, and networks
+absent. Those were exact-run-scoped point-in-time postconditions, not ongoing live truth, general
+Docker absence, or a non-bypass claim. The recovery budget remains zero and recovery retry remains
+false.
+
+## Runtime-Native Repair Review
+
+Exact commit `49db93d80a71855d9ae223826a9849749377c376`, tree
+`23950855584316daba76acd65be0bfdfd20fbcb9`, received independent GPT-5.6 Sol xhigh read-only
+review with Critical: 0, High: 0, Medium: 0, Low: 0 and exact-commit disposition `GO`. The durable
+review is `docs/codex/local-v1-lv1-003-o4-runtime-native-repair-exact-review.md`.
+
+The repaired bridge Dockerfile digest is
+`sha256:a175feecf1fe08bb1f750fecda51ea57ec17cdfd117f0bb36cddfc7f59bc356e`.
+It creates the Ithildin virtual environment with `/usr/bin/python3` inside the exact pinned Hermes
+runtime lineage and asserts Python 3.12 or later plus the native interpreter relationship in both
+stages. It does not transplant a virtual environment from a foreign build image.
+
+The repaired producer digest is
+`sha256:d191f58f1b63245499b1447e5e67f21dc638b6a8ad3881a777574c9a7d010f55`.
+After every successful build it binds each run image to the exact inspected full image ID,
+reference, project/service labels, platform, config, and layers. Cleanup reconciles those identities,
+refuses drift or ancestor-container residue, removes only exact bound IDs without force, and proves
+the exact bound IDs and references absent. A bounded secret-free diagnostic receipt preserves stable
+primary and cleanup failure classifications separately without persisting raw command output,
+credentials, provider/model content, arbitrary paths, or tool results.
+
+## Attempt 004 Candidate And Authority
+
+Attempt `LV1-003-O4-ATTEMPT-004` is authorized only for a clean, single-parent immediate child of
+the reviewed runtime-native repair commit and tree. No future child commit or tree is stated here.
+The gate derives the execution candidate only after every check passes and requires the committed
+diff to equal this exact seven-path control allowlist:
+
+1. `Makefile`
+2. `README.md`
+3. `docs/codex/local-v1-lv1-003-o4-execution-authorization.json`
+4. `docs/codex/local-v1-lv1-003-o4-execution-authorization.md`
+5. `docs/codex/local-v1-lv1-003-o4-runtime-native-repair-exact-review.md`
+6. `scripts/local_v1_lv1_003_o4_execution_authorization_check.py`
+7. `tests/test_local_v1_lv1_003_o4_execution_authorization_check.py`
+
+The execution attempt budget is one, `attempt_consumed` is false, and retry is false. The sole
+operator command is `make local-v1-lv1-003-o4-producer-run`, whose exact module command remains
+`uv run python -m scripts.local_v1_lv1_003_o4_producer`. The gate does not claim atomic,
+tamper-proof, persistent cross-process budget consumption. Any invocation outcome consumes Attempt
+004 and requires an immediate separate post-attempt disposition before any further execution.
 
 ## Historical Attempt Ceiling
 
@@ -188,11 +268,16 @@ inventory entry `gemma4:e4b`. This closure makes no provider-route success or ab
 
 ## Current Disposition
 
-Attempts 001, 002, and 003 are consumed. All 19 authority fields are false. The attempt budget is
-zero; retry, automatic retry, post-failure execution, recovery action, cleanup, and image removal
-are unauthorized.
+Attempts 001, 002, and 003 are consumed. Attempt 003 image recovery is consumed and closed. Attempt
+004 is unconsumed with budget one and no retry.
 
-Release, promotion, production, UAT, credential custody, runner lifecycle, arbitrary host control,
-generic process control, shell execution, Docker socket access, non-bypass claims, new powers, and
-new tools remain unauthorized. The governed tool count remains exactly 24. Any recovery or new
-attempt requires a separate disposition and proportional independent review.
+Exactly five authority fields are true only for the one dynamically validated,
+central-manager-supervised Attempt 004 invocation: `producer_code_authorized`,
+`docker_lifecycle_authorized`, `live_hermes_execution_authorized`,
+`model_provider_access_authorized`, and `o4_evidence_execution_authorized`. The remaining 14
+authority fields are false.
+
+Credential custody, runner lifecycle, arbitrary host control, generic process control, shell
+execution, general Docker socket authority, network/filesystem non-bypass claims, new powers, new
+tools, release, promotion, production, and UAT remain unauthorized. The 24-tool/no-new-powers
+boundary is unchanged and the governed tool count remains exactly 24.

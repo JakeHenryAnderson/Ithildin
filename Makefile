@@ -61,7 +61,7 @@ local-v1-lv1-003-o4-producer-static-check:
 		tests/test_local_v1_constrained_mission_journey.py \
 		-q
 
-# LIVE, gate-protected operator entrypoint. The consumed Attempt 001 disposition currently refuses.
+# LIVE, gate-protected Attempt 004 entrypoint. Exact clean child, one supervised invocation, no retry.
 local-v1-lv1-003-o4-producer-run:
 	uv run python -m scripts.local_v1_lv1_003_o4_producer
 

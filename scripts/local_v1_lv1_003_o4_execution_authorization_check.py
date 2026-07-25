@@ -23,69 +23,50 @@ ROOT = Path(__file__).resolve().parents[1]
 CONTRACT = Path("docs/codex/local-v1-lv1-003-o4-execution-authorization.json")
 DOCUMENT = Path("docs/codex/local-v1-lv1-003-o4-execution-authorization.md")
 PRODUCER_CONTRACT = Path("docs/codex/local-v1-lv1-003-o4-producer-contract.md")
-PRODUCER_EXACT_REVIEW = Path(
-    "docs/codex/local-v1-lv1-003-o4-producer-exact-review.md"
+PRODUCER_EXACT_REVIEW = Path("docs/codex/local-v1-lv1-003-o4-producer-exact-review.md")
+DISPOSITION_JSON = Path("docs/codex/local-v1-lv1-003-o4-post-review-disposition.json")
+DISPOSITION_DOCUMENT = Path("docs/codex/local-v1-lv1-003-o4-post-review-disposition.md")
+ATTEMPT_DISPOSITION_JSON = Path("docs/codex/local-v1-lv1-003-o4-attempt-001-disposition.json")
+ATTEMPT_DISPOSITION_DOCUMENT = Path("docs/codex/local-v1-lv1-003-o4-attempt-001-disposition.md")
+ENTRYPOINT_REPAIR_REVIEW = Path("docs/codex/local-v1-lv1-003-o4-entrypoint-repair-exact-review.md")
+ATTEMPT_002_DISPOSITION_JSON = Path("docs/codex/local-v1-lv1-003-o4-attempt-002-disposition.json")
+ATTEMPT_002_DISPOSITION_DOCUMENT = Path("docs/codex/local-v1-lv1-003-o4-attempt-002-disposition.md")
+ATTEMPT_002_CLOSURE_JSON = Path("docs/codex/local-v1-lv1-003-o4-attempt-002-closure.json")
+ATTEMPT_002_CLOSURE_DOCUMENT = Path("docs/codex/local-v1-lv1-003-o4-attempt-002-closure.md")
+COMPOSE_REPAIR_REVIEW = Path("docs/codex/local-v1-lv1-003-o4-compose-repair-exact-review.md")
+ATTEMPT_003_DISPOSITION_JSON = Path("docs/codex/local-v1-lv1-003-o4-attempt-003-disposition.json")
+ATTEMPT_003_DISPOSITION_DOCUMENT = Path("docs/codex/local-v1-lv1-003-o4-attempt-003-disposition.md")
+ATTEMPT_003_CLOSURE_JSON = Path("docs/codex/local-v1-lv1-003-o4-attempt-003-closure.json")
+ATTEMPT_003_CLOSURE_DOCUMENT = Path("docs/codex/local-v1-lv1-003-o4-attempt-003-closure.md")
+IMAGE_RECOVERY_AUTHORIZATION = Path(
+    "docs/codex/local-v1-lv1-003-o4-image-recovery-authorization.json"
 )
-DISPOSITION_JSON = Path(
-    "docs/codex/local-v1-lv1-003-o4-post-review-disposition.json"
+IMAGE_RECOVERY_AUTHORIZATION_DOCUMENT = Path(
+    "docs/codex/local-v1-lv1-003-o4-image-recovery-authorization.md"
 )
-DISPOSITION_DOCUMENT = Path(
-    "docs/codex/local-v1-lv1-003-o4-post-review-disposition.md"
-)
-ATTEMPT_DISPOSITION_JSON = Path(
-    "docs/codex/local-v1-lv1-003-o4-attempt-001-disposition.json"
-)
-ATTEMPT_DISPOSITION_DOCUMENT = Path(
-    "docs/codex/local-v1-lv1-003-o4-attempt-001-disposition.md"
-)
-ENTRYPOINT_REPAIR_REVIEW = Path(
-    "docs/codex/local-v1-lv1-003-o4-entrypoint-repair-exact-review.md"
-)
-ATTEMPT_002_DISPOSITION_JSON = Path(
-    "docs/codex/local-v1-lv1-003-o4-attempt-002-disposition.json"
-)
-ATTEMPT_002_DISPOSITION_DOCUMENT = Path(
-    "docs/codex/local-v1-lv1-003-o4-attempt-002-disposition.md"
-)
-ATTEMPT_002_CLOSURE_JSON = Path(
-    "docs/codex/local-v1-lv1-003-o4-attempt-002-closure.json"
-)
-ATTEMPT_002_CLOSURE_DOCUMENT = Path(
-    "docs/codex/local-v1-lv1-003-o4-attempt-002-closure.md"
-)
-COMPOSE_REPAIR_REVIEW = Path(
-    "docs/codex/local-v1-lv1-003-o4-compose-repair-exact-review.md"
-)
-ATTEMPT_003_DISPOSITION_JSON = Path(
-    "docs/codex/local-v1-lv1-003-o4-attempt-003-disposition.json"
-)
-ATTEMPT_003_DISPOSITION_DOCUMENT = Path(
-    "docs/codex/local-v1-lv1-003-o4-attempt-003-disposition.md"
-)
-ATTEMPT_003_CLOSURE_JSON = Path(
-    "docs/codex/local-v1-lv1-003-o4-attempt-003-closure.json"
-)
-ATTEMPT_003_CLOSURE_DOCUMENT = Path(
-    "docs/codex/local-v1-lv1-003-o4-attempt-003-closure.md"
+IMAGE_RECOVERY_CLOSURE = Path("docs/codex/local-v1-lv1-003-o4-image-recovery-closure.json")
+IMAGE_RECOVERY_CLOSURE_DOCUMENT = Path("docs/codex/local-v1-lv1-003-o4-image-recovery-closure.md")
+RUNTIME_NATIVE_REPAIR_REVIEW = Path(
+    "docs/codex/local-v1-lv1-003-o4-runtime-native-repair-exact-review.md"
 )
 AUTHORIZATION_TARGET = "local-v1-lv1-003-o4-execution-authorization-check"
 PRODUCER_STATIC_TARGET = "local-v1-lv1-003-o4-producer-static-check"
 PRODUCER_RUN_TARGET = "local-v1-lv1-003-o4-producer-run"
-PRODUCER_MODULE_INVOCATION = (
-    "uv run python -m scripts.local_v1_lv1_003_o4_producer"
+PRODUCER_MODULE_INVOCATION = "uv run python -m scripts.local_v1_lv1_003_o4_producer"
+PRODUCER_RUN_COMMENT = (
+    "# LIVE, gate-protected Attempt 004 entrypoint. Exact clean child, "
+    "one supervised invocation, no retry."
 )
-FAILED_FILE_PATH_INVOCATION = (
-    "uv run python scripts/local_v1_lv1_003_o4_producer.py"
-)
+FAILED_FILE_PATH_INVOCATION = "uv run python scripts/local_v1_lv1_003_o4_producer.py"
 ENTRYPOINT_REPAIR_BASE_COMMIT = "148effd50c69b40a005f86f6217fc3db8b665a06"
 ENTRYPOINT_REPAIR_COMMIT = "88c707f1c90d5807a81412ea7790b3a0b94e2f85"
 ENTRYPOINT_REPAIR_TREE = "5316f8f270eb55af38dd032ec7723edef8a423c5"
 REVIEWED_IMPLEMENTATION_COMMIT = "5dab3654391c14fe214a9dfe302c099d0fe5fbf8"
 REVIEWED_IMPLEMENTATION_TREE = "f9a0cb66ac12e6e0ecca7fc23a0071be0dbe3075"
-CANDIDATE_PARENT_COMMIT = "86e75f0cf7f92ceb33218f2a66a00668f4da9e12"
-CANDIDATE_PARENT_TREE = "11d9a752b8e08b483e1d8b9a347a06b5d8bf9af7"
-CODE_AUTHORIZATION_COMMIT = CANDIDATE_PARENT_COMMIT
-CODE_AUTHORIZATION_TREE = CANDIDATE_PARENT_TREE
+HISTORICAL_CANDIDATE_PARENT_COMMIT = "86e75f0cf7f92ceb33218f2a66a00668f4da9e12"
+HISTORICAL_CANDIDATE_PARENT_TREE = "11d9a752b8e08b483e1d8b9a347a06b5d8bf9af7"
+CODE_AUTHORIZATION_COMMIT = HISTORICAL_CANDIDATE_PARENT_COMMIT
+CODE_AUTHORIZATION_TREE = HISTORICAL_CANDIDATE_PARENT_TREE
 CODE_AUTHORIZATION_ORIGIN_COMMIT = "da17fbc86369ed5a6e7f9de7c1098322bcda4ac9"
 CODE_AUTHORIZATION_ORIGIN_TREE = "7e3c14074a568dc47f7363eaab4e8ec4b996982f"
 CODE_AUTHORIZATION_RECORD_DIGEST = (
@@ -97,15 +78,11 @@ CODE_AUTHORIZATION_ORIGIN_RECORD_DIGEST = (
 HISTORICAL_PRODUCER_CONTRACT_DIGEST = (
     "sha256:3c742762465380387153f5ee17686ed540354926c5364c9e73f15100d9bb30e1"
 )
-PRODUCER_CONTRACT_DIGEST = (
-    "sha256:ef13427da1991dc4f176fe91ca90da29ca8605bfa2435a15d1a7868fc76370b6"
-)
+PRODUCER_CONTRACT_DIGEST = "sha256:ef13427da1991dc4f176fe91ca90da29ca8605bfa2435a15d1a7868fc76370b6"
 PRODUCER_EXACT_REVIEW_DIGEST = (
     "sha256:5d023bb589636fc991a86768fb97f737cae2cdd58da369c94f99a99d20245c76"
 )
-DISPOSITION_JSON_DIGEST = (
-    "sha256:98671458e5c4053e3a892781dfb53bf8be0d397f578995e80a20483166095593"
-)
+DISPOSITION_JSON_DIGEST = "sha256:98671458e5c4053e3a892781dfb53bf8be0d397f578995e80a20483166095593"
 DISPOSITION_DOCUMENT_DIGEST = (
     "sha256:9ddd3fc6a78c6556233888a6828e1540b4f85c68660618a424d228bc3b79eea8"
 )
@@ -148,6 +125,9 @@ COMPOSE_REPAIR_TREE = "fef080b85db9b44675150954d6af5afd5d6fec0d"
 COMPOSE_REPAIR_REVIEW_DIGEST = (
     "sha256:3209b958f6a7810e753e0c50dccdd113349faf96d6a9b45329d1966924d009dc"
 )
+COMPOSE_REPAIR_PRODUCER_DIGEST = (
+    "sha256:b4d44f09183fca2df5cab33496571c3ac316420074e8eeba71e506fd92999c4b"
+)
 ATTEMPT_003_DISPOSITION_JSON_DIGEST = (
     "sha256:7ee2abbb5393b3a18904008aebc4f9bbe029bd14358e04611fd8d2966bfb4db9"
 )
@@ -165,12 +145,35 @@ ATTEMPT_003_CANDIDATE_COMMIT = "7f819bb91c475b4b9fa69b975e629810a7254020"
 ATTEMPT_003_CANDIDATE_TREE = "7ff30d4625e6b086809703889376d34cdb0998b5"
 ATTEMPT_003_RUN_ID = "20260725T125344Z-6460809b"
 ATTEMPT_003_PROJECT = "ithildin-local-v1-o4-6460809b"
+IMAGE_RECOVERY_ID = "LV1-003-O4-ATTEMPT-003-IMAGE-RECOVERY-001"
+IMAGE_RECOVERY_CANDIDATE_COMMIT = "2051a136e13bacbee4e3fcec332fc4ef78698e73"
+IMAGE_RECOVERY_CANDIDATE_TREE = "e0cb7285e720c38a1e071536d7bd25e2bc7caa4e"
+IMAGE_RECOVERY_CLOSURE_COMMIT = "bdde370917f11fd9763954a53885d81a4a28b864"
+IMAGE_RECOVERY_CLOSURE_TREE = "465de2881a782e30af0696b8bb534161a0336acd"
+IMAGE_RECOVERY_AUTHORIZATION_DIGEST = (
+    "sha256:103576d2db0b9fe177f935c8e075217c0786a93be34097eca66f906a11faa1aa"
+)
+IMAGE_RECOVERY_AUTHORIZATION_DOCUMENT_DIGEST = (
+    "sha256:7812616aff873ec22426eeb84759889827cbc3fadf98045fc5675b99a0432715"
+)
+IMAGE_RECOVERY_CLOSURE_DIGEST = (
+    "sha256:88a47a8ee15dab08dc508487758564a448cfe4cc9d65c0adce39a2da1fdd8450"
+)
+IMAGE_RECOVERY_CLOSURE_DOCUMENT_DIGEST = (
+    "sha256:69071ab5b0a0c00390726c639d633c0a83e1c93b9fb0c9f91fc835429180a930"
+)
+RUNTIME_NATIVE_REPAIR_COMMIT = "49db93d80a71855d9ae223826a9849749377c376"
+RUNTIME_NATIVE_REPAIR_TREE = "23950855584316daba76acd65be0bfdfd20fbcb9"
+CANDIDATE_PARENT_COMMIT = RUNTIME_NATIVE_REPAIR_COMMIT
+CANDIDATE_PARENT_TREE = RUNTIME_NATIVE_REPAIR_TREE
+RUNTIME_NATIVE_REPAIR_REVIEW_DIGEST = (
+    "sha256:635f2e473985f4eef18d541c455ddabb7c09ec782c8c67d37b37da0fbf45e551"
+)
+ATTEMPT_004_ID = "LV1-003-O4-ATTEMPT-004"
 ATTEMPT_002_RECEIPT_BASE = Path("var/local-v1-lv1-003-o4-receipts")
 ATTEMPT_002_RECEIPT_ROOT = ATTEMPT_002_RECEIPT_BASE / ATTEMPT_002_RUN_ID
 ATTEMPT_002_DISPOSITION_RECEIPT = ATTEMPT_002_RECEIPT_ROOT / "disposition.json"
-ATTEMPT_002_MANIFEST_RECEIPT = (
-    ATTEMPT_002_RECEIPT_ROOT / "candidate-manifest.json"
-)
+ATTEMPT_002_MANIFEST_RECEIPT = ATTEMPT_002_RECEIPT_ROOT / "candidate-manifest.json"
 ATTEMPT_002_SNAPSHOT_ROOT = ATTEMPT_002_RECEIPT_ROOT / "candidate"
 ATTEMPT_002_RUNTIME_BASE = Path("var/local-v1-lv1-003-o4-runtime")
 ATTEMPT_002_RUNTIME_ROOT = ATTEMPT_002_RUNTIME_BASE / ATTEMPT_002_RUN_ID
@@ -190,11 +193,24 @@ ATTEMPT_002_MANIFEST_SIZE = 96628
 ATTEMPT_002_SNAPSHOT_FILE_COUNT = 663
 ATTEMPT_003_RECEIPT_ROOT = ATTEMPT_002_RECEIPT_BASE / ATTEMPT_003_RUN_ID
 ATTEMPT_003_DISPOSITION_RECEIPT = ATTEMPT_003_RECEIPT_ROOT / "disposition.json"
-ATTEMPT_003_MANIFEST_RECEIPT = (
-    ATTEMPT_003_RECEIPT_ROOT / "candidate-manifest.json"
-)
+ATTEMPT_003_MANIFEST_RECEIPT = ATTEMPT_003_RECEIPT_ROOT / "candidate-manifest.json"
 ATTEMPT_003_SNAPSHOT_ROOT = ATTEMPT_003_RECEIPT_ROOT / "candidate"
 ATTEMPT_003_RUNTIME_ROOT = ATTEMPT_002_RUNTIME_BASE / ATTEMPT_003_RUN_ID
+IMAGE_RECOVERY_CONSUMPTION_RECEIPT_NAME = "attempt-003-image-recovery-001-consumed.json"
+IMAGE_RECOVERY_CONSUMPTION_RECEIPT = (
+    ATTEMPT_002_RUNTIME_BASE / IMAGE_RECOVERY_CONSUMPTION_RECEIPT_NAME
+)
+IMAGE_RECOVERY_CONSUMPTION_RECEIPT_BYTES = (
+    b'{"candidate_commit":"2051a136e13bacbee4e3fcec332fc4ef78698e73",'
+    b'"candidate_tree":"e0cb7285e720c38a1e071536d7bd25e2bc7caa4e",'
+    b'"record_type":"local_v1_lv1_003_o4_image_recovery_consumption",'
+    b'"recovery_id":"LV1-003-O4-ATTEMPT-003-IMAGE-RECOVERY-001",'
+    b'"retry_authorized":false,"schema_version":"1",'
+    b'"status":"consumed_before_docker_inspection"}\n'
+)
+IMAGE_RECOVERY_CONSUMPTION_RECEIPT_DIGEST = (
+    "sha256:df7ce1a69c5fc3b27011f788f846bb5b385ed6f3d348ceb6c78d12de9366ca3c"
+)
 ATTEMPT_003_DISPOSITION_BYTES = (
     b'{"failure_code":"recovery_required","release_allowed":false,'
     b'"status":"quarantined_not_published","uat_complete":false}\n'
@@ -257,6 +273,15 @@ ATTEMPT_003_CLOSURE_CONTROL_PATH_ALLOWLIST = [
     "scripts/local_v1_lv1_003_o4_execution_authorization_check.py",
     "tests/test_local_v1_lv1_003_o4_execution_authorization_check.py",
 ]
+ATTEMPT_004_CONTROL_PATH_ALLOWLIST = [
+    "Makefile",
+    "README.md",
+    CONTRACT.as_posix(),
+    DOCUMENT.as_posix(),
+    RUNTIME_NATIVE_REPAIR_REVIEW.as_posix(),
+    "scripts/local_v1_lv1_003_o4_execution_authorization_check.py",
+    "tests/test_local_v1_lv1_003_o4_execution_authorization_check.py",
+]
 REPAIR_PARITY_PATHS = [
     "Makefile",
     "README.md",
@@ -284,11 +309,11 @@ SOURCE_DIGESTS = {
     ),
     "producer_source_sha256": (
         Path("scripts/local_v1_lv1_003_o4_producer.py"),
-        "sha256:b4d44f09183fca2df5cab33496571c3ac316420074e8eeba71e506fd92999c4b",
+        "sha256:d191f58f1b63245499b1447e5e67f21dc638b6a8ad3881a777574c9a7d010f55",
     ),
     "bridge_dockerfile_sha256": (
         Path("deploy/hermes-node-bridge/Dockerfile"),
-        "sha256:511c195334d336222bc396d471e8cccdd71aa2b0bb36a24e7628b24e4df893da",
+        "sha256:a175feecf1fe08bb1f750fecda51ea57ec17cdfd117f0bb36cddfc7f59bc356e",
     ),
     "dependency_lock_sha256": (
         Path("uv.lock"),
@@ -300,8 +325,8 @@ FIXED_ACTIONS = [
     "docker_compose_version",
     "merged_compose_config_quiet",
     "build_base_api_ui_node",
-    "build_fixed_hermes_bridge",
-    "inspect_owned_image_ids_platform_config_and_layers",
+    "build_fixed_hermes_bridge_with_runtime_native_python",
+    "bind_and_inspect_owned_image_ids_platform_config_layers_and_labels",
     "start_base_api_ui",
     "enroll_node_once_via_stdin",
     "start_ordinary_node",
@@ -312,8 +337,9 @@ FIXED_ACTIONS = [
     "stop_fixed_node",
     "compose_down_remove_orphans_volumes",
     "list_project_containers_volumes_networks",
-    "remove_exact_owned_images",
-    "prove_exact_owned_images_absent",
+    "write_bounded_stable_diagnostic_receipt_on_failure",
+    "remove_exact_bound_owned_image_ids",
+    "prove_exact_bound_owned_image_ids_and_references_absent",
 ]
 EXTERNAL_PREFLIGHT = [
     "clean_exact_candidate_matching_post_review_disposition",
@@ -358,6 +384,8 @@ TOP_LEVEL_FIELDS = {
     "producer_contract_sha256",
     "candidate_parent_commit",
     "candidate_parent_tree",
+    "historical_post_review_candidate_parent_commit",
+    "historical_post_review_candidate_parent_tree",
     "reviewed_implementation_commit",
     "reviewed_implementation_tree",
     "producer_exact_review_record",
@@ -416,6 +444,26 @@ TOP_LEVEL_FIELDS = {
     "attempt_003_execution_authorized",
     "attempt_003_automatic_retry_authorized",
     "attempt_003_recovery_authorized",
+    "image_recovery_authorization_json",
+    "image_recovery_authorization_json_sha256",
+    "image_recovery_authorization_document",
+    "image_recovery_authorization_document_sha256",
+    "image_recovery_closure_json",
+    "image_recovery_closure_json_sha256",
+    "image_recovery_closure_document",
+    "image_recovery_closure_document_sha256",
+    "image_recovery_history",
+    "runtime_native_repair_review_record",
+    "runtime_native_repair_review_sha256",
+    "runtime_native_repair_commit",
+    "runtime_native_repair_tree",
+    "attempt_004_id",
+    "attempt_004_candidate_parent_commit",
+    "attempt_004_candidate_parent_tree",
+    "attempt_004_operator_command",
+    "attempt_004_module_command",
+    "attempt_004_execution_authorized",
+    "attempt_004_automatic_retry_authorized",
     "attempt_002_id",
     "attempt_002_candidate_parent_commit",
     "attempt_002_candidate_parent_tree",
@@ -451,12 +499,8 @@ EXPECTED_PROFILE: JsonObject = {
         "sha256:6705aac1f41c5faca559858611ce696b760d858b73fa3b51be11599c73ba1ffc"
     ),
     "hermes_platform_digests": {
-        "linux/amd64": (
-            "sha256:48420b0abcf18f9f33cfa1da4c4e8bbd4ad107a0ddc52e5fb3ebb34a9fd20149"
-        ),
-        "linux/arm64": (
-            "sha256:bca5bafd0292bdf0d4b4b975780e96c0ec9e428e08941a87aacddb116663ce13"
-        ),
+        "linux/amd64": ("sha256:48420b0abcf18f9f33cfa1da4c4e8bbd4ad107a0ddc52e5fb3ebb34a9fd20149"),
+        "linux/arm64": ("sha256:bca5bafd0292bdf0d4b4b975780e96c0ec9e428e08941a87aacddb116663ce13"),
     },
     "provider_type": "custom",
     "provider_base_url": "http://host.docker.internal:11434/v1",
@@ -473,6 +517,8 @@ EXPECTED_COMMAND_CONTRACT: JsonObject = {
         "anchored_exact_candidate_snapshot_paths",
         "run_specific_image_references",
         "exact_inspected_image_ids",
+        "exact_bound_image_identities",
+        "stable_primary_and_cleanup_failure_codes",
     ],
     "fixed_actions": cast(list[JsonValue], FIXED_ACTIONS),
     "arbitrary_command_allowed": False,
@@ -522,9 +568,7 @@ EXPECTED_EVIDENCE_CONTRACT: JsonObject = {
     "current_tracked_license_family_files": [],
     "license_family_patterns": ["LICENSE*", "NOTICE*", "COPYING*"],
     "static_snapshot_enumeration_and_path_replacement_rejection_proven": True,
-    "transient_malicious_same_uid_mutation_during_docker_context_read_proven_absent": (
-        False
-    ),
+    "transient_malicious_same_uid_mutation_during_docker_context_read_proven_absent": (False),
     "operating_system_snapshot_immutability_claimed": False,
     "complete_sbom_claimed": False,
     "license_completeness_claimed": False,
@@ -588,15 +632,14 @@ HISTORICAL_TRUE_AUTHORITY_FIELDS = {
 HISTORICAL_AUTHORITY: JsonObject = {
     key: key in HISTORICAL_TRUE_AUTHORITY_FIELDS for key in AUTHORITY_FIELDS
 }
-TRUE_AUTHORITY_FIELDS: set[str] = set()
+TRUE_AUTHORITY_FIELDS = set(HISTORICAL_TRUE_AUTHORITY_FIELDS)
 CLOSED_AUTHORITY: JsonObject = {key: False for key in AUTHORITY_FIELDS}
 ATTEMPT_002_AUTHORITY: JsonObject = {
     key: key in HISTORICAL_TRUE_AUTHORITY_FIELDS for key in AUTHORITY_FIELDS
 }
-ATTEMPT_003_AUTHORITY: JsonObject = {
-    key: key in TRUE_AUTHORITY_FIELDS for key in AUTHORITY_FIELDS
-}
-EXPECTED_AUTHORITY: JsonObject = CLOSED_AUTHORITY
+ATTEMPT_003_AUTHORITY: JsonObject = {key: False for key in AUTHORITY_FIELDS}
+ATTEMPT_004_AUTHORITY: JsonObject = {key: key in TRUE_AUTHORITY_FIELDS for key in AUTHORITY_FIELDS}
+EXPECTED_AUTHORITY: JsonObject = ATTEMPT_004_AUTHORITY
 
 
 class O4ExecutionAuthorizationError(RuntimeError):
@@ -658,6 +701,26 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         repo_root / ATTEMPT_003_CLOSURE_DOCUMENT,
         failures,
     )
+    image_recovery_authorization = _read_contract(
+        repo_root / IMAGE_RECOVERY_AUTHORIZATION,
+        failures,
+    )
+    image_recovery_authorization_document = _read_text(
+        repo_root / IMAGE_RECOVERY_AUTHORIZATION_DOCUMENT,
+        failures,
+    )
+    image_recovery_closure = _read_contract(
+        repo_root / IMAGE_RECOVERY_CLOSURE,
+        failures,
+    )
+    image_recovery_closure_document = _read_text(
+        repo_root / IMAGE_RECOVERY_CLOSURE_DOCUMENT,
+        failures,
+    )
+    runtime_native_repair_review = _read_text(
+        repo_root / RUNTIME_NATIVE_REPAIR_REVIEW,
+        failures,
+    )
     _validate_contract(contract, failures)
     _validate_document(document, failures)
     _validate_producer_contract(producer_contract, contract, failures)
@@ -689,6 +752,17 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         attempt_003_closure_document,
         failures,
     )
+    _validate_image_recovery_history(
+        image_recovery_authorization,
+        image_recovery_authorization_document,
+        image_recovery_closure,
+        image_recovery_closure_document,
+        failures,
+    )
+    _validate_runtime_native_repair_review(
+        runtime_native_repair_review,
+        failures,
+    )
     _validate_retained_attempt_evidence(repo_root, failures)
     _validate_evidence_ignore_patterns(repo_root, failures)
     _validate_bound_documents(repo_root, failures)
@@ -699,17 +773,18 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     _validate_source_bindings(repo_root, contract, failures)
     _validate_current_license_discovery(repo_root, failures)
     _validate_wiring(repo_root, failures)
-    closure_checkout = _validate_execution_checkout(
+    execution_checkout = _validate_execution_checkout(
         repo_root,
         failures,
-        candidate_parent_commit=ATTEMPT_003_CANDIDATE_COMMIT,
-        candidate_parent_tree=ATTEMPT_003_CANDIDATE_TREE,
-        reviewed_commit=COMPOSE_REPAIR_COMMIT,
-        control_paths=ATTEMPT_003_CLOSURE_CONTROL_PATH_ALLOWLIST,
+        candidate_parent_commit=RUNTIME_NATIVE_REPAIR_COMMIT,
+        candidate_parent_tree=RUNTIME_NATIVE_REPAIR_TREE,
+        reviewed_commit=RUNTIME_NATIVE_REPAIR_COMMIT,
+        control_paths=ATTEMPT_004_CONTROL_PATH_ALLOWLIST,
         repair_paths=[],
     )
-    checkout_commit = closure_checkout[0] if closure_checkout is not None else None
-    checkout_tree = closure_checkout[1] if closure_checkout is not None else None
+    checkout_commit = execution_checkout[0] if execution_checkout is not None else None
+    checkout_tree = execution_checkout[1] if execution_checkout is not None else None
+    live_authorized = not failures
     return {
         "schema_version": "1",
         "valid": not failures,
@@ -717,10 +792,8 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "record_status": contract.get("record_status"),
         "reviewed_implementation_commit": contract.get("reviewed_implementation_commit"),
         "code_authorization_commit": contract.get("code_authorization_commit"),
-        "attempt_id": contract.get("attempt_003_id"),
-        "attempted_candidate_commit": contract.get(
-            "attempt_003_attempted_candidate_commit"
-        ),
+        "attempt_id": contract.get("attempt_004_id"),
+        "attempted_candidate_commit": contract.get("attempt_003_attempted_candidate_commit"),
         "attempted_candidate_tree": contract.get("attempt_003_attempted_candidate_tree"),
         "attempt_002_attempted_candidate_commit": contract.get(
             "attempt_002_attempted_candidate_commit"
@@ -736,36 +809,29 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         },
         "attempt_002_history": {
             "attempt_id": contract.get("attempt_002_id"),
-            "attempted_candidate_commit": contract.get(
-                "attempt_002_attempted_candidate_commit"
-            ),
-            "attempted_candidate_tree": contract.get(
-                "attempt_002_attempted_candidate_tree"
-            ),
+            "attempted_candidate_commit": contract.get("attempt_002_attempted_candidate_commit"),
+            "attempted_candidate_tree": contract.get("attempt_002_attempted_candidate_tree"),
             "attempt_consumed": True,
         },
         "attempt_003_history": {
             "attempt_id": contract.get("attempt_003_id"),
-            "attempted_candidate_commit": contract.get(
-                "attempt_003_attempted_candidate_commit"
-            ),
-            "attempted_candidate_tree": contract.get(
-                "attempt_003_attempted_candidate_tree"
-            ),
+            "attempted_candidate_commit": contract.get("attempt_003_attempted_candidate_commit"),
+            "attempted_candidate_tree": contract.get("attempt_003_attempted_candidate_tree"),
             "attempt_consumed": True,
         },
         "attempt_001_consumed": True,
         "attempt_002_consumed": True,
         "attempt_003_consumed": True,
+        "attempt_004_consumed": contract.get("attempt_consumed"),
         "attempt_consumed": contract.get("attempt_consumed"),
         "retry_authorized": contract.get("retry_authorized"),
         "execution_checkout_commit": checkout_commit,
         "execution_checkout_tree": checkout_tree,
-        "execution_attempt_budget": 0,
-        "live_execution_authorized": False,
-        "docker_lifecycle_authorized": False,
-        "provider_access_authorized": False,
-        "o4_evidence_execution_authorized": False,
+        "execution_attempt_budget": 1 if live_authorized else 0,
+        "live_execution_authorized": live_authorized,
+        "docker_lifecycle_authorized": live_authorized,
+        "provider_access_authorized": live_authorized,
+        "o4_evidence_execution_authorized": live_authorized,
         "new_governed_tool": False,
         "release_allowed": False,
         "uat_complete": False,
@@ -795,13 +861,15 @@ def _validate_contract(contract: JsonObject, failures: list[str]) -> None:
     expected = {
         "schema_version": "1",
         "record_type": "local_v1_lv1_003_o4_execution_authorization",
-        "record_status": "ATTEMPT_003_CLOSED_RECOVERY_REQUIRED_NO_AUTHORITY",
+        "record_status": "AUTHORIZE_ATTEMPT_004_SUPERVISED_ONE_ATTEMPT_IMMEDIATE_CHILD",
         "ticket_id": "LV1-003",
         "outcome_id": "O4",
         "producer_contract_path": PRODUCER_CONTRACT.as_posix(),
         "producer_contract_sha256": PRODUCER_CONTRACT_DIGEST,
         "candidate_parent_commit": CANDIDATE_PARENT_COMMIT,
         "candidate_parent_tree": CANDIDATE_PARENT_TREE,
+        "historical_post_review_candidate_parent_commit": (HISTORICAL_CANDIDATE_PARENT_COMMIT),
+        "historical_post_review_candidate_parent_tree": (HISTORICAL_CANDIDATE_PARENT_TREE),
         "reviewed_implementation_commit": REVIEWED_IMPLEMENTATION_COMMIT,
         "reviewed_implementation_tree": REVIEWED_IMPLEMENTATION_TREE,
         "producer_exact_review_record": PRODUCER_EXACT_REVIEW.as_posix(),
@@ -810,9 +878,7 @@ def _validate_contract(contract: JsonObject, failures: list[str]) -> None:
         "code_authorization_origin_tree": CODE_AUTHORIZATION_ORIGIN_TREE,
         "code_authorization_commit": CODE_AUTHORIZATION_COMMIT,
         "code_authorization_tree": CODE_AUTHORIZATION_TREE,
-        "code_authorization_origin_record_sha256": (
-            CODE_AUTHORIZATION_ORIGIN_RECORD_DIGEST
-        ),
+        "code_authorization_origin_record_sha256": (CODE_AUTHORIZATION_ORIGIN_RECORD_DIGEST),
         "code_authorization_record_sha256": CODE_AUTHORIZATION_RECORD_DIGEST,
         "post_review_disposition_json": DISPOSITION_JSON.as_posix(),
         "post_review_disposition_json_sha256": DISPOSITION_JSON_DIGEST,
@@ -825,9 +891,7 @@ def _validate_contract(contract: JsonObject, failures: list[str]) -> None:
         "attempt_id": ATTEMPT_ID,
         "attempted_candidate_commit": ATTEMPTED_CANDIDATE_COMMIT,
         "attempted_candidate_tree": ATTEMPTED_CANDIDATE_TREE,
-        "attempted_authorization_contract_sha256": (
-            ATTEMPTED_AUTHORIZATION_CONTRACT_DIGEST
-        ),
+        "attempted_authorization_contract_sha256": (ATTEMPTED_AUTHORIZATION_CONTRACT_DIGEST),
         "attempt_invocation": {
             "command": ATTEMPT_COMMAND,
             "exit_code": 1,
@@ -856,39 +920,23 @@ def _validate_contract(contract: JsonObject, failures: list[str]) -> None:
         "entrypoint_repair_review_record": ENTRYPOINT_REPAIR_REVIEW.as_posix(),
         "entrypoint_repair_review_sha256": ENTRYPOINT_REPAIR_REVIEW_DIGEST,
         "attempt_002_disposition_json": ATTEMPT_002_DISPOSITION_JSON.as_posix(),
-        "attempt_002_disposition_json_sha256": (
-            ATTEMPT_002_DISPOSITION_JSON_DIGEST
-        ),
-        "attempt_002_disposition_document": (
-            ATTEMPT_002_DISPOSITION_DOCUMENT.as_posix()
-        ),
-        "attempt_002_disposition_document_sha256": (
-            ATTEMPT_002_DISPOSITION_DOCUMENT_DIGEST
-        ),
+        "attempt_002_disposition_json_sha256": (ATTEMPT_002_DISPOSITION_JSON_DIGEST),
+        "attempt_002_disposition_document": (ATTEMPT_002_DISPOSITION_DOCUMENT.as_posix()),
+        "attempt_002_disposition_document_sha256": (ATTEMPT_002_DISPOSITION_DOCUMENT_DIGEST),
         "attempt_002_closure_json": ATTEMPT_002_CLOSURE_JSON.as_posix(),
         "attempt_002_closure_json_sha256": ATTEMPT_002_CLOSURE_JSON_DIGEST,
         "attempt_002_closure_document": ATTEMPT_002_CLOSURE_DOCUMENT.as_posix(),
-        "attempt_002_closure_document_sha256": (
-            ATTEMPT_002_CLOSURE_DOCUMENT_DIGEST
-        ),
+        "attempt_002_closure_document_sha256": (ATTEMPT_002_CLOSURE_DOCUMENT_DIGEST),
         "compose_repair_review_record": COMPOSE_REPAIR_REVIEW.as_posix(),
         "compose_repair_review_sha256": COMPOSE_REPAIR_REVIEW_DIGEST,
         "attempt_003_disposition_json": ATTEMPT_003_DISPOSITION_JSON.as_posix(),
-        "attempt_003_disposition_json_sha256": (
-            ATTEMPT_003_DISPOSITION_JSON_DIGEST
-        ),
-        "attempt_003_disposition_document": (
-            ATTEMPT_003_DISPOSITION_DOCUMENT.as_posix()
-        ),
-        "attempt_003_disposition_document_sha256": (
-            ATTEMPT_003_DISPOSITION_DOCUMENT_DIGEST
-        ),
+        "attempt_003_disposition_json_sha256": (ATTEMPT_003_DISPOSITION_JSON_DIGEST),
+        "attempt_003_disposition_document": (ATTEMPT_003_DISPOSITION_DOCUMENT.as_posix()),
+        "attempt_003_disposition_document_sha256": (ATTEMPT_003_DISPOSITION_DOCUMENT_DIGEST),
         "attempt_003_closure_json": ATTEMPT_003_CLOSURE_JSON.as_posix(),
         "attempt_003_closure_json_sha256": ATTEMPT_003_CLOSURE_JSON_DIGEST,
         "attempt_003_closure_document": ATTEMPT_003_CLOSURE_DOCUMENT.as_posix(),
-        "attempt_003_closure_document_sha256": (
-            ATTEMPT_003_CLOSURE_DOCUMENT_DIGEST
-        ),
+        "attempt_003_closure_document_sha256": (ATTEMPT_003_CLOSURE_DOCUMENT_DIGEST),
         "attempt_003_id": ATTEMPT_003_ID,
         "attempt_003_candidate_parent_commit": COMPOSE_REPAIR_COMMIT,
         "attempt_003_candidate_parent_tree": COMPOSE_REPAIR_TREE,
@@ -902,6 +950,39 @@ def _validate_contract(contract: JsonObject, failures: list[str]) -> None:
         "attempt_003_execution_authorized": False,
         "attempt_003_automatic_retry_authorized": False,
         "attempt_003_recovery_authorized": False,
+        "image_recovery_authorization_json": IMAGE_RECOVERY_AUTHORIZATION.as_posix(),
+        "image_recovery_authorization_json_sha256": (IMAGE_RECOVERY_AUTHORIZATION_DIGEST),
+        "image_recovery_authorization_document": (IMAGE_RECOVERY_AUTHORIZATION_DOCUMENT.as_posix()),
+        "image_recovery_authorization_document_sha256": (
+            IMAGE_RECOVERY_AUTHORIZATION_DOCUMENT_DIGEST
+        ),
+        "image_recovery_closure_json": IMAGE_RECOVERY_CLOSURE.as_posix(),
+        "image_recovery_closure_json_sha256": IMAGE_RECOVERY_CLOSURE_DIGEST,
+        "image_recovery_closure_document": (IMAGE_RECOVERY_CLOSURE_DOCUMENT.as_posix()),
+        "image_recovery_closure_document_sha256": (IMAGE_RECOVERY_CLOSURE_DOCUMENT_DIGEST),
+        "image_recovery_history": {
+            "recovery_id": IMAGE_RECOVERY_ID,
+            "recovery_candidate_commit": IMAGE_RECOVERY_CANDIDATE_COMMIT,
+            "recovery_candidate_tree": IMAGE_RECOVERY_CANDIDATE_TREE,
+            "closure_commit": IMAGE_RECOVERY_CLOSURE_COMMIT,
+            "closure_tree": IMAGE_RECOVERY_CLOSURE_TREE,
+            "status": "RECOVERY_COMPLETED_EXACT_IMAGE_REMOVAL_CLOSED",
+            "consumed": True,
+            "retry_authorized": False,
+            "receipt_retained": True,
+            "receipt_removal_authorized": False,
+        },
+        "runtime_native_repair_review_record": (RUNTIME_NATIVE_REPAIR_REVIEW.as_posix()),
+        "runtime_native_repair_review_sha256": (RUNTIME_NATIVE_REPAIR_REVIEW_DIGEST),
+        "runtime_native_repair_commit": RUNTIME_NATIVE_REPAIR_COMMIT,
+        "runtime_native_repair_tree": RUNTIME_NATIVE_REPAIR_TREE,
+        "attempt_004_id": ATTEMPT_004_ID,
+        "attempt_004_candidate_parent_commit": RUNTIME_NATIVE_REPAIR_COMMIT,
+        "attempt_004_candidate_parent_tree": RUNTIME_NATIVE_REPAIR_TREE,
+        "attempt_004_operator_command": ATTEMPT_002_OPERATOR_COMMAND,
+        "attempt_004_module_command": PRODUCER_MODULE_INVOCATION,
+        "attempt_004_execution_authorized": True,
+        "attempt_004_automatic_retry_authorized": False,
         "attempt_002_id": ATTEMPT_002_ID,
         "attempt_002_candidate_parent_commit": ENTRYPOINT_REPAIR_COMMIT,
         "attempt_002_candidate_parent_tree": ENTRYPOINT_REPAIR_TREE,
@@ -914,13 +995,13 @@ def _validate_contract(contract: JsonObject, failures: list[str]) -> None:
         "attempt_002_compose_project": ATTEMPT_002_PROJECT,
         "attempt_002_execution_authorized": False,
         "attempt_002_automatic_retry_authorized": False,
-        "execution_candidate_binding_mode": "none_attempt_closed",
-        "execution_attempt_budget": 0,
-        "attempt_consumed": True,
+        "execution_candidate_binding_mode": "dynamic_current_head_after_all_checks",
+        "execution_attempt_budget": 1,
+        "attempt_consumed": False,
         "retry_authorized": False,
         "attempt_custody": "central_manager_supervised_local_invocation",
         "persistent_cross_process_budget_consumption_claimed": False,
-        "immediate_post_attempt_disposition_recorded": True,
+        "immediate_post_attempt_disposition_recorded": False,
         "prior_attempt_detection_roots": PRIOR_ATTEMPT_ROOTS,
         "external_preflight_requirements": EXTERNAL_PREFLIGHT,
     }
@@ -945,15 +1026,16 @@ def _validate_contract(contract: JsonObject, failures: list[str]) -> None:
     ):
         failures.append("O4 execution cleanup contract is invalid")
     if not _exact_json_equal(contract.get("authority"), EXPECTED_AUTHORITY):
-        failures.append("O4 execution authority must be closed after Attempt 003")
+        failures.append("O4 execution authority is not exact for Attempt 004")
 
 
 def _validate_document(document: str, failures: list[str]) -> None:
     normalized = " ".join(document.split())
     for phrase in (
-        "Status: `ATTEMPT_003_CLOSED_RECOVERY_REQUIRED_NO_AUTHORITY`",
+        "Status: `AUTHORIZE_ATTEMPT_004_SUPERVISED_ONE_ATTEMPT_IMMEDIATE_CHILD`",
         REVIEWED_IMPLEMENTATION_COMMIT,
         CANDIDATE_PARENT_COMMIT,
+        HISTORICAL_CANDIDATE_PARENT_COMMIT,
         CODE_AUTHORIZATION_COMMIT,
         ATTEMPTED_CANDIDATE_COMMIT,
         ATTEMPTED_CANDIDATE_TREE,
@@ -995,7 +1077,7 @@ def _validate_document(document: str, failures: list[str]) -> None:
         "zero Critical, High, Medium, or Low findings and disposition `GO`",
         SOURCE_DIGESTS["base_compose_sha256"][1],
         SOURCE_DIGESTS["overlay_compose_sha256"][1],
-        SOURCE_DIGESTS["producer_source_sha256"][1],
+        COMPOSE_REPAIR_PRODUCER_DIGEST,
         "/tmp:size=16m,mode=0700,uid=10002,gid=10002",
         ATTEMPT_003_DISPOSITION_JSON.as_posix(),
         "clean, single-parent immediate child",
@@ -1013,6 +1095,33 @@ def _validate_document(document: str, failures: list[str]) -> None:
         "point-in-time exact-run-scoped read-only observation",
         "not current live truth, general Docker absence, completed cleanup, or authority",
         "validates the exact Attempt 002 and Attempt 003 retained receipts",
+        IMAGE_RECOVERY_ID,
+        IMAGE_RECOVERY_CANDIDATE_COMMIT,
+        IMAGE_RECOVERY_CANDIDATE_TREE,
+        IMAGE_RECOVERY_CLOSURE_COMMIT,
+        IMAGE_RECOVERY_CLOSURE_TREE,
+        IMAGE_RECOVERY_CONSUMPTION_RECEIPT.as_posix(),
+        IMAGE_RECOVERY_CONSUMPTION_RECEIPT_DIGEST,
+        "receipt remains durable consumption evidence",
+        "Receipt deletion or mutation is not authorized",
+        RUNTIME_NATIVE_REPAIR_COMMIT,
+        RUNTIME_NATIVE_REPAIR_TREE,
+        RUNTIME_NATIVE_REPAIR_REVIEW.as_posix(),
+        "independent GPT-5.6 Sol xhigh read-only review",
+        "Critical: 0, High: 0, Medium: 0, Low: 0",
+        "exact-commit disposition `GO`",
+        SOURCE_DIGESTS["bridge_dockerfile_sha256"][1],
+        "runtime lineage",
+        "exact inspected full image ID",
+        "stable primary and cleanup failure classifications separately",
+        ATTEMPT_004_ID,
+        "exact seven-path control allowlist",
+        "`Makefile`",
+        "`README.md`",
+        "No future child commit or tree is stated here",
+        "execution attempt budget is one",
+        "`attempt_consumed` is false",
+        "requires an immediate separate post-attempt disposition",
         "one server-owned",
         "`synthetic_read_review_v1`",
         "`max_cycles=1`",
@@ -1032,9 +1141,9 @@ def _validate_document(document: str, failures: list[str]) -> None:
         "private recovery receipt is quarantined staged material, not successful published "
         "evidence",
         "There is no automatic retry",
-        "All 19 authority fields are false",
-        "attempt budget is zero",
-        "recovery action, cleanup, and image removal are unauthorized",
+        "Exactly five authority fields are true",
+        "remaining 14 authority fields are false",
+        "24-tool/no-new-powers boundary is unchanged",
         "governed tool count remains exactly 24",
         "Attempts 001, 002, and 003 are consumed",
     ):
@@ -1114,8 +1223,8 @@ def _validate_disposition(
         "record_status": "AUTHORIZE_SUPERVISED_ONE_ATTEMPT_IMMEDIATE_CHILD",
         "ticket_id": "LV1-003",
         "outcome_id": "O4",
-        "candidate_parent_commit": CANDIDATE_PARENT_COMMIT,
-        "candidate_parent_tree": CANDIDATE_PARENT_TREE,
+        "candidate_parent_commit": HISTORICAL_CANDIDATE_PARENT_COMMIT,
+        "candidate_parent_tree": HISTORICAL_CANDIDATE_PARENT_TREE,
         "reviewed_implementation_commit": REVIEWED_IMPLEMENTATION_COMMIT,
         "reviewed_implementation_tree": REVIEWED_IMPLEMENTATION_TREE,
         "producer_exact_review_path": PRODUCER_EXACT_REVIEW.as_posix(),
@@ -1158,7 +1267,7 @@ def _validate_disposition(
     normalized = " ".join(document.split())
     for phrase in (
         "AUTHORIZE_SUPERVISED_ONE_ATTEMPT_IMMEDIATE_CHILD",
-        CANDIDATE_PARENT_COMMIT,
+        HISTORICAL_CANDIDATE_PARENT_COMMIT,
         REVIEWED_IMPLEMENTATION_COMMIT,
         "six-path control allowlist",
         "No future child commit or tree is stated here",
@@ -1190,9 +1299,7 @@ def _validate_attempt_disposition(
         "attempted_candidate_commit": ATTEMPTED_CANDIDATE_COMMIT,
         "attempted_candidate_tree": ATTEMPTED_CANDIDATE_TREE,
         "attempted_candidate_clean": True,
-        "attempted_authorization_contract_sha256": (
-            ATTEMPTED_AUTHORIZATION_CONTRACT_DIGEST
-        ),
+        "attempted_authorization_contract_sha256": (ATTEMPTED_AUTHORIZATION_CONTRACT_DIGEST),
         "invocation": {
             "command": ATTEMPT_COMMAND,
             "exit_code": 1,
@@ -1206,9 +1313,7 @@ def _validate_attempt_disposition(
         },
         "observed_root_absence": {
             "observation_method": "read_only_path_absence_check_after_failed_invocation",
-            "roots": [
-                {"path": path, "exists": False} for path in PRIOR_ATTEMPT_ROOTS
-            ],
+            "roots": [{"path": path, "exists": False} for path in PRIOR_ATTEMPT_ROOTS],
         },
         "external_action_observation": {
             "runtime_created": False,
@@ -1444,8 +1549,7 @@ def _validate_attempt_002_closure(
             "receipt_root": f"var/local-v1-lv1-003-o4-receipts/{ATTEMPT_002_RUN_ID}",
             "receipt_root_mode": "0700",
             "disposition_path": (
-                f"var/local-v1-lv1-003-o4-receipts/{ATTEMPT_002_RUN_ID}/"
-                "disposition.json"
+                f"var/local-v1-lv1-003-o4-receipts/{ATTEMPT_002_RUN_ID}/disposition.json"
             ),
             "disposition_mode": "0600",
             "disposition_status": "quarantined_not_published",
@@ -1453,8 +1557,7 @@ def _validate_attempt_002_closure(
                 "sha256:653e7cb4a656db714769cad329b49c55a194bb5223c911274a57c4a7abbef44b"
             ),
             "candidate_manifest_path": (
-                f"var/local-v1-lv1-003-o4-receipts/{ATTEMPT_002_RUN_ID}/"
-                "candidate-manifest.json"
+                f"var/local-v1-lv1-003-o4-receipts/{ATTEMPT_002_RUN_ID}/candidate-manifest.json"
             ),
             "candidate_manifest_mode": "0600",
             "candidate_manifest_size_bytes": 96628,
@@ -1542,7 +1645,7 @@ def _validate_compose_repair_review(
         "/tmp:size=16m,mode=0700,uid=10002,gid=10002",
         SOURCE_DIGESTS["base_compose_sha256"][1],
         SOURCE_DIGESTS["overlay_compose_sha256"][1],
-        SOURCE_DIGESTS["producer_source_sha256"][1],
+        COMPOSE_REPAIR_PRODUCER_DIGEST,
         "Critical: 0",
         "High: 0",
         "Medium: 0",
@@ -1577,7 +1680,7 @@ def _validate_attempt_003_disposition(
         "repaired_source_digests": {
             "base_compose_sha256": SOURCE_DIGESTS["base_compose_sha256"][1],
             "overlay_compose_sha256": SOURCE_DIGESTS["overlay_compose_sha256"][1],
-            "producer_source_sha256": SOURCE_DIGESTS["producer_source_sha256"][1],
+            "producer_source_sha256": COMPOSE_REPAIR_PRODUCER_DIGEST,
         },
         "attempt_001_history": {
             "attempted_candidate_commit": ATTEMPTED_CANDIDATE_COMMIT,
@@ -1593,9 +1696,7 @@ def _validate_attempt_003_disposition(
             "record_status": "ATTEMPT_002_CONSUMED_FIXED_COMPOSE_INVALID",
             "closure_json_sha256": ATTEMPT_002_CLOSURE_JSON_DIGEST,
             "closure_document_sha256": ATTEMPT_002_CLOSURE_DOCUMENT_DIGEST,
-            "retained_disposition_sha256": (
-                ATTEMPT_002_DISPOSITION_RECEIPT_DIGEST
-            ),
+            "retained_disposition_sha256": (ATTEMPT_002_DISPOSITION_RECEIPT_DIGEST),
             "retained_manifest_sha256": ATTEMPT_002_MANIFEST_RECEIPT_DIGEST,
             "consumed": True,
             "retry_authorized": False,
@@ -1696,9 +1797,7 @@ def _validate_attempt_003_closure(
             "diagnosis_only_command_authorized": False,
             "primary_error_presence_known": False,
             "primary_error_value_known": False,
-            "final_recovery_required_may_have_replaced_primary_or_originated_in_cleanup": (
-                True
-            ),
+            "final_recovery_required_may_have_replaced_primary_or_originated_in_cleanup": (True),
             "bridge_image_build_failure_hypothesis": True,
             "bridge_image_build_failure_proven": False,
             "recovery_failure_root_cause": "unknown",
@@ -1723,13 +1822,10 @@ def _validate_attempt_003_closure(
                     "service": "ithildin-api",
                     "reference": "ithildin/api-o4:6460809b",
                     "image_id": (
-                        "sha256:19dc658884e9298b7966e5fb10c80874afaa33956e565b55d"
-                        "d0a30e8a02bd5d6"
+                        "sha256:19dc658884e9298b7966e5fb10c80874afaa33956e565b55dd0a30e8a02bd5d6"
                     ),
                     "platform": "linux/arm64",
-                    "project_label": (
-                        "com.docker.compose.project=ithildin-local-v1-o4-6460809b"
-                    ),
+                    "project_label": ("com.docker.compose.project=ithildin-local-v1-o4-6460809b"),
                     "service_label": "com.docker.compose.service=ithildin-api",
                     "sole_tag_at_observation": True,
                     "container_count_at_observation": 0,
@@ -1738,13 +1834,10 @@ def _validate_attempt_003_closure(
                     "service": "ithildin-ui",
                     "reference": "ithildin/ui-o4:6460809b",
                     "image_id": (
-                        "sha256:4b530eb0fc350c433089d88ddd75d03042e633a5b23a0fdeaaeb"
-                        "77c58f75b6b7"
+                        "sha256:4b530eb0fc350c433089d88ddd75d03042e633a5b23a0fdeaaeb77c58f75b6b7"
                     ),
                     "platform": "linux/arm64",
-                    "project_label": (
-                        "com.docker.compose.project=ithildin-local-v1-o4-6460809b"
-                    ),
+                    "project_label": ("com.docker.compose.project=ithildin-local-v1-o4-6460809b"),
                     "service_label": "com.docker.compose.service=ithildin-ui",
                     "sole_tag_at_observation": True,
                     "container_count_at_observation": 0,
@@ -1753,13 +1846,10 @@ def _validate_attempt_003_closure(
                     "service": "ithildin-node",
                     "reference": "ithildin/node-o4:6460809b",
                     "image_id": (
-                        "sha256:0d85000f6172508554524f276d4051170e53a6c3fc79cbc5dc1b"
-                        "0c051b682c81"
+                        "sha256:0d85000f6172508554524f276d4051170e53a6c3fc79cbc5dc1b0c051b682c81"
                     ),
                     "platform": "linux/arm64",
-                    "project_label": (
-                        "com.docker.compose.project=ithildin-local-v1-o4-6460809b"
-                    ),
+                    "project_label": ("com.docker.compose.project=ithildin-local-v1-o4-6460809b"),
                     "service_label": "com.docker.compose.service=ithildin-node",
                     "sole_tag_at_observation": True,
                     "container_count_at_observation": 0,
@@ -1771,21 +1861,17 @@ def _validate_attempt_003_closure(
             "current_live_truth_claimed": False,
         },
         "retained_receipt": {
-            "receipt_root": (
-                f"var/local-v1-lv1-003-o4-receipts/{ATTEMPT_003_RUN_ID}"
-            ),
+            "receipt_root": (f"var/local-v1-lv1-003-o4-receipts/{ATTEMPT_003_RUN_ID}"),
             "receipt_root_mode": "0700",
             "disposition_path": (
-                f"var/local-v1-lv1-003-o4-receipts/{ATTEMPT_003_RUN_ID}/"
-                "disposition.json"
+                f"var/local-v1-lv1-003-o4-receipts/{ATTEMPT_003_RUN_ID}/disposition.json"
             ),
             "disposition_mode": "0600",
             "disposition_size_bytes": len(ATTEMPT_003_DISPOSITION_BYTES),
             "disposition_status": "quarantined_not_published",
             "disposition_sha256": ATTEMPT_003_DISPOSITION_RECEIPT_DIGEST,
             "candidate_manifest_path": (
-                f"var/local-v1-lv1-003-o4-receipts/{ATTEMPT_003_RUN_ID}/"
-                "candidate-manifest.json"
+                f"var/local-v1-lv1-003-o4-receipts/{ATTEMPT_003_RUN_ID}/candidate-manifest.json"
             ),
             "candidate_manifest_mode": "0600",
             "candidate_manifest_size_bytes": ATTEMPT_003_MANIFEST_SIZE,
@@ -1850,6 +1936,128 @@ def _validate_attempt_003_closure(
     ):
         if phrase not in normalized:
             failures.append(f"O4 Attempt 003 closure doc is missing phrase: {phrase}")
+
+
+def _validate_image_recovery_history(
+    authorization: JsonObject,
+    authorization_document: str,
+    closure: JsonObject,
+    closure_document: str,
+    failures: list[str],
+) -> None:
+    expected_receipt: JsonObject = {
+        "path": IMAGE_RECOVERY_CONSUMPTION_RECEIPT.as_posix(),
+        "runtime_base_mode": "0700",
+        "runtime_base_entries": [IMAGE_RECOVERY_CONSUMPTION_RECEIPT_NAME],
+        "receipt_mode": "0600",
+        "receipt_size_bytes": len(IMAGE_RECOVERY_CONSUMPTION_RECEIPT_BYTES),
+        "receipt_sha256": IMAGE_RECOVERY_CONSUMPTION_RECEIPT_DIGEST,
+        "receipt_candidate_commit": IMAGE_RECOVERY_CANDIDATE_COMMIT,
+        "receipt_candidate_tree": IMAGE_RECOVERY_CANDIDATE_TREE,
+        "receipt_status": "consumed_before_docker_inspection",
+        "receipt_retry_authorized": False,
+        "receipt_retained": True,
+        "receipt_removal_authorized": False,
+    }
+    if (
+        authorization.get("record_status") != "ATTEMPT_003_IMAGE_RECOVERY_CLOSED_NO_AUTHORITY"
+        or authorization.get("recovery_id") != IMAGE_RECOVERY_ID
+        or authorization.get("recovery_candidate_commit") != IMAGE_RECOVERY_CANDIDATE_COMMIT
+        or authorization.get("recovery_candidate_tree") != IMAGE_RECOVERY_CANDIDATE_TREE
+        or not _exact_json_equal(
+            authorization.get("durable_consumption_receipt"),
+            expected_receipt,
+        )
+        or authorization.get("recovery_attempt_budget") != 0
+        or authorization.get("retry_authorized") is not False
+        or not _exact_json_equal(
+            authorization.get("o4_authority"),
+            CLOSED_AUTHORITY,
+        )
+    ):
+        failures.append("O4 image recovery authorization closure is not exact")
+    closure_receipt = closure.get("durable_consumption_receipt")
+    if (
+        closure.get("record_status") != "RECOVERY_COMPLETED_EXACT_IMAGE_REMOVAL_CLOSED"
+        or closure.get("recovery_id") != IMAGE_RECOVERY_ID
+        or closure.get("recovery_candidate_commit") != IMAGE_RECOVERY_CANDIDATE_COMMIT
+        or closure.get("recovery_candidate_tree") != IMAGE_RECOVERY_CANDIDATE_TREE
+        or not isinstance(closure_receipt, dict)
+        or closure_receipt.get("path") != IMAGE_RECOVERY_CONSUMPTION_RECEIPT.as_posix()
+        or closure_receipt.get("receipt_size_bytes")
+        != len(IMAGE_RECOVERY_CONSUMPTION_RECEIPT_BYTES)
+        or closure_receipt.get("receipt_sha256") != IMAGE_RECOVERY_CONSUMPTION_RECEIPT_DIGEST
+        or closure_receipt.get("receipt_retained") is not True
+        or closure_receipt.get("receipt_removal_authorized") is not False
+        or closure.get("recovery_attempt_budget") != 0
+        or closure.get("retry_authorized") is not False
+        or not _exact_json_equal(closure.get("o4_authority"), CLOSED_AUTHORITY)
+    ):
+        failures.append("O4 image recovery result closure is not exact")
+    for label, document, phrases in (
+        (
+            "authorization",
+            authorization_document,
+            (
+                "Status: `ATTEMPT_003_IMAGE_RECOVERY_CLOSED_NO_AUTHORITY`",
+                IMAGE_RECOVERY_ID,
+                IMAGE_RECOVERY_CANDIDATE_COMMIT,
+                IMAGE_RECOVERY_CONSUMPTION_RECEIPT_DIGEST,
+                "receipt remains durable consumption evidence",
+                "Receipt deletion or mutation is not authorized",
+            ),
+        ),
+        (
+            "closure",
+            closure_document,
+            (
+                "Status: `RECOVERY_COMPLETED_EXACT_IMAGE_REMOVAL_CLOSED`",
+                IMAGE_RECOVERY_ID,
+                IMAGE_RECOVERY_CANDIDATE_COMMIT,
+                IMAGE_RECOVERY_CONSUMPTION_RECEIPT_DIGEST,
+                "receipt remains durable consumption evidence",
+                "receipt removal is not authorized",
+            ),
+        ),
+    ):
+        normalized = " ".join(document.split())
+        for phrase in phrases:
+            if phrase not in normalized:
+                failures.append(f"O4 image recovery {label} document is missing phrase: {phrase}")
+
+
+def _validate_runtime_native_repair_review(
+    document: str,
+    failures: list[str],
+) -> None:
+    normalized = " ".join(document.split())
+    for phrase in (
+        "Status: `GO`",
+        "independent GPT-5.6 Sol xhigh read-only review",
+        RUNTIME_NATIVE_REPAIR_COMMIT,
+        RUNTIME_NATIVE_REPAIR_TREE,
+        "changes exactly these four paths",
+        SOURCE_DIGESTS["bridge_dockerfile_sha256"][1],
+        SOURCE_DIGESTS["producer_source_sha256"][1],
+        "sha256:e65010ff75765b798575245d16ad28884690bac315b5f010834163754212ed2f",
+        "sha256:4c39e1301aff96223cc6c02d7ae1401d11edab1e71e574b1872fc1afb73e9c7f",
+        "Critical: 0",
+        "High: 0",
+        "Medium: 0",
+        "Low: 0",
+        "exact-commit disposition is `GO`",
+        "runtime lineage",
+        "exact inspected full image ID",
+        "removes only exact bound IDs without force",
+        "stable primary and cleanup failure classifications distinct",
+        "24-tool/no-new-powers boundary",
+        "permits preparation of a separate, exact Attempt 004 execution disposition only",
+        "does not execute Attempt 004",
+    ):
+        if phrase not in normalized:
+            failures.append(f"O4 runtime-native repair review is missing phrase: {phrase}")
+    if _digest(document) != RUNTIME_NATIVE_REPAIR_REVIEW_DIGEST:
+        failures.append("O4 runtime-native repair review digest is invalid")
 
 
 def _directory_open_flags() -> int:
@@ -1945,9 +2153,7 @@ def _open_owned_child_directory_optional_mode(
         before = os.stat(name, dir_fd=parent_descriptor, follow_symlinks=False)
         if not _owned_directory(before, mode):
             mode_text = "expected-mode" if mode is None else f"{mode:04o}"
-            failures.append(
-                f"{label} is not an owner-owned {mode_text} directory"
-            )
+            failures.append(f"{label} is not an owner-owned {mode_text} directory")
             return None
         descriptor = os.open(
             name,
@@ -2042,8 +2248,7 @@ def _validate_repo_relative_absence(
             expected_mode = expected_parent_modes.get(relative_component)
             if not _owned_directory(details, expected_mode):
                 failures.append(
-                    f"{label} ancestor is not an owner-owned directory: "
-                    f"{relative_component}"
+                    f"{label} ancestor is not an owner-owned directory: {relative_component}"
                 )
                 return
             child = _open_owned_child_directory_optional_mode(
@@ -2181,18 +2386,14 @@ def _candidate_snapshot_from_git(
                 or raw_mode not in {"100644", "100755"}
                 or not re.fullmatch(r"[0-9a-f]{40}", raw_oid)
             ):
-                failures.append(
-                    f"{label} candidate snapshot source is invalid: {relative}"
-                )
+                failures.append(f"{label} candidate snapshot source is invalid: {relative}")
                 continue
             inventory[relative] = (raw_mode, raw_oid)
     if set(inventory) != set(manifest_files):
         failures.append(f"{label} manifest paths do not match candidate blobs")
         return {}
     ordered = sorted(inventory)
-    batch_input = b"".join(
-        inventory[relative][1].encode("ascii") + b"\n" for relative in ordered
-    )
+    batch_input = b"".join(inventory[relative][1].encode("ascii") + b"\n" for relative in ordered)
     try:
         batch_result = subprocess.run(
             ["git", "-C", str(repo_root), "cat-file", "--batch"],
@@ -2218,8 +2419,7 @@ def _candidate_snapshot_from_git(
         cursor = header_end + 1
         if (
             len(header) != 3
-            or header[0].decode("ascii", errors="ignore")
-            != inventory[relative][1]
+            or header[0].decode("ascii", errors="ignore") != inventory[relative][1]
             or header[1] != b"blob"
         ):
             failures.append(f"{label} candidate blob batch is ambiguous")
@@ -2230,9 +2430,7 @@ def _candidate_snapshot_from_git(
             failures.append(f"{label} candidate blob size is invalid")
             return {}
         if size < 0 or size > MAX_RETAINED_SNAPSHOT_FILE_BYTES:
-            failures.append(
-                f"{label} candidate blob exceeds size ceiling: {relative}"
-            )
+            failures.append(f"{label} candidate blob exceeds size ceiling: {relative}")
             return {}
         content = batch_result.stdout[cursor : cursor + size]
         cursor += size
@@ -2289,9 +2487,7 @@ def _validate_snapshot_directory(
             continue
         if stat.S_ISDIR(details.st_mode):
             if relative not in expected_directories:
-                failures.append(
-                    f"{label} snapshot contains an extra directory: {relative}"
-                )
+                failures.append(f"{label} snapshot contains an extra directory: {relative}")
             child = _open_owned_child_directory(
                 descriptor,
                 name,
@@ -2314,9 +2510,7 @@ def _validate_snapshot_directory(
                 os.close(child)
             continue
         if not stat.S_ISREG(details.st_mode):
-            failures.append(
-                f"{label} snapshot contains a symlink or special entry: {relative}"
-            )
+            failures.append(f"{label} snapshot contains a symlink or special entry: {relative}")
             continue
         expectation = expected.get(relative)
         if expectation is None:
@@ -2351,10 +2545,26 @@ def _validate_attempt_002_runtime_posture_from_descriptor(
     )
     if runtime_base is not None:
         try:
-            if os.listdir(runtime_base):
-                failures.append("O4 Attempt 002 runtime base is not empty")
-        except OSError:
-            failures.append("O4 Attempt 002 runtime base cannot be enumerated")
+            try:
+                if os.listdir(runtime_base) != [IMAGE_RECOVERY_CONSUMPTION_RECEIPT_NAME]:
+                    failures.append(
+                        "O4 runtime base entries do not equal the retained recovery receipt"
+                    )
+            except OSError:
+                failures.append("O4 retained recovery runtime base cannot be enumerated")
+            receipt = _read_owned_child_file(
+                runtime_base,
+                IMAGE_RECOVERY_CONSUMPTION_RECEIPT_NAME,
+                mode=0o600,
+                size=len(IMAGE_RECOVERY_CONSUMPTION_RECEIPT_BYTES),
+                digest=IMAGE_RECOVERY_CONSUMPTION_RECEIPT_DIGEST,
+                label="O4 Attempt 003 image recovery consumption receipt",
+                failures=failures,
+            )
+            if receipt is not None and receipt != IMAGE_RECOVERY_CONSUMPTION_RECEIPT_BYTES:
+                failures.append(
+                    "O4 Attempt 003 image recovery consumption receipt content is not exact"
+                )
         finally:
             os.close(runtime_base)
     for path, parent_modes, label in (
@@ -2368,7 +2578,7 @@ def _validate_attempt_002_runtime_posture_from_descriptor(
             {ATTEMPT_002_RUNTIME_BASE.as_posix(): 0o700},
             "O4 Attempt 003 runtime run directory or plaintext",
         ),
-        (ATTEMPT_002_REPORT_BASE, {}, "O4 pre-Attempt 003 report base"),
+        (ATTEMPT_002_REPORT_BASE, {}, "O4 pre-Attempt 004 report base"),
     ):
         _validate_repo_relative_absence(
             repository_descriptor,
@@ -2503,9 +2713,7 @@ def _validate_retained_attempt_receipt(
                 )
                 is None
             ):
-                failures.append(
-                    f"{label} candidate manifest entry is invalid: {relative}"
-                )
+                failures.append(f"{label} candidate manifest entry is invalid: {relative}")
         expected = _candidate_snapshot_from_git(
             repo_root,
             manifest_files,
@@ -2522,9 +2730,7 @@ def _validate_retained_attempt_receipt(
                 or not _exact_json_equal(value.get("mode"), mode)
                 or not _exact_json_equal(value.get("sha256"), digest)
             ):
-                failures.append(
-                    f"{label} candidate manifest binding differs: {relative}"
-                )
+                failures.append(f"{label} candidate manifest binding differs: {relative}")
         observed = _validate_snapshot_directory(
             snapshot,
             expected,
@@ -2689,6 +2895,31 @@ def _validate_bound_documents(repo_root: Path, failures: list[str]) -> None:
             ATTEMPT_003_CLOSURE_DOCUMENT_DIGEST,
             "Attempt 003 closure document",
         ),
+        (
+            IMAGE_RECOVERY_AUTHORIZATION,
+            IMAGE_RECOVERY_AUTHORIZATION_DIGEST,
+            "image recovery authorization JSON",
+        ),
+        (
+            IMAGE_RECOVERY_AUTHORIZATION_DOCUMENT,
+            IMAGE_RECOVERY_AUTHORIZATION_DOCUMENT_DIGEST,
+            "image recovery authorization document",
+        ),
+        (
+            IMAGE_RECOVERY_CLOSURE,
+            IMAGE_RECOVERY_CLOSURE_DIGEST,
+            "image recovery closure JSON",
+        ),
+        (
+            IMAGE_RECOVERY_CLOSURE_DOCUMENT,
+            IMAGE_RECOVERY_CLOSURE_DOCUMENT_DIGEST,
+            "image recovery closure document",
+        ),
+        (
+            RUNTIME_NATIVE_REPAIR_REVIEW,
+            RUNTIME_NATIVE_REPAIR_REVIEW_DIGEST,
+            "runtime-native repair exact review",
+        ),
     ):
         if _file_digest(repo_root / path, failures) != expected:
             failures.append(f"O4 {label} digest is invalid")
@@ -2698,23 +2929,17 @@ def _validate_execution_checkout(
     repo_root: Path,
     failures: list[str],
     *,
-    candidate_parent_commit: str = ATTEMPT_003_CANDIDATE_COMMIT,
-    candidate_parent_tree: str = ATTEMPT_003_CANDIDATE_TREE,
-    reviewed_commit: str = COMPOSE_REPAIR_COMMIT,
+    candidate_parent_commit: str = RUNTIME_NATIVE_REPAIR_COMMIT,
+    candidate_parent_tree: str = RUNTIME_NATIVE_REPAIR_TREE,
+    reviewed_commit: str = RUNTIME_NATIVE_REPAIR_COMMIT,
     runtime_paths: list[str] | None = None,
     control_paths: list[str] | None = None,
     repair_paths: list[str] | None = None,
 ) -> tuple[str, str] | None:
     runtime_paths = (
-        list(code_authorization.ALLOWED_RUNTIME_PATHS)
-        if runtime_paths is None
-        else runtime_paths
+        list(code_authorization.ALLOWED_RUNTIME_PATHS) if runtime_paths is None else runtime_paths
     )
-    control_paths = (
-        ATTEMPT_003_CLOSURE_CONTROL_PATH_ALLOWLIST
-        if control_paths is None
-        else control_paths
-    )
+    control_paths = ATTEMPT_004_CONTROL_PATH_ALLOWLIST if control_paths is None else control_paths
     repair_paths = [] if repair_paths is None else repair_paths
     head = _git(repo_root, ["rev-parse", "HEAD"], failures)
     tree = _git(repo_root, ["show", "-s", "--format=%T", "HEAD"], failures)
@@ -2817,8 +3042,7 @@ def _validate_wiring(repo_root: Path, failures: list[str]) -> None:
     readme = _read_text(repo_root / "README.md", failures)
     expected_bodies = {
         AUTHORIZATION_TARGET: (
-            "\tuv run python "
-            "scripts/local_v1_lv1_003_o4_execution_authorization_check.py"
+            "\tuv run python scripts/local_v1_lv1_003_o4_execution_authorization_check.py"
         ),
         PRODUCER_STATIC_TARGET: (
             "\tuv run pytest \\\n"
@@ -2829,9 +3053,7 @@ def _validate_wiring(repo_root: Path, failures: list[str]) -> None:
         ),
     }
     for target, expected_body in expected_bodies.items():
-        definitions = sum(
-            line.startswith(f"{target}:") for line in makefile.splitlines()
-        )
+        definitions = sum(line.startswith(f"{target}:") for line in makefile.splitlines())
         if definitions != 1:
             failures.append(f"O4 execution Make target is not unique: {target}")
             continue
@@ -2859,10 +3081,7 @@ def _validate_wiring(repo_root: Path, failures: list[str]) -> None:
             continue
         if line.startswith(".PHONY:"):
             tokens = line.split()
-            if (
-                tokens.count(PRODUCER_RUN_TARGET) == 1
-                and line.count(PRODUCER_RUN_TARGET) == 1
-            ):
+            if tokens.count(PRODUCER_RUN_TARGET) == 1 and line.count(PRODUCER_RUN_TARGET) == 1:
                 allowed_occurrences += 1
                 continue
         failures.append(
@@ -2871,15 +3090,13 @@ def _validate_wiring(repo_root: Path, failures: list[str]) -> None:
         )
     if len(run_occurrences) != 2 or allowed_occurrences != 2:
         failures.append("O4 live producer Make target occurrence allowlist is not exact")
-    run_definitions = sum(
-        line == f"{PRODUCER_RUN_TARGET}:" for line in makefile.splitlines()
-    )
+    run_definitions = sum(line == f"{PRODUCER_RUN_TARGET}:" for line in makefile.splitlines())
     if run_definitions != 1:
         failures.append("O4 live producer Make target header is not unique and exact")
-    if _target_body(makefile, PRODUCER_RUN_TARGET).strip() != (
-        PRODUCER_MODULE_INVOCATION
-    ):
+    if _target_body(makefile, PRODUCER_RUN_TARGET).strip() != (PRODUCER_MODULE_INVOCATION):
         failures.append("O4 live producer Make target body is not exact")
+    if makefile.splitlines().count(PRODUCER_RUN_COMMENT) != 1:
+        failures.append("O4 live producer Make target comment is not exact")
     for parent_target in (
         "release-check",
         "local-v1-milestone-check",
@@ -2902,8 +3119,19 @@ def _validate_wiring(repo_root: Path, failures: list[str]) -> None:
         failures.append("README does not document the O4 live producer entrypoint")
     if PRODUCER_MODULE_INVOCATION not in readme:
         failures.append("README does not bind the O4 module invocation")
-    if "currently refuses because Attempt 001 is consumed" not in readme:
-        failures.append("README does not preserve the O4 consumed-attempt refusal")
+    for phrase in (
+        "exact Attempt 004 immediate-child gate",
+        "one central-manager-supervised invocation",
+        "runtime-native bridge/producer review",
+        "authorized only on the exact clean Attempt 004 immediate child",
+        "one central-manager-supervised invocation with no retry",
+        "otherwise refuses before live work",
+        "It is not part of release, milestone, or static checks",
+        "producer contract itself grants no execution authority",
+        "separate exact Attempt 004 gate",
+    ):
+        if phrase not in readme:
+            failures.append(f"README is missing current O4 Attempt 004 guidance: {phrase}")
 
 
 def _target_body(makefile: str, target: str) -> str:
@@ -2929,6 +3157,9 @@ def _validate_git_bindings(repo_root: Path, failures: list[str]) -> None:
         (CODE_AUTHORIZATION_COMMIT, CODE_AUTHORIZATION_TREE),
         (ENTRYPOINT_REPAIR_COMMIT, ENTRYPOINT_REPAIR_TREE),
         (COMPOSE_REPAIR_COMMIT, COMPOSE_REPAIR_TREE),
+        (IMAGE_RECOVERY_CANDIDATE_COMMIT, IMAGE_RECOVERY_CANDIDATE_TREE),
+        (IMAGE_RECOVERY_CLOSURE_COMMIT, IMAGE_RECOVERY_CLOSURE_TREE),
+        (RUNTIME_NATIVE_REPAIR_COMMIT, RUNTIME_NATIVE_REPAIR_TREE),
     ):
         tree = _git(repo_root, ["show", "-s", "--format=%T", commit], failures)
         if tree != expected_tree:
@@ -2948,6 +3179,31 @@ def _validate_git_bindings(repo_root: Path, failures: list[str]) -> None:
     ).split()
     if repair_parents != [ENTRYPOINT_REPAIR_BASE_COMMIT]:
         failures.append("O4 entrypoint repair parent is not exact")
+    runtime_native_repair_parents = _git(
+        repo_root,
+        ["show", "-s", "--format=%P", RUNTIME_NATIVE_REPAIR_COMMIT],
+        failures,
+    ).split()
+    if runtime_native_repair_parents != [IMAGE_RECOVERY_CLOSURE_COMMIT]:
+        failures.append("O4 runtime-native repair parent is not exact")
+    runtime_native_changed = _git(
+        repo_root,
+        [
+            "diff-tree",
+            "--no-commit-id",
+            "--name-only",
+            "-r",
+            RUNTIME_NATIVE_REPAIR_COMMIT,
+        ],
+        failures,
+    ).splitlines()
+    if runtime_native_changed != [
+        "deploy/hermes-node-bridge/Dockerfile",
+        "scripts/local_v1_lv1_003_o4_producer.py",
+        "tests/test_local_v1_lv1_003_o4_producer.py",
+        "tests/test_node_fixed_runner_bridge.py",
+    ]:
+        failures.append("O4 runtime-native repair changed paths are not exact")
     historical = _git(
         repo_root,
         [
@@ -3112,9 +3368,7 @@ def _validate_source_bindings(
             failures.append(f"O4 execution current source differs for {key}")
     try:
         raw_profile = json.loads(
-            (repo_root / "deploy/hermes-node-bridge/profile.json").read_text(
-                encoding="utf-8"
-            ),
+            (repo_root / "deploy/hermes-node-bridge/profile.json").read_text(encoding="utf-8"),
             object_pairs_hook=_reject_duplicates,
         )
     except (OSError, UnicodeError, json.JSONDecodeError, ValueError):
@@ -3258,8 +3512,7 @@ def render_report(report: dict[str, Any]) -> str:
         f"retry_authorized: {str(report['retry_authorized']).lower()}",
         f"execution_attempt_budget: {report['execution_attempt_budget']}",
         f"live_execution_authorized: {str(report['live_execution_authorized']).lower()}",
-        "docker_lifecycle_authorized: "
-        f"{str(report['docker_lifecycle_authorized']).lower()}",
+        f"docker_lifecycle_authorized: {str(report['docker_lifecycle_authorized']).lower()}",
         f"provider_access_authorized: {str(report['provider_access_authorized']).lower()}",
         "o4_evidence_execution_authorized: "
         f"{str(report['o4_evidence_execution_authorized']).lower()}",
