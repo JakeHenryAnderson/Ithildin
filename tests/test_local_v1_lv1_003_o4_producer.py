@@ -221,6 +221,7 @@ class FakeExecutor:
         self.runtime = runtime
         self.commands: list[tuple[str, ...]] = []
         self.inputs: list[str | None] = []
+        self.timeouts: list[float] = []
         self.hermes_commands: list[tuple[str, ...]] = []
         self.hermes_timeouts: list[float] = []
         self.images: dict[str, str] = {}
@@ -240,6 +241,15 @@ class FakeExecutor:
         self.cleanup_drift: str | None = None
         self.cleanup_phase = False
         self.removal_failures: set[str] = set()
+        self.base_start_returncode = 0
+        self.base_diagnostic_result = producer.CommandResult(
+            0,
+            (
+                "ithildin-api\trunning\tstarting\t0\n"
+                "ithildin-ui\texited\t\t1\n"
+            ),
+        )
+        self.base_diagnostic_failure: str | None = None
         self.interrupt_on: str | None = None
         self.enrollment_failure: str | None = None
 
@@ -254,7 +264,7 @@ class FakeExecutor:
         input_text: str | None = None,
         timeout: float = 180.0,
     ) -> producer.CommandResult:
-        del timeout
+        self.timeouts.append(timeout)
         producer._validate_command(  # noqa: SLF001
             command,
             hermes=False,
@@ -298,6 +308,20 @@ class FakeExecutor:
             )
         if command in {plan.daemon_version(), plan.compose_version()}:
             return producer.CommandResult(0, "available")
+        if command == plan.base_service_start_diagnostic():
+            if self.base_diagnostic_failure == "error":
+                raise producer.ProducerError("subprocess_unavailable")
+            if self.base_diagnostic_failure == "interruption":
+                raise producer.ProducerSignal("synthetic")
+            return self.base_diagnostic_result
+        if command == plan.compose(
+            "up",
+            "--detach",
+            "--wait",
+            "ithildin-api",
+            "ithildin-ui",
+        ):
+            return producer.CommandResult(self.base_start_returncode, "")
         for resource in ("container", "volume", "network"):
             if command == plan.resource_query(resource):
                 return producer.CommandResult(0, "")
@@ -396,6 +420,25 @@ class FakeExecutor:
                     return producer.CommandResult(2, "", "error")
                 if mode == "ambiguous":
                     return producer.CommandResult(1, "", "error")
+                if mode == "single_newline":
+                    return producer.CommandResult(
+                        1,
+                        "\n",
+                        "image_not_found",
+                    )
+                hostile_stdout = {
+                    "space": " ",
+                    "tab": "\t",
+                    "crlf": "\r\n",
+                    "multiple_newlines": "\n\n",
+                    "content": "present",
+                }.get(mode)
+                if hostile_stdout is not None:
+                    return producer.CommandResult(
+                        1,
+                        hostile_stdout,
+                        "image_not_found",
+                    )
                 if (
                     image_id in self.images.values()
                     or image_id in self.remaining_image_ids
@@ -816,6 +859,7 @@ def test_fake_full_journey_is_one_admission_one_devnull_hermes_attempt_and_close
     assert state.revocation_recovery_receipt_written is False
     assert state.cleanup_failures == []
     assert producer.REVOCATION_RECOVERY_RECEIPT not in runtime.receipts.files
+    assert "diagnostic.json" not in runtime.receipts.files
 
 
 @pytest.mark.parametrize("failure", ["nonzero", "timeout", "malformed"])
@@ -948,6 +992,245 @@ def test_full_journey_unconfirmed_revocation_quarantines_recovery_identity(
         "ithildin-node",
         fixed=True,
     )
+
+
+def test_base_start_failure_collects_one_closed_diagnostic_and_preserves_primary(
+    fake_stack: tuple[
+        FakeRuntimeFactory,
+        FakeExecutorFactory,
+        FakeApiFactory,
+        FakeProvider,
+        FakeAssembler,
+    ],
+) -> None:
+    runtime, executors, apis, provider, assembler = fake_stack
+    executors.executor.base_start_returncode = 1
+    plan = producer.ComposePlan(
+        "20260724T180000Z-1234abcd",
+        runtime.runtime.path,
+    )
+
+    with pytest.raises(
+        producer.ProducerError,
+        match="base_services_start_failed",
+    ):
+        producer.run_producer(
+            gate=AllowGate(),
+            runtime_factory=runtime,
+            executor_factory=executors,
+            api_factory=apis,
+            provider=provider,
+            assembler=assembler,
+            candidate=(COMMIT, TREE),
+            environment={},
+            now=datetime(2026, 7, 24, 18, 0, tzinfo=UTC),
+        )
+
+    diagnostic = json.loads(runtime.receipts.files["diagnostic.json"])
+    assert diagnostic["outward_failure_code"] == "base_services_start_failed"
+    assert diagnostic["primary_failure_code"] == "base_services_start_failed"
+    assert diagnostic["base_service_start_diagnostic"] == {
+        "collection_status": "complete",
+        "reason_code": "base_service_start_state_collected",
+        "services": {
+            "ithildin-api": "service_running_starting",
+            "ithildin-ui": "service_exited_nonzero",
+        },
+    }
+    assert (
+        executors.executor.commands.count(
+            plan.base_service_start_diagnostic()
+        )
+        == 1
+    )
+    diagnostic_index = executors.executor.commands.index(
+        plan.base_service_start_diagnostic()
+    )
+    assert executors.executor.timeouts[diagnostic_index] == 30.0
+    assert apis.api.calls == []
+    assert sum(
+        "down" in command for command in executors.executor.commands
+    ) == 1
+
+
+@pytest.mark.parametrize(
+    ("case", "expected_status", "expected_reason", "expected_ui"),
+    [
+        (
+            "malformed",
+            "output_rejected",
+            "base_service_start_diagnostic_output_rejected",
+            "service_unobserved",
+        ),
+        (
+            "secret",
+            "output_rejected",
+            "base_service_start_diagnostic_output_rejected",
+            "service_unobserved",
+        ),
+        (
+            "duplicate",
+            "output_rejected",
+            "base_service_start_diagnostic_output_rejected",
+            "service_unobserved",
+        ),
+        (
+            "oversize",
+            "output_rejected",
+            "base_service_start_diagnostic_output_rejected",
+            "service_unobserved",
+        ),
+        (
+            "control",
+            "output_rejected",
+            "base_service_start_diagnostic_output_rejected",
+            "service_unobserved",
+        ),
+        (
+            "missing",
+            "complete",
+            "base_service_start_state_collected",
+            "service_missing",
+        ),
+        (
+            "error",
+            "inconclusive",
+            "base_service_start_diagnostic_command_failed",
+            "service_unobserved",
+        ),
+        (
+            "interruption",
+            "inconclusive",
+            "base_service_start_diagnostic_command_failed",
+            "service_unobserved",
+        ),
+    ],
+)
+def test_base_start_diagnostic_hostile_or_incomplete_input_is_closed(
+    fake_stack: tuple[
+        FakeRuntimeFactory,
+        FakeExecutorFactory,
+        FakeApiFactory,
+        FakeProvider,
+        FakeAssembler,
+    ],
+    case: str,
+    expected_status: str,
+    expected_reason: str,
+    expected_ui: str,
+) -> None:
+    runtime, executors, apis, provider, assembler = fake_stack
+    executors.executor.base_start_returncode = 1
+    if case == "malformed":
+        executors.executor.base_diagnostic_result = producer.CommandResult(
+            0,
+            "not-tabular\n",
+        )
+    elif case == "secret":
+        executors.executor.base_diagnostic_result = producer.CommandResult(
+            0,
+            "ithildin-api\trunning\thealthy\t0\nBearer token-value\n",
+        )
+    elif case == "duplicate":
+        executors.executor.base_diagnostic_result = producer.CommandResult(
+            0,
+            (
+                "ithildin-api\trunning\thealthy\t0\n"
+                "ithildin-api\texited\t\t1\n"
+            ),
+        )
+    elif case == "oversize":
+        executors.executor.base_diagnostic_result = producer.CommandResult(
+            0,
+            "x" * (producer.MAX_BASE_SERVICE_START_DIAGNOSTIC_BYTES + 1),
+        )
+    elif case == "control":
+        executors.executor.base_diagnostic_result = producer.CommandResult(
+            0,
+            "ithildin-api\trunning\thealthy\t0\r\n",
+        )
+    elif case == "missing":
+        executors.executor.base_diagnostic_result = producer.CommandResult(
+            0,
+            "ithildin-api\trunning\thealthy\t0\n",
+        )
+    elif case == "error":
+        executors.executor.base_diagnostic_result = producer.CommandResult(
+            2,
+            "",
+            "completed",
+            "compose unavailable\n",
+        )
+    else:
+        executors.executor.base_diagnostic_failure = "interruption"
+
+    with pytest.raises(
+        producer.ProducerError,
+        match="base_services_start_failed",
+    ):
+        producer.run_producer(
+            gate=AllowGate(),
+            runtime_factory=runtime,
+            executor_factory=executors,
+            api_factory=apis,
+            provider=provider,
+            assembler=assembler,
+            candidate=(COMMIT, TREE),
+            environment={},
+            now=datetime(2026, 7, 24, 18, 0, tzinfo=UTC),
+        )
+
+    encoded = runtime.receipts.files["diagnostic.json"].decode()
+    diagnostic = json.loads(encoded)
+    nested = diagnostic["base_service_start_diagnostic"]
+    assert diagnostic["outward_failure_code"] == "base_services_start_failed"
+    assert diagnostic["primary_failure_code"] == "base_services_start_failed"
+    assert nested["collection_status"] == expected_status
+    assert nested["reason_code"] == expected_reason
+    assert nested["services"]["ithildin-ui"] == expected_ui
+    assert "token-value" not in encoded
+    assert apis.api.calls == []
+    plan = producer.ComposePlan(
+        "20260724T180000Z-1234abcd",
+        runtime.runtime.path,
+    )
+    assert (
+        executors.executor.commands.count(
+            plan.base_service_start_diagnostic()
+        )
+        == 1
+    )
+    assert sum(
+        "down" in command for command in executors.executor.commands
+    ) == 1
+
+
+def test_base_start_diagnostic_command_is_exactly_allowlisted() -> None:
+    plan = producer.ComposePlan(
+        "20260724T180000Z-1234abcd",
+        producer.RUNTIME_BASE / "20260724T180000Z-1234abcd",
+    )
+    command = plan.base_service_start_diagnostic()
+    producer._validate_command(command, hermes=False)  # noqa: SLF001
+    mutations = (
+        (*command, "unexpected-service"),
+        tuple(value for value in command if value != "--all"),
+        tuple(
+            "changed-format"
+            if value == producer.BASE_SERVICE_START_DIAGNOSTIC_FORMAT
+            else value
+            for value in command
+        ),
+    )
+    for mutation in mutations:
+        with pytest.raises(
+            producer.ProducerError,
+            match="subprocess_command_not_allowed",
+        ):
+            producer._validate_command(  # noqa: SLF001
+                mutation,
+                hermes=False,
+            )
 
 
 def test_bridge_build_failure_cleans_exact_bound_base_images_and_preserves_primary(
@@ -1118,8 +1401,19 @@ def test_all_run_tags_absent_but_bound_full_id_remains_is_recovery_required(
     ]
 
 
-@pytest.mark.parametrize("probe_mode", ["error", "ambiguous"])
-def test_bound_id_absence_probe_error_or_ambiguous_outcome_fails_closed(
+@pytest.mark.parametrize(
+    "probe_mode",
+    [
+        "error",
+        "ambiguous",
+        "space",
+        "tab",
+        "crlf",
+        "multiple_newlines",
+        "content",
+    ],
+)
+def test_bound_id_absence_probe_nonexact_outcome_fails_closed(
     fake_stack: tuple[
         FakeRuntimeFactory,
         FakeExecutorFactory,
@@ -1153,6 +1447,41 @@ def test_bound_id_absence_probe_error_or_ambiguous_outcome_fails_closed(
     assert diagnostic["cleanup_failure_codes"] == [
         "owned_image_id_absence_probe_failed"
     ]
+
+
+def test_bound_id_absence_probe_accepts_one_newline_as_exact_absence(
+    fake_stack: tuple[
+        FakeRuntimeFactory,
+        FakeExecutorFactory,
+        FakeApiFactory,
+        FakeProvider,
+        FakeAssembler,
+    ],
+) -> None:
+    runtime, executors, apis, provider, assembler = fake_stack
+    image_id = "sha256:" + "1" * 64
+    executors.executor.build_failure = "bridge"
+    executors.executor.image_id_probe_modes[image_id] = "single_newline"
+
+    with pytest.raises(
+        producer.ProducerError,
+        match="bridge_image_build_failed",
+    ):
+        producer.run_producer(
+            gate=AllowGate(),
+            runtime_factory=runtime,
+            executor_factory=executors,
+            api_factory=apis,
+            provider=provider,
+            assembler=assembler,
+            candidate=(COMMIT, TREE),
+            environment={},
+            now=datetime(2026, 7, 24, 18, 0, tzinfo=UTC),
+        )
+
+    diagnostic = json.loads(runtime.receipts.files["diagnostic.json"])
+    assert diagnostic["cleanup_failure_codes"] == []
+    assert diagnostic["outward_failure_code"] == "bridge_image_build_failed"
 
 
 @pytest.mark.parametrize(
@@ -1323,16 +1652,54 @@ def test_raw_successful_inspect_does_not_authorize_unbound_id_commands(
 
 
 @pytest.mark.parametrize(
-    ("returncode", "stderr", "classification"),
+    ("returncode", "stdout", "stderr", "classification"),
     [
         (
             1,
+            "",
             "Error response from daemon: No such image: {image_id}\n",
             "image_not_found",
         ),
-        (1, "Error response from daemon: permission denied\n", "error"),
+        (
+            1,
+            "\n",
+            "Error response from daemon: No such image: {image_id}",
+            "image_not_found",
+        ),
+        (1, "", "Error response from daemon: permission denied\n", "error"),
         (
             2,
+            "",
+            "Error response from daemon: No such image: {image_id}\n",
+            "error",
+        ),
+        (
+            1,
+            " ",
+            "Error response from daemon: No such image: {image_id}\n",
+            "error",
+        ),
+        (
+            1,
+            "\t",
+            "Error response from daemon: No such image: {image_id}\n",
+            "error",
+        ),
+        (
+            1,
+            "\r\n",
+            "Error response from daemon: No such image: {image_id}\n",
+            "error",
+        ),
+        (
+            1,
+            "\n\n",
+            "Error response from daemon: No such image: {image_id}\n",
+            "error",
+        ),
+        (
+            1,
+            "content",
             "Error response from daemon: No such image: {image_id}\n",
             "error",
         ),
@@ -1342,6 +1709,7 @@ def test_bound_id_probe_classifies_only_exact_not_found_as_absent(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     returncode: int,
+    stdout: str,
     stderr: str,
     classification: str,
 ) -> None:
@@ -1360,7 +1728,7 @@ def test_bound_id_probe_classifies_only_exact_not_found_as_absent(
         return subprocess.CompletedProcess(
             command,
             returncode,
-            "",
+            stdout,
             stderr.format(image_id=image_id),
         )
 
@@ -1368,7 +1736,7 @@ def test_bound_id_probe_classifies_only_exact_not_found_as_absent(
     result = executor.run(plan.image_id_inspect(image_id))
 
     assert result.returncode == returncode
-    assert result.stdout == ""
+    assert result.stdout == stdout
     assert result.classification == classification
 
 

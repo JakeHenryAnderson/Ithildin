@@ -53,6 +53,10 @@ MAX_SNAPSHOT_FILE_BYTES = 16 * 1_048_576
 MAX_SNAPSHOT_BYTES = 64 * 1_048_576
 NODE_TMPFS = ("/tmp:size=16m,mode=0700,uid=10002,gid=10002",)
 MAX_RECOVERY_RECEIPT_BYTES = 4096
+MAX_BASE_SERVICE_START_DIAGNOSTIC_BYTES = 1024
+BASE_SERVICE_START_DIAGNOSTIC_FORMAT = (
+    "{{.Service}}\t{{.State}}\t{{.Health}}\t{{.ExitCode}}"
+)
 HERMES_TIMEOUT_SECONDS = 920.0
 NODE_SYNCHRONIZATION_SECONDS = 90.0
 REVOCATION_RECOVERY_RECEIPT = "node-revocation-recovery.json"
@@ -74,6 +78,7 @@ _IMAGE_REFERENCE = re.compile(
     r"^ithildin/(?:api|ui|node|hermes-node-bridge)-o4:[0-9a-f]{8}$"
 )
 _COMPOSE_VERSION_LABEL = re.compile(r"^[0-9A-Za-z][0-9A-Za-z.+-]{0,31}$")
+_ABSENT_IMAGE_ID_STDOUTS = frozenset({"", "\n"})
 _AMBIENT_AUTHORITY = re.compile(
     r"^(?:DOCKER_HOST|DOCKER_CONTEXT|DOCKER_CONFIG|COMPOSE_PROJECT_NAME|"
     r"HTTP_PROXY|HTTPS_PROXY|ALL_PROXY|NO_PROXY|AWS_.*|AZURE_.*|GOOGLE_.*|"
@@ -145,6 +150,7 @@ class CommandResult:
     returncode: int
     stdout: str
     classification: str = "completed"
+    stderr: str = ""
 
 
 @dataclass(frozen=True)
@@ -785,6 +791,16 @@ class ComposePlan:
             image_id,
         )
 
+    def base_service_start_diagnostic(self) -> tuple[str, ...]:
+        return self.compose(
+            "ps",
+            "--all",
+            "--format",
+            BASE_SERVICE_START_DIAGNOSTIC_FORMAT,
+            "ithildin-api",
+            "ithildin-ui",
+        )
+
 
 @dataclass(frozen=True)
 class BoundImageIdentity:
@@ -831,6 +847,7 @@ class ProducerState:
     clean_after_bridge_build: bool = False
     base_build_completed: bool = False
     bridge_build_completed: bool = False
+    base_service_start_diagnostic: JsonObject | None = None
     bound_images: dict[str, BoundImageIdentity] = field(default_factory=dict)
     inspected_images: dict[str, str] = field(default_factory=dict)
     image_platform: str | None = None
@@ -1033,13 +1050,22 @@ class SubprocessExecutor:
             == ("image", "inspect", "--format", "{{json .Id}}")
             and _DIGEST.fullmatch(command[7]) is not None
         )
+        config_runtime = Path(command[2]).parent
+        command_plan = ComposePlan(config_runtime.name, config_runtime)
+        is_base_start_diagnostic = (
+            command == command_plan.base_service_start_diagnostic()
+        )
         try:
             completed = subprocess.run(
                 command,
                 cwd=ROOT,
                 input=input_text,
                 stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE if is_id_probe else subprocess.DEVNULL,
+                stderr=(
+                    subprocess.PIPE
+                    if is_id_probe or is_base_start_diagnostic
+                    else subprocess.DEVNULL
+                ),
                 text=True,
                 check=False,
                 timeout=timeout,
@@ -1051,15 +1077,16 @@ class SubprocessExecutor:
             raise ProducerError("subprocess_output_too_large")
         classification = "completed"
         if is_id_probe and completed.returncode != 0:
-            expected = {
+            messages = {
                 f"Error response from daemon: No such image: {command[7]}",
                 f"Error: No such image: {command[7]}",
             }
-            stderr = completed.stderr.strip() if completed.stderr else ""
+            expected = messages | {message + "\n" for message in messages}
+            stderr = completed.stderr if completed.stderr else ""
             classification = (
                 "image_not_found"
                 if completed.returncode == 1
-                and not completed.stdout
+                and completed.stdout in _ABSENT_IMAGE_ID_STDOUTS
                 and stderr in expected
                 else "error"
             )
@@ -1067,6 +1094,7 @@ class SubprocessExecutor:
             completed.returncode,
             completed.stdout,
             classification,
+            completed.stderr if is_base_start_diagnostic else "",
         )
 
     def run_hermes(
@@ -2072,13 +2100,173 @@ def _license_source_inventory(state: ProducerState) -> JsonObject:
     }
 
 
-def _start_and_enroll(state: ProducerState, executor: Executor, api: Api) -> str:
-    _require_success(
-        executor.run(
-            state.plan.compose("up", "--detach", "--wait", "ithildin-api", "ithildin-ui")
+def _base_service_start_diagnostic_fallback(
+    *,
+    output_rejected: bool,
+) -> JsonObject:
+    return {
+        "collection_status": (
+            "output_rejected" if output_rejected else "inconclusive"
         ),
-        "base_services_start_failed",
+        "reason_code": (
+            "base_service_start_diagnostic_output_rejected"
+            if output_rejected
+            else "base_service_start_diagnostic_command_failed"
+        ),
+        "services": {
+            "ithildin-api": "service_unobserved",
+            "ithildin-ui": "service_unobserved",
+        },
+    }
+
+
+def _validate_base_service_start_output_safety(
+    result: CommandResult,
+) -> None:
+    try:
+        combined = (result.stdout + result.stderr).encode(
+            "utf-8",
+            errors="strict",
+        )
+    except UnicodeError as exc:
+        raise ProducerError("base_service_start_diagnostic_output_rejected") from exc
+    if len(combined) > MAX_BASE_SERVICE_START_DIAGNOSTIC_BYTES:
+        raise ProducerError("base_service_start_diagnostic_output_rejected")
+    for text in (result.stdout, result.stderr):
+        if any(
+            (ord(character) < 32 and character not in {"\t", "\n"})
+            or ord(character) == 127
+            or ord(character) > 126
+            for character in text
+        ) or re.search(
+            r"(?i)(?:authorization|bearer[ \t]|credential|enrollment[_ -]?code|"
+            r"password|private[_ -]?key|prompt|raw[_ -]?output|secret|token)",
+            text,
+        ):
+            raise ProducerError("base_service_start_diagnostic_output_rejected")
+
+
+def _classify_base_service_start(
+    state: str,
+    health: str,
+    exit_code: int,
+) -> str:
+    if state == "running":
+        if exit_code != 0:
+            raise ProducerError("base_service_start_diagnostic_output_rejected")
+        classification = {
+            "healthy": "service_running_healthy",
+            "starting": "service_running_starting",
+            "unhealthy": "service_running_unhealthy",
+            "": "service_running_without_healthcheck",
+        }.get(health)
+        if classification is None:
+            raise ProducerError("base_service_start_diagnostic_output_rejected")
+        return classification
+    if health:
+        raise ProducerError("base_service_start_diagnostic_output_rejected")
+    if state == "exited":
+        return (
+            "service_exited_zero"
+            if exit_code == 0
+            else "service_exited_nonzero"
+        )
+    if state == "dead":
+        return (
+            "service_dead_zero"
+            if exit_code == 0
+            else "service_dead_nonzero"
+        )
+    if state == "restarting":
+        return (
+            "service_restarting_zero"
+            if exit_code == 0
+            else "service_restarting_nonzero"
+        )
+    if exit_code != 0:
+        raise ProducerError("base_service_start_diagnostic_output_rejected")
+    classification = {
+        "created": "service_created",
+        "paused": "service_paused",
+        "removing": "service_removing",
+    }.get(state)
+    if classification is None:
+        raise ProducerError("base_service_start_diagnostic_output_rejected")
+    return classification
+
+
+def _parse_base_service_start_diagnostic(stdout: str) -> JsonObject:
+    services: JsonObject = {
+        "ithildin-api": "service_missing",
+        "ithildin-ui": "service_missing",
+    }
+    observed: set[str] = set()
+    lines = stdout.splitlines()
+    if len(lines) > 2:
+        raise ProducerError("base_service_start_diagnostic_output_rejected")
+    for line in lines:
+        fields = line.split("\t")
+        if len(fields) != 4:
+            raise ProducerError("base_service_start_diagnostic_output_rejected")
+        service, state, health, raw_exit_code = fields
+        if service not in services or service in observed:
+            raise ProducerError("base_service_start_diagnostic_output_rejected")
+        if not re.fullmatch(r"(?:0|[1-9][0-9]{0,2})", raw_exit_code):
+            raise ProducerError("base_service_start_diagnostic_output_rejected")
+        exit_code = int(raw_exit_code)
+        if exit_code > 255:
+            raise ProducerError("base_service_start_diagnostic_output_rejected")
+        services[service] = _classify_base_service_start(
+            state,
+            health,
+            exit_code,
+        )
+        observed.add(service)
+    return services
+
+
+def _collect_base_service_start_diagnostic(
+    state: ProducerState,
+    executor: Executor,
+) -> JsonObject:
+    try:
+        result = executor.run(
+            state.plan.base_service_start_diagnostic(),
+            timeout=30.0,
+        )
+    except (Exception, KeyboardInterrupt, ProducerSignal):
+        return _base_service_start_diagnostic_fallback(output_rejected=False)
+    try:
+        _validate_base_service_start_output_safety(result)
+        if result.returncode != 0 or result.stderr:
+            return _base_service_start_diagnostic_fallback(
+                output_rejected=False
+            )
+        return {
+            "collection_status": "complete",
+            "reason_code": "base_service_start_state_collected",
+            "services": _parse_base_service_start_diagnostic(result.stdout),
+        }
+    except (ProducerError, UnicodeError, ValueError):
+        return _base_service_start_diagnostic_fallback(output_rejected=True)
+
+
+def _start_and_enroll(state: ProducerState, executor: Executor, api: Api) -> str:
+    start = executor.run(
+        state.plan.compose(
+            "up",
+            "--detach",
+            "--wait",
+            "ithildin-api",
+            "ithildin-ui",
+        )
     )
+    if start.returncode != 0:
+        state.base_service_start_diagnostic = (
+            _collect_base_service_start_diagnostic(state, executor)
+        )
+        raise ProducerError("base_services_start_failed")
+    _require_success(start, "base_services_start_failed")
     health = api.get("/healthz", admin=False)
     if health != {"status": "ok", "service": "ithildin-api"}:
         raise ProducerError("gateway_health_invalid")
@@ -2696,7 +2884,7 @@ def _cleanup_once(
                 )
                 if (
                     probe.returncode == 1
-                    and not probe.stdout
+                    and probe.stdout in _ABSENT_IMAGE_ID_STDOUTS
                     and probe.classification == "image_not_found"
                 ):
                     image_id_proofs.append(True)
@@ -3060,6 +3248,7 @@ def _exact_command_vocabulary(
             fixed=True,
         ),
         plan.compose("up", "--detach", "--wait", "ithildin-api", "ithildin-ui"),
+        plan.base_service_start_diagnostic(),
         plan.compose(
             "--profile",
             "node",
@@ -3429,6 +3618,10 @@ def _write_failure_diagnostic(
         else False,
         "bound_inspected_image_identities": cast(list[Any], identities),
     }
+    if state is not None and state.base_service_start_diagnostic is not None:
+        diagnostic["base_service_start_diagnostic"] = (
+            state.base_service_start_diagnostic
+        )
     try:
         receipts.write(
             "diagnostic.json",
