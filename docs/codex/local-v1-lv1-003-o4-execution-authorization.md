@@ -1,10 +1,9 @@
 # Local v1 LV1-003 O4 Execution Authorization Gate
 
-Status: `AUTHORIZE_ATTEMPT_003_SUPERVISED_ONE_ATTEMPT_IMMEDIATE_CHILD`
+Status: `ATTEMPT_003_CLOSED_RECOVERY_REQUIRED_NO_AUTHORITY`
 
-This gate preserves both consumed attempt histories and authorizes exactly one
-central-manager-supervised Attempt 003 invocation for the dynamically validated control child. Its
-machine contract is
+This gate preserves all three consumed attempt histories and authorizes no execution, retry,
+recovery action, cleanup, or image removal. Its machine contract is
 `docs/codex/local-v1-lv1-003-o4-execution-authorization.json`.
 
 The gate preserves the reviewed fixed bridge and bounded producer implementation at
@@ -76,7 +75,7 @@ contents, an empty runtime base, and an absent published report. The current clo
 exactly seven tracked paths, including `.gitignore`; its three exact evidence-root child patterns do
 not create a broad `var` ignore and do not suppress gate inspection.
 
-## Compose Repair Review And Attempt 003
+## Compose Repair Review And Attempt 003 Result
 
 The exact Compose-repair candidate
 `7e6eb9f0fcad35016f611096543fa4a81017259c`, tree
@@ -92,20 +91,40 @@ The base Node owns exactly one bounded
 `/tmp:size=16m,mode=0700,uid=10002,gid=10002` declaration, the overlay no longer duplicates that
 target, and the producer rejects any non-exact merged Node tmpfs set.
 
-The accompanying
-`docs/codex/local-v1-lv1-003-o4-attempt-003-disposition.json` authorizes no static future candidate.
-Only after every check passes does the gate derive a clean, single-parent immediate child of the
-reviewed repair commit whose committed diff is exactly the seven-path control allowlist. All
-non-control paths must remain byte-equivalent to the reviewed repair parent.
+The accompanying historical
+`docs/codex/local-v1-lv1-003-o4-attempt-003-disposition.json` authorized no static future candidate.
+Only after every check passed did the prior gate derive a clean, single-parent immediate child of
+the reviewed repair commit whose committed diff was exactly the seven-path control allowlist. That
+derived candidate was `7f819bb91c475b4b9fa69b975e629810a7254020`, tree
+`7ff30d4625e6b086809703889376d34cdb0998b5`.
 
-The exact retained Attempt 002 receipt is required and allowed. Any missing, changed, unknown, or
-additional receipt run, populated runtime, published report, symlink, special entry, or additional
-attempt root refuses Attempt 003. Attempt 003 has budget one, retry false, and requires an immediate
-new post-attempt disposition after any invocation outcome.
+The exact operator invocation consumed Attempt 003. Make exited `2`; the producer exited `1` with
+`recovery_required`. The exact run and project identities were
+`20260725T125344Z-6460809b` and `ithildin-local-v1-o4-6460809b`.
+
+The gate and producer runtime were entered. The Docker mutation and image-build phase was entered,
+three base-service image outputs were observed afterward, and cleanup did not complete. This record
+does not claim that an earlier primary error existed or assign a value to one. The final
+`recovery_required` may have replaced an earlier error or may have originated in cleanup itself.
+The missing run-specific Hermes image makes bridge image-build failure a hypothesis, not a proven
+diagnosis. No later runtime phase is claimed.
+
+A point-in-time exact-run-scoped read-only observation found zero project-labeled containers,
+volumes, and networks, no run-specific Hermes image, and three retained sole-tag `linux/arm64`
+base-service images with zero containers and exact project/service labels. Their exact references,
+image IDs, and labels are recorded in
+`docs/codex/local-v1-lv1-003-o4-attempt-003-closure.json`. This is not current live truth, general
+Docker absence, completed cleanup, or authority to remove an image.
+
+The owner-only Attempt 003 receipt retains a 119-byte exact quarantine disposition, a 96,628-byte
+manifest bound to the attempted commit/tree, and a 663-file exact candidate snapshot. The runtime
+base is empty `0700`, and the report base is absent. The validator directly and independently
+validates the exact Attempt 002 and Attempt 003 retained receipts and rejects any missing, changed,
+unknown, extra, symlink, or special run, file, directory, manifest, or snapshot entry.
 
 ## Historical Attempt Ceiling
 
-The consumed authorization limited the producer to one uniquely named isolated Compose project and
+The consumed Attempt 003 authorization limited the producer to one uniquely named isolated Compose project and
 one server-owned `synthetic_read_review_v1` mission. It could create ephemeral local admin and enrollment
 values, but they must remain in memory or owner-only anchored runtime files and must never be
 printed, returned in receipts, or copied into evidence. The ordinary authenticated Node must become
@@ -164,19 +183,16 @@ unclaimed, and `recovery_required` remains true.
 Ambient Docker hosts, contexts, configuration, credential helpers, registry credentials, proxy
 variables, cloud credentials, arbitrary providers/models/tools/commands/arguments/paths, Docker
 socket mounts, or host-control APIs are rejected.
-Provider preflight is host-local only at `http://127.0.0.1:11434` and must confirm the exact model
-inventory entry `gemma4:e4b`. Container routing through `host.docker.internal` remains unknown until
-the sole attempt; a routing failure consumes that attempt and permits no retry.
+Provider preflight was host-local only at `http://127.0.0.1:11434` and required the exact model
+inventory entry `gemma4:e4b`. This closure makes no provider-route success or absence claim.
 
 ## Current Disposition
 
-Exactly five fields are true only for one dynamically validated, central-manager-supervised
-Attempt 003 invocation: `producer_code_authorized`, `docker_lifecycle_authorized`,
-`live_hermes_execution_authorized`, `model_provider_access_authorized`, and
-`o4_evidence_execution_authorized`. The remaining 14 authority fields are false. The attempt budget
-is one and retry is unauthorized.
+Attempts 001, 002, and 003 are consumed. All 19 authority fields are false. The attempt budget is
+zero; retry, automatic retry, post-failure execution, recovery action, cleanup, and image removal
+are unauthorized.
 
 Release, promotion, production, UAT, credential custody, runner lifecycle, arbitrary host control,
 generic process control, shell execution, Docker socket access, non-bypass claims, new powers, and
-new tools remain unauthorized. The governed tool count remains exactly 24. Attempts 001 and 002
-remain consumed, and Attempt 003 has not been executed by this control candidate.
+new tools remain unauthorized. The governed tool count remains exactly 24. Any recovery or new
+attempt requires a separate disposition and proportional independent review.

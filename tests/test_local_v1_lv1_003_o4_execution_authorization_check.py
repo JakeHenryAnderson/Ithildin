@@ -32,18 +32,18 @@ def _run_git(repo: Path, *arguments: str) -> str:
     return result.stdout.strip()
 
 
-def _authorized_child_repository(tmp_path: Path) -> tuple[Path, str, str]:
+def _closed_child_repository(tmp_path: Path) -> tuple[Path, str, str]:
     repo = tmp_path / "candidate"
     subprocess.run(
         ["git", "clone", "-q", str(Path.cwd()), str(repo)],
         check=True,
     )
-    _run_git(repo, "checkout", "--detach", gate.COMPOSE_REPAIR_COMMIT)
-    for relative in gate.ATTEMPT_003_CONTROL_PATH_ALLOWLIST:
+    _run_git(repo, "checkout", "--detach", gate.ATTEMPT_003_CANDIDATE_COMMIT)
+    for relative in gate.ATTEMPT_003_CLOSURE_CONTROL_PATH_ALLOWLIST:
         destination = repo / relative
         destination.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(relative, destination)
-    _run_git(repo, "add", "--", *gate.ATTEMPT_003_CONTROL_PATH_ALLOWLIST)
+    _run_git(repo, "add", "--", *gate.ATTEMPT_003_CLOSURE_CONTROL_PATH_ALLOWLIST)
     _run_git(
         repo,
         "-c",
@@ -53,7 +53,7 @@ def _authorized_child_repository(tmp_path: Path) -> tuple[Path, str, str]:
         "commit",
         "-q",
         "-m",
-        "test: exact O4 Attempt 003 disposition child",
+        "test: exact O4 Attempt 003 closure child",
     )
     shutil.copytree(
         Path.cwd() / gate.ATTEMPT_002_RECEIPT_BASE,
@@ -68,22 +68,22 @@ def _authorized_child_repository(tmp_path: Path) -> tuple[Path, str, str]:
     )
 
 
-def test_attempt_003_exact_child_derives_one_bounded_authorization(
+def test_attempt_003_exact_closure_child_keeps_all_authority_closed(
     tmp_path: Path,
 ) -> None:
-    repo, candidate_commit, candidate_tree = _authorized_child_repository(tmp_path)
+    repo, closure_commit, closure_tree = _closed_child_repository(tmp_path)
     report = gate.build_report(repo)
 
-    assert report["valid"] is True
     assert report["failures"] == []
+    assert report["valid"] is True
     assert report["record_status"] == (
-        "AUTHORIZE_ATTEMPT_003_SUPERVISED_ONE_ATTEMPT_IMMEDIATE_CHILD"
+        "ATTEMPT_003_CLOSED_RECOVERY_REQUIRED_NO_AUTHORITY"
     )
     assert report["reviewed_implementation_commit"] == gate.REVIEWED_IMPLEMENTATION_COMMIT
     assert report["code_authorization_commit"] == gate.CODE_AUTHORIZATION_COMMIT
     assert report["attempt_id"] == gate.ATTEMPT_003_ID
-    assert report["attempted_candidate_commit"] == candidate_commit
-    assert report["attempted_candidate_tree"] == candidate_tree
+    assert report["attempted_candidate_commit"] == gate.ATTEMPT_003_CANDIDATE_COMMIT
+    assert report["attempted_candidate_tree"] == gate.ATTEMPT_003_CANDIDATE_TREE
     assert (
         report["attempt_002_attempted_candidate_commit"]
         == gate.ATTEMPT_002_CANDIDATE_COMMIT
@@ -100,7 +100,8 @@ def test_attempt_003_exact_child_derives_one_bounded_authorization(
     }
     assert report["attempt_001_consumed"] is True
     assert report["attempt_002_consumed"] is True
-    assert report["attempt_consumed"] is False
+    assert report["attempt_003_consumed"] is True
+    assert report["attempt_consumed"] is True
     assert report["retry_authorized"] is False
     contract = _contract()
     assert (
@@ -111,13 +112,13 @@ def test_attempt_003_exact_child_derives_one_bounded_authorization(
         contract["code_authorization_record_sha256"]
         == gate.CODE_AUTHORIZATION_RECORD_DIGEST
     )
-    assert report["execution_checkout_commit"] == candidate_commit
-    assert report["execution_checkout_tree"] == candidate_tree
-    assert report["execution_attempt_budget"] == 1
-    assert report["live_execution_authorized"] is True
-    assert report["docker_lifecycle_authorized"] is True
-    assert report["provider_access_authorized"] is True
-    assert report["o4_evidence_execution_authorized"] is True
+    assert report["execution_checkout_commit"] == closure_commit
+    assert report["execution_checkout_tree"] == closure_tree
+    assert report["execution_attempt_budget"] == 0
+    assert report["live_execution_authorized"] is False
+    assert report["docker_lifecycle_authorized"] is False
+    assert report["provider_access_authorized"] is False
+    assert report["o4_evidence_execution_authorized"] is False
     assert report["new_governed_tool"] is False
     assert report["release_allowed"] is False
     assert report["uat_complete"] is False
@@ -135,17 +136,21 @@ def test_attempt_003_exact_child_derives_one_bounded_authorization(
         gate._file_digest(gate.ATTEMPT_DISPOSITION_DOCUMENT, [])  # noqa: SLF001
         == gate.ATTEMPT_DISPOSITION_DOCUMENT_DIGEST
     )
-    gate.assert_live_execution_authorized(
-        repo,
-        candidate_commit=candidate_commit,
-        candidate_tree=candidate_tree,
-    )
+    with pytest.raises(
+        gate.O4ExecutionAuthorizationError,
+        match="o4_live_execution_not_authorized",
+    ):
+        gate.assert_live_execution_authorized(
+            repo,
+            candidate_commit=closure_commit,
+            candidate_tree=closure_tree,
+        )
 
 
-def test_real_retained_attempt_002_evidence_is_exact() -> None:
+def test_real_retained_attempt_002_and_003_evidence_is_exact() -> None:
     failures: list[str] = []
 
-    gate._validate_retained_attempt_002_evidence(ROOT, failures)  # noqa: SLF001
+    gate._validate_retained_attempt_evidence(ROOT, failures)  # noqa: SLF001
 
     assert failures == []
 
@@ -153,7 +158,7 @@ def test_real_retained_attempt_002_evidence_is_exact() -> None:
 def test_additional_retained_attempt_run_refuses_attempt_003(
     tmp_path: Path,
 ) -> None:
-    repo, _, _ = _authorized_child_repository(tmp_path)
+    repo, _, _ = _closed_child_repository(tmp_path)
     receipt_base = repo / gate.ATTEMPT_002_RECEIPT_BASE
     (receipt_base / "unknown-attempt").mkdir(mode=0o700)
 
@@ -172,6 +177,43 @@ def test_additional_retained_attempt_run_refuses_attempt_003(
 
 
 @pytest.mark.parametrize(
+    "mutation",
+    ["tampered", "symlink", "special", "extra_child"],
+)
+def test_attempt_003_retained_receipt_rejects_tamper_symlink_or_special(
+    tmp_path: Path,
+    mutation: str,
+) -> None:
+    repo, _, _ = _closed_child_repository(tmp_path)
+    receipt_root = repo / gate.ATTEMPT_003_RECEIPT_ROOT
+    disposition = receipt_root / "disposition.json"
+    if mutation == "tampered":
+        disposition.write_bytes(b"x" * len(gate.ATTEMPT_003_DISPOSITION_BYTES))
+        disposition.chmod(0o600)
+    elif mutation == "symlink":
+        disposition.unlink()
+        external = tmp_path / "external-disposition.json"
+        external.write_bytes(gate.ATTEMPT_003_DISPOSITION_BYTES)
+        disposition.symlink_to(external)
+    elif mutation == "special":
+        disposition.unlink()
+        os.mkfifo(disposition, 0o600)
+    else:
+        extra = receipt_root / "unknown.json"
+        extra.write_text("{}\n", encoding="utf-8")
+        extra.chmod(0o600)
+
+    report = gate.build_report(repo)
+
+    assert report["valid"] is False
+    assert report["execution_attempt_budget"] == 0
+    assert report["live_execution_authorized"] is False
+    assert report["docker_lifecycle_authorized"] is False
+    assert report["provider_access_authorized"] is False
+    assert report["o4_evidence_execution_authorized"] is False
+
+
+@pytest.mark.parametrize(
     "posture",
     ["empty_base", "unknown_file", "unknown_directory", "symlinked_base"],
 )
@@ -179,7 +221,7 @@ def test_any_report_base_posture_refuses_attempt_003(
     tmp_path: Path,
     posture: str,
 ) -> None:
-    repo, _, _ = _authorized_child_repository(tmp_path)
+    repo, _, _ = _closed_child_repository(tmp_path)
     report_base = repo / gate.ATTEMPT_002_REPORT_BASE
     if posture == "symlinked_base":
         external = tmp_path / "external-report-base"
@@ -214,7 +256,7 @@ def test_invalid_retained_evidence_never_reopens_authority(
 
     monkeypatch.setattr(
         gate,
-        "_validate_retained_attempt_002_evidence",
+        "_validate_retained_attempt_evidence",
         reject_retained_evidence,
     )
 
@@ -285,7 +327,7 @@ def test_live_gate_refuses_consumed_attempt_002() -> None:
             "attempt_root_absence",
         ),
         (
-            lambda value: value.__setitem__("attempt_consumed", True),
+            lambda value: value.__setitem__("attempt_consumed", False),
             "attempt_consumed",
         ),
         (
@@ -468,27 +510,27 @@ def test_live_gate_refuses_consumed_attempt_002() -> None:
         ),
         (
             lambda value: value["authority"].__setitem__(  # type: ignore[union-attr]
-                "docker_lifecycle_authorized", False
+                "docker_lifecycle_authorized", True
             ),
-            "bounded Attempt 003",
+            "closed after Attempt 003",
         ),
         (
             lambda value: value["authority"].__setitem__(  # type: ignore[union-attr]
                 "producer_code_authorized", 1
             ),
-            "bounded Attempt 003",
+            "closed after Attempt 003",
         ),
         (
             lambda value: value["authority"].__setitem__(  # type: ignore[union-attr]
                 "shell_execution_authorized", True
             ),
-            "bounded Attempt 003",
+            "closed after Attempt 003",
         ),
         (
             lambda value: value["authority"].__setitem__(  # type: ignore[union-attr]
                 "release_allowed", 0
             ),
-            "bounded Attempt 003",
+            "closed after Attempt 003",
         ),
         (
             lambda value: value.__setitem__("unexpected", False),
@@ -780,6 +822,56 @@ def test_attempt_003_disposition_rejects_scope_history_or_authority_drift(
     assert "O4 Attempt 003 disposition is not closed and exact" in failures
 
 
+@pytest.mark.parametrize(
+    "mutate",
+    [
+        lambda value: value["diagnosis"].__setitem__(  # type: ignore[union-attr]
+            "bridge_image_build_failure_proven", True
+        ),
+        lambda value: value["diagnosis"].__setitem__(  # type: ignore[union-attr]
+            "primary_error_presence_known", True
+        ),
+        lambda value: value["diagnosis"].__setitem__(  # type: ignore[union-attr]
+            "primary_error_value_known", True
+        ),
+        lambda value: value["diagnosis"].__setitem__(  # type: ignore[union-attr]
+            "final_recovery_required_may_have_replaced_primary_or_originated_in_cleanup",
+            False,
+        ),
+        lambda value: value["read_only_residue_observation"].__setitem__(  # type: ignore[union-attr]
+            "current_live_truth_claimed", True
+        ),
+        lambda value: value["read_only_residue_observation"].__setitem__(  # type: ignore[union-attr]
+            "images_removed", True
+        ),
+        lambda value: value["tracked_closure_scope"].pop(),  # type: ignore[union-attr]
+        lambda value: value["attempt_contract"].__setitem__(  # type: ignore[union-attr]
+            "recovery_action_authorized", True
+        ),
+        lambda value: value["authority"].__setitem__(  # type: ignore[union-attr]
+            "docker_lifecycle_authorized", True
+        ),
+    ],
+)
+def test_attempt_003_closure_rejects_diagnosis_scope_or_authority_drift(
+    mutate: object,
+) -> None:
+    closure = json.loads(
+        gate.ATTEMPT_003_CLOSURE_JSON.read_text(encoding="utf-8")
+    )
+    assert callable(mutate)
+    mutate(closure)
+    failures: list[str] = []
+
+    gate._validate_attempt_003_closure(  # noqa: SLF001
+        closure,
+        gate.ATTEMPT_003_CLOSURE_DOCUMENT.read_text(encoding="utf-8"),
+        failures,
+    )
+
+    assert "O4 Attempt 003 closure is not closed and exact" in failures
+
+
 def _snapshot_expectation(content: bytes) -> tuple[int, str, bytes]:
     return (
         0o400,
@@ -968,7 +1060,7 @@ def test_descriptor_traversal_rejects_symlinked_receipt_base(
     )
     failures: list[str] = []
 
-    gate._validate_retained_attempt_002_evidence(tmp_path, failures)  # noqa: SLF001
+    gate._validate_retained_attempt_evidence(tmp_path, failures)  # noqa: SLF001
 
     assert failures
     assert any(
@@ -976,7 +1068,7 @@ def test_descriptor_traversal_rejects_symlinked_receipt_base(
     )
 
 
-def test_evidence_ignore_patterns_and_seven_path_closure_scope_are_exact() -> None:
+def test_evidence_ignore_patterns_and_closure_scopes_are_exact() -> None:
     failures: list[str] = []
 
     gate._validate_evidence_ignore_patterns(ROOT, failures)  # noqa: SLF001
@@ -986,6 +1078,14 @@ def test_evidence_ignore_patterns_and_seven_path_closure_scope_are_exact() -> No
     assert closure["tracked_closure_scope"] == gate.CLOSURE_CONTROL_PATH_ALLOWLIST
     assert len(gate.CLOSURE_CONTROL_PATH_ALLOWLIST) == 7
     assert gate.CLOSURE_CONTROL_PATH_ALLOWLIST[0] == ".gitignore"
+    attempt_003_closure = json.loads(
+        gate.ATTEMPT_003_CLOSURE_JSON.read_text(encoding="utf-8")
+    )
+    assert (
+        attempt_003_closure["tracked_closure_scope"]
+        == gate.ATTEMPT_003_CLOSURE_CONTROL_PATH_ALLOWLIST
+    )
+    assert len(gate.ATTEMPT_003_CLOSURE_CONTROL_PATH_ALLOWLIST) == 6
 
 
 @pytest.mark.parametrize(
@@ -1042,6 +1142,8 @@ def test_bound_review_or_disposition_digest_drift_is_rejected(
         gate.COMPOSE_REPAIR_REVIEW,
         gate.ATTEMPT_003_DISPOSITION_JSON,
         gate.ATTEMPT_003_DISPOSITION_DOCUMENT,
+        gate.ATTEMPT_003_CLOSURE_JSON,
+        gate.ATTEMPT_003_CLOSURE_DOCUMENT,
     ):
         destination = tmp_path / relative
         destination.parent.mkdir(parents=True, exist_ok=True)
@@ -1060,7 +1162,7 @@ def test_bound_review_or_disposition_digest_drift_is_rejected(
 def test_execution_checkout_rejects_descendant_dirty_and_extra_path(
     tmp_path: Path,
 ) -> None:
-    repo, _, _ = _authorized_child_repository(tmp_path)
+    repo, _, _ = _closed_child_repository(tmp_path)
     (repo / "extra-control.txt").write_text("extra\n", encoding="utf-8")
     failures: list[str] = []
     gate._validate_execution_checkout(repo, failures)  # noqa: SLF001
@@ -1089,12 +1191,12 @@ def test_execution_checkout_rejects_sibling_of_reviewed_parent(
 ) -> None:
     repo = tmp_path / "sibling"
     subprocess.run(["git", "clone", "-q", str(Path.cwd()), str(repo)], check=True)
-    _run_git(repo, "checkout", "--detach", f"{gate.COMPOSE_REPAIR_COMMIT}^")
-    for relative in gate.ATTEMPT_003_CONTROL_PATH_ALLOWLIST:
+    _run_git(repo, "checkout", "--detach", f"{gate.ATTEMPT_003_CANDIDATE_COMMIT}^")
+    for relative in gate.ATTEMPT_003_CLOSURE_CONTROL_PATH_ALLOWLIST:
         destination = repo / relative
         destination.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(relative, destination)
-    _run_git(repo, "add", "--", *gate.ATTEMPT_003_CONTROL_PATH_ALLOWLIST)
+    _run_git(repo, "add", "--", *gate.ATTEMPT_003_CLOSURE_CONTROL_PATH_ALLOWLIST)
     _run_git(
         repo,
         "-c",
@@ -1114,7 +1216,7 @@ def test_execution_checkout_rejects_sibling_of_reviewed_parent(
 
 
 def test_execution_checkout_rejects_non_control_drift(tmp_path: Path) -> None:
-    repo, _, _ = _authorized_child_repository(tmp_path)
+    repo, _, _ = _closed_child_repository(tmp_path)
     makefile = repo / "Makefile"
     makefile.write_text(
         makefile.read_text(encoding="utf-8") + "\n# repair drift\n",
