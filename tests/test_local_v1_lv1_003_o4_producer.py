@@ -1975,6 +1975,176 @@ def test_api_container_diagnostic_interruption_reaps_before_stream_close(
     assert process.stderr.closed_after_reap is True
 
 
+def test_api_container_diagnostic_repeated_wait_interrupt_is_bounded(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    original = producer.ProducerSignal("synthetic_selector")
+    cleanup_interrupt = producer.ProducerSignal("synthetic_reap")
+
+    class FakePipe:
+        def __init__(self, descriptor: int) -> None:
+            self.descriptor = descriptor
+            self.closed = False
+
+        def close(self) -> None:
+            self.closed = True
+
+    class FakeProcess:
+        def __init__(self) -> None:
+            self.stdout = FakePipe(1)
+            self.stderr = FakePipe(2)
+            self.kill_calls = 0
+            self.wait_calls = 0
+
+        def poll(self) -> None:
+            return None
+
+        def kill(self) -> None:
+            self.kill_calls += 1
+
+        def wait(self, timeout: float | None = None) -> int:
+            assert timeout == producer.API_CONTAINER_REAP_TIMEOUT_SECONDS
+            self.wait_calls += 1
+            raise cleanup_interrupt
+
+    class FakeKey:
+        def __init__(self, pipe: FakePipe, data: str) -> None:
+            self.fd = pipe.descriptor
+            self.fileobj = pipe
+            self.data = data
+
+    process = FakeProcess()
+
+    class FakeSelector:
+        def __init__(self) -> None:
+            self.keys: dict[FakePipe, FakeKey] = {}
+            self.closed = False
+
+        def register(
+            self,
+            pipe: FakePipe,
+            event: int,
+            data: str,
+        ) -> None:
+            del event
+            self.keys[pipe] = FakeKey(pipe, data)
+
+        def get_map(self) -> dict[FakePipe, FakeKey]:
+            return self.keys
+
+        def select(self, timeout: float) -> list[tuple[FakeKey, int]]:
+            del timeout
+            raise original
+
+        def close(self) -> None:
+            self.closed = True
+
+    selector = FakeSelector()
+    monkeypatch.setattr(
+        producer.subprocess,
+        "Popen",
+        lambda *args, **kwargs: process,
+    )
+    monkeypatch.setattr(
+        producer.selectors,
+        "DefaultSelector",
+        lambda: selector,
+    )
+
+    with pytest.raises(producer.ProducerSignal) as caught:
+        producer.SubprocessExecutor(
+            dict(os.environ)
+        )._run_bounded_api_container_diagnostic(  # noqa: SLF001
+            ("synthetic",),
+            timeout=10.0,
+        )
+
+    assert caught.value is original
+    assert process.kill_calls == producer.MAX_API_CONTAINER_REAP_ATTEMPTS
+    assert process.wait_calls == producer.MAX_API_CONTAINER_REAP_ATTEMPTS
+    assert selector.closed is True
+    assert process.stdout.closed is True
+    assert process.stderr.closed is True
+
+
+def test_api_container_diagnostic_cleanup_interrupt_is_deferred(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    cleanup_interrupt = KeyboardInterrupt("synthetic_cleanup")
+
+    class FakePipe:
+        def __init__(self) -> None:
+            self.closed = False
+
+        def close(self) -> None:
+            self.closed = True
+
+    class FakeProcess:
+        def __init__(self) -> None:
+            self.stdout = FakePipe()
+            self.stderr = FakePipe()
+            self.poll_calls = 0
+            self.wait_calls = 0
+
+        def poll(self) -> int | None:
+            self.poll_calls += 1
+            if self.poll_calls == 1:
+                raise cleanup_interrupt
+            return None
+
+        def kill(self) -> None:
+            return None
+
+        def wait(self, timeout: float | None = None) -> int:
+            self.wait_calls += 1
+            if self.wait_calls == 1:
+                assert timeout is not None
+            else:
+                assert timeout == producer.API_CONTAINER_REAP_TIMEOUT_SECONDS
+            return 0
+
+    process = FakeProcess()
+
+    class FakeSelector:
+        def __init__(self) -> None:
+            self.closed = False
+
+        def register(self, *args: object) -> None:
+            return None
+
+        def get_map(self) -> dict[object, object]:
+            return {}
+
+        def close(self) -> None:
+            self.closed = True
+
+    selector = FakeSelector()
+    monkeypatch.setattr(
+        producer.subprocess,
+        "Popen",
+        lambda *args, **kwargs: process,
+    )
+    monkeypatch.setattr(
+        producer.selectors,
+        "DefaultSelector",
+        lambda: selector,
+    )
+
+    with pytest.raises(KeyboardInterrupt) as caught:
+        producer.SubprocessExecutor(
+            dict(os.environ)
+        )._run_bounded_api_container_diagnostic(  # noqa: SLF001
+            ("synthetic",),
+            timeout=10.0,
+        )
+
+    assert caught.value is cleanup_interrupt
+    assert process.wait_calls == 2
+    assert selector.closed is True
+    assert process.stdout.closed is True
+    assert process.stderr.closed is True
+
+
 @pytest.mark.parametrize("stage", ["query", "inspect"])
 def test_api_container_diagnostic_interruption_is_closed_and_cleanup_once(
     fake_stack: tuple[

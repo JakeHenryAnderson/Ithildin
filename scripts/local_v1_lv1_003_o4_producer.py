@@ -56,6 +56,8 @@ NODE_TMPFS = ("/tmp:size=16m,mode=0700,uid=10002,gid=10002",)
 MAX_RECOVERY_RECEIPT_BYTES = 4096
 MAX_BASE_SERVICE_START_DIAGNOSTIC_BYTES = 1024
 MAX_API_CONTAINER_DIAGNOSTIC_BYTES = 512
+MAX_API_CONTAINER_REAP_ATTEMPTS = 3
+API_CONTAINER_REAP_TIMEOUT_SECONDS = 0.25
 BASE_SERVICE_START_DIAGNOSTIC_FORMAT = (
     "{{.Service}}\t{{.State}}\t{{.Health}}\t{{.ExitCode}}"
 )
@@ -1226,43 +1228,82 @@ class SubprocessExecutor:
                 process.wait()
             raise ProducerError("subprocess_unavailable") from exc
         finally:
+            unwinding = sys.exc_info()[1] is not None
+            process_reaped = True
+            cleanup_interrupt: BaseException | None = None
             if process is not None:
-                self._terminate_and_reap_active_process(process)
+                process_reaped, cleanup_interrupt = (
+                    self._terminate_and_reap_active_process(process)
+                )
             try:
                 selector.close()
-            except BaseException:
+            except (KeyboardInterrupt, ProducerSignal) as exc:
+                if cleanup_interrupt is None:
+                    cleanup_interrupt = exc
+            except (OSError, ValueError):
                 pass
             if process is not None:
                 if process.stdout is not None:
                     try:
                         process.stdout.close()
-                    except BaseException:
+                    except (KeyboardInterrupt, ProducerSignal) as exc:
+                        if cleanup_interrupt is None:
+                            cleanup_interrupt = exc
+                    except OSError:
                         pass
                 if process.stderr is not None:
                     try:
                         process.stderr.close()
-                    except BaseException:
+                    except (KeyboardInterrupt, ProducerSignal) as exc:
+                        if cleanup_interrupt is None:
+                            cleanup_interrupt = exc
+                    except OSError:
                         pass
+            if not unwinding and cleanup_interrupt is not None:
+                raise cleanup_interrupt
+            if not unwinding and not process_reaped:
+                raise ProducerError("subprocess_cleanup_unconfirmed")
 
     @staticmethod
     def _terminate_and_reap_active_process(
         process: subprocess.Popen[bytes],
-    ) -> None:
+    ) -> tuple[bool, BaseException | None]:
+        cleanup_interrupt: BaseException | None = None
+
+        def remember_interrupt(exc: BaseException) -> None:
+            nonlocal cleanup_interrupt
+            if cleanup_interrupt is None:
+                cleanup_interrupt = exc
+
         try:
             if process.poll() is not None:
-                return
-        except BaseException:
+                return True, cleanup_interrupt
+        except (KeyboardInterrupt, ProducerSignal) as exc:
+            remember_interrupt(exc)
+        except OSError:
             pass
-        while True:
+        for _ in range(MAX_API_CONTAINER_REAP_ATTEMPTS):
             try:
                 process.kill()
-            except BaseException:
+            except (KeyboardInterrupt, ProducerSignal) as exc:
+                remember_interrupt(exc)
+            except OSError:
                 pass
             try:
-                process.wait()
-                return
-            except BaseException:
-                continue
+                process.wait(timeout=API_CONTAINER_REAP_TIMEOUT_SECONDS)
+                return True, cleanup_interrupt
+            except (KeyboardInterrupt, ProducerSignal) as exc:
+                remember_interrupt(exc)
+            except (OSError, subprocess.TimeoutExpired):
+                pass
+            try:
+                if process.poll() is not None:
+                    return True, cleanup_interrupt
+            except (KeyboardInterrupt, ProducerSignal) as exc:
+                remember_interrupt(exc)
+            except OSError:
+                pass
+        return False, cleanup_interrupt
 
     def run_hermes(
         self,
