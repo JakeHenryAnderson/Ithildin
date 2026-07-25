@@ -1,17 +1,20 @@
 # Local v1 LV1-003 O4 Execution Authorization Gate
 
-Status: `PREPARE_REVIEW`
+Status: `AUTHORIZED_SUPERVISED_ONE_ATTEMPT_CHILD`
 
-This is the separate execution gate for the future exact-candidate Local-v1 `O4` journey. It is
-non-authorizing. Its machine contract is
+This is the separate execution gate for one supervised Local-v1 `O4` journey. Its machine contract is
 `docs/codex/local-v1-lv1-003-o4-execution-authorization.json`.
 
 The gate preserves the reviewed fixed bridge and bounded producer implementation at
 `5dab3654391c14fe214a9dfe302c099d0fe5fbf8`. The current code-only authorization record retains
 historical origin commit `da17fbc86369ed5a6e7f9de7c1098322bcda4ac9` while binding the later
-producer review at `docs/codex/local-v1-lv1-003-o4-producer-exact-review.md`. That `GO_CODE_ONLY`
-record does not bind a future execution candidate or grant a live attempt. The future commit/tree,
-live exact-review, and distinct post-review execution-disposition fields remain deliberately null.
+producer review at `docs/codex/local-v1-lv1-003-o4-producer-exact-review.md`. The separate
+post-review disposition is
+`docs/codex/local-v1-lv1-003-o4-post-review-disposition.json`. It authorizes only a clean,
+single-parent immediate child of code-authorization commit
+`86e75f0cf7f92ceb33218f2a66a00668f4da9e12`, with the exact closed six-path control diff and
+byte parity across every reviewed runtime, producer, bridge, and covered test path. The gate derives
+that child commit and tree only after every check passes; it contains no future self-reference.
 
 ## Prepared Live Ceiling
 
@@ -40,11 +43,9 @@ The future run must produce actual bounded image artifact and repository-license
 Image config/layer metadata is not an SBOM. The candidate producer and assembler now use
 `image_artifact_inventory_digest` and `license_source_inventory_digest`, preserve actual Gateway
 Agent Run status `active`, and require exactly two distinctly identified Gateway completion events.
-The independently reviewed code-only candidate remains unusable for live producer evidence until
-the still-null future live-candidate, live exact-review, and separate post-review execution
-disposition fields are populated by a later control step. The inventories are not placeholder
-hashes and do not claim SBOM coverage, license completeness, compliance, provenance custody, or
-provider truth.
+The independently reviewed code-only candidate is usable for this one supervised producer attempt
+only when the dynamic immediate-child gate passes. The inventories are not placeholder hashes and
+do not claim SBOM coverage, license completeness, compliance, provenance custody, or provider truth.
 Static fake evidence proves closed private-snapshot enumeration and rejects observed path
 replacement. It does not prove absence of transient malicious same-UID mutation while Docker reads
 the build context; that threat remains outside the Local-v1 evidence boundary, consistent with the
@@ -82,9 +83,18 @@ the sole attempt; a routing failure consumes that attempt and permits no retry.
 ## Current Disposition
 
 `producer_code_authorized`, `docker_lifecycle_authorized`, `live_hermes_execution_authorized`,
-`model_provider_access_authorized`, and `o4_evidence_execution_authorized` are all false. Release,
-promotion, production, UAT, host-control, new-power, and new-tool authority are also false.
+`model_provider_access_authorized`, and `o4_evidence_execution_authorized` are the only five true
+authority bits, and they become effective only for the dynamically validated child and one
+central-manager-supervised invocation. Release, promotion, production, UAT, credential custody,
+runner lifecycle, arbitrary host control, generic process control, shell execution, Docker socket
+access, non-bypass claims, new-power, and new-tool authority remain false. The governed tool count
+remains exactly 24.
 
-Only a later exact-candidate review with no blocking finding and a separate post-review disposition
-may populate the future bindings and grant a maximum of one execution attempt. Until then, the live
-target must fail before any Docker, API, provider, filesystem-runtime, or network action.
+The gate checks three exact local evidence roots and refuses any retained prior-attempt or success
+entry, unsafe root, or unreadable root. This does not implement atomic cross-process budget
+consumption and makes no tamper-proof or durable-ledger claim. No concurrent invocation, automatic
+retry, or post-attempt rerun is authorized. Every attempted invocation requires an immediate
+post-attempt disposition before any further run.
+
+The current uncommitted preparation worktree is intentionally non-authorizing. Authority exists only
+after these six control paths are committed as the clean single immediate child described above.

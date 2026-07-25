@@ -1,0 +1,71 @@
+{
+  "schema_version": "1",
+  "record_type": "local_v1_lv1_003_o4_post_review_disposition",
+  "record_status": "AUTHORIZE_SUPERVISED_ONE_ATTEMPT_IMMEDIATE_CHILD",
+  "ticket_id": "LV1-003",
+  "outcome_id": "O4",
+  "candidate_parent_commit": "86e75f0cf7f92ceb33218f2a66a00668f4da9e12",
+  "candidate_parent_tree": "11d9a752b8e08b483e1d8b9a347a06b5d8bf9af7",
+  "reviewed_implementation_commit": "5dab3654391c14fe214a9dfe302c099d0fe5fbf8",
+  "reviewed_implementation_tree": "f9a0cb66ac12e6e0ecca7fc23a0071be0dbe3075",
+  "producer_exact_review_path": "docs/codex/local-v1-lv1-003-o4-producer-exact-review.md",
+  "producer_exact_review_sha256": "sha256:5d023bb589636fc991a86768fb97f737cae2cdd58da369c94f99a99d20245c76",
+  "code_authorization_path": "docs/codex/mission-command-runner-bridge-authorization-record.md",
+  "code_authorization_commit": "86e75f0cf7f92ceb33218f2a66a00668f4da9e12",
+  "code_authorization_tree": "11d9a752b8e08b483e1d8b9a347a06b5d8bf9af7",
+  "code_authorization_record_sha256": "sha256:2420d1c22faaec94d15834734b5b2f700579446c9e5fb9ea742855ff78a7b83d",
+  "producer_contract_sha256": "sha256:3c742762465380387153f5ee17686ed540354926c5364c9e73f15100d9bb30e1",
+  "execution_candidate_binding": {
+    "mode": "dynamic_current_head_after_all_checks",
+    "required_parent_relation": "single_immediate_child_of_candidate_parent",
+    "clean_checkout_required": true,
+    "static_child_commit_claimed": false,
+    "static_child_tree_claimed": false,
+    "runtime_byte_parity_commit": "5dab3654391c14fe214a9dfe302c099d0fe5fbf8",
+    "changed_paths_must_equal_control_allowlist": true
+  },
+  "control_path_allowlist": [
+    "docs/codex/local-v1-lv1-003-o4-execution-authorization.json",
+    "docs/codex/local-v1-lv1-003-o4-execution-authorization.md",
+    "docs/codex/local-v1-lv1-003-o4-post-review-disposition.json",
+    "docs/codex/local-v1-lv1-003-o4-post-review-disposition.md",
+    "scripts/local_v1_lv1_003_o4_execution_authorization_check.py",
+    "tests/test_local_v1_lv1_003_o4_execution_authorization_check.py"
+  ],
+  "attempt_contract": {
+    "maximum_supervised_invocations": 1,
+    "custody": "central_manager_supervised_local_invocation",
+    "concurrent_invocations_authorized": false,
+    "automatic_retry_authorized": false,
+    "post_attempt_rerun_authorized": false,
+    "immediate_post_attempt_disposition_required": true,
+    "persistent_cross_process_budget_consumption_claimed": false,
+    "prior_attempt_detection": "retained_exact_local_evidence_only_not_tamper_proof_or_atomic_consumption",
+    "prior_attempt_roots": [
+      "var/local-v1-lv1-003-o4-receipts",
+      "var/local-v1-lv1-003-o4-runtime",
+      "var/local-v1-constrained-mission-journey"
+    ]
+  },
+  "authority": {
+    "producer_code_authorized": true,
+    "docker_lifecycle_authorized": true,
+    "live_hermes_execution_authorized": true,
+    "model_provider_access_authorized": true,
+    "o4_evidence_execution_authorized": true,
+    "credential_custody_authorized": false,
+    "runner_lifecycle_authority": false,
+    "arbitrary_host_control_authorized": false,
+    "generic_process_control_authorized": false,
+    "shell_execution_authorized": false,
+    "docker_socket_authorized": false,
+    "network_non_bypass_claimed": false,
+    "filesystem_non_bypass_claimed": false,
+    "new_governed_power_authorized": false,
+    "new_governed_tool": false,
+    "release_allowed": false,
+    "promotion_allowed": false,
+    "production_authorized": false,
+    "uat_complete": false
+  }
+}

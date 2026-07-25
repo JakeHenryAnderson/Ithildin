@@ -3,6 +3,7 @@ from __future__ import annotations
 import copy
 import json
 import shutil
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -18,12 +19,66 @@ def _contract() -> dict[str, object]:
     return document
 
 
-def test_o4_candidate_gate_has_exact_code_authority_but_remains_non_authorizing() -> None:
-    report = gate.build_report(ROOT)
+def _run_git(repo: Path, *arguments: str) -> str:
+    result = subprocess.run(
+        ["git", "-C", str(repo), *arguments],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    return result.stdout.strip()
 
-    assert report["valid"] is True
-    assert report["failures"] == []
-    assert report["record_status"] == "PREPARE_REVIEW"
+
+def _authorized_child_repository(tmp_path: Path) -> tuple[Path, str, str]:
+    repo = tmp_path / "candidate"
+    subprocess.run(
+        ["git", "clone", "-q", str(Path.cwd()), str(repo)],
+        check=True,
+    )
+    _run_git(repo, "checkout", "--detach", gate.CANDIDATE_PARENT_COMMIT)
+    for relative in gate.CONTROL_PATH_ALLOWLIST:
+        destination = repo / relative
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(relative, destination)
+    _run_git(repo, "add", "--", *gate.CONTROL_PATH_ALLOWLIST)
+    _run_git(
+        repo,
+        "-c",
+        "user.name=Ithildin Test",
+        "-c",
+        "user.email=ithildin-test@example.invalid",
+        "commit",
+        "-q",
+        "-m",
+        "test: exact O4 disposition child",
+    )
+    return repo, _run_git(repo, "rev-parse", "HEAD"), _run_git(
+        repo, "show", "-s", "--format=%T", "HEAD"
+    )
+
+
+def _dirty_candidate_parent_repository(tmp_path: Path) -> Path:
+    repo = tmp_path / "dirty-parent"
+    subprocess.run(
+        ["git", "clone", "-q", str(Path.cwd()), str(repo)],
+        check=True,
+    )
+    _run_git(repo, "checkout", "--detach", gate.CANDIDATE_PARENT_COMMIT)
+    for relative in gate.CONTROL_PATH_ALLOWLIST:
+        destination = repo / relative
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(relative, destination)
+    return repo
+
+
+def test_uncommitted_candidate_parent_remains_non_authorizing(
+    tmp_path: Path,
+) -> None:
+    repo = _dirty_candidate_parent_repository(tmp_path)
+    report = gate.build_report(repo)
+
+    assert report["valid"] is False
+    assert report["record_status"] == "AUTHORIZED_SUPERVISED_ONE_ATTEMPT_CHILD"
     assert report["reviewed_implementation_commit"] == gate.REVIEWED_IMPLEMENTATION_COMMIT
     assert report["code_authorization_commit"] == gate.CODE_AUTHORIZATION_COMMIT
     contract = _contract()
@@ -35,8 +90,8 @@ def test_o4_candidate_gate_has_exact_code_authority_but_remains_non_authorizing(
         contract["code_authorization_record_sha256"]
         == gate.CODE_AUTHORIZATION_RECORD_DIGEST
     )
-    assert report["future_execution_candidate_commit"] is None
-    assert report["future_execution_candidate_tree"] is None
+    assert report["execution_checkout_commit"] is None
+    assert report["execution_checkout_tree"] is None
     assert report["execution_attempt_budget"] == 0
     assert report["live_execution_authorized"] is False
     assert report["docker_lifecycle_authorized"] is False
@@ -45,15 +100,75 @@ def test_o4_candidate_gate_has_exact_code_authority_but_remains_non_authorizing(
     assert report["new_governed_tool"] is False
     assert report["release_allowed"] is False
     assert report["uat_complete"] is False
+    assert any("not a single immediate child" in value for value in report["failures"])
+    assert any("not clean" in value for value in report["failures"])
 
 
-def test_live_gate_refuses_before_any_future_candidate_is_bound() -> None:
+def test_ambient_exact_child_authorizes_one_supervised_attempt() -> None:
+    commit = _run_git(ROOT, "rev-parse", "HEAD")
+    tree = _run_git(ROOT, "show", "-s", "--format=%T", "HEAD")
+
+    report = gate.build_report(ROOT)
+
+    assert report["valid"] is True
+    assert report["failures"] == []
+    assert report["execution_checkout_commit"] == commit
+    assert report["execution_checkout_tree"] == tree
+    assert report["execution_attempt_budget"] == 1
+    assert report["live_execution_authorized"] is True
+    assert report["docker_lifecycle_authorized"] is True
+    assert report["provider_access_authorized"] is True
+    assert report["o4_evidence_execution_authorized"] is True
+    assert report["new_governed_tool"] is False
+    assert report["release_allowed"] is False
+    assert report["uat_complete"] is False
+    authority = _contract()["authority"]
+    assert isinstance(authority, dict)
+    assert {
+        key for key, authorized in authority.items() if authorized is True
+    } == gate.TRUE_AUTHORITY_FIELDS
+    gate.assert_live_execution_authorized(
+        ROOT,
+        candidate_commit=commit,
+        candidate_tree=tree,
+    )
+
+
+def test_exact_clean_immediate_child_authorizes_one_supervised_attempt(
+    tmp_path: Path,
+) -> None:
+    repo, commit, tree = _authorized_child_repository(tmp_path)
+
+    report = gate.build_report(repo)
+
+    assert report["valid"] is True
+    assert report["failures"] == []
+    assert report["execution_checkout_commit"] == commit
+    assert report["execution_checkout_tree"] == tree
+    assert report["execution_attempt_budget"] == 1
+    assert report["live_execution_authorized"] is True
+    assert report["docker_lifecycle_authorized"] is True
+    assert report["provider_access_authorized"] is True
+    assert report["o4_evidence_execution_authorized"] is True
+    assert report["new_governed_tool"] is False
+    assert report["release_allowed"] is False
+    assert report["uat_complete"] is False
+    gate.assert_live_execution_authorized(
+        repo,
+        candidate_commit=commit,
+        candidate_tree=tree,
+    )
+
+
+def test_live_gate_refuses_wrong_dynamic_identity(tmp_path: Path) -> None:
+    repo, _, _ = _authorized_child_repository(tmp_path)
+
     with pytest.raises(
         gate.O4ExecutionAuthorizationError,
         match="o4_live_execution_not_authorized",
     ):
         gate.assert_live_execution_authorized(
-            ROOT,
+            repo,
             candidate_commit="a" * 40,
             candidate_tree="b" * 40,
         )
@@ -64,15 +179,17 @@ def test_live_gate_refuses_before_any_future_candidate_is_bound() -> None:
     [
         (
             lambda value: value.__setitem__(
-                "future_execution_candidate_commit", "a" * 40
+                "execution_candidate_commit", "a" * 40
             ),
-            "future_execution_candidate_commit",
+            "fields are not closed",
         ),
         (
-            lambda value: value.__setitem__(
-                "future_execution_candidate_tree", "b" * 40
-            ),
-            "future_execution_candidate_tree",
+            lambda value: value.__setitem__("execution_attempt_budget", 2),
+            "execution_attempt_budget",
+        ),
+        (
+            lambda value: value.__setitem__("execution_attempt_budget", True),
+            "execution_attempt_budget",
         ),
         (
             lambda value: value.__setitem__("record_status", "AUTHORIZED_EXACT_CANDIDATE"),
@@ -126,6 +243,12 @@ def test_live_gate_refuses_before_any_future_candidate_is_bound() -> None:
         ),
         (
             lambda value: value["evidence_contract"].__setitem__(  # type: ignore[union-attr]
+                "mission_count", True
+            ),
+            "evidence contract",
+        ),
+        (
+            lambda value: value["evidence_contract"].__setitem__(  # type: ignore[union-attr]
                 "gateway_agent_run_record_status", "completed"
             ),
             "evidence contract",
@@ -144,7 +267,7 @@ def test_live_gate_refuses_before_any_future_candidate_is_bound() -> None:
         ),
         (
             lambda value: value["evidence_contract"].__setitem__(  # type: ignore[union-attr]
-                "current_assembler_usable_for_live_producer", True
+                "current_assembler_usable_for_live_producer", False
             ),
             "evidence contract",
         ),
@@ -200,9 +323,27 @@ def test_live_gate_refuses_before_any_future_candidate_is_bound() -> None:
         ),
         (
             lambda value: value["authority"].__setitem__(  # type: ignore[union-attr]
-                "docker_lifecycle_authorized", True
+                "docker_lifecycle_authorized", False
             ),
-            "authority must remain all false",
+            "exact five-bit disposition",
+        ),
+        (
+            lambda value: value["authority"].__setitem__(  # type: ignore[union-attr]
+                "producer_code_authorized", 1
+            ),
+            "exact five-bit disposition",
+        ),
+        (
+            lambda value: value["authority"].__setitem__(  # type: ignore[union-attr]
+                "shell_execution_authorized", True
+            ),
+            "exact five-bit disposition",
+        ),
+        (
+            lambda value: value["authority"].__setitem__(  # type: ignore[union-attr]
+                "release_allowed", 0
+            ),
+            "exact five-bit disposition",
         ),
         (
             lambda value: value.__setitem__("unexpected", False),
@@ -210,7 +351,7 @@ def test_live_gate_refuses_before_any_future_candidate_is_bound() -> None:
         ),
     ],
 )
-def test_prepare_review_contract_rejects_authority_or_scope_drift(
+def test_supervised_attempt_contract_rejects_authority_or_scope_drift(
     mutate: object,
     failure_fragment: str,
 ) -> None:
@@ -235,6 +376,165 @@ def test_authorization_json_rejects_duplicate_keys(tmp_path: Path) -> None:
     assert failures == [
         "O4 execution authorization JSON is unavailable or ambiguous"
     ]
+
+
+def test_disposition_rejects_static_child_self_reference() -> None:
+    disposition = json.loads(gate.DISPOSITION_JSON.read_text(encoding="utf-8"))
+    disposition["execution_candidate_commit"] = "a" * 40
+    failures: list[str] = []
+
+    gate._validate_disposition(  # noqa: SLF001
+        disposition,
+        gate.DISPOSITION_DOCUMENT.read_text(encoding="utf-8"),
+        failures,
+    )
+
+    assert "O4 post-review disposition is not closed and exact" in failures
+
+
+@pytest.mark.parametrize(
+    "mutate",
+    [
+        lambda value: value["attempt_contract"].__setitem__(  # type: ignore[union-attr]
+            "maximum_supervised_invocations", True
+        ),
+        lambda value: value["authority"].__setitem__(  # type: ignore[union-attr]
+            "producer_code_authorized", 1
+        ),
+        lambda value: value["authority"].__setitem__(  # type: ignore[union-attr]
+            "release_allowed", 0
+        ),
+    ],
+)
+def test_disposition_rejects_bool_int_type_substitution(mutate: object) -> None:
+    disposition = json.loads(gate.DISPOSITION_JSON.read_text(encoding="utf-8"))
+    assert callable(mutate)
+    mutate(disposition)
+    failures: list[str] = []
+
+    gate._validate_disposition(  # noqa: SLF001
+        disposition,
+        gate.DISPOSITION_DOCUMENT.read_text(encoding="utf-8"),
+        failures,
+    )
+
+    assert "O4 post-review disposition is not closed and exact" in failures
+
+
+def test_bound_review_or_disposition_digest_drift_is_rejected(
+    tmp_path: Path,
+) -> None:
+    for relative in (
+        gate.PRODUCER_EXACT_REVIEW,
+        gate.DISPOSITION_JSON,
+        gate.DISPOSITION_DOCUMENT,
+    ):
+        destination = tmp_path / relative
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(relative, destination)
+    (tmp_path / gate.DISPOSITION_DOCUMENT).write_text("altered\n", encoding="utf-8")
+    failures: list[str] = []
+
+    gate._validate_bound_documents(tmp_path, failures)  # noqa: SLF001
+
+    assert any("post-review disposition document digest" in value for value in failures)
+
+
+def test_execution_checkout_rejects_descendant_dirty_and_extra_path(
+    tmp_path: Path,
+) -> None:
+    repo, _, _ = _authorized_child_repository(tmp_path)
+    (repo / "extra-control.txt").write_text("extra\n", encoding="utf-8")
+    failures: list[str] = []
+    gate._validate_execution_checkout(repo, failures)  # noqa: SLF001
+    assert any("not clean" in value for value in failures)
+
+    _run_git(repo, "add", "extra-control.txt")
+    _run_git(
+        repo,
+        "-c",
+        "user.name=Ithildin Test",
+        "-c",
+        "user.email=ithildin-test@example.invalid",
+        "commit",
+        "-q",
+        "-m",
+        "test: forbidden descendant",
+    )
+    failures = []
+    gate._validate_execution_checkout(repo, failures)  # noqa: SLF001
+    assert any("not a single immediate child" in value for value in failures)
+    assert any("not the exact control allowlist" in value for value in failures)
+
+
+def test_execution_checkout_rejects_runtime_byte_drift(tmp_path: Path) -> None:
+    repo = tmp_path / "tiny-runtime"
+    repo.mkdir()
+    _run_git(repo, "init", "-q")
+    (repo / "runtime.txt").write_text("reviewed\n", encoding="utf-8")
+    _run_git(repo, "add", "runtime.txt")
+    _run_git(
+        repo,
+        "-c",
+        "user.name=Ithildin Test",
+        "-c",
+        "user.email=ithildin-test@example.invalid",
+        "commit",
+        "-q",
+        "-m",
+        "reviewed runtime",
+    )
+    reviewed = _run_git(repo, "rev-parse", "HEAD")
+    parent_tree = _run_git(repo, "show", "-s", "--format=%T", "HEAD")
+    (repo / "control.txt").write_text("control\n", encoding="utf-8")
+    (repo / "runtime.txt").write_text("drift\n", encoding="utf-8")
+    _run_git(repo, "add", "control.txt", "runtime.txt")
+    _run_git(
+        repo,
+        "-c",
+        "user.name=Ithildin Test",
+        "-c",
+        "user.email=ithildin-test@example.invalid",
+        "commit",
+        "-q",
+        "-m",
+        "candidate drift",
+    )
+    failures: list[str] = []
+
+    gate._validate_execution_checkout(  # noqa: SLF001
+        repo,
+        failures,
+        candidate_parent_commit=reviewed,
+        candidate_parent_tree=parent_tree,
+        reviewed_commit=reviewed,
+        runtime_paths=["runtime.txt"],
+        control_paths=["control.txt", "runtime.txt"],
+    )
+
+    assert any("runtime differs from the exact reviewed candidate" in value for value in failures)
+
+
+def test_prior_attempt_roots_fail_closed_on_retained_or_unsafe_evidence(
+    tmp_path: Path,
+) -> None:
+    safe_root = tmp_path / gate.PRIOR_ATTEMPT_ROOTS[0]
+    safe_root.mkdir(parents=True, mode=0o700)
+    safe_root.chmod(0o700)
+    failures: list[str] = []
+    gate._validate_prior_attempt_posture(tmp_path, failures)  # noqa: SLF001
+    assert failures == []
+
+    (safe_root / "attempt.json").write_text("{}\n", encoding="utf-8")
+    failures = []
+    gate._validate_prior_attempt_posture(tmp_path, failures)  # noqa: SLF001
+    assert any("prior attempt or success evidence exists" in value for value in failures)
+
+    (safe_root / "attempt.json").unlink()
+    safe_root.chmod(0o755)
+    failures = []
+    gate._validate_prior_attempt_posture(tmp_path, failures)  # noqa: SLF001
+    assert any("mode is not 0700" in value for value in failures)
 
 
 def test_source_binding_rejects_profile_or_compose_drift(tmp_path: Path) -> None:
