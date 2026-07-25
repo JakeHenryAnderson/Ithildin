@@ -24,11 +24,14 @@ DOCUMENT = Path("docs/codex/local-v1-lv1-003-o4-execution-authorization.md")
 PRODUCER_CONTRACT = Path("docs/codex/local-v1-lv1-003-o4-producer-contract.md")
 AUTHORIZATION_TARGET = "local-v1-lv1-003-o4-execution-authorization-check"
 PRODUCER_STATIC_TARGET = "local-v1-lv1-003-o4-producer-static-check"
-REVIEWED_IMPLEMENTATION_COMMIT = "da5fd021bddb48ad663aa0a409da036bc854b516"
-REVIEWED_IMPLEMENTATION_TREE = "f489dee60235d04eb8bc64cc6bb55e8534db1f8e"
+REVIEWED_IMPLEMENTATION_COMMIT = "5dab3654391c14fe214a9dfe302c099d0fe5fbf8"
+REVIEWED_IMPLEMENTATION_TREE = "f9a0cb66ac12e6e0ecca7fc23a0071be0dbe3075"
 CODE_AUTHORIZATION_COMMIT = "da17fbc86369ed5a6e7f9de7c1098322bcda4ac9"
 CODE_AUTHORIZATION_TREE = "7e3c14074a568dc47f7363eaab4e8ec4b996982f"
 CODE_AUTHORIZATION_RECORD_DIGEST = (
+    "sha256:2420d1c22faaec94d15834734b5b2f700579446c9e5fb9ea742855ff78a7b83d"
+)
+CODE_AUTHORIZATION_ORIGIN_RECORD_DIGEST = (
     "sha256:f241034bc56219c29ecaa215cdbed1404516130b8093567611a8c56960b1a051"
 )
 PRODUCER_CONTRACT_DIGEST = (
@@ -122,6 +125,7 @@ TOP_LEVEL_FIELDS = {
     "reviewed_implementation_tree",
     "code_authorization_commit",
     "code_authorization_tree",
+    "code_authorization_origin_record_sha256",
     "code_authorization_record_sha256",
     "future_execution_candidate_commit",
     "future_execution_candidate_tree",
@@ -369,6 +373,9 @@ def _validate_contract(contract: JsonObject, failures: list[str]) -> None:
         "reviewed_implementation_tree": REVIEWED_IMPLEMENTATION_TREE,
         "code_authorization_commit": CODE_AUTHORIZATION_COMMIT,
         "code_authorization_tree": CODE_AUTHORIZATION_TREE,
+        "code_authorization_origin_record_sha256": (
+            CODE_AUTHORIZATION_ORIGIN_RECORD_DIGEST
+        ),
         "code_authorization_record_sha256": CODE_AUTHORIZATION_RECORD_DIGEST,
         "future_execution_candidate_commit": None,
         "future_execution_candidate_tree": None,
@@ -408,7 +415,8 @@ def _validate_document(document: str, failures: list[str]) -> None:
         "Agent Run record status `active`, and exactly two "
         "`tool.execution.completed` timeline events",
         "connected directly to `DEVNULL` when its subprocess is created",
-        "candidate remains unusable for live producer evidence until independent exact review",
+        "independently reviewed code-only candidate remains unusable for live producer evidence",
+        code_authorization.REVIEW_DOCUMENT,
         "does not prove absence of transient malicious same-UID mutation while Docker reads "
         "the build context",
         "host-local only at `http://127.0.0.1:11434`",
@@ -559,8 +567,14 @@ def _validate_git_bindings(repo_root: Path, failures: list[str]) -> None:
         failures,
         strip=False,
     )
-    if historical and _digest(historical) != CODE_AUTHORIZATION_RECORD_DIGEST:
-        failures.append("O4 execution code authorization record digest is invalid")
+    if historical and _digest(historical) != CODE_AUTHORIZATION_ORIGIN_RECORD_DIGEST:
+        failures.append("O4 execution code authorization origin record digest is invalid")
+    current_authorization = _file_digest(
+        repo_root / code_authorization.AUTHORIZATION,
+        failures,
+    )
+    if current_authorization != CODE_AUTHORIZATION_RECORD_DIGEST:
+        failures.append("O4 execution current code authorization record digest is invalid")
 
 
 def _validate_source_bindings(

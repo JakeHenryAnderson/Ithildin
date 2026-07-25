@@ -18,17 +18,23 @@ def _contract() -> dict[str, object]:
     return document
 
 
-def test_o4_candidate_gate_is_prepare_review_non_authorizing_and_exact_review_blocked() -> None:
+def test_o4_candidate_gate_has_exact_code_authority_but_remains_non_authorizing() -> None:
     report = gate.build_report(ROOT)
 
-    assert report["valid"] is False
-    assert report["failures"] == [
-        "reviewed runner-bridge code authorization is invalid",
-        "reviewed runner-bridge code authority is not exact",
-    ]
+    assert report["valid"] is True
+    assert report["failures"] == []
     assert report["record_status"] == "PREPARE_REVIEW"
     assert report["reviewed_implementation_commit"] == gate.REVIEWED_IMPLEMENTATION_COMMIT
     assert report["code_authorization_commit"] == gate.CODE_AUTHORIZATION_COMMIT
+    contract = _contract()
+    assert (
+        contract["code_authorization_origin_record_sha256"]
+        == gate.CODE_AUTHORIZATION_ORIGIN_RECORD_DIGEST
+    )
+    assert (
+        contract["code_authorization_record_sha256"]
+        == gate.CODE_AUTHORIZATION_RECORD_DIGEST
+    )
     assert report["future_execution_candidate_commit"] is None
     assert report["future_execution_candidate_tree"] is None
     assert report["execution_attempt_budget"] == 0

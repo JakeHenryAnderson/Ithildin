@@ -17,54 +17,41 @@ from scripts import mission_command_runner_bridge_decision_check as decision_che
 ROOT = Path(__file__).resolve().parents[1]
 TARGET = "mission-command-runner-bridge-authorization-check"
 AUTHORIZATION = "docs/codex/mission-command-runner-bridge-authorization-record.md"
-REVIEW_DOCUMENT = "docs/codex/local-v1-lv1-003-exact-review.md"
+REVIEW_DOCUMENT = "docs/codex/local-v1-lv1-003-o4-producer-exact-review.md"
+PREVIOUS_REVIEW_DOCUMENT = "docs/codex/local-v1-lv1-003-exact-review.md"
 START = "<!-- mission-command-runner-bridge-authorization:start -->"
 END = "<!-- mission-command-runner-bridge-authorization:end -->"
-PREVIOUS_REVIEWED_COMMIT = "6cc8a4f1f9deceee231b185cf0d7f0acd63bb313"
-PREVIOUS_REVIEWED_TREE = "542f6d3b146b8bb5fa07f7cd73f80329d6de8ab6"
-REVIEWED_COMMIT = "da5fd021bddb48ad663aa0a409da036bc854b516"
-REVIEWED_PARENT = "ef226b28ba4806bfa3fb5ccfb0121afc5e9ae53b"
-REVIEWED_TREE = "f489dee60235d04eb8bc64cc6bb55e8534db1f8e"
+PREVIOUS_REVIEWED_COMMIT = "da5fd021bddb48ad663aa0a409da036bc854b516"
+PREVIOUS_REVIEWED_TREE = "f489dee60235d04eb8bc64cc6bb55e8534db1f8e"
+REVIEWED_COMMIT = "5dab3654391c14fe214a9dfe302c099d0fe5fbf8"
+REVIEWED_PARENT = "7b293a30823b20aef7a32a2f22910b66f822c35f"
+REVIEWED_TREE = "f9a0cb66ac12e6e0ecca7fc23a0071be0dbe3075"
 PREVIOUS_DECISION_DIGEST = (
-    "sha256:3edb0ce71c01e9e3763a622642ab531b64bfa1d001575e9cad9a601f05101b98"
+    "sha256:2a5792c80b672e9e44b24e9ef1e7201990386c90c89e496f17ac2073e04efc72"
+)
+PREVIOUS_REVIEW_DOCUMENT_DIGEST = (
+    "sha256:3b9bb240810995ce97a963445912e7d0f7431def2e84f590c1e8e60e0e5990c5"
 )
 CURRENT_DECISION_DIGEST = (
     "sha256:2a5792c80b672e9e44b24e9ef1e7201990386c90c89e496f17ac2073e04efc72"
 )
-ALLOWED_RUNTIME_PATHS = decision_check.IMPLEMENTATION_PATHS
+ALLOWED_RUNTIME_PATHS = [
+    *decision_check.IMPLEMENTATION_PATHS,
+    "scripts/local_v1_lv1_003_o4_producer.py",
+    "tests/test_local_v1_lv1_003_o4_producer.py",
+]
 REVIEWED_PATH_INVENTORY = [
     "Makefile",
     "README.md",
-    "apps/mcp-server/src/ithildin_mcp_server/node_bridge.py",
-    "apps/node/src/ithildin_node/client.py",
-    "apps/node/src/ithildin_node/fixed_runner_bridge.py",
-    "apps/node/src/ithildin_node/service.py",
-    "deploy/hermes-node-bridge/Dockerfile",
-    "deploy/hermes-node-bridge/README.md",
-    "deploy/hermes-node-bridge/compose.yaml",
-    "deploy/hermes-node-bridge/config.yaml",
-    "deploy/hermes-node-bridge/fixed-instruction.md",
-    "deploy/hermes-node-bridge/profile.json",
-    "docs/codex/local-v1-completion-contract.md",
-    "docs/codex/local-v1-golden-path.md",
-    "docs/codex/mission-command-runner-bridge-authorization-record.md",
-    "docs/codex/mission-command-runner-bridge-capability-decision.md",
+    "docs/codex/local-v1-lv1-003-o4-execution-authorization.json",
+    "docs/codex/local-v1-lv1-003-o4-execution-authorization.md",
+    "docs/codex/local-v1-lv1-003-o4-producer-contract.md",
     "scripts/local_v1_constrained_mission_journey.py",
-    "scripts/local_v1_constrained_mission_journey_check.py",
-    "scripts/local_v1_contract_check.py",
-    "scripts/local_v1_golden_path_check.py",
-    "scripts/mission_command_runner_bridge_authorization_check.py",
-    "scripts/mission_command_runner_bridge_decision_check.py",
-    "tests/test_api_service.py",
+    "scripts/local_v1_lv1_003_o4_execution_authorization_check.py",
+    "scripts/local_v1_lv1_003_o4_producer.py",
     "tests/test_local_v1_constrained_mission_journey.py",
-    "tests/test_local_v1_contract.py",
-    "tests/test_local_v1_golden_path.py",
-    "tests/test_mission_command_runner_bridge_authorization_check.py",
-    "tests/test_mission_command_runner_bridge_decision_check.py",
-    "tests/test_node_client.py",
-    "tests/test_node_fixed_runner_bridge.py",
-    "tests/test_node_mcp_bridge.py",
-    "tests/test_node_service.py",
+    "tests/test_local_v1_lv1_003_o4_execution_authorization_check.py",
+    "tests/test_local_v1_lv1_003_o4_producer.py",
 ]
 REVIEW_LINEAGE = [
     {
@@ -93,6 +80,14 @@ REVIEW_LINEAGE = [
     },
     {
         "stage": "final_exact_review",
+        "critical": 0,
+        "high": 0,
+        "medium": 0,
+        "low": 0,
+        "disposition": "GO",
+    },
+    {
+        "stage": "producer_exact_review",
         "critical": 0,
         "high": 0,
         "medium": 0,
@@ -152,6 +147,8 @@ EXPECTED_KEYS = {
     "previous_reviewed_candidate_commit",
     "previous_reviewed_candidate_tree",
     "previous_decision_sha256",
+    "previous_review_document",
+    "previous_review_document_sha256",
     "current_decision_sha256",
     "reviewed_candidate_commit",
     "reviewed_candidate_parent",
@@ -177,6 +174,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     authorization_text = _read(repo_root / AUTHORIZATION, failures)
     decision_text = _read(repo_root / decision_check.DECISION, failures)
     review_text = _read(repo_root / REVIEW_DOCUMENT, failures)
+    previous_review_text = _read(repo_root / PREVIOUS_REVIEW_DOCUMENT, failures)
     try:
         authorization = _contract(authorization_text)
     except AuthorizationContractError as exc:
@@ -276,6 +274,8 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     )
     _validate_text(authorization_text, failures)
     _validate_review_text(review_text, failures)
+    if _digest(previous_review_text) != PREVIOUS_REVIEW_DOCUMENT_DIGEST:
+        failures.append("historical runner-bridge exact review digest is invalid")
     _validate_wiring(repo_root, failures)
     return {
         "schema_version": "1",
@@ -323,6 +323,8 @@ def _validate_contract(
         "previous_reviewed_candidate_commit": PREVIOUS_REVIEWED_COMMIT,
         "previous_reviewed_candidate_tree": PREVIOUS_REVIEWED_TREE,
         "previous_decision_sha256": PREVIOUS_DECISION_DIGEST,
+        "previous_review_document": PREVIOUS_REVIEW_DOCUMENT,
+        "previous_review_document_sha256": PREVIOUS_REVIEW_DOCUMENT_DIGEST,
         "current_decision_sha256": CURRENT_DECISION_DIGEST,
         "reviewed_candidate_commit": REVIEWED_COMMIT,
         "reviewed_candidate_parent": REVIEWED_PARENT,
@@ -378,6 +380,7 @@ def _validate_text(text: str, failures: list[str]) -> None:
         "`0/2/1/1`",
         "`0/0/1/0`",
         "`0/0/0/0`",
+        "`producer_exact_review`",
         "`GO_CODE_ONLY`",
         "Any staged, unstaged, deleted, renamed, or",
         "untracked runtime-path delta invalidates code authority",
@@ -397,15 +400,10 @@ def _validate_review_text(text: str, failures: list[str]) -> None:
         REVIEWED_TREE,
         CURRENT_DECISION_DIGEST,
         "independent GPT-5.6 Sol xhigh",
-        "Initial audit | Dirty worktree candidate | 0 | 3 | 1 | 1 | `NO-GO`",
-        "First exact review | First bounded exact candidate | 0 | 2 | 1 | 1 | `NO-GO`",
-        "Exact rereview | Remediated exact candidate | 0 | 0 | 1 | 0 | `NO-GO`",
-        f"Final exact review | Candidate `{REVIEWED_COMMIT}` | 0 | 0 | 0 | 0 | `GO`",
-        "exact 32-path candidate",
+        f"Producer exact review | Candidate `{REVIEWED_COMMIT}` | 0 | 0 | 0 | 0 | `GO`",
+        "exact 11-path candidate",
         "`LV1-003` remains `in_progress`",
         "`O4` remains `not_started`",
-        "release outcomes remain `1/8`",
-        "critical-path milestones remain `3/8`",
         "separately reviewed live-evidence authorization",
         "All live Hermes/provider, Docker lifecycle",
     ):

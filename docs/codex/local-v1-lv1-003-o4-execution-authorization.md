@@ -6,11 +6,12 @@ This is the separate execution gate for the future exact-candidate Local-v1 `O4`
 non-authorizing. Its machine contract is
 `docs/codex/local-v1-lv1-003-o4-execution-authorization.json`.
 
-The gate preserves the reviewed fixed bridge implementation at
-`da5fd021bddb48ad663aa0a409da036bc854b516` and the code-only authorization record at
-`da17fbc86369ed5a6e7f9de7c1098322bcda4ac9`. It does not bind a future producer candidate yet.
-Those future commit/tree fields, an independent exact-review record, and a distinct post-review
-disposition are deliberately null.
+The gate preserves the reviewed fixed bridge and bounded producer implementation at
+`5dab3654391c14fe214a9dfe302c099d0fe5fbf8`. The current code-only authorization record retains
+historical origin commit `da17fbc86369ed5a6e7f9de7c1098322bcda4ac9` while binding the later
+producer review at `docs/codex/local-v1-lv1-003-o4-producer-exact-review.md`. That `GO_CODE_ONLY`
+record does not bind a future execution candidate or grant a live attempt. The future commit/tree,
+live exact-review, and distinct post-review execution-disposition fields remain deliberately null.
 
 ## Prepared Live Ceiling
 
@@ -39,9 +40,11 @@ The future run must produce actual bounded image artifact and repository-license
 Image config/layer metadata is not an SBOM. The candidate producer and assembler now use
 `image_artifact_inventory_digest` and `license_source_inventory_digest`, preserve actual Gateway
 Agent Run status `active`, and require exactly two distinctly identified Gateway completion events.
-That candidate remains unusable for live producer evidence until independent exact review and a
-separate post-review disposition bind it. The inventories are not placeholder hashes and do not
-claim SBOM coverage, license completeness, compliance, provenance custody, or provider truth.
+The independently reviewed code-only candidate remains unusable for live producer evidence until
+the still-null future live-candidate, live exact-review, and separate post-review execution
+disposition fields are populated by a later control step. The inventories are not placeholder
+hashes and do not claim SBOM coverage, license completeness, compliance, provenance custody, or
+provider truth.
 Static fake evidence proves closed private-snapshot enumeration and rejects observed path
 replacement. It does not prove absence of transient malicious same-UID mutation while Docker reads
 the build context; that threat remains outside the Local-v1 evidence boundary, consistent with the

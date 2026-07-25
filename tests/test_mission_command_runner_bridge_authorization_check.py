@@ -31,8 +31,33 @@ def test_authorization_contract_binds_exact_review_lineage_and_inventory() -> No
     assert authorization["review_document"] == authorization_check.REVIEW_DOCUMENT
     assert authorization["review_lineage"] == authorization_check.REVIEW_LINEAGE
     assert (
+        authorization["previous_reviewed_candidate_commit"]
+        == authorization_check.PREVIOUS_REVIEWED_COMMIT
+    )
+    assert (
+        authorization["previous_review_document"]
+        == authorization_check.PREVIOUS_REVIEW_DOCUMENT
+    )
+    assert (
+        authorization["previous_review_document_sha256"]
+        == authorization_check.PREVIOUS_REVIEW_DOCUMENT_DIGEST
+    )
+    assert (
         authorization["reviewed_path_inventory"]
         == authorization_check.REVIEWED_PATH_INVENTORY
+    )
+    assert len(authorization["reviewed_path_inventory"]) == 11
+    assert authorization["review_lineage"][-1] == {
+        "stage": "producer_exact_review",
+        "critical": 0,
+        "high": 0,
+        "medium": 0,
+        "low": 0,
+        "disposition": "GO",
+    }
+    assert (
+        "scripts/local_v1_lv1_003_o4_producer.py"
+        in authorization["allowed_runtime_paths"]
     )
     assert authorization["runtime_adapter_code_authorized"] is True
     assert authorization["runner_bridge_code_authorized"] is True
@@ -88,16 +113,8 @@ def test_authorization_rejects_reviewed_inventory_substitution() -> None:
     decision = Path(authorization_check.decision_check.DECISION).read_text(
         encoding="utf-8"
     )
-    authorization = authorization_check._contract(  # noqa: SLF001
-        text.replace(
-            '"tests/test_node_service.py"\n  ],\n'
-            '  "exact_implementation_review_required"',
-            '"tests/test_node_service.py",\n'
-            '    "pyproject.toml"\n  ],\n'
-            '  "exact_implementation_review_required"',
-            1,
-        )
-    )
+    authorization = authorization_check._contract(text)  # noqa: SLF001
+    authorization["reviewed_path_inventory"].append("pyproject.toml")
     failures: list[str] = []
 
     authorization_check._validate_contract(  # noqa: SLF001
@@ -189,9 +206,8 @@ def test_authorization_rejects_coupled_current_decision_and_digest_substitution(
         + "\nsubstituted\n"
     )
     substituted_digest = authorization_check._digest(decision)  # noqa: SLF001
-    authorization = authorization_check._contract(  # noqa: SLF001
-        text.replace(authorization_check.CURRENT_DECISION_DIGEST, substituted_digest, 1)
-    )
+    authorization = authorization_check._contract(text)  # noqa: SLF001
+    authorization["current_decision_sha256"] = substituted_digest
     failures: list[str] = []
 
     authorization_check._validate_contract(  # noqa: SLF001
