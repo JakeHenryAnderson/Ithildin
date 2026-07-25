@@ -1,11 +1,12 @@
 # Local v1 LV1-003 O4 Execution Authorization Gate
 
-Status: `ATTEMPT_006_CONSUMED_APPLICATION_STARTUP_DIAGNOSTIC_REQUIRED_NO_LIVE_AUTHORITY`
+Status: `ATTEMPT_007_EXACT_CHILD_ONE_SHOT_EXECUTION_AUTHORIZED`
 
 This gate preserves all six consumed attempt histories, the consumed and closed Attempt 003 image
-recovery, and the consumed Attempt 006 failure evidence. It authorizes no execution, retry,
-automatic retry, recovery action, evidence deletion, release, promotion, production action, or UAT
-action. Its machine contract is
+recovery, and the consumed Attempt 006 failure evidence. It authorizes exactly one
+central-manager-supervised Attempt 007 invocation through the gate-protected producer entrypoint.
+It authorizes no retry, automatic retry, recovery action, evidence deletion, release, promotion,
+production action, or UAT action. Its machine contract is
 `docs/codex/local-v1-lv1-003-o4-execution-authorization.json`.
 
 The gate preserves the reviewed fixed bridge and bounded producer implementation at
@@ -23,9 +24,9 @@ That authorization was exercised once by candidate
 `aa3eecea481dd5c92925ceec3421c051c63cb3cf`, and is no longer live.
 
 The machine contract's generic `candidate_parent_commit` and `candidate_parent_tree` fields now
-refer only to the consumed Attempt 006 candidate
-`d4c1d322a9d3faf24422009b7bc40f73544250af`, tree
-`9acbfc6ee270613518c4c5cc74b2719604946c46`. The reviewed runtime-native repair
+refer only to the reviewed application startup-stage diagnostic parent
+`cce80b5cc71e9387237d18b588d294c39351a362`, tree
+`4701443cd266cd86d6654a295f6277caddc117f2`. The reviewed runtime-native repair
 `49db93d80a71855d9ae223826a9849749377c376`, tree
 `23950855584316daba76acd65be0bfdfd20fbcb9`, remains the explicit historical Attempt 004
 authorization parent. The older
@@ -34,8 +35,8 @@ authorization parent. The older
 code-authorization identity only; it is not the current execution candidate parent.
 
 The machine contract names all inherited Attempt 001 lineage with explicit `attempt_001_*` keys.
-Those fields are historical only. The validator's public current-attempt fields bind the consumed
-Attempt 006 candidate while Attempts 001 through 005 remain explicit history, so generic report
+Those fields are historical only. The validator's public current-attempt fields bind the dynamic
+Attempt 007 exact child while Attempts 001 through 006 remain explicit history, so generic report
 labels cannot silently substitute an earlier attempt for the current attempt.
 
 ## Attempt 001 Result
@@ -366,6 +367,67 @@ The next action is a separately reviewed application-emitted closed startup-stag
 It must not scrape logs or persist raw application output. This closure assigns no root cause,
 includes no producer change, and grants no execution authority.
 
+## Application Startup-Stage Diagnostic Review And Attempt 007 Authority
+
+Exact implementation commit `cce80b5cc71e9387237d18b588d294c39351a362`, tree
+`4701443cd266cd86d6654a295f6277caddc117f2`, received independent GPT-5.6 Sol xhigh read-only
+review with Critical: 0, High: 0, Medium: 0, Low: 0 and exact-commit disposition `GO`. The durable
+review is
+`docs/codex/local-v1-lv1-003-o4-application-startup-stage-diagnostic-exact-review.md`.
+
+The review binds exactly six implementation and test paths and their SHA-256 digests:
+
+1. `apps/api/src/ithildin_api/app.py` —
+   `sha256:be8ad59f62dc71180e327ad044c481a4c916cbc42d043bfd88d749d4fbf30730`
+2. `apps/api/verified_launch.py` —
+   `sha256:9c7a71bcc9c4643e203a578486b04ea392df1985b99b0da06a89973b20a96408`
+3. `scripts/local_v1_lv1_003_o4_producer.py` —
+   `sha256:76f74c3c2b75ae8b320c5c12c3087b51a714ec1f9230a373a3d9335e9df0aca0`
+4. `tests/test_api_service.py` —
+   `sha256:4c74e040294ccf216436bd729ab5f84536912d7cd17d5a3d587a57c7c5a69d2c`
+5. `tests/test_local_v1_lv1_003_o4_producer.py` —
+   `sha256:d7f0df7e818c43d83abe42b4e1c5d9d97e4fa05d8a7ef64927549a511d9f3a45`
+6. `tests/test_runtime_candidate_bootstrap.py` —
+   `sha256:68cdceb283d5968ede0d589d46b96e0a9319bffd83a037105320ec4a21139896`
+
+The application writes only one of 12 closed startup stages to canonical ASCII JSON through an
+owner-matching `0700` no-follow directory and an atomically replaced `0600` file. The producer may
+read that marker only after Compose `up` fails, the API is `service_exited_nonzero`, and the
+container-state diagnostic is exactly `api_application_exit_nonzero_no_engine_error`. The
+descriptor-anchored no-follow read is capped at 256 bytes and retains only normalized collection
+status, reason code, and last emitted stage. Missing or unsafe material becomes closed `unknown`.
+
+The stage marker does not authorize log scraping or persistence of raw application output,
+exceptions, tracebacks, error messages, environment, configuration, credentials, provider/model
+content, prompts, or tool results. It localizes the last successful application-emitted stage only;
+it does not establish root cause or predict Attempt 007 success. Primary failure, cleanup,
+recovery, and the governed 24-tool surface remain unchanged.
+
+The exact candidate passed 389 focused tests, Ruff, strict mypy, no-new-powers, the exact 24-tool
+invariant, and the agent-workflow check. Those checks are evidence, not execution or release
+authority.
+
+Attempt `LV1-003-O4-ATTEMPT-007` is authorized only for a clean, single-parent immediate child of
+the reviewed commit and tree. No future child commit or tree is stated. The gate derives the
+candidate only after every check passes and requires this exact seven-path control allowlist:
+
+1. `Makefile`
+2. `README.md`
+3. `docs/codex/local-v1-lv1-003-o4-application-startup-stage-diagnostic-exact-review.md`
+4. `docs/codex/local-v1-lv1-003-o4-execution-authorization.json`
+5. `docs/codex/local-v1-lv1-003-o4-execution-authorization.md`
+6. `scripts/local_v1_lv1_003_o4_execution_authorization_check.py`
+7. `tests/test_local_v1_lv1_003_o4_execution_authorization_check.py`
+
+The budget is one, `attempt_consumed` is false, and retry and automatic retry are false. The sole
+operator command is `make local-v1-lv1-003-o4-producer-run`, whose exact module command remains
+`uv run python -m scripts.local_v1_lv1_003_o4_producer`. Any invocation outcome consumes Attempt
+007 and requires an immediate separate post-attempt disposition.
+
+The validator preserves and directly checks retained Attempts 002 through 006 receipts and the
+consumed Attempt 003 recovery receipt. No earlier attempt, recovery, retry, evidence-deletion, or
+application-diagnostic authority is reopened.
+
 ## Historical Attempt Ceiling
 
 The consumed Attempt 003 authorization limited the producer to one uniquely named isolated Compose project and
@@ -432,9 +494,14 @@ inventory entry `gemma4:e4b`. This closure makes no provider-route success or ab
 
 ## Current Disposition
 
-Attempts 001 through 006 are consumed. Attempt 003 image recovery is consumed and closed. The
-Attempt 006 budget is zero, `attempt_consumed` is true, retry and automatic retry are false, and all
-19 authority fields are false.
+Attempts 001 through 006 are consumed. Attempt 003 image recovery is consumed and closed. Attempt
+007 is unconsumed with budget one; retry and automatic retry are false.
+
+Exactly five authority fields are true only for the one dynamically validated,
+central-manager-supervised Attempt 007 invocation: `producer_code_authorized`,
+`docker_lifecycle_authorized`, `live_hermes_execution_authorized`,
+`model_provider_access_authorized`, and `o4_evidence_execution_authorized`. The remaining 14
+authority fields are false.
 
 Credential custody, runner lifecycle, arbitrary host control, generic process control, shell
 execution, general Docker socket authority, network/filesystem non-bypass claims, new powers, new

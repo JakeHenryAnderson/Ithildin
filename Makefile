@@ -61,7 +61,7 @@ local-v1-lv1-003-o4-producer-static-check:
 		tests/test_local_v1_constrained_mission_journey.py \
 		-q
 
-# LIVE, gate-protected entrypoint. Attempt 006 is consumed; current closure always refuses.
+# LIVE, gate-protected entrypoint. Attempt 007 permits one exact-child supervised invocation.
 local-v1-lv1-003-o4-producer-run:
 	uv run python -m scripts.local_v1_lv1_003_o4_producer
 
