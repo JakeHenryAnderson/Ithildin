@@ -309,15 +309,110 @@ def test_verified_launcher_verifies_before_importing_app(monkeypatch: pytest.Mon
     fake_uvicorn = types.ModuleType("uvicorn")
     fake_uvicorn.run = lambda *_args, **_kwargs: observed.append("run")  # type: ignore[attr-defined]
     monkeypatch.setattr(launcher, "verifier_from_environment", Verifier)
+    monkeypatch.setattr(
+        launcher,
+        "write_closed_startup_stage",
+        lambda stage: observed.append(stage),
+    )
     monkeypatch.setitem(sys.modules, "ithildin_api.promotion_authority", fake_authority)
     monkeypatch.setitem(sys.modules, "uvicorn", fake_uvicorn)
 
     assert launcher.main() == 0
-    assert observed == ["verified", "candidate", "run"]
+    assert observed == [
+        "launcher_entered",
+        "runtime_candidate_verification_entered",
+        "verified",
+        "application_import_entered",
+        "application_factory_entered",
+        "candidate",
+        "server_run_entered",
+        "run",
+    ]
+    assert app_kwargs["startup_stage_reporter"] is not None
     verifier = app_kwargs["runtime_candidate_verifier"]
     assert callable(verifier)
     verifier()
-    assert observed == ["verified", "candidate", "run", "verified", "candidate"]
+    assert observed[-2:] == ["verified", "candidate"]
+
+
+def test_closed_startup_stage_writer_is_canonical_atomic_and_private(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import verified_launch as launcher
+
+    tmp_path.chmod(0o700)
+    monkeypatch.setattr(launcher, "STARTUP_STATUS_DIRECTORY", tmp_path)
+    original_replace = launcher.os.replace
+    replaced: list[bool] = []
+
+    def observed_replace(
+        source: str,
+        destination: str,
+        *,
+        src_dir_fd: int,
+        dst_dir_fd: int,
+    ) -> None:
+        assert source == launcher.STARTUP_STATUS_TEMP_FILE
+        assert destination == launcher.STARTUP_STATUS_FILE
+        details = launcher.os.stat(source, dir_fd=src_dir_fd)
+        assert details.st_mode & 0o777 == 0o600
+        assert not (tmp_path / destination).exists()
+        replaced.append(True)
+        original_replace(
+            source,
+            destination,
+            src_dir_fd=src_dir_fd,
+            dst_dir_fd=dst_dir_fd,
+        )
+
+    monkeypatch.setattr(launcher.os, "replace", observed_replace)
+
+    launcher.write_closed_startup_stage("launcher_entered")
+
+    final = tmp_path / launcher.STARTUP_STATUS_FILE
+    assert final.read_bytes() == (
+        b'{"record_type":"ithildin_api_closed_startup_stage",'
+        b'"schema_version":"1","stage":"launcher_entered"}\n'
+    )
+    assert final.stat().st_mode & 0o777 == 0o600
+    assert replaced == [True]
+    assert not (tmp_path / launcher.STARTUP_STATUS_TEMP_FILE).exists()
+
+
+@pytest.mark.parametrize(
+    "failure",
+    ["absent", "unsafe", "replace", "zero_write", "invalid_stage"],
+)
+def test_closed_startup_stage_writer_is_no_throw_and_cleans_temp(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    failure: str,
+) -> None:
+    import verified_launch as launcher
+
+    directory = tmp_path / "status"
+    if failure != "absent":
+        directory.mkdir(mode=0o700)
+    if failure == "unsafe":
+        directory.chmod(0o755)
+    monkeypatch.setattr(launcher, "STARTUP_STATUS_DIRECTORY", directory)
+    if failure == "replace":
+        monkeypatch.setattr(
+            launcher.os,
+            "replace",
+            lambda *_args, **_kwargs: (_ for _ in ()).throw(OSError("synthetic")),
+        )
+    elif failure == "zero_write":
+        monkeypatch.setattr(launcher.os, "write", lambda *_args, **_kwargs: 0)
+
+    launcher.write_closed_startup_stage(
+        "not_a_stage" if failure == "invalid_stage" else "launcher_entered"
+    )
+
+    assert not (directory / launcher.STARTUP_STATUS_TEMP_FILE).exists()
+    if failure != "replace":
+        assert not (directory / launcher.STARTUP_STATUS_FILE).exists()
 
 
 def _candidate_fixture(

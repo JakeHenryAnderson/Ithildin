@@ -56,6 +56,7 @@ NODE_TMPFS = ("/tmp:size=16m,mode=0700,uid=10002,gid=10002",)
 MAX_RECOVERY_RECEIPT_BYTES = 4096
 MAX_BASE_SERVICE_START_DIAGNOSTIC_BYTES = 1024
 MAX_API_CONTAINER_DIAGNOSTIC_BYTES = 512
+MAX_APPLICATION_STARTUP_STAGE_BYTES = 256
 MAX_API_CONTAINER_REAP_ATTEMPTS = 3
 API_CONTAINER_REAP_TIMEOUT_SECONDS = 0.25
 BASE_SERVICE_START_DIAGNOSTIC_FORMAT = (
@@ -67,6 +68,24 @@ API_CONTAINER_STATE_FORMAT = (
     "{{.State.Status}}\t{{.State.Running}}\t{{.State.ExitCode}}\t"
     "{{.State.OOMKilled}}\t{{.State.Dead}}\t{{ne .State.Error \"\"}}\t"
     "{{if .State.Health}}{{.State.Health.Status}}{{else}}absent{{end}}"
+)
+APPLICATION_STARTUP_STATUS_DIRECTORY = "startup-status"
+APPLICATION_STARTUP_STATUS_FILE = "api-startup-stage.json"
+APPLICATION_STARTUP_STAGES = frozenset(
+    {
+        "launcher_entered",
+        "runtime_candidate_verification_entered",
+        "application_import_entered",
+        "application_factory_entered",
+        "server_run_entered",
+        "lifespan_configuration_entered",
+        "lifespan_persistence_entered",
+        "lifespan_governance_entered",
+        "lifespan_services_entered",
+        "startup_ready",
+        "shutdown_entered",
+        "shutdown_complete",
+    }
 )
 HERMES_TIMEOUT_SECONDS = 920.0
 NODE_SYNCHRONIZATION_SECONDS = 90.0
@@ -423,6 +442,78 @@ class PrivateDirectory:
         if len(content) > maximum:
             raise ProducerError("runtime_file_too_large")
         return content
+
+    def read_exact_owner_file(
+        self,
+        directory: str,
+        filename: str,
+        *,
+        maximum: int,
+    ) -> bytes | None:
+        self.validate()
+        directory_fd = -1
+        descriptor = -1
+        try:
+            directory_details = os.stat(
+                directory,
+                dir_fd=self.run_fd,
+                follow_symlinks=False,
+            )
+            directory_fd = os.open(
+                directory,
+                _directory_flags(),
+                dir_fd=self.run_fd,
+            )
+            held_directory = os.fstat(directory_fd)
+            if (
+                (directory_details.st_dev, directory_details.st_ino)
+                != (held_directory.st_dev, held_directory.st_ino)
+                or not _owner_directory(directory_details)
+                or not _owner_directory(held_directory)
+            ):
+                raise ProducerError("runtime_file_unsafe")
+            inventory = sorted(os.listdir(directory_fd))
+            if not inventory:
+                return None
+            if inventory != [filename]:
+                raise ProducerError("runtime_file_unsafe")
+            lexical = os.stat(
+                filename,
+                dir_fd=directory_fd,
+                follow_symlinks=False,
+            )
+            if (
+                not stat.S_ISREG(lexical.st_mode)
+                or stat.S_IMODE(lexical.st_mode) != 0o600
+                or lexical.st_uid != os.geteuid()
+                or lexical.st_gid != os.getegid()
+                or lexical.st_size > maximum
+            ):
+                raise ProducerError("runtime_file_unsafe")
+            descriptor = os.open(
+                filename,
+                _file_flags(os.O_RDONLY | os.O_NONBLOCK),
+                dir_fd=directory_fd,
+            )
+            held = os.fstat(descriptor)
+            if (
+                (lexical.st_dev, lexical.st_ino) != (held.st_dev, held.st_ino)
+                or not stat.S_ISREG(held.st_mode)
+                or stat.S_IMODE(held.st_mode) != 0o600
+                or held.st_uid != os.geteuid()
+                or held.st_gid != os.getegid()
+                or held.st_size > maximum
+            ):
+                raise ProducerError("runtime_file_unsafe")
+            return _read_all(descriptor, maximum)
+        except OSError as exc:
+            raise ProducerError("runtime_file_unsafe") from exc
+        finally:
+            if descriptor >= 0:
+                os.close(descriptor)
+            if directory_fd >= 0:
+                os.close(directory_fd)
+            self.validate()
 
     def file(self, relative: str) -> Path:
         _relative_parts(relative)
@@ -1965,6 +2056,7 @@ def _prepare_runtime(state: ProducerState, admin_token: str) -> None:
         "authority",
         "copied-receipt",
         "empty-scripts",
+        APPLICATION_STARTUP_STATUS_DIRECTORY,
     ):
         state.runtime.mkdir(relative)
     docker_config: JsonObject = {"auths": {}, "credHelpers": {}}
@@ -2673,6 +2765,82 @@ def _collect_api_container_state_diagnostic(
         )
 
 
+def _application_startup_stage_fallback(
+    *,
+    collection_status: str,
+    collection_reason_code: str,
+) -> JsonObject:
+    return {
+        "collection_status": collection_status,
+        "collection_reason_code": collection_reason_code,
+        "last_emitted_stage": "unknown",
+    }
+
+
+def _closed_json_object(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+    result: dict[str, Any] = {}
+    for key, value in pairs:
+        if key in result:
+            raise ValueError("duplicate JSON member")
+        result[key] = value
+    return result
+
+
+def _collect_application_startup_stage_diagnostic(
+    state: ProducerState,
+) -> JsonObject:
+    try:
+        content = state.runtime.read_exact_owner_file(
+            APPLICATION_STARTUP_STATUS_DIRECTORY,
+            APPLICATION_STARTUP_STATUS_FILE,
+            maximum=MAX_APPLICATION_STARTUP_STAGE_BYTES,
+        )
+        if content is None:
+            return _application_startup_stage_fallback(
+                collection_status="inconclusive",
+                collection_reason_code="application_startup_stage_missing",
+            )
+        raw = json.loads(
+            content.decode("utf-8", errors="strict"),
+            object_pairs_hook=_closed_json_object,
+        )
+        if (
+            not isinstance(raw, dict)
+            or set(raw) != {"record_type", "schema_version", "stage"}
+            or raw.get("record_type")
+            != "ithildin_api_closed_startup_stage"
+            or raw.get("schema_version") != "1"
+            or not isinstance(raw.get("stage"), str)
+            or raw["stage"] not in APPLICATION_STARTUP_STAGES
+        ):
+            raise ProducerError("application_startup_stage_invalid")
+        normalized: JsonObject = {
+            "record_type": "ithildin_api_closed_startup_stage",
+            "schema_version": "1",
+            "stage": cast(str, raw["stage"]),
+        }
+        if content != (canonical_json(normalized) + "\n").encode("utf-8"):
+            raise ProducerError("application_startup_stage_invalid")
+        return {
+            "collection_status": "complete",
+            "collection_reason_code": "application_startup_stage_collected",
+            "last_emitted_stage": cast(str, raw["stage"]),
+        }
+    except (
+        OSError,
+        ProducerError,
+        UnicodeError,
+        ValueError,
+        json.JSONDecodeError,
+    ):
+        return _application_startup_stage_fallback(
+            collection_status="output_rejected",
+            collection_reason_code=(
+                "application_startup_stage_unsafe_or_incomplete"
+            ),
+        )
+
+
 def _start_and_enroll(state: ProducerState, executor: Executor, api: Api) -> str:
     start = executor.run(
         state.plan.compose(
@@ -2694,9 +2862,20 @@ def _start_and_enroll(state: ProducerState, executor: Executor, api: Api) -> str
             and isinstance(services, dict)
             and services.get("ithildin-api") == "service_exited_nonzero"
         ):
+            api_container_diagnostic = (
+                _collect_api_container_state_diagnostic(state, executor)
+            )
             state.base_service_start_diagnostic[
                 "api_container_state_diagnostic"
-            ] = _collect_api_container_state_diagnostic(state, executor)
+            ] = api_container_diagnostic
+            if (
+                api_container_diagnostic.get("collection_status") == "complete"
+                and api_container_diagnostic.get("cause_code")
+                == "api_application_exit_nonzero_no_engine_error"
+            ):
+                state.base_service_start_diagnostic[
+                    "application_startup_stage_diagnostic"
+                ] = _collect_application_startup_stage_diagnostic(state)
         raise ProducerError("base_services_start_failed")
     _require_success(start, "base_services_start_failed")
     health = api.get("/healthz", admin=False)
@@ -3488,6 +3667,10 @@ def _compose_override(state: ProducerState) -> str:
       - type: bind
         source: {root / "var"}
         target: /app/var
+      - type: bind
+        source: {root / APPLICATION_STARTUP_STATUS_DIRECTORY}
+        target: /run/ithildin-startup
+        read_only: false
   ithildin-ui:
     image: {ui_image}
   ithildin-node:
@@ -3528,6 +3711,9 @@ def _validate_merged_compose_config(
         "/app/scripts": runtime / "empty-scripts",
         "/app/workspaces": runtime / "workspaces",
         "/app/var": runtime / "var",
+        "/run/ithildin-startup": (
+            runtime / APPLICATION_STARTUP_STATUS_DIRECTORY
+        ),
     }
     observed_binds: dict[str, Path] = {}
     named_volume_targets: set[tuple[str, str]] = set()
@@ -3585,6 +3771,13 @@ def _validate_merged_compose_config(
                     )
                 ):
                     raise ProducerError("merged_compose_host_path_invalid")
+                if (
+                    target == "/run/ithildin-startup"
+                    and volume.get("read_only") is not False
+                ):
+                    raise ProducerError("merged_compose_mount_invalid")
+                if target in observed_binds:
+                    raise ProducerError("merged_compose_mount_invalid")
                 observed_binds[target] = source_path
             elif volume_type == "volume":
                 if source != "ithildin-node-state":

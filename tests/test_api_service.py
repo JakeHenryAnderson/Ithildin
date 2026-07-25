@@ -13,6 +13,7 @@ from pathlib import Path
 from threading import Event
 from typing import Any, NoReturn, cast
 
+import ithildin_api.app as app_module
 import ithildin_api.mission_reports as mission_reports_module
 import ithildin_api.registry as registry_module
 import ithildin_api.trusted_host_promotions as trusted_host_promotions_module
@@ -384,15 +385,77 @@ def test_healthz_returns_service_health(tmp_path: Path) -> None:
     assert response.json() == {"status": "ok", "service": "ithildin-api"}
 
 
+def test_app_lifespan_reports_closed_ready_and_shutdown_stages(
+    tmp_path: Path,
+) -> None:
+    stages: list[str] = []
+    app = create_app(
+        make_settings(tmp_path),
+        startup_stage_reporter=stages.append,
+    )
+
+    with TestClient(app):
+        assert stages[-1] == "startup_ready"
+
+    assert stages == [
+        "lifespan_configuration_entered",
+        "lifespan_persistence_entered",
+        "lifespan_governance_entered",
+        "lifespan_services_entered",
+        "startup_ready",
+        "shutdown_entered",
+        "shutdown_complete",
+    ]
+
+
+@pytest.mark.parametrize(
+    ("failure_stage", "target"),
+    [
+        ("lifespan_persistence_entered", "initialize_database"),
+        ("lifespan_governance_entered", "governance"),
+        ("lifespan_services_entered", "MissionAdmissionService"),
+    ],
+)
+def test_app_lifespan_reports_last_entered_stage_on_startup_failure(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    failure_stage: str,
+    target: str,
+) -> None:
+    stages: list[str] = []
+
+    def fail(*_args: object, **_kwargs: object) -> NoReturn:
+        raise RuntimeError("synthetic startup failure")
+
+    if target == "governance":
+        monkeypatch.setattr(app_module.ToolRegistry, "load", fail)
+    else:
+        monkeypatch.setattr(app_module, target, fail)
+    app = create_app(
+        make_settings(tmp_path),
+        startup_stage_reporter=stages.append,
+    )
+
+    with pytest.raises(RuntimeError, match="synthetic startup failure"):
+        with TestClient(app):
+            pass
+
+    assert stages[-1] == failure_stage
+    assert "startup_ready" not in stages
+    assert "shutdown_complete" not in stages
+
+
 def test_missing_admin_token_fails_startup(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.chdir(tmp_path)
     monkeypatch.delenv("ITHILDIN_ADMIN_TOKEN", raising=False)
+    stages: list[str] = []
 
-    app = create_app()
+    app = create_app(startup_stage_reporter=stages.append)
 
     with pytest.raises(ValidationError):
         with TestClient(app):
             pass
+    assert stages == ["lifespan_configuration_entered"]
 
 
 def test_admin_status_requires_authentication(tmp_path: Path) -> None:

@@ -30,6 +30,7 @@ class FakePrivateDirectory:
     def __init__(self, path: Path) -> None:
         self.path = path
         self.files: dict[str, bytes] = {}
+        self.file_modes: dict[str, int] = {}
         self.removed = False
         self.closed = False
         self.validate_calls = 0
@@ -43,6 +44,7 @@ class FakePrivateDirectory:
     def write(self, relative: str, content: bytes, *, mode: int = 0o600) -> None:
         assert mode in {0o400, 0o500, 0o600, 0o700}
         self.files[relative] = content
+        self.file_modes[relative] = mode
 
     def read(self, relative: str, *, maximum: int = producer.MAX_LICENSE_BYTES) -> bytes:
         content = self.files[relative]
@@ -51,6 +53,28 @@ class FakePrivateDirectory:
 
     def file(self, relative: str) -> Path:
         return self.path / relative
+
+    def read_exact_owner_file(
+        self,
+        directory: str,
+        filename: str,
+        *,
+        maximum: int,
+    ) -> bytes | None:
+        relative = f"{directory}/{filename}"
+        inventory = sorted(
+            path
+            for path in self.files
+            if path.startswith(directory + "/")
+        )
+        if not inventory:
+            return None
+        if inventory != [relative]:
+            raise producer.ProducerError("runtime_file_unsafe")
+        content = self.files[relative]
+        if self.file_modes.get(relative) != 0o600 or len(content) > maximum:
+            raise producer.ProducerError("runtime_file_unsafe")
+        return content
 
     def remove(self) -> bool:
         self.removed = True
@@ -166,8 +190,10 @@ def _merged_compose_document(
             "/app/scripts": runtime / "empty-scripts",
             "/app/workspaces": runtime / "workspaces",
             "/app/var": runtime / "var",
+            "/run/ithildin-startup": runtime / "startup-status",
         }.items()
     ]
+    api_volumes[-1]["read_only"] = False
     services: JsonObject = {
         "ithildin-api": {
             "build": {
@@ -1296,6 +1322,19 @@ def _enable_api_exited_diagnostic(executor: FakeExecutor) -> None:
     )
 
 
+def _startup_stage_record(stage: str) -> bytes:
+    return (
+        producer.canonical_json(
+            {
+                "record_type": "ithildin_api_closed_startup_stage",
+                "schema_version": "1",
+                "stage": stage,
+            }
+        )
+        + "\n"
+    ).encode()
+
+
 def test_api_container_state_diagnostic_is_exact_closed_and_id_free(
     fake_stack: tuple[
         FakeRuntimeFactory,
@@ -1340,6 +1379,13 @@ def test_api_container_state_diagnostic_is_exact_closed_and_id_free(
         "cause_code": "api_application_exit_nonzero_no_engine_error",
         "health_status": "absent",
     }
+    assert diagnostic["base_service_start_diagnostic"][
+        "application_startup_stage_diagnostic"
+    ] == {
+        "collection_status": "inconclusive",
+        "collection_reason_code": "application_startup_stage_missing",
+        "last_emitted_stage": "unknown",
+    }
     assert executor.api_container_id not in encoded
     sequence = [
         plan.compose(
@@ -1363,6 +1409,137 @@ def test_api_container_state_diagnostic_is_exact_closed_and_id_free(
     ) == 1
     assert diagnostic["primary_failure_code"] == "base_services_start_failed"
     assert diagnostic["outward_failure_code"] == "base_services_start_failed"
+
+
+def test_application_startup_stage_is_normalized_only_for_exact_trigger(
+    fake_stack: tuple[
+        FakeRuntimeFactory,
+        FakeExecutorFactory,
+        FakeApiFactory,
+        FakeProvider,
+        FakeAssembler,
+    ],
+) -> None:
+    runtime, executors, apis, provider, assembler = fake_stack
+    executor = executors.executor
+    _enable_api_exited_diagnostic(executor)
+    runtime.runtime.write(
+        "startup-status/api-startup-stage.json",
+        _startup_stage_record("lifespan_governance_entered"),
+    )
+
+    with pytest.raises(
+        producer.ProducerError,
+        match="base_services_start_failed",
+    ):
+        producer.run_producer(
+            gate=AllowGate(),
+            runtime_factory=runtime,
+            executor_factory=executors,
+            api_factory=apis,
+            provider=provider,
+            assembler=assembler,
+            candidate=(COMMIT, TREE),
+            environment={},
+            now=datetime(2026, 7, 24, 18, 0, tzinfo=UTC),
+        )
+
+    encoded = runtime.receipts.files["diagnostic.json"].decode()
+    diagnostic = json.loads(encoded)
+    assert diagnostic["base_service_start_diagnostic"][
+        "application_startup_stage_diagnostic"
+    ] == {
+        "collection_status": "complete",
+        "collection_reason_code": "application_startup_stage_collected",
+        "last_emitted_stage": "lifespan_governance_entered",
+    }
+    assert "ithildin_api_closed_startup_stage" not in encoded
+    assert "api-startup-stage.json" not in encoded
+    assert diagnostic["primary_failure_code"] == "base_services_start_failed"
+    assert diagnostic["outward_failure_code"] == "base_services_start_failed"
+    assert sum("down" in command for command in executor.commands) == 1
+
+
+@pytest.mark.parametrize(
+    ("case", "expected_status"),
+    [
+        ("missing", "inconclusive"),
+        ("malformed", "output_rejected"),
+        ("duplicate", "output_rejected"),
+        ("extra_key", "output_rejected"),
+        ("oversize", "output_rejected"),
+        ("utf8", "output_rejected"),
+        ("enum", "output_rejected"),
+        ("noncanonical", "output_rejected"),
+        ("extra_file", "output_rejected"),
+        ("temp_file", "output_rejected"),
+        ("mode", "output_rejected"),
+    ],
+)
+def test_application_startup_stage_parser_is_closed(
+    tmp_path: Path,
+    case: str,
+    expected_status: str,
+) -> None:
+    run_id = "20260724T180000Z-1234abcd"
+    runtime = FakePrivateDirectory(tmp_path / "runtime" / run_id)
+    receipts = FakePrivateDirectory(tmp_path / "receipts" / run_id)
+    state = producer.ProducerState(
+        COMMIT,
+        TREE,
+        run_id,
+        producer.ComposePlan(run_id, runtime.path),
+        cast(producer.PrivateDirectory, runtime),
+        cast(producer.PrivateDirectory, receipts),
+    )
+    relative = "startup-status/api-startup-stage.json"
+    if case != "missing":
+        content = _startup_stage_record("application_import_entered")
+        if case == "malformed":
+            content = b"{\n"
+        elif case == "duplicate":
+            content = (
+                b'{"record_type":"ithildin_api_closed_startup_stage",'
+                b'"schema_version":"1","stage":"application_import_entered",'
+                b'"stage":"startup_ready"}\n'
+            )
+        elif case == "extra_key":
+            content = content[:-2] + b',"extra":false}\n'
+        elif case == "oversize":
+            content = b"x" * (
+                producer.MAX_APPLICATION_STARTUP_STAGE_BYTES + 1
+            )
+        elif case == "utf8":
+            content = b"\xff"
+        elif case == "enum":
+            content = _startup_stage_record("not_a_stage")
+        elif case == "noncanonical":
+            content = json.dumps(
+                {
+                    "record_type": "ithildin_api_closed_startup_stage",
+                    "schema_version": "1",
+                    "stage": "application_import_entered",
+                }
+            ).encode()
+        runtime.write(relative, content)
+        if case == "extra_file":
+            runtime.write("startup-status/extra", b"")
+        elif case == "temp_file":
+            runtime.write("startup-status/.api-startup-stage.tmp", b"")
+        elif case == "mode":
+            runtime.file_modes[relative] = 0o644
+
+    result = producer._collect_application_startup_stage_diagnostic(  # noqa: SLF001
+        state
+    )
+
+    assert result["collection_status"] == expected_status
+    assert result["collection_reason_code"] == (
+        "application_startup_stage_missing"
+        if case == "missing"
+        else "application_startup_stage_unsafe_or_incomplete"
+    )
+    assert result["last_emitted_stage"] == "unknown"
 
 
 @pytest.mark.parametrize(
@@ -1506,7 +1683,8 @@ def test_api_container_id_query_hostile_results_are_closed(
         )
 
     encoded = runtime.receipts.files["diagnostic.json"].decode()
-    nested = json.loads(encoded)["base_service_start_diagnostic"][
+    base_diagnostic = json.loads(encoded)["base_service_start_diagnostic"]
+    nested = base_diagnostic[
         "api_container_state_diagnostic"
     ]
     assert nested["collection_status"] == status
@@ -1740,7 +1918,8 @@ def test_api_container_state_hostile_and_cause_classification_is_closed(
         )
 
     encoded = runtime.receipts.files["diagnostic.json"].decode()
-    nested = json.loads(encoded)["base_service_start_diagnostic"][
+    base_diagnostic = json.loads(encoded)["base_service_start_diagnostic"]
+    nested = base_diagnostic[
         "api_container_state_diagnostic"
     ]
     assert nested == {
@@ -1749,6 +1928,7 @@ def test_api_container_state_hostile_and_cause_classification_is_closed(
         "cause_code": cause,
         "health_status": health,
     }
+    assert "application_startup_stage_diagnostic" not in base_diagnostic
     assert executor.api_container_id not in encoded
     assert "token-value" not in encoded
     assert sum(
@@ -2911,6 +3091,83 @@ def test_private_directory_rejects_lexical_anchor_replacement(
         anchored.close()
 
 
+@pytest.mark.parametrize(
+    "case",
+    ["symlink", "fifo", "mode", "directory_mode", "owner"],
+)
+def test_application_startup_stage_rejects_unsafe_filesystem_objects(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    case: str,
+) -> None:
+    root = tmp_path / "repo"
+    var = root / "var"
+    var.mkdir(parents=True)
+    root.chmod(0o755)
+    var.chmod(0o755)
+    runtime_base = var / "runtime-base"
+    receipt_base = var / "receipt-base"
+    monkeypatch.setattr(producer, "ROOT", root)
+    monkeypatch.setattr(producer, "RUNTIME_BASE", runtime_base)
+    monkeypatch.setattr(producer, "RECEIPT_BASE", receipt_base)
+    run_id = "20260724T180000Z-1234abcd"
+    runtime = producer.PrivateDirectory.create(runtime_base, run_id)
+    receipts = FakePrivateDirectory(tmp_path / "receipts" / run_id)
+    runtime.mkdir("startup-status")
+    state = producer.ProducerState(
+        COMMIT,
+        TREE,
+        run_id,
+        producer.ComposePlan(run_id, runtime.path),
+        runtime,
+        cast(producer.PrivateDirectory, receipts),
+    )
+    status_directory = runtime.file("startup-status")
+    final = status_directory / producer.APPLICATION_STARTUP_STATUS_FILE
+    try:
+        if case == "symlink":
+            final.symlink_to(status_directory / "missing")
+        elif case == "fifo":
+            os.mkfifo(final, 0o600)
+        else:
+            runtime.write(
+                "startup-status/api-startup-stage.json",
+                _startup_stage_record("startup_ready"),
+            )
+            if case == "mode":
+                final.chmod(0o644)
+            elif case == "directory_mode":
+                status_directory.chmod(0o755)
+        if case == "owner":
+            current_uid = os.geteuid()
+            with monkeypatch.context() as owner_context:
+                owner_context.setattr(
+                    producer.os,
+                    "geteuid",
+                    lambda: current_uid + 1,
+                )
+                result = (
+                    producer._collect_application_startup_stage_diagnostic(  # noqa: SLF001
+                        state
+                    )
+                )
+        else:
+            result = producer._collect_application_startup_stage_diagnostic(  # noqa: SLF001
+                state
+            )
+
+        assert result == {
+            "collection_status": "output_rejected",
+            "collection_reason_code": (
+                "application_startup_stage_unsafe_or_incomplete"
+            ),
+            "last_emitted_stage": "unknown",
+        }
+    finally:
+        status_directory.chmod(0o700)
+        assert runtime.remove() is True
+
+
 def test_node_configuration_mismatch_times_out_before_admission(
     fake_stack: tuple[
         FakeRuntimeFactory,
@@ -3375,6 +3632,59 @@ def test_merged_compose_config_rejects_any_surviving_repo_host_path(
     volumes[0]["source"] = str(producer.ROOT / "tool-manifests.lock.json")
 
     with pytest.raises(producer.ProducerError, match="merged_compose_host_path_invalid"):
+        producer._validate_merged_compose_config(  # noqa: SLF001
+            producer.CommandResult(0, json.dumps(document)),
+            state,
+            fixed=True,
+        )
+
+
+@pytest.mark.parametrize(
+    "mutation",
+    ["read_only", "ui_mount", "duplicate"],
+)
+def test_merged_compose_config_requires_exact_api_only_startup_mount(
+    fake_stack: tuple[
+        FakeRuntimeFactory,
+        FakeExecutorFactory,
+        FakeApiFactory,
+        FakeProvider,
+        FakeAssembler,
+    ],
+    mutation: str,
+) -> None:
+    runtime, _, _, _, _ = fake_stack
+    run_id = "20260724T180000Z-1234abcd"
+    plan = producer.ComposePlan(run_id, runtime.runtime.path)
+    state = producer.ProducerState(
+        COMMIT,
+        TREE,
+        run_id,
+        plan,
+        cast(producer.PrivateDirectory, runtime.runtime),
+        cast(producer.PrivateDirectory, runtime.receipts),
+        cast(producer.CandidateSnapshot, FakeCandidateSnapshot(runtime.receipts)),
+    )
+    document = _merged_compose_document(plan, fixed=True)
+    services = cast(JsonObject, document["services"])
+    api = cast(JsonObject, services["ithildin-api"])
+    volumes = cast(list[JsonObject], api["volumes"])
+    startup_mount = next(
+        volume
+        for volume in volumes
+        if volume["target"] == "/run/ithildin-startup"
+    )
+    if mutation == "read_only":
+        startup_mount["read_only"] = True
+    elif mutation == "ui_mount":
+        volumes.remove(startup_mount)
+        cast(list[JsonObject], cast(JsonObject, services["ithildin-ui"])["volumes"]).append(
+            startup_mount
+        )
+    else:
+        volumes.append(dict(startup_mount))
+
+    with pytest.raises(producer.ProducerError):
         producer._validate_merged_compose_config(  # noqa: SLF001
             producer.CommandResult(0, json.dumps(document)),
             state,

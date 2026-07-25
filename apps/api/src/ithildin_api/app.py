@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Callable
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -197,9 +197,19 @@ def create_app(
     runtime_candidate_verifier: RuntimeCandidateVerifier | None = None,
     trusted_host_promotion_test_fixture_ready: bool = False,
     trusted_host_promotion_placement_test_fixture_ready: bool = False,
+    startup_stage_reporter: Callable[[str], None] | None = None,
 ) -> FastAPI:
+    def report_startup_stage(stage: str) -> None:
+        if startup_stage_reporter is None:
+            return
+        try:
+            startup_stage_reporter(stage)
+        except Exception:
+            pass
+
     @asynccontextmanager
     async def lifespan(app_instance: FastAPI) -> AsyncIterator[None]:
+        report_startup_stage("lifespan_configuration_entered")
         resolved_settings = settings or load_settings()
         configure_logging(resolved_settings.log_level)
         validate_security_settings(resolved_settings)
@@ -212,6 +222,7 @@ def create_app(
             "ithildin.api.startup",
             safe_span_attributes(storage_backend=resolved_settings.storage_backend),
         ):
+            report_startup_stage("lifespan_persistence_entered")
             initialize_database(resolved_settings.db_path)
             audit_writer = AuditWriter(resolved_settings.db_path, resolved_settings.audit_log_path)
             audit_writer.initialize()
@@ -258,6 +269,7 @@ def create_app(
                 audit_writer,
                 timedelta(seconds=resolved_settings.approval_expiry_seconds),
             )
+            report_startup_stage("lifespan_governance_entered")
             registry = ToolRegistry.load(
                 resolved_settings.manifest_dir,
                 lock_path=resolved_settings.manifest_lock_path,
@@ -293,6 +305,7 @@ def create_app(
             app_instance.state.workspace_registry = workspace_registry
             app_instance.state.trusted_host_registry = trusted_host_registry
             app_instance.state.policy_evaluator = policy_evaluator
+            report_startup_stage("lifespan_services_entered")
             app_instance.state.mission_admission_service = MissionAdmissionService(
                 mission_store=mission_store,
                 node_store=node_store,
@@ -409,14 +422,19 @@ def create_app(
             mission_claim_reconciliation_task
         )
         logging.getLogger(__name__).info("api service started")
+        report_startup_stage("startup_ready")
         try:
             yield
         finally:
-            mission_claim_reconciliation_task.cancel()
+            report_startup_stage("shutdown_entered")
             try:
-                await mission_claim_reconciliation_task
-            except asyncio.CancelledError:
-                pass
+                mission_claim_reconciliation_task.cancel()
+                try:
+                    await mission_claim_reconciliation_task
+                except asyncio.CancelledError:
+                    pass
+            finally:
+                report_startup_stage("shutdown_complete")
 
     api = FastAPI(title="Ithildin API", lifespan=lifespan)
     api.add_middleware(
