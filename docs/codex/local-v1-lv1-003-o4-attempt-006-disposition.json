@@ -1,0 +1,171 @@
+{
+  "schema_version": "1",
+  "record_type": "local_v1_lv1_003_o4_attempt_disposition",
+  "record_status": "ATTEMPT_006_CONSUMED_APPLICATION_STARTUP_DIAGNOSTIC_REQUIRED_NO_LIVE_AUTHORITY",
+  "ticket_id": "LV1-003",
+  "outcome_id": "O4",
+  "attempt_id": "LV1-003-O4-ATTEMPT-006",
+  "attempted_candidate_commit": "d4c1d322a9d3faf24422009b7bc40f73544250af",
+  "attempted_candidate_tree": "9acbfc6ee270613518c4c5cc74b2719604946c46",
+  "operator_command": "make local-v1-lv1-003-o4-producer-run",
+  "module_command": "uv run python -m scripts.local_v1_lv1_003_o4_producer",
+  "run_id": "20260725T183846Z-b00570b3",
+  "compose_project": "ithildin-local-v1-o4-b00570b3",
+  "outward_failure_code": "base_services_start_failed",
+  "diagnostic_facts": {
+    "base_build_completed": true,
+    "bridge_build_completed": true,
+    "bound_image_identity_count": 4,
+    "bound_image_identities": [
+      {
+        "service": "ithildin-api",
+        "reference": "ithildin/api-o4:b00570b3",
+        "image_id": "sha256:e75264be1cf08effff08d122324410435955dd6c816c506f1b1d5da5614527a5"
+      },
+      {
+        "service": "ithildin-ui",
+        "reference": "ithildin/ui-o4:b00570b3",
+        "image_id": "sha256:2d97d8658498978da4ca610dbd51e0b6aa55bf9b35f0815a002b65054a208ce5"
+      },
+      {
+        "service": "ithildin-node",
+        "reference": "ithildin/node-o4:b00570b3",
+        "image_id": "sha256:1ae93646eca07cf3472ea70952ee83083228eb1924aebf91ab6fa0cd54cb0ebb"
+      },
+      {
+        "service": "hermes",
+        "reference": "ithildin/hermes-node-bridge-o4:b00570b3",
+        "image_id": "sha256:1a1eb3d53d106428f1266e8ce1d1799fd6b6074449673767a2a2016da647794f"
+      }
+    ],
+    "highest_completed_stage": 7,
+    "primary_failure_code": "base_services_start_failed",
+    "cleanup_failure_codes": [],
+    "outward_failure_code": "base_services_start_failed",
+    "diagnostic_recovery_required": false,
+    "base_service_start_diagnostic": {
+      "collection_status": "complete",
+      "reason_code": "base_service_start_state_collected",
+      "services": {
+        "ithildin-api": "service_exited_nonzero",
+        "ithildin-ui": "service_created"
+      },
+      "api_container_state_diagnostic": {
+        "collection_status": "complete",
+        "collection_reason_code": "api_container_state_collected",
+        "cause_code": "api_application_exit_nonzero_no_engine_error",
+        "health_status": "unhealthy"
+      }
+    },
+    "oom_killed": false,
+    "container_engine_error_present": false,
+    "application_root_cause_known": false
+  },
+  "in_run_cleanup_result": {
+    "cleanup_succeeded": true,
+    "evidence_source": "reviewed_bounded_diagnostic",
+    "cleanup_failure_codes": [],
+    "recovery_required": false,
+    "scope": "exact_bound_attempt_006_resources",
+    "generic_docker_absence_claimed": false,
+    "ongoing_live_truth_claimed": false
+  },
+  "point_in_time_post_attempt_observation": {
+    "observation_scope": "exact_run_scoped_read_only_post_failure",
+    "all_four_run_references_absent": true,
+    "all_four_exact_image_ids_absent": true,
+    "exact_project_label_containers": 0,
+    "exact_project_label_volumes": 0,
+    "exact_project_label_networks": 0,
+    "temporary_docker_config_cleaned": true,
+    "runtime_run_directory_absent": true,
+    "runtime_plaintext_absent": true,
+    "runtime_base_entries": [
+      "attempt-003-image-recovery-001-consumed.json"
+    ],
+    "ongoing_live_truth_claimed": false,
+    "general_docker_absence_claimed": false
+  },
+  "retained_receipt": {
+    "receipt_root": "var/local-v1-lv1-003-o4-receipts/20260725T183846Z-b00570b3",
+    "receipt_root_mode": "0700",
+    "receipt_entries": [
+      "candidate",
+      "candidate-manifest.json",
+      "diagnostic.json",
+      "disposition.json"
+    ],
+    "disposition_path": "var/local-v1-lv1-003-o4-receipts/20260725T183846Z-b00570b3/disposition.json",
+    "disposition_mode": "0600",
+    "disposition_size_bytes": 128,
+    "disposition_sha256": "sha256:5a84070039cc153416cf6fcc3a12c9f13bbd921befa97ee4b33a861a309b9d7a",
+    "diagnostic_path": "var/local-v1-lv1-003-o4-receipts/20260725T183846Z-b00570b3/diagnostic.json",
+    "diagnostic_mode": "0600",
+    "diagnostic_size_bytes": 7270,
+    "diagnostic_sha256": "sha256:5203fad9e028b6596c46358de00ab5a24e78ab314dbb582f9c3184ad4ac296b5",
+    "candidate_manifest_path": "var/local-v1-lv1-003-o4-receipts/20260725T183846Z-b00570b3/candidate-manifest.json",
+    "candidate_manifest_mode": "0600",
+    "candidate_manifest_size_bytes": 96772,
+    "candidate_manifest_sha256": "sha256:001e9c51992339079de8560d372a463ce7b30b4d9ff1be38cd516e7148f78fcd",
+    "candidate_snapshot_path": "var/local-v1-lv1-003-o4-receipts/20260725T183846Z-b00570b3/candidate",
+    "candidate_snapshot_mode": "0500",
+    "candidate_snapshot_file_count": 664,
+    "published_report_base_exists": false
+  },
+  "runtime_posture": {
+    "run_directory_exists": false,
+    "runtime_plaintext_exists": false,
+    "runtime_base_exists": true,
+    "runtime_base_mode": "0700",
+    "runtime_base_entries": [
+      "attempt-003-image-recovery-001-consumed.json"
+    ],
+    "recovery_consumption_receipt_mode": "0600",
+    "recovery_consumption_receipt_size_bytes": 336,
+    "recovery_consumption_receipt_sha256": "sha256:df7ce1a69c5fc3b27011f788f846bb5b385ed6f3d348ceb6c78d12de9366ca3c"
+  },
+  "tracked_closure_scope": [
+    "Makefile",
+    "README.md",
+    "docs/codex/local-v1-lv1-003-o4-attempt-006-disposition.json",
+    "docs/codex/local-v1-lv1-003-o4-attempt-006-disposition.md",
+    "docs/codex/local-v1-lv1-003-o4-execution-authorization.json",
+    "docs/codex/local-v1-lv1-003-o4-execution-authorization.md",
+    "scripts/local_v1_lv1_003_o4_execution_authorization_check.py",
+    "tests/test_local_v1_lv1_003_o4_execution_authorization_check.py"
+  ],
+  "attempt_contract": {
+    "attempt_consumed": true,
+    "execution_attempt_budget": 0,
+    "retry_authorized": false,
+    "automatic_retry_authorized": false,
+    "post_failure_execution_authorized": false,
+    "image_recovery_required": false,
+    "image_recovery_authorized": false,
+    "evidence_deletion_authorized": false,
+    "separate_reviewed_producer_repair_required": true,
+    "separate_new_attempt_disposition_required": true
+  },
+  "next_action": "prepare_separately_reviewed_application_emitted_closed_startup_stage_diagnostic_without_log_scraping_or_root_cause_guess",
+  "authority": {
+    "producer_code_authorized": false,
+    "docker_lifecycle_authorized": false,
+    "live_hermes_execution_authorized": false,
+    "model_provider_access_authorized": false,
+    "o4_evidence_execution_authorized": false,
+    "credential_custody_authorized": false,
+    "runner_lifecycle_authority": false,
+    "arbitrary_host_control_authorized": false,
+    "generic_process_control_authorized": false,
+    "shell_execution_authorized": false,
+    "docker_socket_authorized": false,
+    "network_non_bypass_claimed": false,
+    "filesystem_non_bypass_claimed": false,
+    "new_governed_power_authorized": false,
+    "new_governed_tool": false,
+    "release_allowed": false,
+    "promotion_allowed": false,
+    "production_authorized": false,
+    "uat_complete": false
+  }
+}

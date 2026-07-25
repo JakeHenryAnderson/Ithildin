@@ -1,12 +1,11 @@
 # Local v1 LV1-003 O4 Execution Authorization Gate
 
-Status: `ATTEMPT_006_EXACT_CHILD_ONE_SHOT_EXECUTION_AUTHORIZED`
+Status: `ATTEMPT_006_CONSUMED_APPLICATION_STARTUP_DIAGNOSTIC_REQUIRED_NO_LIVE_AUTHORITY`
 
-This gate preserves all five consumed attempt histories, the consumed and closed Attempt 003 image
-recovery, and the consumed Attempt 005 failure evidence. It authorizes exactly one
-central-manager-supervised Attempt 006 invocation through the gate-protected producer entrypoint.
-It authorizes no retry, automatic retry, recovery action, evidence deletion, release, promotion,
-production action, or UAT action. Its machine contract is
+This gate preserves all six consumed attempt histories, the consumed and closed Attempt 003 image
+recovery, and the consumed Attempt 006 failure evidence. It authorizes no execution, retry,
+automatic retry, recovery action, evidence deletion, release, promotion, production action, or UAT
+action. Its machine contract is
 `docs/codex/local-v1-lv1-003-o4-execution-authorization.json`.
 
 The gate preserves the reviewed fixed bridge and bounded producer implementation at
@@ -24,9 +23,9 @@ That authorization was exercised once by candidate
 `aa3eecea481dd5c92925ceec3421c051c63cb3cf`, and is no longer live.
 
 The machine contract's generic `candidate_parent_commit` and `candidate_parent_tree` fields now
-refer only to the reviewed API container-state diagnostic parent
-`3f207b8f390742b956ed62cea674b0e5c557b514`, tree
-`e3bc1d84ab798e34b297b659fa4698003f3423fe`. The reviewed runtime-native repair
+refer only to the consumed Attempt 006 candidate
+`d4c1d322a9d3faf24422009b7bc40f73544250af`, tree
+`9acbfc6ee270613518c4c5cc74b2719604946c46`. The reviewed runtime-native repair
 `49db93d80a71855d9ae223826a9849749377c376`, tree
 `23950855584316daba76acd65be0bfdfd20fbcb9`, remains the explicit historical Attempt 004
 authorization parent. The older
@@ -35,8 +34,8 @@ authorization parent. The older
 code-authorization identity only; it is not the current execution candidate parent.
 
 The machine contract names all inherited Attempt 001 lineage with explicit `attempt_001_*` keys.
-Those fields are historical only. The validator's public current-attempt fields bind the dynamic
-Attempt 006 exact child while Attempts 001 through 005 remain explicit history, so generic report
+Those fields are historical only. The validator's public current-attempt fields bind the consumed
+Attempt 006 candidate while Attempts 001 through 005 remain explicit history, so generic report
 labels cannot silently substitute an earlier attempt for the current attempt.
 
 ## Attempt 001 Result
@@ -277,7 +276,7 @@ eight-path closure allowlist recorded in the Attempt 005 disposition.
 The next action is a separate reviewed API-exit diagnostic repair. This closure does not guess the
 cause of `service_exited_nonzero`, includes no producer change, and grants no execution authority.
 
-## API Container-State Diagnostic Review And Attempt 006 Authority
+## API Container-State Diagnostic Review And Attempt 006 Result
 
 Exact API container-state diagnostic commit
 `3f207b8f390742b956ed62cea674b0e5c557b514`, tree
@@ -332,6 +331,40 @@ tamper-proof, persistent cross-process budget consumption. Any invocation outcom
 The gate directly validates all four retained Attempt 002 through Attempt 005 receipt roots and the
 consumed Attempt 003 recovery receipt. It rejects missing, mutated, extra, symlink, or special
 entries. No earlier attempt, recovery, retry, or evidence-deletion authority is reopened.
+
+The exact authorized candidate was
+`d4c1d322a9d3faf24422009b7bc40f73544250af`, tree
+`9acbfc6ee270613518c4c5cc74b2719604946c46`. Its sole invocation consumed Attempt 006 with run
+`20260725T183846Z-b00570b3` and Compose project
+`ithildin-local-v1-o4-b00570b3`.
+
+Both image builds completed, all four image identities were bound, and producer stage `7` was
+reached. The primary and outward failure remained `base_services_start_failed`. The base-service
+diagnostic classified the API as `service_exited_nonzero` and the UI as `service_created`. The API
+state diagnostic completed with `api_application_exit_nonzero_no_engine_error` and health
+`unhealthy`. It found no OOM-killed or engine-error condition, but the exact application root cause
+remains unknown.
+
+The cleanup failure list is empty and `recovery_required` is false. A separate exact-run-scoped
+point-in-time postcheck found all four exact references and IDs absent, the exact-project
+containers, volumes, and networks absent, and the temporary Docker configuration cleaned. These
+facts do not claim generic or ongoing Docker absence.
+
+The owner-only retained Attempt 006 receipt contains a 128-byte disposition with digest
+`sha256:5a84070039cc153416cf6fcc3a12c9f13bbd921befa97ee4b33a861a309b9d7a`, a 7,270-byte diagnostic
+with digest `sha256:5203fad9e028b6596c46358de00ab5a24e78ab314dbb582f9c3184ad4ac296b5`, a
+96,772-byte manifest with digest
+`sha256:001e9c51992339079de8560d372a463ce7b30b4d9ff1be38cd516e7148f78fcd`, and a
+664-file exact candidate snapshot. The durable disposition is
+`docs/codex/local-v1-lv1-003-o4-attempt-006-disposition.json`.
+
+No future closure child commit or tree is stated. The closure validator accepts only a clean,
+single-parent immediate child of the attempted candidate whose committed diff is the exact
+eight-path closure allowlist recorded in the Attempt 006 disposition.
+
+The next action is a separately reviewed application-emitted closed startup-stage diagnostic.
+It must not scrape logs or persist raw application output. This closure assigns no root cause,
+includes no producer change, and grants no execution authority.
 
 ## Historical Attempt Ceiling
 
@@ -394,19 +427,14 @@ unclaimed, and `recovery_required` remains true.
 Ambient Docker hosts, contexts, configuration, credential helpers, registry credentials, proxy
 variables, cloud credentials, arbitrary providers/models/tools/commands/arguments/paths, Docker
 socket mounts, or host-control APIs are rejected.
-Provider preflight is host-local only at `http://127.0.0.1:11434` and requires the exact model
-inventory entry `gemma4:e4b`. This authorization makes no provider-route success or absence claim.
+Provider preflight was host-local only at `http://127.0.0.1:11434` and required the exact model
+inventory entry `gemma4:e4b`. This closure makes no provider-route success or absence claim.
 
 ## Current Disposition
 
-Attempts 001 through 005 are consumed. Attempt 003 image recovery is consumed and closed. The
-Attempt 006 budget is one, `attempt_consumed` is false, and retry and automatic retry are false.
-
-Exactly five authority fields are true only for the one dynamically validated,
-central-manager-supervised Attempt 006 invocation: `producer_code_authorized`,
-`docker_lifecycle_authorized`, `live_hermes_execution_authorized`,
-`model_provider_access_authorized`, and `o4_evidence_execution_authorized`. The remaining 14
-authority fields are false.
+Attempts 001 through 006 are consumed. Attempt 003 image recovery is consumed and closed. The
+Attempt 006 budget is zero, `attempt_consumed` is true, retry and automatic retry are false, and all
+19 authority fields are false.
 
 Credential custody, runner lifecycle, arbitrary host control, generic process control, shell
 execution, general Docker socket authority, network/filesystem non-bypass claims, new powers, new
