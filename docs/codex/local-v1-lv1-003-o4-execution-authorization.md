@@ -1,12 +1,11 @@
 # Local v1 LV1-003 O4 Execution Authorization Gate
 
-Status: `ATTEMPT_007_EXACT_CHILD_ONE_SHOT_EXECUTION_AUTHORIZED`
+Status: `ATTEMPT_007_CONSUMED_PRELAUNCH_IMAGE_READABILITY_INVESTIGATION_REQUIRED_NO_LIVE_AUTHORITY`
 
 This gate preserves all six consumed attempt histories, the consumed and closed Attempt 003 image
-recovery, and the consumed Attempt 006 failure evidence. It authorizes exactly one
-central-manager-supervised Attempt 007 invocation through the gate-protected producer entrypoint.
-It authorizes no retry, automatic retry, recovery action, evidence deletion, release, promotion,
-production action, or UAT action. Its machine contract is
+recovery, and the consumed Attempt 007 failure evidence. It authorizes no execution, retry,
+automatic retry, recovery action, evidence deletion, release, promotion, production action, or UAT
+action. Its machine contract is
 `docs/codex/local-v1-lv1-003-o4-execution-authorization.json`.
 
 The gate preserves the reviewed fixed bridge and bounded producer implementation at
@@ -24,9 +23,9 @@ That authorization was exercised once by candidate
 `aa3eecea481dd5c92925ceec3421c051c63cb3cf`, and is no longer live.
 
 The machine contract's generic `candidate_parent_commit` and `candidate_parent_tree` fields now
-refer only to the reviewed application startup-stage diagnostic parent
-`cce80b5cc71e9387237d18b588d294c39351a362`, tree
-`4701443cd266cd86d6654a295f6277caddc117f2`. The reviewed runtime-native repair
+refer only to the consumed Attempt 007 candidate
+`a2f0338a045dd15352c77cb1841f2098013b1f86`, tree
+`04a5dbe34b604c95eb5a63bbfc9610b1033bf521`. The reviewed runtime-native repair
 `49db93d80a71855d9ae223826a9849749377c376`, tree
 `23950855584316daba76acd65be0bfdfd20fbcb9`, remains the explicit historical Attempt 004
 authorization parent. The older
@@ -35,8 +34,8 @@ authorization parent. The older
 code-authorization identity only; it is not the current execution candidate parent.
 
 The machine contract names all inherited Attempt 001 lineage with explicit `attempt_001_*` keys.
-Those fields are historical only. The validator's public current-attempt fields bind the dynamic
-Attempt 007 exact child while Attempts 001 through 006 remain explicit history, so generic report
+Those fields are historical only. The validator's public current-attempt fields bind the consumed
+Attempt 007 candidate while Attempts 001 through 006 remain explicit history, so generic report
 labels cannot silently substitute an earlier attempt for the current attempt.
 
 ## Attempt 001 Result
@@ -428,6 +427,33 @@ The validator preserves and directly checks retained Attempts 002 through 006 re
 consumed Attempt 003 recovery receipt. No earlier attempt, recovery, retry, evidence-deletion, or
 application-diagnostic authority is reopened.
 
+The exact candidate `a2f0338a045dd15352c77cb1841f2098013b1f86`, tree
+`04a5dbe34b604c95eb5a63bbfc9610b1033bf521`, was invoked once. Run
+`20260725T194808Z-1993a10f`, project `ithildin-local-v1-o4-1993a10f`, failed with
+`base_services_start_failed` after both builds and stage `7`.
+
+The API was `service_exited_nonzero`, the UI was `service_created`, and the API container-state
+classification was `api_application_exit_nonzero_no_engine_error` with health `unhealthy`. The new
+application-stage diagnostic was `inconclusive`: reason `application_startup_stage_missing`, stage
+`unknown`. Marker absence means failure before the first checkpoint or an unusable diagnostic
+channel; it does not prove either explanation or establish root cause.
+
+Cleanup failures are empty and `recovery_required` is false. The separate exact-run postcheck found
+all four exact references and IDs, project containers, volumes, and networks absent; the temporary
+Docker configuration and runtime plaintext were absent. The retained receipt binds the 128-byte
+disposition, 7,438-byte diagnostic
+`sha256:add06ef7d609b220e52d3ab0053a8521262d1dbc253b0d972cae83442f97cf10`,
+96,772-byte manifest
+`sha256:73219848ccef6715ee7c1f3fb5356ecced8db36eea58bc449cf64d37e7197998`,
+and 664-file snapshot.
+
+Attempt 007 is consumed. Its closure accepts only a clean direct child of the attempted candidate
+with the exact eight-path closure allowlist recorded in
+`docs/codex/local-v1-lv1-003-o4-attempt-007-disposition.json`.
+
+The next action is a separately reviewed pre-launch Docker image-readability repair investigation.
+It must not scrape logs or claim a proven root cause. This closure grants no execution authority.
+
 ## Historical Attempt Ceiling
 
 The consumed Attempt 003 authorization limited the producer to one uniquely named isolated Compose project and
@@ -494,13 +520,8 @@ inventory entry `gemma4:e4b`. This closure makes no provider-route success or ab
 
 ## Current Disposition
 
-Attempts 001 through 006 are consumed. Attempt 003 image recovery is consumed and closed. Attempt
-007 is unconsumed with budget one; retry and automatic retry are false.
-
-Exactly five authority fields are true only for the one dynamically validated,
-central-manager-supervised Attempt 007 invocation: `producer_code_authorized`,
-`docker_lifecycle_authorized`, `live_hermes_execution_authorized`,
-`model_provider_access_authorized`, and `o4_evidence_execution_authorized`. The remaining 14
+Attempts 001 through 007 are consumed. Attempt 003 image recovery is consumed and closed. Attempt
+007 has budget zero; `attempt_consumed` is true, retry and automatic retry are false, and all 19
 authority fields are false.
 
 Credential custody, runner lifecycle, arbitrary host control, generic process control, shell

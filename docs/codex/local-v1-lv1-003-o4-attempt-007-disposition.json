@@ -1,0 +1,151 @@
+{
+  "schema_version": "1",
+  "record_type": "local_v1_lv1_003_o4_attempt_disposition",
+  "record_status": "ATTEMPT_007_CONSUMED_PRELAUNCH_IMAGE_READABILITY_INVESTIGATION_REQUIRED_NO_LIVE_AUTHORITY",
+  "ticket_id": "LV1-003",
+  "outcome_id": "O4",
+  "attempt_id": "LV1-003-O4-ATTEMPT-007",
+  "attempted_candidate_commit": "a2f0338a045dd15352c77cb1841f2098013b1f86",
+  "attempted_candidate_tree": "04a5dbe34b604c95eb5a63bbfc9610b1033bf521",
+  "operator_command": "make local-v1-lv1-003-o4-producer-run",
+  "module_command": "uv run python -m scripts.local_v1_lv1_003_o4_producer",
+  "run_id": "20260725T194808Z-1993a10f",
+  "compose_project": "ithildin-local-v1-o4-1993a10f",
+  "outward_failure_code": "base_services_start_failed",
+  "diagnostic_facts": {
+    "base_build_completed": true,
+    "bridge_build_completed": true,
+    "highest_completed_stage": 7,
+    "primary_failure_code": "base_services_start_failed",
+    "cleanup_failure_codes": [],
+    "outward_failure_code": "base_services_start_failed",
+    "diagnostic_recovery_required": false,
+    "bound_image_identities": [
+      {
+        "service": "ithildin-api",
+        "reference": "ithildin/api-o4:1993a10f",
+        "image_id": "sha256:686096ac390a1d3d169c8a146d873b08d9fde05d96a7b6ea78a40d47d6aa6b03"
+      },
+      {
+        "service": "ithildin-ui",
+        "reference": "ithildin/ui-o4:1993a10f",
+        "image_id": "sha256:8eb20fbc8457db83d7a127b630b01fb93323eedc4b4d7a745e534bd21b88a11d"
+      },
+      {
+        "service": "ithildin-node",
+        "reference": "ithildin/node-o4:1993a10f",
+        "image_id": "sha256:1839df6ce76622b08a4dedf3abf63da4dcdcd02086ffec2683bf808fdf79c141"
+      },
+      {
+        "service": "hermes",
+        "reference": "ithildin/hermes-node-bridge-o4:1993a10f",
+        "image_id": "sha256:a0ab24b39cfc2ad24051004278c347ce86c3a1fb865724f0340e96365f6e958f"
+      }
+    ],
+    "base_service_start_diagnostic": {
+      "collection_status": "complete",
+      "reason_code": "base_service_start_state_collected",
+      "services": {
+        "ithildin-api": "service_exited_nonzero",
+        "ithildin-ui": "service_created"
+      },
+      "api_container_state_diagnostic": {
+        "collection_status": "complete",
+        "collection_reason_code": "api_container_state_collected",
+        "cause_code": "api_application_exit_nonzero_no_engine_error",
+        "health_status": "unhealthy"
+      },
+      "application_startup_stage_diagnostic": {
+        "collection_status": "inconclusive",
+        "collection_reason_code": "application_startup_stage_missing",
+        "last_emitted_stage": "unknown"
+      }
+    },
+    "application_root_cause_known": false,
+    "marker_absence_interpretation": "pre_first_checkpoint_or_unusable_diagnostic_channel"
+  },
+  "in_run_cleanup_result": {
+    "cleanup_succeeded": true,
+    "cleanup_failure_codes": [],
+    "recovery_required": false,
+    "scope": "exact_bound_attempt_007_resources",
+    "generic_docker_absence_claimed": false,
+    "ongoing_live_truth_claimed": false
+  },
+  "point_in_time_post_attempt_observation": {
+    "observation_scope": "exact_run_scoped_read_only_post_failure",
+    "all_four_run_references_absent": true,
+    "all_four_exact_image_ids_absent": true,
+    "exact_project_label_containers": 0,
+    "exact_project_label_volumes": 0,
+    "exact_project_label_networks": 0,
+    "temporary_docker_config_removed": true,
+    "runtime_run_directory_absent": true,
+    "runtime_plaintext_absent": true,
+    "runtime_base_entries": [
+      "attempt-003-image-recovery-001-consumed.json"
+    ],
+    "ongoing_live_truth_claimed": false,
+    "general_docker_absence_claimed": false
+  },
+  "retained_receipt": {
+    "receipt_root": "var/local-v1-lv1-003-o4-receipts/20260725T194808Z-1993a10f",
+    "receipt_root_mode": "0700",
+    "receipt_entries": [
+      "candidate",
+      "candidate-manifest.json",
+      "diagnostic.json",
+      "disposition.json"
+    ],
+    "disposition_size_bytes": 128,
+    "disposition_sha256": "sha256:5a84070039cc153416cf6fcc3a12c9f13bbd921befa97ee4b33a861a309b9d7a",
+    "diagnostic_size_bytes": 7438,
+    "diagnostic_sha256": "sha256:add06ef7d609b220e52d3ab0053a8521262d1dbc253b0d972cae83442f97cf10",
+    "candidate_manifest_size_bytes": 96772,
+    "candidate_manifest_sha256": "sha256:73219848ccef6715ee7c1f3fb5356ecced8db36eea58bc449cf64d37e7197998",
+    "candidate_snapshot_file_count": 664,
+    "published_report_base_exists": false
+  },
+  "tracked_closure_scope": [
+    "Makefile",
+    "README.md",
+    "docs/codex/local-v1-lv1-003-o4-attempt-007-disposition.json",
+    "docs/codex/local-v1-lv1-003-o4-attempt-007-disposition.md",
+    "docs/codex/local-v1-lv1-003-o4-execution-authorization.json",
+    "docs/codex/local-v1-lv1-003-o4-execution-authorization.md",
+    "scripts/local_v1_lv1_003_o4_execution_authorization_check.py",
+    "tests/test_local_v1_lv1_003_o4_execution_authorization_check.py"
+  ],
+  "attempt_contract": {
+    "attempt_consumed": true,
+    "execution_attempt_budget": 0,
+    "retry_authorized": false,
+    "automatic_retry_authorized": false,
+    "post_failure_execution_authorized": false,
+    "image_recovery_required": false,
+    "image_recovery_authorized": false,
+    "evidence_deletion_authorized": false
+  },
+  "next_action": "prepare_separately_reviewed_prelaunch_docker_image_readability_repair_investigation_without_log_scraping_or_root_cause_claim",
+  "authority": {
+    "producer_code_authorized": false,
+    "docker_lifecycle_authorized": false,
+    "live_hermes_execution_authorized": false,
+    "model_provider_access_authorized": false,
+    "o4_evidence_execution_authorized": false,
+    "credential_custody_authorized": false,
+    "runner_lifecycle_authority": false,
+    "arbitrary_host_control_authorized": false,
+    "generic_process_control_authorized": false,
+    "shell_execution_authorized": false,
+    "docker_socket_authorized": false,
+    "network_non_bypass_claimed": false,
+    "filesystem_non_bypass_claimed": false,
+    "new_governed_power_authorized": false,
+    "new_governed_tool": false,
+    "release_allowed": false,
+    "promotion_allowed": false,
+    "production_authorized": false,
+    "uat_complete": false
+  }
+}
