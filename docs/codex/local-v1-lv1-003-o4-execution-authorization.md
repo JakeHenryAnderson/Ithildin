@@ -1,9 +1,10 @@
 # Local v1 LV1-003 O4 Execution Authorization Gate
 
-Status: `ATTEMPT_002_CONSUMED_FIXED_COMPOSE_INVALID`
+Status: `AUTHORIZE_ATTEMPT_003_SUPERVISED_ONE_ATTEMPT_IMMEDIATE_CHILD`
 
-This gate preserves both consumed attempt histories and grants no further execution. Its machine
-contract is
+This gate preserves both consumed attempt histories and authorizes exactly one
+central-manager-supervised Attempt 003 invocation for the dynamically validated control child. Its
+machine contract is
 `docs/codex/local-v1-lv1-003-o4-execution-authorization.json`.
 
 The gate preserves the reviewed fixed bridge and bounded producer implementation at
@@ -75,6 +76,33 @@ contents, an empty runtime base, and an absent published report. The current clo
 exactly seven tracked paths, including `.gitignore`; its three exact evidence-root child patterns do
 not create a broad `var` ignore and do not suppress gate inspection.
 
+## Compose Repair Review And Attempt 003
+
+The exact Compose-repair candidate
+`7e6eb9f0fcad35016f611096543fa4a81017259c`, tree
+`fef080b85db9b44675150954d6af5afd5d6fec0d`, received independent Sol xhigh read-only review with
+zero Critical, High, Medium, or Low findings and disposition `GO`. The durable review is
+`docs/codex/local-v1-lv1-003-o4-compose-repair-exact-review.md`.
+
+The repaired base Compose, overlay, and producer digests are respectively
+`sha256:895107a268169790024c07fe00556fb5d6df0ce4479f49cbe091ccfc517ceb04`,
+`sha256:f6a78f705165354e9908c4512ab551f87dd16cada6e415d59979d78d6f66107c`, and
+`sha256:b4d44f09183fca2df5cab33496571c3ac316420074e8eeba71e506fd92999c4b`.
+The base Node owns exactly one bounded
+`/tmp:size=16m,mode=0700,uid=10002,gid=10002` declaration, the overlay no longer duplicates that
+target, and the producer rejects any non-exact merged Node tmpfs set.
+
+The accompanying
+`docs/codex/local-v1-lv1-003-o4-attempt-003-disposition.json` authorizes no static future candidate.
+Only after every check passes does the gate derive a clean, single-parent immediate child of the
+reviewed repair commit whose committed diff is exactly the seven-path control allowlist. All
+non-control paths must remain byte-equivalent to the reviewed repair parent.
+
+The exact retained Attempt 002 receipt is required and allowed. Any missing, changed, unknown, or
+additional receipt run, populated runtime, published report, symlink, special entry, or additional
+attempt root refuses Attempt 003. Attempt 003 has budget one, retry false, and requires an immediate
+new post-attempt disposition after any invocation outcome.
+
 ## Historical Attempt Ceiling
 
 The consumed authorization limited the producer to one uniquely named isolated Compose project and
@@ -142,13 +170,13 @@ the sole attempt; a routing failure consumes that attempt and permits no retry.
 
 ## Current Disposition
 
-`producer_code_authorized`, `docker_lifecycle_authorized`, `live_hermes_execution_authorized`,
-`model_provider_access_authorized`, and `o4_evidence_execution_authorized` are now false. Every one
-of the 19 authority fields is false, the attempt budget is zero, and retry is unauthorized. Release,
-promotion, production, UAT, credential custody, runner lifecycle, arbitrary host control, generic
-process control, shell execution, Docker socket access, non-bypass claims, new powers, and new tools
-remain unauthorized. The governed tool count remains exactly 24.
+Exactly five fields are true only for one dynamically validated, central-manager-supervised
+Attempt 003 invocation: `producer_code_authorized`, `docker_lifecycle_authorized`,
+`live_hermes_execution_authorized`, `model_provider_access_authorized`, and
+`o4_evidence_execution_authorized`. The remaining 14 authority fields are false. The attempt budget
+is one and retry is unauthorized.
 
-A future attempt requires a separately repaired overlay candidate, independent exact review, and a
-separate new-attempt disposition. Fixing the overlay does not restore authority. Attempt 001
-history remains unchanged.
+Release, promotion, production, UAT, credential custody, runner lifecycle, arbitrary host control,
+generic process control, shell execution, Docker socket access, non-bypass claims, new powers, and
+new tools remain unauthorized. The governed tool count remains exactly 24. Attempts 001 and 002
+remain consumed, and Attempt 003 has not been executed by this control candidate.
