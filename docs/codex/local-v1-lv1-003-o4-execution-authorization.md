@@ -1,8 +1,9 @@
 # Local v1 LV1-003 O4 Execution Authorization Gate
 
-Status: `AUTHORIZED_SUPERVISED_ONE_ATTEMPT_CHILD`
+Status: `ATTEMPT_CONSUMED_PRE_GATE_IMPORT_FAILURE`
 
-This is the separate execution gate for one supervised Local-v1 `O4` journey. Its machine contract is
+This is the closed execution gate after the sole supervised Local-v1 `O4` invocation was consumed.
+Its machine contract is
 `docs/codex/local-v1-lv1-003-o4-execution-authorization.json`.
 
 The gate preserves the reviewed fixed bridge and bounded producer implementation at
@@ -15,11 +16,27 @@ single-parent immediate child of code-authorization commit
 `86e75f0cf7f92ceb33218f2a66a00668f4da9e12`, with the exact closed six-path control diff and
 byte parity across every reviewed runtime, producer, bridge, and covered test path. The gate derives
 that child commit and tree only after every check passes; it contains no future self-reference.
+That authorization was exercised once by candidate
+`9a9e10a083ee9019b58d49d5099040e18bfbb7f2`, tree
+`aa3eecea481dd5c92925ceec3421c051c63cb3cf`, and is no longer live.
 
-## Prepared Live Ceiling
+## Attempt 001 Result
 
-The producer is limited to one uniquely named isolated Compose project and one server-owned
-`synthetic_read_review_v1` mission. It may eventually create ephemeral local admin and enrollment
+The exact command `uv run python scripts/local_v1_lv1_003_o4_producer.py` exited `1` before gate
+authorization or producer runtime entry. Module import failed at
+`scripts/local_v1_lv1_003_o4_producer.py:36` with
+`ModuleNotFoundError: No module named 'scripts'`. The durable exact disposition is
+`docs/codex/local-v1-lv1-003-o4-attempt-001-disposition.json`.
+
+Read-only post-failure checks found the receipt, runtime, and constrained-journey report roots
+absent. Attempt 001 therefore performed no runtime creation, Docker, Ollama or provider, API, Node,
+Hermes, credential, network journey, or evidence action. This is a bounded observation about this
+failed invocation, not a general non-bypass claim.
+
+## Historical Attempt Ceiling
+
+The consumed authorization limited the producer to one uniquely named isolated Compose project and
+one server-owned `synthetic_read_review_v1` mission. It could create ephemeral local admin and enrollment
 values, but they must remain in memory or owner-only anchored runtime files and must never be
 printed, returned in receipts, or copied into evidence. The ordinary authenticated Node must become
 eligible before mission admission. The same enrolled Node state may then be restarted through the
@@ -37,15 +54,17 @@ For this journey, actual Gateway truth is mission lifecycle `runner_reported_suc
 record status `active`, and exactly two `tool.execution.completed` timeline events. Synthesizing
 Agent Run completion is forbidden.
 
-## Build And Evidence Boundary
+## Historical Build And Evidence Boundary
 
-The future run must produce actual bounded image artifact and repository-license source inventories.
+Attempt 001 would have had to produce actual bounded image artifact and repository-license source
+inventories if it had entered the producer runtime.
 Image config/layer metadata is not an SBOM. The candidate producer and assembler now use
 `image_artifact_inventory_digest` and `license_source_inventory_digest`, preserve actual Gateway
 Agent Run status `active`, and require exactly two distinctly identified Gateway completion events.
-The independently reviewed code-only candidate is usable for this one supervised producer attempt
-only when the dynamic immediate-child gate passes. The inventories are not placeholder hashes and
-do not claim SBOM coverage, license completeness, compliance, provenance custody, or provider truth.
+The independently reviewed code-only candidate was usable only for the now-consumed supervised
+attempt when the dynamic immediate-child gate passed. The inventories are not placeholder hashes
+and do not claim SBOM coverage, license completeness, compliance, provenance custody, or provider
+truth.
 Static fake evidence proves closed private-snapshot enumeration and rejects observed path
 replacement. It does not prove absence of transient malicious same-UID mutation while Docker reads
 the build context; that threat remains outside the Local-v1 evidence boundary, consistent with the
@@ -83,18 +102,13 @@ the sole attempt; a routing failure consumes that attempt and permits no retry.
 ## Current Disposition
 
 `producer_code_authorized`, `docker_lifecycle_authorized`, `live_hermes_execution_authorized`,
-`model_provider_access_authorized`, and `o4_evidence_execution_authorized` are the only five true
-authority bits, and they become effective only for the dynamically validated child and one
-central-manager-supervised invocation. Release, promotion, production, UAT, credential custody,
-runner lifecycle, arbitrary host control, generic process control, shell execution, Docker socket
-access, non-bypass claims, new-power, and new-tool authority remain false. The governed tool count
-remains exactly 24.
+`model_provider_access_authorized`, and `o4_evidence_execution_authorized` are now false. Every other
+authority field is also false. The attempt budget is zero. Release, promotion, production, UAT,
+credential custody, runner lifecycle, arbitrary host control, generic process control, shell
+execution, Docker socket access, non-bypass claims, new powers, and new tools remain unauthorized.
+The governed tool count remains exactly 24.
 
-The gate checks three exact local evidence roots and refuses any retained prior-attempt or success
-entry, unsafe root, or unreadable root. This does not implement atomic cross-process budget
-consumption and makes no tamper-proof or durable-ledger claim. No concurrent invocation, automatic
-retry, or post-attempt rerun is authorized. Every attempted invocation requires an immediate
-post-attempt disposition before any further run.
-
-The current uncommitted preparation worktree is intentionally non-authorizing. Authority exists only
-after these six control paths are committed as the clean single immediate child described above.
+No retry is authorized. A retry requires a repaired candidate, independent exact review of that
+candidate, and a separate post-review execution disposition. Repairing the import path does not
+restore the consumed authority. A descendant control-only commit may record this closure; this
+document does not bind or derive its own closure commit or tree.

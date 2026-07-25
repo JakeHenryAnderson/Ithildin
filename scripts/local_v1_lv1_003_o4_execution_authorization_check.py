@@ -32,6 +32,12 @@ DISPOSITION_JSON = Path(
 DISPOSITION_DOCUMENT = Path(
     "docs/codex/local-v1-lv1-003-o4-post-review-disposition.md"
 )
+ATTEMPT_DISPOSITION_JSON = Path(
+    "docs/codex/local-v1-lv1-003-o4-attempt-001-disposition.json"
+)
+ATTEMPT_DISPOSITION_DOCUMENT = Path(
+    "docs/codex/local-v1-lv1-003-o4-attempt-001-disposition.md"
+)
 AUTHORIZATION_TARGET = "local-v1-lv1-003-o4-execution-authorization-check"
 PRODUCER_STATIC_TARGET = "local-v1-lv1-003-o4-producer-static-check"
 REVIEWED_IMPLEMENTATION_COMMIT = "5dab3654391c14fe214a9dfe302c099d0fe5fbf8"
@@ -60,6 +66,19 @@ DISPOSITION_JSON_DIGEST = (
 DISPOSITION_DOCUMENT_DIGEST = (
     "sha256:9ddd3fc6a78c6556233888a6828e1540b4f85c68660618a424d228bc3b79eea8"
 )
+ATTEMPT_DISPOSITION_JSON_DIGEST = (
+    "sha256:16545c118efc7fc93d57534215d1b2defeb920fb9cde388cedd14e646db00671"
+)
+ATTEMPT_DISPOSITION_DOCUMENT_DIGEST = (
+    "sha256:3b3e12c7e6f1993c2c256eb0140e15dedf7dc42914cbf67a29de11ed20c7a245"
+)
+ATTEMPT_ID = "LV1-003-O4-ATTEMPT-001"
+ATTEMPTED_CANDIDATE_COMMIT = "9a9e10a083ee9019b58d49d5099040e18bfbb7f2"
+ATTEMPTED_CANDIDATE_TREE = "aa3eecea481dd5c92925ceec3421c051c63cb3cf"
+ATTEMPTED_AUTHORIZATION_CONTRACT_DIGEST = (
+    "sha256:2dfd27d564a8359ae66c87bd0ed7308cf74cd2cf5561aa60a80ba04b83bd6863"
+)
+ATTEMPT_COMMAND = "uv run python scripts/local_v1_lv1_003_o4_producer.py"
 CONTROL_PATH_ALLOWLIST = [
     CONTRACT.as_posix(),
     DOCUMENT.as_posix(),
@@ -173,11 +192,23 @@ TOP_LEVEL_FIELDS = {
     "post_review_disposition_json_sha256",
     "post_review_disposition_document",
     "post_review_disposition_document_sha256",
+    "attempt_disposition_json",
+    "attempt_disposition_json_sha256",
+    "attempt_disposition_document",
+    "attempt_disposition_document_sha256",
+    "attempt_id",
+    "attempted_candidate_commit",
+    "attempted_candidate_tree",
+    "attempted_authorization_contract_sha256",
+    "attempt_invocation",
+    "attempt_root_absence",
     "execution_candidate_binding_mode",
     "execution_attempt_budget",
+    "attempt_consumed",
+    "retry_authorized",
     "attempt_custody",
     "persistent_cross_process_budget_consumption_claimed",
-    "immediate_post_attempt_disposition_required",
+    "immediate_post_attempt_disposition_recorded",
     "prior_attempt_detection_roots",
     "profile",
     "command_contract",
@@ -321,16 +352,18 @@ EXPECTED_CLEANUP_CONTRACT: JsonObject = {
     "chmod_only_publication_rollback_success_allowed": False,
     "retry_after_failure_automatic": False,
 }
-TRUE_AUTHORITY_FIELDS = {
+HISTORICAL_TRUE_AUTHORITY_FIELDS = {
     "producer_code_authorized",
     "docker_lifecycle_authorized",
     "live_hermes_execution_authorized",
     "model_provider_access_authorized",
     "o4_evidence_execution_authorized",
 }
-EXPECTED_AUTHORITY: JsonObject = {
-    key: key in TRUE_AUTHORITY_FIELDS for key in AUTHORITY_FIELDS
+HISTORICAL_AUTHORITY: JsonObject = {
+    key: key in HISTORICAL_TRUE_AUTHORITY_FIELDS for key in AUTHORITY_FIELDS
 }
+TRUE_AUTHORITY_FIELDS: set[str] = set()
+EXPECTED_AUTHORITY: JsonObject = {key: False for key in AUTHORITY_FIELDS}
 
 
 class O4ExecutionAuthorizationError(RuntimeError):
@@ -344,12 +377,26 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     producer_contract = _read_text(repo_root / PRODUCER_CONTRACT, failures)
     disposition = _read_contract(repo_root / DISPOSITION_JSON, failures)
     disposition_document = _read_text(repo_root / DISPOSITION_DOCUMENT, failures)
+    attempt_disposition = _read_contract(
+        repo_root / ATTEMPT_DISPOSITION_JSON,
+        failures,
+    )
+    attempt_disposition_document = _read_text(
+        repo_root / ATTEMPT_DISPOSITION_DOCUMENT,
+        failures,
+    )
     _validate_contract(contract, failures)
     _validate_document(document, failures)
     _validate_producer_contract(producer_contract, contract, failures)
     _validate_disposition(disposition, disposition_document, failures)
+    _validate_attempt_disposition(
+        attempt_disposition,
+        attempt_disposition_document,
+        failures,
+    )
     _validate_bound_documents(repo_root, failures)
     _validate_git_bindings(repo_root, failures)
+    _validate_attempted_candidate_binding(repo_root, failures)
     _validate_source_bindings(repo_root, contract, failures)
     _validate_current_license_discovery(repo_root, failures)
     code_report = code_authorization.build_report(repo_root)
@@ -362,21 +409,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     ):
         failures.append("reviewed runner-bridge code authority is not exact")
     _validate_wiring(repo_root, failures)
-    execution_checkout = _validate_execution_checkout(repo_root, failures)
-    _validate_prior_attempt_posture(repo_root, failures)
-    static_authority_exact = _exact_json_equal(
-        contract.get("authority"),
-        EXPECTED_AUTHORITY,
-    )
-    live_execution_authorized = (
-        not failures
-        and execution_checkout is not None
-        and static_authority_exact
-    )
-    checkout_commit: str | None = None
-    checkout_tree: str | None = None
-    if live_execution_authorized and execution_checkout is not None:
-        checkout_commit, checkout_tree = execution_checkout
+    _validate_recorded_root_absence(repo_root, failures)
     return {
         "schema_version": "1",
         "valid": not failures,
@@ -384,13 +417,18 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "record_status": contract.get("record_status"),
         "reviewed_implementation_commit": contract.get("reviewed_implementation_commit"),
         "code_authorization_commit": contract.get("code_authorization_commit"),
-        "execution_checkout_commit": checkout_commit,
-        "execution_checkout_tree": checkout_tree,
-        "execution_attempt_budget": 1 if live_execution_authorized else 0,
-        "live_execution_authorized": live_execution_authorized,
-        "docker_lifecycle_authorized": live_execution_authorized,
-        "provider_access_authorized": live_execution_authorized,
-        "o4_evidence_execution_authorized": live_execution_authorized,
+        "attempt_id": contract.get("attempt_id"),
+        "attempted_candidate_commit": contract.get("attempted_candidate_commit"),
+        "attempted_candidate_tree": contract.get("attempted_candidate_tree"),
+        "attempt_consumed": contract.get("attempt_consumed"),
+        "retry_authorized": False,
+        "execution_checkout_commit": None,
+        "execution_checkout_tree": None,
+        "execution_attempt_budget": 0,
+        "live_execution_authorized": False,
+        "docker_lifecycle_authorized": False,
+        "provider_access_authorized": False,
+        "o4_evidence_execution_authorized": False,
         "new_governed_tool": False,
         "release_allowed": False,
         "uat_complete": False,
@@ -420,7 +458,7 @@ def _validate_contract(contract: JsonObject, failures: list[str]) -> None:
     expected = {
         "schema_version": "1",
         "record_type": "local_v1_lv1_003_o4_execution_authorization",
-        "record_status": "AUTHORIZED_SUPERVISED_ONE_ATTEMPT_CHILD",
+        "record_status": "ATTEMPT_CONSUMED_PRE_GATE_IMPORT_FAILURE",
         "ticket_id": "LV1-003",
         "outcome_id": "O4",
         "producer_contract_path": PRODUCER_CONTRACT.as_posix(),
@@ -443,13 +481,39 @@ def _validate_contract(contract: JsonObject, failures: list[str]) -> None:
         "post_review_disposition_json_sha256": DISPOSITION_JSON_DIGEST,
         "post_review_disposition_document": DISPOSITION_DOCUMENT.as_posix(),
         "post_review_disposition_document_sha256": DISPOSITION_DOCUMENT_DIGEST,
-        "execution_candidate_binding_mode": (
-            "dynamic_clean_single_immediate_child_after_all_checks"
+        "attempt_disposition_json": ATTEMPT_DISPOSITION_JSON.as_posix(),
+        "attempt_disposition_json_sha256": ATTEMPT_DISPOSITION_JSON_DIGEST,
+        "attempt_disposition_document": ATTEMPT_DISPOSITION_DOCUMENT.as_posix(),
+        "attempt_disposition_document_sha256": ATTEMPT_DISPOSITION_DOCUMENT_DIGEST,
+        "attempt_id": ATTEMPT_ID,
+        "attempted_candidate_commit": ATTEMPTED_CANDIDATE_COMMIT,
+        "attempted_candidate_tree": ATTEMPTED_CANDIDATE_TREE,
+        "attempted_authorization_contract_sha256": (
+            ATTEMPTED_AUTHORIZATION_CONTRACT_DIGEST
         ),
-        "execution_attempt_budget": 1,
+        "attempt_invocation": {
+            "command": ATTEMPT_COMMAND,
+            "exit_code": 1,
+            "classification": "PRE_GATE_MODULE_IMPORT_FAILURE",
+            "exception_type": "ModuleNotFoundError",
+            "exception_message": "No module named 'scripts'",
+            "failure_location": "scripts/local_v1_lv1_003_o4_producer.py:36",
+            "gate_authorization_entered": False,
+            "producer_runtime_entered": False,
+        },
+        "attempt_root_absence": {
+            "observation_method": "read_only_path_absence_check_after_failed_invocation",
+            "absent_roots": cast(list[JsonValue], PRIOR_ATTEMPT_ROOTS),
+        },
+        "execution_candidate_binding_mode": (
+            "attempt_consumed_no_execution_candidate_authorized"
+        ),
+        "execution_attempt_budget": 0,
+        "attempt_consumed": True,
+        "retry_authorized": False,
         "attempt_custody": "central_manager_supervised_local_invocation",
         "persistent_cross_process_budget_consumption_claimed": False,
-        "immediate_post_attempt_disposition_required": True,
+        "immediate_post_attempt_disposition_recorded": True,
         "prior_attempt_detection_roots": PRIOR_ATTEMPT_ROOTS,
         "external_preflight_requirements": EXTERNAL_PREFLIGHT,
     }
@@ -474,18 +538,24 @@ def _validate_contract(contract: JsonObject, failures: list[str]) -> None:
     ):
         failures.append("O4 execution cleanup contract is invalid")
     if not _exact_json_equal(contract.get("authority"), EXPECTED_AUTHORITY):
-        failures.append("O4 execution authority is not the exact five-bit disposition")
+        failures.append("O4 execution authority must be all false after Attempt 001")
 
 
 def _validate_document(document: str, failures: list[str]) -> None:
     normalized = " ".join(document.split())
     for phrase in (
-        "Status: `AUTHORIZED_SUPERVISED_ONE_ATTEMPT_CHILD`",
+        "Status: `ATTEMPT_CONSUMED_PRE_GATE_IMPORT_FAILURE`",
         REVIEWED_IMPLEMENTATION_COMMIT,
         CANDIDATE_PARENT_COMMIT,
         CODE_AUTHORIZATION_COMMIT,
-        "exact closed six-path control diff",
-        "derives that child commit and tree only after every check passes",
+        ATTEMPTED_CANDIDATE_COMMIT,
+        ATTEMPTED_CANDIDATE_TREE,
+        ATTEMPT_COMMAND,
+        "exited `1` before gate authorization or producer runtime entry",
+        "`ModuleNotFoundError: No module named 'scripts'`",
+        "receipt, runtime, and constrained-journey report roots absent",
+        "performed no runtime creation, Docker, Ollama or provider, API, Node, Hermes, "
+        "credential, network journey, or evidence action",
         "one server-owned",
         "`synthetic_read_review_v1`",
         "`max_cycles=1`",
@@ -495,8 +565,8 @@ def _validate_document(document: str, failures: list[str]) -> None:
         "Agent Run record status `active`, and exactly two "
         "`tool.execution.completed` timeline events",
         "connected directly to `DEVNULL` when its subprocess is created",
-        "usable for this one supervised producer attempt only when the dynamic immediate-child "
-        "gate passes",
+        "was usable only for the now-consumed supervised attempt when the dynamic immediate-child "
+        "gate passed",
         code_authorization.REVIEW_DOCUMENT,
         "does not prove absence of transient malicious same-UID mutation while Docker reads "
         "the build context",
@@ -506,12 +576,13 @@ def _validate_document(document: str, failures: list[str]) -> None:
         "private recovery receipt is quarantined staged material, not successful published "
         "evidence",
         "There is no automatic retry",
-        "the only five true authority bits",
+        "Every other authority field is also false",
+        "attempt budget is zero",
         "governed tool count remains exactly 24",
-        "does not implement atomic cross-process budget consumption",
-        "No concurrent invocation, automatic retry, or post-attempt rerun is authorized",
-        "immediate post-attempt disposition",
-        "current uncommitted preparation worktree is intentionally non-authorizing",
+        "No retry is authorized",
+        "requires a repaired candidate, independent exact review of that candidate, and a "
+        "separate post-review execution disposition",
+        "does not bind or derive its own closure commit or tree",
     ):
         if phrase not in normalized:
             failures.append(f"O4 execution authorization doc is missing phrase: {phrase}")
@@ -615,7 +686,7 @@ def _validate_disposition(
             ),
             "prior_attempt_roots": cast(list[JsonValue], PRIOR_ATTEMPT_ROOTS),
         },
-        "authority": EXPECTED_AUTHORITY,
+        "authority": HISTORICAL_AUTHORITY,
     }
     if not _exact_json_equal(disposition, expected):
         failures.append("O4 post-review disposition is not closed and exact")
@@ -638,6 +709,93 @@ def _validate_disposition(
             failures.append(f"O4 post-review disposition doc is missing phrase: {phrase}")
 
 
+def _validate_attempt_disposition(
+    disposition: JsonObject,
+    document: str,
+    failures: list[str],
+) -> None:
+    expected: JsonObject = {
+        "schema_version": "1",
+        "record_type": "local_v1_lv1_003_o4_attempt_disposition",
+        "record_status": "ATTEMPT_CONSUMED_PRE_GATE_IMPORT_FAILURE",
+        "ticket_id": "LV1-003",
+        "outcome_id": "O4",
+        "attempt_id": ATTEMPT_ID,
+        "attempt_number": 1,
+        "attempted_candidate_commit": ATTEMPTED_CANDIDATE_COMMIT,
+        "attempted_candidate_tree": ATTEMPTED_CANDIDATE_TREE,
+        "attempted_candidate_clean": True,
+        "attempted_authorization_contract_sha256": (
+            ATTEMPTED_AUTHORIZATION_CONTRACT_DIGEST
+        ),
+        "invocation": {
+            "command": ATTEMPT_COMMAND,
+            "exit_code": 1,
+            "classification": "PRE_GATE_MODULE_IMPORT_FAILURE",
+            "exception_type": "ModuleNotFoundError",
+            "exception_message": "No module named 'scripts'",
+            "failure_location": "scripts/local_v1_lv1_003_o4_producer.py:36",
+            "module_import_started": True,
+            "gate_authorization_entered": False,
+            "producer_runtime_entered": False,
+        },
+        "observed_root_absence": {
+            "observation_method": "read_only_path_absence_check_after_failed_invocation",
+            "roots": [
+                {"path": path, "exists": False} for path in PRIOR_ATTEMPT_ROOTS
+            ],
+        },
+        "external_action_observation": {
+            "runtime_created": False,
+            "docker_action_performed": False,
+            "ollama_or_provider_action_performed": False,
+            "api_action_performed": False,
+            "node_action_performed": False,
+            "hermes_action_performed": False,
+            "credential_action_performed": False,
+            "network_journey_action_performed": False,
+            "evidence_action_performed": False,
+        },
+        "attempt_contract": {
+            "attempt_consumed": True,
+            "retry_authorized": False,
+            "automatic_retry_authorized": False,
+            "post_failure_execution_authorized": False,
+            "separately_reviewed_repair_candidate_required": True,
+            "separate_post_review_execution_disposition_required": True,
+        },
+        "closure_candidate_binding": {
+            "closure_commit_claimed": False,
+            "closure_tree_claimed": False,
+            "descendant_closure_commit_allowed": True,
+        },
+        "authority": EXPECTED_AUTHORITY,
+    }
+    if not _exact_json_equal(disposition, expected):
+        failures.append("O4 Attempt 001 disposition is not closed and exact")
+    normalized = " ".join(document.split())
+    for phrase in (
+        "Status: `ATTEMPT_CONSUMED_PRE_GATE_IMPORT_FAILURE`",
+        ATTEMPT_ID,
+        ATTEMPTED_CANDIDATE_COMMIT,
+        ATTEMPTED_CANDIDATE_TREE,
+        ATTEMPT_COMMAND,
+        "exited `1` during module import",
+        "`ModuleNotFoundError: No module named 'scripts'`",
+        "authorization gate was not entered and producer runtime was not entered",
+        "all three exact roots absent",
+        "no runtime creation, Docker action, Ollama or model provider action, API action, "
+        "Node action, Hermes action, credential action, network journey action, or evidence "
+        "action",
+        "attempt budget is now zero and all 19 authority fields are false",
+        "A retry requires a repaired candidate, independent exact review of that candidate, "
+        "and a separate post-review execution disposition",
+        "does not state or derive its own future closure commit or tree",
+    ):
+        if phrase not in normalized:
+            failures.append(f"O4 Attempt 001 disposition doc is missing phrase: {phrase}")
+
+
 def _validate_bound_documents(repo_root: Path, failures: list[str]) -> None:
     for path, expected, label in (
         (PRODUCER_EXACT_REVIEW, PRODUCER_EXACT_REVIEW_DIGEST, "producer exact review"),
@@ -646,6 +804,16 @@ def _validate_bound_documents(repo_root: Path, failures: list[str]) -> None:
             DISPOSITION_DOCUMENT,
             DISPOSITION_DOCUMENT_DIGEST,
             "post-review disposition document",
+        ),
+        (
+            ATTEMPT_DISPOSITION_JSON,
+            ATTEMPT_DISPOSITION_JSON_DIGEST,
+            "Attempt 001 disposition JSON",
+        ),
+        (
+            ATTEMPT_DISPOSITION_DOCUMENT,
+            ATTEMPT_DISPOSITION_DOCUMENT_DIGEST,
+            "Attempt 001 disposition document",
         ),
     ):
         if _file_digest(repo_root / path, failures) != expected:
@@ -853,6 +1021,61 @@ def _validate_git_bindings(repo_root: Path, failures: list[str]) -> None:
         failures.append("O4 execution current code authorization record digest is invalid")
 
 
+def _validate_attempted_candidate_binding(
+    repo_root: Path,
+    failures: list[str],
+) -> None:
+    tree = _git(
+        repo_root,
+        ["show", "-s", "--format=%T", ATTEMPTED_CANDIDATE_COMMIT],
+        failures,
+    )
+    if tree != ATTEMPTED_CANDIDATE_TREE:
+        failures.append("O4 Attempt 001 candidate tree is invalid")
+    ancestry = subprocess.run(
+        [
+            "git",
+            "-C",
+            str(repo_root),
+            "merge-base",
+            "--is-ancestor",
+            ATTEMPTED_CANDIDATE_COMMIT,
+            "HEAD",
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    if ancestry.returncode != 0:
+        failures.append("O4 Attempt 001 candidate is not an ancestor of the closure")
+    historical_contract = _git(
+        repo_root,
+        ["show", f"{ATTEMPTED_CANDIDATE_COMMIT}:{CONTRACT.as_posix()}"],
+        failures,
+        strip=False,
+    )
+    if (
+        historical_contract
+        and _digest(historical_contract) != ATTEMPTED_AUTHORIZATION_CONTRACT_DIGEST
+    ):
+        failures.append("O4 Attempt 001 authorization contract digest is invalid")
+
+
+def _validate_recorded_root_absence(
+    repo_root: Path,
+    failures: list[str],
+) -> None:
+    for relative in PRIOR_ATTEMPT_ROOTS:
+        try:
+            (repo_root / relative).lstat()
+        except FileNotFoundError:
+            continue
+        except OSError:
+            failures.append(f"O4 Attempt 001 observed root posture is unreadable: {relative}")
+            continue
+        failures.append(f"O4 Attempt 001 observed-absent root is now present: {relative}")
+
+
 def _validate_source_bindings(
     repo_root: Path,
     contract: JsonObject,
@@ -1015,6 +1238,9 @@ def render_report(report: dict[str, Any]) -> str:
         "LV1-003 O4 execution authorization check",
         f"valid: {str(report['valid']).lower()}",
         f"record_status: {report['record_status']}",
+        f"attempt_id: {report['attempt_id']}",
+        f"attempt_consumed: {str(report['attempt_consumed']).lower()}",
+        f"retry_authorized: {str(report['retry_authorized']).lower()}",
         f"execution_attempt_budget: {report['execution_attempt_budget']}",
         f"live_execution_authorized: {str(report['live_execution_authorized']).lower()}",
         "docker_lifecycle_authorized: "
