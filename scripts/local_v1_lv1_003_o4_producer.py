@@ -51,6 +51,7 @@ LICENSE_INPUTS = ("pyproject.toml", "uv.lock")
 MAX_LICENSE_BYTES = 1_048_576
 MAX_SNAPSHOT_FILE_BYTES = 16 * 1_048_576
 MAX_SNAPSHOT_BYTES = 64 * 1_048_576
+NODE_TMPFS = ("/tmp:size=16m,mode=0700,uid=10002,gid=10002",)
 MAX_RECOVERY_RECEIPT_BYTES = 4096
 HERMES_TIMEOUT_SECONDS = 920.0
 NODE_SYNCHRONIZATION_SECONDS = 90.0
@@ -2710,6 +2711,11 @@ def _validate_merged_compose_config(
         if not isinstance(service_name, str) or not isinstance(service_raw, dict):
             raise ProducerError("merged_compose_config_invalid")
         service = cast(dict[str, Any], service_raw)
+        if (
+            service_name == "ithildin-node"
+            and service.get("tmpfs") != list(NODE_TMPFS)
+        ):
+            raise ProducerError("merged_compose_node_tmpfs_invalid")
         build = service.get("build")
         if service_name in build_services:
             if not isinstance(build, dict):

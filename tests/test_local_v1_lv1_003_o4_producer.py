@@ -187,6 +187,7 @@ def _merged_compose_document(
                 "context": str(candidate),
                 "dockerfile": str(candidate / "deploy/Dockerfile.node"),
             },
+            "tmpfs": list(producer.NODE_TMPFS),
             "volumes": [
                 {
                     "type": "volume",
@@ -1499,6 +1500,44 @@ def test_merged_compose_config_rejects_any_surviving_repo_host_path(
     volumes[0]["source"] = str(producer.ROOT / "tool-manifests.lock.json")
 
     with pytest.raises(producer.ProducerError, match="merged_compose_host_path_invalid"):
+        producer._validate_merged_compose_config(  # noqa: SLF001
+            producer.CommandResult(0, json.dumps(document)),
+            state,
+            fixed=True,
+        )
+
+
+def test_merged_compose_config_requires_exactly_one_bounded_node_tmpfs(
+    fake_stack: tuple[
+        FakeRuntimeFactory,
+        FakeExecutorFactory,
+        FakeApiFactory,
+        FakeProvider,
+        FakeAssembler,
+    ],
+) -> None:
+    runtime, _, _, _, _ = fake_stack
+    run_id = "20260724T180000Z-1234abcd"
+    plan = producer.ComposePlan(run_id, runtime.runtime.path)
+    snapshot = FakeCandidateSnapshot(runtime.receipts)
+    state = producer.ProducerState(
+        COMMIT,
+        TREE,
+        run_id,
+        plan,
+        cast(producer.PrivateDirectory, runtime.runtime),
+        cast(producer.PrivateDirectory, runtime.receipts),
+        cast(producer.CandidateSnapshot, snapshot),
+    )
+    document = _merged_compose_document(plan, fixed=True)
+    services = cast(JsonObject, document["services"])
+    node = cast(JsonObject, services["ithildin-node"])
+    node["tmpfs"] = [*producer.NODE_TMPFS, "/tmp"]
+
+    with pytest.raises(
+        producer.ProducerError,
+        match="merged_compose_node_tmpfs_invalid",
+    ):
         producer._validate_merged_compose_config(  # noqa: SLF001
             producer.CommandResult(0, json.dumps(document)),
             state,

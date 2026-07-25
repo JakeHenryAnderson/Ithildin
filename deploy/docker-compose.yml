@@ -122,7 +122,7 @@ services:
       - ithildin-node-state:/var/lib/ithildin-node
     read_only: true
     tmpfs:
-      - /tmp
+      - /tmp:size=16m,mode=0700,uid=10002,gid=10002
     cap_drop:
       - ALL
     security_opt:

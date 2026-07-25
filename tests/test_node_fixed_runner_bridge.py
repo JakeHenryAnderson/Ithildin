@@ -340,6 +340,9 @@ def test_operator_profile_fixes_runner_without_lifecycle_or_host_control() -> No
     assert base["name"] == "ithildin-demo"
     assert "ithildin-api" in base["services"]
     assert base["services"]["ithildin-node"]["user"] == "10002:10002"
+    assert base["services"]["ithildin-node"]["tmpfs"] == [
+        "/tmp:size=16m,mode=0700,uid=10002,gid=10002"
+    ]
     assert "ithildin-node-state" in base["volumes"]
     node = compose["services"]["ithildin-node"]
     runner = compose["services"]["hermes"]
@@ -358,6 +361,7 @@ def test_operator_profile_fixes_runner_without_lifecycle_or_host_control() -> No
     assert node["user"] == "10002:10002"
     assert node["group_add"] == ["20000"]
     assert node["command"][-2:] == ["--max-cycles", "1"]
+    assert "tmpfs" not in node
     assert node["healthcheck"]["test"][:3] == ["CMD", "python", "-c"]
     assert "stat.S_ISSOCK" in node["healthcheck"]["test"][3]
     assert runner["user"] == "10000:10000"

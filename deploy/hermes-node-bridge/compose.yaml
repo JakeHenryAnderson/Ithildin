@@ -17,8 +17,6 @@ services:
       - docker_sidecar
       - --max-cycles
       - "1"
-    tmpfs:
-      - /tmp:size=16m,mode=0700,uid=10002,gid=10002
     healthcheck:
       test:
         - CMD
