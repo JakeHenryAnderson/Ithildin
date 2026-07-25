@@ -1,9 +1,9 @@
 # Local v1 LV1-003 O4 Execution Authorization Gate
 
-Status: `ATTEMPT_CONSUMED_PRE_GATE_IMPORT_FAILURE`
+Status: `AUTHORIZED_ATTEMPT_002_SUPERVISED_ONE_ATTEMPT_CHILD`
 
-This is the closed execution gate after the sole supervised Local-v1 `O4` invocation was consumed.
-Its machine contract is
+This gate preserves the consumed Attempt 001 closure and separately authorizes at most one
+manager-supervised Attempt 002 invocation. Its machine contract is
 `docs/codex/local-v1-lv1-003-o4-execution-authorization.json`.
 
 The gate preserves the reviewed fixed bridge and bounded producer implementation at
@@ -41,9 +41,12 @@ The operator-visible live, gate-protected entrypoint is now
 `main` function. The failed command `uv run python scripts/local_v1_lv1_003_o4_producer.py` is not
 an authorized future invocation.
 
-This repair does not restore the consumed attempt. It requires independent exact review and a
-separate new-attempt disposition before the Make target can pass the execution gate. The target is
-not a dependency of release, milestone, or static checks.
+This repair does not restore the consumed Attempt 001. The repaired candidate
+`88c707f1c90d5807a81412ea7790b3a0b94e2f85`, tree
+`5316f8f270eb55af38dd032ec7723edef8a423c5`, received independent exact review with zero Critical,
+High, Medium, or Low findings. The distinct Attempt 002 disposition is
+`docs/codex/local-v1-lv1-003-o4-attempt-002-disposition.json`. The live Make target remains outside
+release, milestone, static, and authorization-check dependencies.
 
 ## Historical Attempt Ceiling
 
@@ -73,10 +76,9 @@ inventories if it had entered the producer runtime.
 Image config/layer metadata is not an SBOM. The candidate producer and assembler now use
 `image_artifact_inventory_digest` and `license_source_inventory_digest`, preserve actual Gateway
 Agent Run status `active`, and require exactly two distinctly identified Gateway completion events.
-The independently reviewed code-only candidate was usable only for the now-consumed supervised
-attempt when the dynamic immediate-child gate passed. The inventories are not placeholder hashes
-and do not claim SBOM coverage, license completeness, compliance, provenance custody, or provider
-truth.
+The independently reviewed runtime candidate remains byte-bound for Attempt 002; Attempt 001
+remains consumed and is not reopened. The inventories are not placeholder hashes and do not claim
+SBOM coverage, license completeness, compliance, provenance custody, or provider truth.
 Static fake evidence proves closed private-snapshot enumeration and rejects observed path
 replacement. It does not prove absence of transient malicious same-UID mutation while Docker reads
 the build context; that threat remains outside the Local-v1 evidence boundary, consistent with the
@@ -114,13 +116,19 @@ the sole attempt; a routing failure consumes that attempt and permits no retry.
 ## Current Disposition
 
 `producer_code_authorized`, `docker_lifecycle_authorized`, `live_hermes_execution_authorized`,
-`model_provider_access_authorized`, and `o4_evidence_execution_authorized` are now false. Every other
-authority field is also false. The attempt budget is zero. Release, promotion, production, UAT,
-credential custody, runner lifecycle, arbitrary host control, generic process control, shell
-execution, Docker socket access, non-bypass claims, new powers, and new tools remain unauthorized.
-The governed tool count remains exactly 24.
+`model_provider_access_authorized`, and `o4_evidence_execution_authorized` are the exact five true
+authority fields for Attempt 002 only. The remaining 14 fields are false. Release, promotion,
+production, UAT, credential custody, runner lifecycle, arbitrary host control, generic process
+control, shell execution, Docker socket access, non-bypass claims, new powers, and new tools remain
+unauthorized. The governed tool count remains exactly 24.
 
-No retry is authorized. A retry requires a repaired candidate, independent exact review of that
-candidate, and a separate post-review execution disposition. Repairing the import path does not
-restore the consumed authority. A descendant control-only commit may record this closure; this
-document does not bind or derive its own closure commit or tree.
+No future child commit or tree is stated here. The gate grants an effective budget of one only when
+current `HEAD` is a clean single-parent immediate child of `88c707f1c90d5807a81412ea7790b3a0b94e2f85`
+with the exact seven-path control diff, runtime parity to
+`5dab3654391c14fe214a9dfe302c099d0fe5fbf8`, repaired-entrypoint parity to the parent, exact review
+and disposition digests, and safe empty-or-absent attempt roots. Otherwise the effective budget and
+all authority are false.
+
+No concurrent invocation, automatic retry, or post-attempt rerun is authorized. The gate makes no
+atomic, tamper-proof, persistent cross-process budget-consumption claim. Any Attempt 002 invocation
+requires immediate post-attempt closure before another run.

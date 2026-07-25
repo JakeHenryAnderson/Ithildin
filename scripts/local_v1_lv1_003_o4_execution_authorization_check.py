@@ -38,6 +38,15 @@ ATTEMPT_DISPOSITION_JSON = Path(
 ATTEMPT_DISPOSITION_DOCUMENT = Path(
     "docs/codex/local-v1-lv1-003-o4-attempt-001-disposition.md"
 )
+ENTRYPOINT_REPAIR_REVIEW = Path(
+    "docs/codex/local-v1-lv1-003-o4-entrypoint-repair-exact-review.md"
+)
+ATTEMPT_002_DISPOSITION_JSON = Path(
+    "docs/codex/local-v1-lv1-003-o4-attempt-002-disposition.json"
+)
+ATTEMPT_002_DISPOSITION_DOCUMENT = Path(
+    "docs/codex/local-v1-lv1-003-o4-attempt-002-disposition.md"
+)
 AUTHORIZATION_TARGET = "local-v1-lv1-003-o4-execution-authorization-check"
 PRODUCER_STATIC_TARGET = "local-v1-lv1-003-o4-producer-static-check"
 PRODUCER_RUN_TARGET = "local-v1-lv1-003-o4-producer-run"
@@ -48,6 +57,8 @@ FAILED_FILE_PATH_INVOCATION = (
     "uv run python scripts/local_v1_lv1_003_o4_producer.py"
 )
 ENTRYPOINT_REPAIR_BASE_COMMIT = "148effd50c69b40a005f86f6217fc3db8b665a06"
+ENTRYPOINT_REPAIR_COMMIT = "88c707f1c90d5807a81412ea7790b3a0b94e2f85"
+ENTRYPOINT_REPAIR_TREE = "5316f8f270eb55af38dd032ec7723edef8a423c5"
 REVIEWED_IMPLEMENTATION_COMMIT = "5dab3654391c14fe214a9dfe302c099d0fe5fbf8"
 REVIEWED_IMPLEMENTATION_TREE = "f9a0cb66ac12e6e0ecca7fc23a0071be0dbe3075"
 CANDIDATE_PARENT_COMMIT = "86e75f0cf7f92ceb33218f2a66a00668f4da9e12"
@@ -90,13 +101,39 @@ ATTEMPTED_AUTHORIZATION_CONTRACT_DIGEST = (
     "sha256:2dfd27d564a8359ae66c87bd0ed7308cf74cd2cf5561aa60a80ba04b83bd6863"
 )
 ATTEMPT_COMMAND = "uv run python scripts/local_v1_lv1_003_o4_producer.py"
-CONTROL_PATH_ALLOWLIST = [
+ENTRYPOINT_REPAIR_REVIEW_DIGEST = (
+    "sha256:c3f5260cbdc71b3be22b3bcf1db9e3974718bb3fed5ed5244f3729b0c14e4750"
+)
+ATTEMPT_002_DISPOSITION_JSON_DIGEST = (
+    "sha256:131e421ba479abbb2b68d93f04b6c4ffdb76da94535cf1810a8abca59ba7b7c1"
+)
+ATTEMPT_002_DISPOSITION_DOCUMENT_DIGEST = (
+    "sha256:389a81a2a491ba9d5540e6eba54f18f58459404dd9642e3f47feaeeea0fe6e10"
+)
+ATTEMPT_002_ID = "LV1-003-O4-ATTEMPT-002"
+ATTEMPT_002_OPERATOR_COMMAND = f"make {PRODUCER_RUN_TARGET}"
+HISTORICAL_CONTROL_PATH_ALLOWLIST = [
     CONTRACT.as_posix(),
     DOCUMENT.as_posix(),
     DISPOSITION_JSON.as_posix(),
     DISPOSITION_DOCUMENT.as_posix(),
     "scripts/local_v1_lv1_003_o4_execution_authorization_check.py",
     "tests/test_local_v1_lv1_003_o4_execution_authorization_check.py",
+]
+CONTROL_PATH_ALLOWLIST = [
+    ATTEMPT_002_DISPOSITION_JSON.as_posix(),
+    ATTEMPT_002_DISPOSITION_DOCUMENT.as_posix(),
+    ENTRYPOINT_REPAIR_REVIEW.as_posix(),
+    CONTRACT.as_posix(),
+    DOCUMENT.as_posix(),
+    "scripts/local_v1_lv1_003_o4_execution_authorization_check.py",
+    "tests/test_local_v1_lv1_003_o4_execution_authorization_check.py",
+]
+REPAIR_PARITY_PATHS = [
+    "Makefile",
+    "README.md",
+    PRODUCER_CONTRACT.as_posix(),
+    "scripts/local_v1_lv1_003_o4_producer.py",
 ]
 PRIOR_ATTEMPT_ROOTS = [
     "var/local-v1-lv1-003-o4-receipts",
@@ -214,6 +251,19 @@ TOP_LEVEL_FIELDS = {
     "attempt_invocation",
     "attempt_root_absence",
     "producer_entrypoint_repair",
+    "entrypoint_repair_review_record",
+    "entrypoint_repair_review_sha256",
+    "attempt_002_disposition_json",
+    "attempt_002_disposition_json_sha256",
+    "attempt_002_disposition_document",
+    "attempt_002_disposition_document_sha256",
+    "attempt_002_id",
+    "attempt_002_candidate_parent_commit",
+    "attempt_002_candidate_parent_tree",
+    "attempt_002_operator_command",
+    "attempt_002_module_command",
+    "attempt_002_execution_authorized",
+    "attempt_002_automatic_retry_authorized",
     "execution_candidate_binding_mode",
     "execution_attempt_budget",
     "attempt_consumed",
@@ -374,8 +424,11 @@ HISTORICAL_TRUE_AUTHORITY_FIELDS = {
 HISTORICAL_AUTHORITY: JsonObject = {
     key: key in HISTORICAL_TRUE_AUTHORITY_FIELDS for key in AUTHORITY_FIELDS
 }
-TRUE_AUTHORITY_FIELDS: set[str] = set()
-EXPECTED_AUTHORITY: JsonObject = {key: False for key in AUTHORITY_FIELDS}
+TRUE_AUTHORITY_FIELDS = set(HISTORICAL_TRUE_AUTHORITY_FIELDS)
+CLOSED_AUTHORITY: JsonObject = {key: False for key in AUTHORITY_FIELDS}
+EXPECTED_AUTHORITY: JsonObject = {
+    key: key in TRUE_AUTHORITY_FIELDS for key in AUTHORITY_FIELDS
+}
 
 
 class O4ExecutionAuthorizationError(RuntimeError):
@@ -397,6 +450,18 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         repo_root / ATTEMPT_DISPOSITION_DOCUMENT,
         failures,
     )
+    entrypoint_repair_review = _read_text(
+        repo_root / ENTRYPOINT_REPAIR_REVIEW,
+        failures,
+    )
+    attempt_002_disposition = _read_contract(
+        repo_root / ATTEMPT_002_DISPOSITION_JSON,
+        failures,
+    )
+    attempt_002_disposition_document = _read_text(
+        repo_root / ATTEMPT_002_DISPOSITION_DOCUMENT,
+        failures,
+    )
     _validate_contract(contract, failures)
     _validate_document(document, failures)
     _validate_producer_contract(producer_contract, contract, failures)
@@ -404,6 +469,12 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     _validate_attempt_disposition(
         attempt_disposition,
         attempt_disposition_document,
+        failures,
+    )
+    _validate_entrypoint_repair_review(entrypoint_repair_review, failures)
+    _validate_attempt_002_disposition(
+        attempt_002_disposition,
+        attempt_002_disposition_document,
         failures,
     )
     _validate_bound_documents(repo_root, failures)
@@ -421,7 +492,17 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     ):
         failures.append("reviewed runner-bridge code authority is not exact")
     _validate_wiring(repo_root, failures)
-    _validate_recorded_root_absence(repo_root, failures)
+    execution_checkout = _validate_execution_checkout(repo_root, failures)
+    _validate_prior_attempt_posture(repo_root, failures)
+    live_execution_authorized = (
+        not failures
+        and execution_checkout is not None
+        and _exact_json_equal(contract.get("authority"), EXPECTED_AUTHORITY)
+    )
+    checkout_commit: str | None = None
+    checkout_tree: str | None = None
+    if live_execution_authorized and execution_checkout is not None:
+        checkout_commit, checkout_tree = execution_checkout
     return {
         "schema_version": "1",
         "valid": not failures,
@@ -429,18 +510,19 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "record_status": contract.get("record_status"),
         "reviewed_implementation_commit": contract.get("reviewed_implementation_commit"),
         "code_authorization_commit": contract.get("code_authorization_commit"),
-        "attempt_id": contract.get("attempt_id"),
+        "attempt_id": contract.get("attempt_002_id"),
         "attempted_candidate_commit": contract.get("attempted_candidate_commit"),
         "attempted_candidate_tree": contract.get("attempted_candidate_tree"),
-        "attempt_consumed": contract.get("attempt_consumed"),
+        "attempt_001_consumed": contract.get("attempt_consumed"),
+        "attempt_consumed": False,
         "retry_authorized": False,
-        "execution_checkout_commit": None,
-        "execution_checkout_tree": None,
-        "execution_attempt_budget": 0,
-        "live_execution_authorized": False,
-        "docker_lifecycle_authorized": False,
-        "provider_access_authorized": False,
-        "o4_evidence_execution_authorized": False,
+        "execution_checkout_commit": checkout_commit,
+        "execution_checkout_tree": checkout_tree,
+        "execution_attempt_budget": 1 if live_execution_authorized else 0,
+        "live_execution_authorized": live_execution_authorized,
+        "docker_lifecycle_authorized": live_execution_authorized,
+        "provider_access_authorized": live_execution_authorized,
+        "o4_evidence_execution_authorized": live_execution_authorized,
         "new_governed_tool": False,
         "release_allowed": False,
         "uat_complete": False,
@@ -470,7 +552,7 @@ def _validate_contract(contract: JsonObject, failures: list[str]) -> None:
     expected = {
         "schema_version": "1",
         "record_type": "local_v1_lv1_003_o4_execution_authorization",
-        "record_status": "ATTEMPT_CONSUMED_PRE_GATE_IMPORT_FAILURE",
+        "record_status": "AUTHORIZED_ATTEMPT_002_SUPERVISED_ONE_ATTEMPT_CHILD",
         "ticket_id": "LV1-003",
         "outcome_id": "O4",
         "producer_contract_path": PRODUCER_CONTRACT.as_posix(),
@@ -528,10 +610,29 @@ def _validate_contract(contract: JsonObject, failures: list[str]) -> None:
             "independent_exact_review_required": True,
             "separate_new_attempt_disposition_required": True,
         },
-        "execution_candidate_binding_mode": (
-            "attempt_consumed_no_execution_candidate_authorized"
+        "entrypoint_repair_review_record": ENTRYPOINT_REPAIR_REVIEW.as_posix(),
+        "entrypoint_repair_review_sha256": ENTRYPOINT_REPAIR_REVIEW_DIGEST,
+        "attempt_002_disposition_json": ATTEMPT_002_DISPOSITION_JSON.as_posix(),
+        "attempt_002_disposition_json_sha256": (
+            ATTEMPT_002_DISPOSITION_JSON_DIGEST
         ),
-        "execution_attempt_budget": 0,
+        "attempt_002_disposition_document": (
+            ATTEMPT_002_DISPOSITION_DOCUMENT.as_posix()
+        ),
+        "attempt_002_disposition_document_sha256": (
+            ATTEMPT_002_DISPOSITION_DOCUMENT_DIGEST
+        ),
+        "attempt_002_id": ATTEMPT_002_ID,
+        "attempt_002_candidate_parent_commit": ENTRYPOINT_REPAIR_COMMIT,
+        "attempt_002_candidate_parent_tree": ENTRYPOINT_REPAIR_TREE,
+        "attempt_002_operator_command": ATTEMPT_002_OPERATOR_COMMAND,
+        "attempt_002_module_command": PRODUCER_MODULE_INVOCATION,
+        "attempt_002_execution_authorized": True,
+        "attempt_002_automatic_retry_authorized": False,
+        "execution_candidate_binding_mode": (
+            "attempt_002_dynamic_clean_single_immediate_child_after_all_checks"
+        ),
+        "execution_attempt_budget": 1,
         "attempt_consumed": True,
         "retry_authorized": False,
         "attempt_custody": "central_manager_supervised_local_invocation",
@@ -561,13 +662,13 @@ def _validate_contract(contract: JsonObject, failures: list[str]) -> None:
     ):
         failures.append("O4 execution cleanup contract is invalid")
     if not _exact_json_equal(contract.get("authority"), EXPECTED_AUTHORITY):
-        failures.append("O4 execution authority must be all false after Attempt 001")
+        failures.append("O4 Attempt 002 authority is not the exact five-bit disposition")
 
 
 def _validate_document(document: str, failures: list[str]) -> None:
     normalized = " ".join(document.split())
     for phrase in (
-        "Status: `ATTEMPT_CONSUMED_PRE_GATE_IMPORT_FAILURE`",
+        "Status: `AUTHORIZED_ATTEMPT_002_SUPERVISED_ONE_ATTEMPT_CHILD`",
         REVIEWED_IMPLEMENTATION_COMMIT,
         CANDIDATE_PARENT_COMMIT,
         CODE_AUTHORIZATION_COMMIT,
@@ -584,8 +685,11 @@ def _validate_document(document: str, failures: list[str]) -> None:
         "failed command `uv run python scripts/local_v1_lv1_003_o4_producer.py` is not "
         "an authorized future invocation",
         "Importing that module does not execute its `main` function",
-        "requires independent exact review and a separate new-attempt disposition",
-        "not a dependency of release, milestone, or static checks",
+        ENTRYPOINT_REPAIR_COMMIT,
+        ENTRYPOINT_REPAIR_TREE,
+        "received independent exact review with zero Critical, High, Medium, or Low findings",
+        ATTEMPT_002_DISPOSITION_JSON.as_posix(),
+        "outside release, milestone, static, and authorization-check dependencies",
         "one server-owned",
         "`synthetic_read_review_v1`",
         "`max_cycles=1`",
@@ -595,8 +699,7 @@ def _validate_document(document: str, failures: list[str]) -> None:
         "Agent Run record status `active`, and exactly two "
         "`tool.execution.completed` timeline events",
         "connected directly to `DEVNULL` when its subprocess is created",
-        "was usable only for the now-consumed supervised attempt when the dynamic immediate-child "
-        "gate passed",
+        "reviewed runtime candidate remains byte-bound for Attempt 002",
         code_authorization.REVIEW_DOCUMENT,
         "does not prove absence of transient malicious same-UID mutation while Docker reads "
         "the build context",
@@ -606,13 +709,14 @@ def _validate_document(document: str, failures: list[str]) -> None:
         "private recovery receipt is quarantined staged material, not successful published "
         "evidence",
         "There is no automatic retry",
-        "Every other authority field is also false",
-        "attempt budget is zero",
+        "exact five true authority fields for Attempt 002 only",
+        "remaining 14 fields are false",
         "governed tool count remains exactly 24",
-        "No retry is authorized",
-        "requires a repaired candidate, independent exact review of that candidate, and a "
-        "separate post-review execution disposition",
-        "does not bind or derive its own closure commit or tree",
+        "No future child commit or tree is stated here",
+        "effective budget of one only when current `HEAD` is a clean single-parent immediate child",
+        "No concurrent invocation, automatic retry, or post-attempt rerun is authorized",
+        "makes no atomic, tamper-proof, persistent cross-process budget-consumption claim",
+        "requires immediate post-attempt closure",
     ):
         if phrase not in normalized:
             failures.append(f"O4 execution authorization doc is missing phrase: {phrase}")
@@ -710,7 +814,10 @@ def _validate_disposition(
             "runtime_byte_parity_commit": REVIEWED_IMPLEMENTATION_COMMIT,
             "changed_paths_must_equal_control_allowlist": True,
         },
-        "control_path_allowlist": cast(list[JsonValue], CONTROL_PATH_ALLOWLIST),
+        "control_path_allowlist": cast(
+            list[JsonValue],
+            HISTORICAL_CONTROL_PATH_ALLOWLIST,
+        ),
         "attempt_contract": {
             "maximum_supervised_invocations": 1,
             "custody": "central_manager_supervised_local_invocation",
@@ -807,7 +914,7 @@ def _validate_attempt_disposition(
             "closure_tree_claimed": False,
             "descendant_closure_commit_allowed": True,
         },
-        "authority": EXPECTED_AUTHORITY,
+        "authority": CLOSED_AUTHORITY,
     }
     if not _exact_json_equal(disposition, expected):
         failures.append("O4 Attempt 001 disposition is not closed and exact")
@@ -834,6 +941,122 @@ def _validate_attempt_disposition(
             failures.append(f"O4 Attempt 001 disposition doc is missing phrase: {phrase}")
 
 
+def _validate_entrypoint_repair_review(
+    document: str,
+    failures: list[str],
+) -> None:
+    normalized = " ".join(document.split())
+    for phrase in (
+        "Status: `GO`",
+        "independent Sol xhigh read-only review",
+        ENTRYPOINT_REPAIR_COMMIT,
+        ENTRYPOINT_REPAIR_TREE,
+        ENTRYPOINT_REPAIR_BASE_COMMIT,
+        "changes exactly these seven paths",
+        PRODUCER_MODULE_INVOCATION,
+        ATTEMPT_002_OPERATOR_COMMAND,
+        "Critical: 0",
+        "High: 0",
+        "Medium: 0",
+        "Low: 0",
+        "exact-commit disposition is `GO`",
+        "permits preparation of a separate Attempt 002 execution disposition only",
+        "does not modify the Attempt 001 record",
+    ):
+        if phrase not in normalized:
+            failures.append(f"O4 entrypoint repair review is missing phrase: {phrase}")
+    if _digest(document) != ENTRYPOINT_REPAIR_REVIEW_DIGEST:
+        failures.append("O4 entrypoint repair review digest is invalid")
+
+
+def _validate_attempt_002_disposition(
+    disposition: JsonObject,
+    document: str,
+    failures: list[str],
+) -> None:
+    expected: JsonObject = {
+        "schema_version": "1",
+        "record_type": "local_v1_lv1_003_o4_attempt_disposition",
+        "record_status": "AUTHORIZE_SUPERVISED_ONE_ATTEMPT_IMMEDIATE_CHILD",
+        "ticket_id": "LV1-003",
+        "outcome_id": "O4",
+        "attempt_id": ATTEMPT_002_ID,
+        "candidate_parent_commit": ENTRYPOINT_REPAIR_COMMIT,
+        "candidate_parent_tree": ENTRYPOINT_REPAIR_TREE,
+        "repair_parent_commit": ENTRYPOINT_REPAIR_BASE_COMMIT,
+        "reviewed_runtime_commit": REVIEWED_IMPLEMENTATION_COMMIT,
+        "entrypoint_repair_review_path": ENTRYPOINT_REPAIR_REVIEW.as_posix(),
+        "entrypoint_repair_review_sha256": ENTRYPOINT_REPAIR_REVIEW_DIGEST,
+        "attempt_001_history": {
+            "attempted_candidate_commit": ATTEMPTED_CANDIDATE_COMMIT,
+            "record_status": "ATTEMPT_CONSUMED_PRE_GATE_IMPORT_FAILURE",
+            "disposition_json_path": ATTEMPT_DISPOSITION_JSON.as_posix(),
+            "disposition_json_sha256": ATTEMPT_DISPOSITION_JSON_DIGEST,
+            "disposition_document_path": ATTEMPT_DISPOSITION_DOCUMENT.as_posix(),
+            "disposition_document_sha256": ATTEMPT_DISPOSITION_DOCUMENT_DIGEST,
+            "consumed": True,
+            "retry_authorized": False,
+        },
+        "operator_command": ATTEMPT_002_OPERATOR_COMMAND,
+        "module_command": PRODUCER_MODULE_INVOCATION,
+        "failed_file_path_command": FAILED_FILE_PATH_INVOCATION,
+        "failed_file_path_command_authorized": False,
+        "execution_candidate_binding": {
+            "mode": "dynamic_current_head_after_all_checks",
+            "required_parent_relation": "single_immediate_child_of_candidate_parent",
+            "clean_checkout_required": True,
+            "static_child_commit_claimed": False,
+            "static_child_tree_claimed": False,
+            "runtime_byte_parity_commit": REVIEWED_IMPLEMENTATION_COMMIT,
+            "repair_byte_parity_commit": ENTRYPOINT_REPAIR_COMMIT,
+            "changed_paths_must_equal_control_allowlist": True,
+        },
+        "control_path_allowlist": cast(list[JsonValue], CONTROL_PATH_ALLOWLIST),
+        "attempt_contract": {
+            "maximum_supervised_invocations": 1,
+            "custody": "central_manager_supervised_local_invocation",
+            "concurrent_invocations_authorized": False,
+            "automatic_retry_authorized": False,
+            "post_attempt_rerun_authorized": False,
+            "immediate_post_attempt_disposition_required": True,
+            "persistent_cross_process_budget_consumption_claimed": False,
+            "prior_attempt_detection": (
+                "retained_exact_local_evidence_only_not_tamper_proof_or_atomic_consumption"
+            ),
+            "prior_attempt_roots": cast(list[JsonValue], PRIOR_ATTEMPT_ROOTS),
+        },
+        "authority": EXPECTED_AUTHORITY,
+    }
+    if not _exact_json_equal(disposition, expected):
+        failures.append("O4 Attempt 002 disposition is not closed and exact")
+    normalized = " ".join(document.split())
+    for phrase in (
+        "Status: `AUTHORIZE_SUPERVISED_ONE_ATTEMPT_IMMEDIATE_CHILD`",
+        ATTEMPT_002_ID,
+        ENTRYPOINT_REPAIR_COMMIT,
+        ENTRYPOINT_REPAIR_TREE,
+        ENTRYPOINT_REPAIR_BASE_COMMIT,
+        "zero Critical, High, Medium, or Low findings",
+        "No future child commit or tree is stated here",
+        "clean, single-parent immediate child",
+        "exactly the seven-path control allowlist",
+        REVIEWED_IMPLEMENTATION_COMMIT,
+        ATTEMPT_002_OPERATOR_COMMAND,
+        PRODUCER_MODULE_INVOCATION,
+        FAILED_FILE_PATH_INVOCATION,
+        "Attempt 001 remains `ATTEMPT_CONSUMED_PRE_GATE_IMPORT_FAILURE`",
+        "Existing roots must be no-follow owner-owned `0700` directories and empty",
+        "does not implement or claim atomic, tamper-proof, persistent cross-process budget "
+        "consumption",
+        "requires an immediate new post-attempt disposition",
+        "Exactly five authority fields are true",
+        "remaining 14 authority fields are false",
+        "governed tool count remains exactly 24",
+    ):
+        if phrase not in normalized:
+            failures.append(f"O4 Attempt 002 disposition doc is missing phrase: {phrase}")
+
+
 def _validate_bound_documents(repo_root: Path, failures: list[str]) -> None:
     for path, expected, label in (
         (PRODUCER_EXACT_REVIEW, PRODUCER_EXACT_REVIEW_DIGEST, "producer exact review"),
@@ -853,6 +1076,21 @@ def _validate_bound_documents(repo_root: Path, failures: list[str]) -> None:
             ATTEMPT_DISPOSITION_DOCUMENT_DIGEST,
             "Attempt 001 disposition document",
         ),
+        (
+            ENTRYPOINT_REPAIR_REVIEW,
+            ENTRYPOINT_REPAIR_REVIEW_DIGEST,
+            "entrypoint repair exact review",
+        ),
+        (
+            ATTEMPT_002_DISPOSITION_JSON,
+            ATTEMPT_002_DISPOSITION_JSON_DIGEST,
+            "Attempt 002 disposition JSON",
+        ),
+        (
+            ATTEMPT_002_DISPOSITION_DOCUMENT,
+            ATTEMPT_002_DISPOSITION_DOCUMENT_DIGEST,
+            "Attempt 002 disposition document",
+        ),
     ):
         if _file_digest(repo_root / path, failures) != expected:
             failures.append(f"O4 {label} digest is invalid")
@@ -862,11 +1100,12 @@ def _validate_execution_checkout(
     repo_root: Path,
     failures: list[str],
     *,
-    candidate_parent_commit: str = CANDIDATE_PARENT_COMMIT,
-    candidate_parent_tree: str = CANDIDATE_PARENT_TREE,
+    candidate_parent_commit: str = ENTRYPOINT_REPAIR_COMMIT,
+    candidate_parent_tree: str = ENTRYPOINT_REPAIR_TREE,
     reviewed_commit: str = REVIEWED_IMPLEMENTATION_COMMIT,
     runtime_paths: list[str] | None = None,
     control_paths: list[str] | None = None,
+    repair_paths: list[str] | None = None,
 ) -> tuple[str, str] | None:
     runtime_paths = (
         list(code_authorization.ALLOWED_RUNTIME_PATHS)
@@ -874,6 +1113,7 @@ def _validate_execution_checkout(
         else runtime_paths
     )
     control_paths = CONTROL_PATH_ALLOWLIST if control_paths is None else control_paths
+    repair_paths = REPAIR_PARITY_PATHS if repair_paths is None else repair_paths
     head = _git(repo_root, ["rev-parse", "HEAD"], failures)
     tree = _git(repo_root, ["show", "-s", "--format=%T", "HEAD"], failures)
     parents = _git(repo_root, ["show", "-s", "--format=%P", "HEAD"], failures).split()
@@ -920,6 +1160,25 @@ def _validate_execution_checkout(
     )
     if parity.returncode != 0:
         failures.append("O4 execution runtime differs from the exact reviewed candidate")
+    if repair_paths:
+        repair_parity = subprocess.run(
+            [
+                "git",
+                "-C",
+                str(repo_root),
+                "diff",
+                "--quiet",
+                candidate_parent_commit,
+                "HEAD",
+                "--",
+                *repair_paths,
+            ],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        if repair_parity.returncode != 0:
+            failures.append("O4 entrypoint repair differs from the exact reviewed parent")
     if failures:
         return None
     return head, tree
@@ -1066,6 +1325,7 @@ def _validate_git_bindings(repo_root: Path, failures: list[str]) -> None:
         (REVIEWED_IMPLEMENTATION_COMMIT, REVIEWED_IMPLEMENTATION_TREE),
         (CODE_AUTHORIZATION_ORIGIN_COMMIT, CODE_AUTHORIZATION_ORIGIN_TREE),
         (CODE_AUTHORIZATION_COMMIT, CODE_AUTHORIZATION_TREE),
+        (ENTRYPOINT_REPAIR_COMMIT, ENTRYPOINT_REPAIR_TREE),
     ):
         tree = _git(repo_root, ["show", "-s", "--format=%T", commit], failures)
         if tree != expected_tree:
@@ -1078,6 +1338,13 @@ def _validate_git_bindings(repo_root: Path, failures: list[str]) -> None:
         )
         if ancestry.returncode != 0:
             failures.append(f"O4 execution bound commit is not an ancestor: {commit}")
+    repair_parents = _git(
+        repo_root,
+        ["show", "-s", "--format=%P", ENTRYPOINT_REPAIR_COMMIT],
+        failures,
+    ).split()
+    if repair_parents != [ENTRYPOINT_REPAIR_BASE_COMMIT]:
+        failures.append("O4 entrypoint repair parent is not exact")
     historical = _git(
         repo_root,
         [
