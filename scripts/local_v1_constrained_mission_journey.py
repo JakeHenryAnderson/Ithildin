@@ -43,6 +43,7 @@ _MISSION_ID = re.compile(r"^mission_[0-9a-f]{32}$")
 _CLAIM_ID = re.compile(r"^mclaim_[0-9a-f]{32}$")
 _AGENT_RUN_ID = re.compile(r"^run_[0-9a-f]{32}$")
 _REQUEST_ID = re.compile(r"^req_[0-9a-f]{32}$")
+_EVENT_ID = re.compile(r"^evt_[0-9a-f]{32}$")
 _MISSION_SESSION = re.compile(
     r"^mission:mission_[0-9a-f]{32}:mclaim_[0-9a-f]{32}:[0-9a-f]{16}$"
 )
@@ -68,8 +69,8 @@ _BUILD_KEYS = {
     "bridge_image_digest",
     "node_image_digest",
     "platform",
-    "sbom_digest",
-    "license_receipt_digest",
+    "image_artifact_inventory_digest",
+    "license_source_inventory_digest",
 }
 _JOURNEY_KEYS = {
     "candidate_commit",
@@ -79,7 +80,6 @@ _JOURNEY_KEYS = {
     "envelope_digest",
     "profile_digest",
     "handoff_nonce_digest",
-    "operations",
     "authority",
     "correlation_basis",
     "rejected_correlation_count",
@@ -90,7 +90,11 @@ _JOURNEY_KEYS = {
     "runner_state_authority",
     "model_provider_state_known",
     "container_absent",
+    "volumes_absent",
+    "network_absent",
     "persistent_profile_volume_absent",
+    "run_specific_images_absent",
+    "runtime_plaintext_absent",
     "read_only_root",
     "logging_driver",
     "tmpfs_limits",
@@ -191,6 +195,8 @@ def build_report(
     expected_tree: str,
     observed_at: datetime | None = None,
     run_id: str | None = None,
+    source_root: Path = ROOT,
+    source_evidence: JsonObject | None = None,
 ) -> JsonObject:
     if set(build) != _BUILD_KEYS or set(journey) != _JOURNEY_KEYS:
         raise ConstrainedJourneyError("receipt shape is not closed")
@@ -210,11 +216,12 @@ def build_report(
         or journey.get("candidate_tree") != expected_tree
     ):
         raise ConstrainedJourneyError("candidate or tree identity differs")
-    profile = _json_object(PROFILE_PATH)
+    evidence = source_evidence or candidate_source_evidence(source_root)
+    profile = cast(JsonObject, evidence["profile"])
     profile_digest = sha256_digest(profile)
-    expected_bridge_source = source_digest(BRIDGE_SOURCE_PATHS)
-    expected_node_source = source_digest(NODE_SOURCE_PATHS)
-    expected_lock_digest = file_digest(ROOT / "uv.lock")
+    expected_bridge_source = evidence["bridge_source_digest"]
+    expected_node_source = evidence["node_source_digest"]
+    expected_lock_digest = evidence["dependency_lock_digest"]
     for field, expected in {
         "profile_digest": profile_digest,
         "bridge_source_digest": expected_bridge_source,
@@ -225,7 +232,11 @@ def build_report(
             raise ConstrainedJourneyError(f"build {field} differs from candidate")
     if journey.get("profile_digest") != profile_digest:
         raise ConstrainedJourneyError("journey profile differs from candidate")
-    _validate_build_receipt(build, profile)
+    _validate_build_receipt(
+        build,
+        profile,
+        hermes_config_digest=cast(str, evidence["hermes_config_digest"]),
+    )
     _validate_journey_receipt(journey, profile)
     effective_now = (observed_at or datetime.now(UTC)).astimezone(UTC)
     effective_run_id = run_id or (
@@ -253,11 +264,22 @@ def build_report(
             "filesystem_non_bypass_claimed": False,
         },
     }
-    validate_report(report, expected_candidate=expected_candidate)
+    validate_report(
+        report,
+        expected_candidate=expected_candidate,
+        source_root=source_root,
+        source_evidence=evidence,
+    )
     return report
 
 
-def validate_report(report: JsonObject, *, expected_candidate: str) -> None:
+def validate_report(
+    report: JsonObject,
+    *,
+    expected_candidate: str,
+    source_root: Path = ROOT,
+    source_evidence: JsonObject | None = None,
+) -> None:
     if set(report) != {
         "document_type",
         "schema_version",
@@ -304,16 +326,21 @@ def validate_report(report: JsonObject, *, expected_candidate: str) -> None:
         )
     ):
         raise ConstrainedJourneyError("report candidate build binding is invalid")
-    profile = _json_object(PROFILE_PATH)
+    evidence = source_evidence or candidate_source_evidence(source_root)
+    profile = cast(JsonObject, evidence["profile"])
     if (
         build.get("profile_digest") != sha256_digest(profile)
         or journey.get("profile_digest") != sha256_digest(profile)
-        or build.get("bridge_source_digest") != source_digest(BRIDGE_SOURCE_PATHS)
-        or build.get("node_source_digest") != source_digest(NODE_SOURCE_PATHS)
-        or build.get("dependency_lock_digest") != file_digest(ROOT / "uv.lock")
+        or build.get("bridge_source_digest") != evidence["bridge_source_digest"]
+        or build.get("node_source_digest") != evidence["node_source_digest"]
+        or build.get("dependency_lock_digest") != evidence["dependency_lock_digest"]
     ):
         raise ConstrainedJourneyError("report source or profile binding is invalid")
-    _validate_build_receipt(build, profile)
+    _validate_build_receipt(
+        build,
+        profile,
+        hermes_config_digest=cast(str, evidence["hermes_config_digest"]),
+    )
     _validate_journey_receipt(journey, profile)
     false_limits = {
         "live_execution_authorized_by_report",
@@ -392,7 +419,9 @@ def render_markdown(report: JsonObject) -> str:
             "- Agent Run authority: `gateway_agent_run_evidence`",
             "- Correlation basis: `gateway_validated_claim_session`",
             "- Rejected correlations: `0`",
-            "- Correlated Agent Runs: `1` with two closed governed calls",
+            "- Correlated Agent Runs: `1` active record with two Gateway-completed events",
+            "- Image artifact inventory is bounded metadata, not an SBOM",
+            "- License-source inventory makes no completeness or compliance claim",
             "- Runner behavior proven: `false`",
             "- Model-provider state known: `false`",
             "- Release allowed: `false`",
@@ -402,11 +431,39 @@ def render_markdown(report: JsonObject) -> str:
     )
 
 
-def source_digest(paths: tuple[Path, ...]) -> str:
+def source_digest(paths: tuple[Path, ...], *, source_root: Path = ROOT) -> str:
     material: JsonObject = {
-        str(path.relative_to(ROOT)): file_digest(path) for path in sorted(paths)
+        str(path.relative_to(source_root)): file_digest(path) for path in sorted(paths)
     }
     return sha256_digest(material)
+
+
+def candidate_source_evidence(source_root: Path = ROOT) -> JsonObject:
+    profile = _json_object(source_root / PROFILE_PATH.relative_to(ROOT))
+    evidence: JsonObject = {
+        "profile": profile,
+        "bridge_source_digest": source_digest(
+            tuple(source_root / path.relative_to(ROOT) for path in BRIDGE_SOURCE_PATHS),
+            source_root=source_root,
+        ),
+        "node_source_digest": source_digest(
+            tuple(source_root / path.relative_to(ROOT) for path in NODE_SOURCE_PATHS),
+            source_root=source_root,
+        ),
+        "dependency_lock_digest": file_digest(source_root / "uv.lock"),
+        "hermes_config_digest": file_digest(
+            source_root / "deploy/hermes-node-bridge/config.yaml"
+        ),
+    }
+    if set(evidence) != {
+        "profile",
+        "bridge_source_digest",
+        "node_source_digest",
+        "dependency_lock_digest",
+        "hermes_config_digest",
+    }:
+        raise ConstrainedJourneyError("candidate source evidence is invalid")
+    return evidence
 
 
 def file_digest(path: Path) -> str:
@@ -416,7 +473,12 @@ def file_digest(path: Path) -> str:
         raise ConstrainedJourneyError("candidate source file is unavailable") from exc
 
 
-def _validate_build_receipt(build: JsonObject, profile: JsonObject) -> None:
+def _validate_build_receipt(
+    build: JsonObject,
+    profile: JsonObject,
+    *,
+    hermes_config_digest: str,
+) -> None:
     digest_fields = _BUILD_KEYS - {
         "candidate_commit",
         "candidate_tree",
@@ -435,9 +497,7 @@ def _validate_build_receipt(build: JsonObject, profile: JsonObject) -> None:
     platform = build.get("platform")
     if not isinstance(platform, str) or not _SAFE_PLATFORM.fullmatch(platform):
         raise ConstrainedJourneyError("build platform is invalid")
-    if profile.get("hermes_config_digest") != file_digest(
-        ROOT / "deploy/hermes-node-bridge/config.yaml"
-    ):
+    if profile.get("hermes_config_digest") != hermes_config_digest:
         raise ConstrainedJourneyError("Hermes configuration differs from profile")
     hermes = cast(JsonObject, profile["hermes"])
     platform_digests = cast(JsonObject, hermes["platform_digests"])
@@ -459,27 +519,6 @@ def _validate_journey_receipt(journey: JsonObject, profile: JsonObject) -> None:
         value = journey.get(field)
         if not isinstance(value, str) or not pattern.fullmatch(value):
             raise ConstrainedJourneyError(f"journey {field} is invalid")
-    operations = journey.get("operations")
-    expected_operations = [
-        {
-            "operation_index": 1,
-            "tool_name": "project.structure.summary",
-            "closed_status": "operation_1_closed",
-        },
-        {
-            "operation_index": 2,
-            "tool_name": "project.test.summary",
-            "closed_status": "operation_2_closed",
-        },
-    ]
-    if not isinstance(operations, list) or operations != expected_operations:
-        raise ConstrainedJourneyError("journey operations are incomplete or reordered")
-    if any(
-        not isinstance(operation, dict)
-        or type(operation.get("operation_index")) is not int
-        for operation in operations
-    ):
-        raise ConstrainedJourneyError("journey operation index must be an exact integer")
     mission_id = cast(str, journey["mission_id"])
     claim_id = cast(str, journey["claim_id"])
     envelope_digest = cast(str, journey["envelope_digest"])
@@ -526,7 +565,7 @@ def _validate_journey_receipt(journey: JsonObject, profile: JsonObject) -> None:
         or agent_run.get("correlation_basis") != "gateway_validated_claim_session"
         or type(agent_run.get("tool_call_count")) is not int
         or agent_run.get("tool_call_count") != 2
-        or agent_run.get("status") != "completed"
+        or agent_run.get("status") != "active"
     ):
         raise ConstrainedJourneyError("correlated Agent Run binding is invalid")
     operation_bindings = journey.get("gateway_operation_bindings")
@@ -534,6 +573,8 @@ def _validate_journey_receipt(journey: JsonObject, profile: JsonObject) -> None:
     if not isinstance(operation_bindings, list) or len(operation_bindings) != 2:
         raise ConstrainedJourneyError("Gateway operation bindings are incomplete")
     request_ids: set[str] = set()
+    event_ids: set[str] = set()
+    event_hashes: set[str] = set()
     for index, (binding, tool_name) in enumerate(
         zip(operation_bindings, expected_tools, strict=True),
         start=1,
@@ -541,10 +582,15 @@ def _validate_journey_receipt(journey: JsonObject, profile: JsonObject) -> None:
         if not isinstance(binding, dict):
             raise ConstrainedJourneyError("Gateway operation binding is invalid")
         request_id = binding.get("request_id")
+        event_id = binding.get("event_id")
+        event_hash = binding.get("event_hash")
         if (
             set(binding)
             != {
                 "operation_index",
+                "event_id",
+                "event_hash",
+                "event_type",
                 "tool_name",
                 "request_id",
                 "run_id",
@@ -558,6 +604,11 @@ def _validate_journey_receipt(journey: JsonObject, profile: JsonObject) -> None:
             }
             or type(binding.get("operation_index")) is not int
             or binding.get("operation_index") != index
+            or not isinstance(event_id, str)
+            or not _EVENT_ID.fullmatch(event_id)
+            or not isinstance(event_hash, str)
+            or not _DIGEST.fullmatch(event_hash)
+            or binding.get("event_type") != "tool.execution.completed"
             or binding.get("tool_name") != tool_name
             or not isinstance(request_id, str)
             or not _REQUEST_ID.fullmatch(request_id)
@@ -572,15 +623,21 @@ def _validate_journey_receipt(journey: JsonObject, profile: JsonObject) -> None:
         ):
             raise ConstrainedJourneyError("Gateway operation binding is invalid")
         request_ids.add(request_id)
-    if len(request_ids) != 2:
-        raise ConstrainedJourneyError("Gateway operation request binding is ambiguous")
+        event_ids.add(event_id)
+        event_hashes.add(event_hash)
+    if len(request_ids) != 2 or len(event_ids) != 2 or len(event_hashes) != 2:
+        raise ConstrainedJourneyError("Gateway operation event binding is ambiguous")
     tmpfs = cast(JsonObject, cast(JsonObject, profile["limits"])["tmpfs"])
     if (
         journey.get("gateway_lifecycle_state") != "runner_reported_succeeded"
         or journey.get("runner_state_authority") != "runner_reported_only"
         or journey.get("model_provider_state_known") is not False
         or journey.get("container_absent") is not True
+        or journey.get("volumes_absent") is not True
+        or journey.get("network_absent") is not True
         or journey.get("persistent_profile_volume_absent") is not True
+        or journey.get("run_specific_images_absent") is not True
+        or journey.get("runtime_plaintext_absent") is not True
         or journey.get("read_only_root") is not True
         or journey.get("logging_driver") != "none"
         or journey.get("tmpfs_limits") != tmpfs

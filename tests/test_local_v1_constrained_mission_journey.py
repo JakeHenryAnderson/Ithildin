@@ -46,8 +46,8 @@ def _receipts() -> tuple[JsonObject, JsonObject]:
         "bridge_image_digest": "sha256:" + ("1" * 64),
         "node_image_digest": "sha256:" + ("2" * 64),
         "platform": "linux/arm64",
-        "sbom_digest": "sha256:" + ("3" * 64),
-        "license_receipt_digest": "sha256:" + ("4" * 64),
+        "image_artifact_inventory_digest": "sha256:" + ("3" * 64),
+        "license_source_inventory_digest": "sha256:" + ("4" * 64),
     }
     mission_id = "mission_" + ("5" * 32)
     claim_id = "mclaim_" + ("6" * 32)
@@ -62,18 +62,6 @@ def _receipts() -> tuple[JsonObject, JsonObject]:
         "envelope_digest": envelope_digest,
         "profile_digest": profile_digest,
         "handoff_nonce_digest": "sha256:" + ("8" * 64),
-        "operations": [
-            {
-                "operation_index": 1,
-                "tool_name": "project.structure.summary",
-                "closed_status": "operation_1_closed",
-            },
-            {
-                "operation_index": 2,
-                "tool_name": "project.test.summary",
-                "closed_status": "operation_2_closed",
-            },
-        ],
         "authority": "gateway_agent_run_evidence",
         "correlation_basis": "gateway_validated_claim_session",
         "rejected_correlation_count": 0,
@@ -88,12 +76,15 @@ def _receipts() -> tuple[JsonObject, JsonObject]:
                 "authority": "gateway_agent_run_evidence",
                 "correlation_basis": "gateway_validated_claim_session",
                 "tool_call_count": 2,
-                "status": "completed",
+                "status": "active",
             }
         ],
         "gateway_operation_bindings": [
             {
                 "operation_index": index,
+                "event_id": "evt_" + (str(index) * 32),
+                "event_hash": "sha256:" + (str(index + 1) * 64),
+                "event_type": "tool.execution.completed",
                 "tool_name": tool_name,
                 "request_id": "req_" + (str(index) * 32),
                 "run_id": run_id,
@@ -114,7 +105,11 @@ def _receipts() -> tuple[JsonObject, JsonObject]:
         "runner_state_authority": "runner_reported_only",
         "model_provider_state_known": False,
         "container_absent": True,
+        "volumes_absent": True,
+        "network_absent": True,
         "persistent_profile_volume_absent": True,
+        "run_specific_images_absent": True,
+        "runtime_plaintext_absent": True,
         "read_only_root": True,
         "logging_driver": "none",
         "tmpfs_limits": tmpfs_limits,
@@ -201,21 +196,6 @@ def test_constrained_journey_rejects_identity_drift_dirty_build_and_incomplete_e
         )
 
 
-def test_constrained_journey_rejects_reordered_or_incomplete_operations() -> None:
-    build, observed = _receipts()
-    operations = observed["operations"]
-    assert isinstance(operations, list)
-    observed["operations"] = list(reversed(operations))
-    with pytest.raises(journey.ConstrainedJourneyError, match="incomplete or reordered"):
-        journey.build_report(
-            build,
-            observed,
-            expected_candidate=CANDIDATE,
-            expected_tree=TREE,
-            run_id=RUN_ID,
-        )
-
-
 @pytest.mark.parametrize(
     ("section", "field", "value", "reason"),
     [
@@ -273,6 +253,30 @@ def test_constrained_journey_rejects_reordered_or_incomplete_operations() -> Non
             "fs.read",
             "operation binding is invalid",
         ),
+        (
+            "binding",
+            "event_id",
+            "evt_" + ("f" * 31),
+            "operation binding is invalid",
+        ),
+        (
+            "binding",
+            "event_hash",
+            "sha256:" + ("f" * 63),
+            "operation binding is invalid",
+        ),
+        (
+            "binding",
+            "event_type",
+            "tool.execution.started",
+            "operation binding is invalid",
+        ),
+        (
+            "binding",
+            "status",
+            "failed",
+            "operation binding is invalid",
+        ),
     ],
 )
 def test_constrained_journey_rejects_agent_run_and_operation_false_positive_mutations(
@@ -300,15 +304,16 @@ def test_constrained_journey_rejects_agent_run_and_operation_false_positive_muta
         )
 
 
-def test_constrained_journey_rejects_boolean_node_operation_index() -> None:
+def test_constrained_journey_rejects_duplicate_gateway_event_identity() -> None:
     build, observed = _receipts()
-    operations = observed["operations"]
-    assert isinstance(operations, list)
-    operation = operations[0]
-    assert isinstance(operation, dict)
-    operation["operation_index"] = True
+    bindings = observed["gateway_operation_bindings"]
+    assert isinstance(bindings, list)
+    first, second = bindings
+    assert isinstance(first, dict)
+    assert isinstance(second, dict)
+    second["event_id"] = first["event_id"]
 
-    with pytest.raises(journey.ConstrainedJourneyError, match="exact integer"):
+    with pytest.raises(journey.ConstrainedJourneyError, match="event binding is ambiguous"):
         journey.build_report(
             build,
             observed,

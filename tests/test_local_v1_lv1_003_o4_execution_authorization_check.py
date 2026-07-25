@@ -18,10 +18,14 @@ def _contract() -> dict[str, object]:
     return document
 
 
-def test_live_o4_execution_gate_is_valid_prepare_review_and_non_authorizing() -> None:
+def test_o4_candidate_gate_is_prepare_review_non_authorizing_and_exact_review_blocked() -> None:
     report = gate.build_report(ROOT)
 
-    assert report["valid"] is True, report["failures"]
+    assert report["valid"] is False
+    assert report["failures"] == [
+        "reviewed runner-bridge code authorization is invalid",
+        "reviewed runner-bridge code authority is not exact",
+    ]
     assert report["record_status"] == "PREPARE_REVIEW"
     assert report["reviewed_implementation_commit"] == gate.REVIEWED_IMPLEMENTATION_COMMIT
     assert report["code_authorization_commit"] == gate.CODE_AUTHORIZATION_COMMIT
@@ -152,6 +156,13 @@ def test_live_gate_refuses_before_any_future_candidate_is_bound() -> None:
         ),
         (
             lambda value: value["evidence_contract"].__setitem__(  # type: ignore[union-attr]
+                "transient_malicious_same_uid_mutation_during_docker_context_read_proven_absent",
+                True,
+            ),
+            "evidence contract",
+        ),
+        (
+            lambda value: value["evidence_contract"].__setitem__(  # type: ignore[union-attr]
                 "unexpected", False
             ),
             "evidence contract",
@@ -159,6 +170,19 @@ def test_live_gate_refuses_before_any_future_candidate_is_bound() -> None:
         (
             lambda value: value["cleanup_contract"].__setitem__(  # type: ignore[union-attr]
                 "runtime_plaintext_absent_required", False
+            ),
+            "cleanup contract",
+        ),
+        (
+            lambda value: value["cleanup_contract"].__setitem__(  # type: ignore[union-attr]
+                "chmod_only_publication_rollback_success_allowed", True
+            ),
+            "cleanup contract",
+        ),
+        (
+            lambda value: value["cleanup_contract"].__setitem__(  # type: ignore[union-attr]
+                "confirmed_node_revocation_required_before_destructive_cleanup",
+                False,
             ),
             "cleanup contract",
         ),
@@ -241,6 +265,13 @@ def test_producer_contract_closes_sequence_no_retry_and_runtime_unknowns() -> No
     assert document.count("Hermes service exactly once") == 1
     assert "There is no automatic retry" in " ".join(document.split())
     assert "Runtime-Only Facts Still Unproven" in document
+    assert (
+        "do not prove absence of transient malicious same-UID mutation while Docker reads "
+        "the build context"
+    ) in " ".join(document.split())
+    assert "writes and verifies `node-revocation-recovery.json`" in " ".join(
+        document.split()
+    )
 
 
 @pytest.mark.parametrize(

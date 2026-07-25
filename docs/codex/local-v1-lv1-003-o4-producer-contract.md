@@ -1,17 +1,18 @@
 # Local v1 LV1-003 O4 Producer Contract
 
-Status: `design_blocked_on_assembler_reconciliation_pending_implementation_and_exact_review`
+Status: `implementation_candidate_pending_exact_review_and_separate_live_disposition`
 
-This contract defines the only acceptable future live producer for the fixed `MCC-007` bridge. It
-does not implement the producer and does not authorize Docker, API, provider, network, credential,
+This contract defines the only acceptable live producer for the fixed `MCC-007` bridge. The
+candidate producer and reconciled assembler now implement this contract with injected, fake-tested
+external seams. That implementation does not authorize Docker, API, provider, network, credential,
 Hermes, Node, or `O4` execution. The separate execution-authorization contract remains
-`PREPARE_REVIEW`.
+`PREPARE_REVIEW` with attempt budget zero until exact review and a separate disposition.
 
-The current constrained-mission assembler is not usable by this future producer. It requires a
-synthesized Agent Run status of `completed` even though the authoritative Gateway Agent Run record
-remains `active`, and it names image metadata as `sbom_digest`. Before any live authority, the
-future exact producer-and-assembler candidate must change the assembler schema, checker, renderer,
-and tests to preserve actual Gateway truth and accurate artifact-inventory terminology.
+The candidate constrained-mission assembler now preserves the authoritative Gateway Agent Run
+status `active`, requires exactly two distinctly identified Gateway `tool.execution.completed`
+events, and names bounded image metadata `image_artifact_inventory_digest`. It remains unusable for
+live producer evidence until this producer-and-assembler candidate receives independent exact review
+and the separate execution gate binds that exact candidate with attempt budget one.
 
 ## Entry Gate
 
@@ -29,24 +30,36 @@ One invocation has these exact ordered stages:
 2. Reject ambient Docker host/context/config, credential-helper, registry-auth, proxy, cloud-key,
    and provider/model variables.
 3. Create a unique `ithildin-local-v1-o4-<8 lowercase hex>` Compose project, a descriptor-anchored
-   owner-only `0700` runtime, and an independent owner-only `0700` receipt directory.
+   owner-only `0700` runtime, and an independent owner-only `0700` receipt directory. Materialize
+   the exact authorized Git tree's bounded build/config inputs into a descriptor-anchored private
+   snapshot using verified Git blob identities; candidate files are owner-readable `0400` or
+   executable `0500`, every snapshot directory is sealed owner-readable `0500`, and recursive
+   descriptor-relative enumeration must equal the exact directory and file manifests. Extra files,
+   directories, symlinks, or special entries fail closed before any whole-directory build copy.
+   Static tests prove snapshot enumeration and path-replacement rejection only. They do not prove
+   absence of transient malicious same-UID mutation while Docker reads the build context; that
+   threat remains outside the Local-v1 evidence boundary, aligned with the golden-path limitation.
 4. Write only owner-controlled `0600` Compose environment, override, Docker configuration, signing
-   key, authority placeholder, and receipt files. Ephemeral admin and enrollment values are never
-   emitted.
+   key, authority placeholder, and staged receipt files. Ephemeral admin and enrollment values are
+   never emitted. All candidate workspace/profile/config reads come from the private snapshot.
 5. Prove one local Docker socket, Docker/Compose availability, free loopback ports `8000` and
-   `5173`, exact source/profile digests, host-local Ollama reachability at
+   `5173`, exact snapshot source/profile digests, merged Compose build contexts and bind sources
+   confined to the private snapshot/runtime, host-local Ollama reachability at
    `http://127.0.0.1:11434`, and exact host model inventory entry `gemma4:e4b`. Container routing
    through `host.docker.internal` remains a runtime-only fact for the sole Hermes attempt.
 6. Prove all four unique image references absent, then explicitly build the base API/UI/Node images
    and reviewed fixed Hermes bridge image.
 7. Inspect exact image reference, ID, platform, config digest, and ordered layer digests. Record that
    bounded image metadata only as `image_artifact_inventory_digest`, never as an SBOM. Build the
-   license-source inventory from the tracked Git tree with no-follow reads and a fixed size ceiling;
+   license-source inventory from the exact private snapshot with no-follow reads and a fixed size ceiling;
    current discovery is exactly `pyproject.toml` and `uv.lock`, with zero tracked `LICENSE*`,
    `NOTICE*`, or `COPYING*` files. Mark complete SBOM, license completeness, compliance, custody,
    and provider truth claims false.
 8. Start only base API/UI, prove their closed health projections, enroll one Node once through stdin,
-   assign and acknowledge one signed configuration, and start the ordinary Node.
+   assign and acknowledge one signed configuration, and start the ordinary Node. Immediately before
+   the enrollment subprocess, record `enrollment_attempted=true` and
+   `enrollment_outcome_ambiguous=true`; clear ambiguity only after the returned Node identity,
+   principal, and workspace are closed and validated.
 9. Prove Gateway-derived identity, workspace, signed configuration, and ordinary Node eligibility
    while runner and provider health remain unknown.
 10. Admit exactly one server-owned `synthetic_read_review_v1` mission with one run-bound idempotency
@@ -69,14 +82,21 @@ One invocation has these exact ordered stages:
     `completed`, and never trust runner-authored operation counts or output.
 15. Copy and validate only the closed Node mission receipt needed for the handoff nonce digest. It
     cannot override Gateway mission, claim, run, request, tool, count, lifecycle, or status truth.
-16. Revoke the Node, stop the fixed Node, tear down the exact project with volumes, reconcile and
-    remove only the exact inspected run-specific images, and prove project containers, volumes,
-    network, profile volume, images, and runtime plaintext absent.
-17. Write closed `0600` build and journey receipts, then invoke only the future reconciled
-    constrained-mission assembler and checker from the same exact candidate. Their schema must use
+16. Revoke the Node. Only a closed, shape-valid successful revocation response permits the complete
+    cleanup path: stop the fixed Node, tear down the exact project with volumes, reconcile and remove
+    only the exact inspected run-specific images, and prove project containers, volumes, network,
+    profile volume, images, and runtime plaintext absent. If revocation is unavailable, invalid, or
+    interrupted, write and re-read one bounded owner-only secret-free recovery identity receipt,
+    attempt only the existing exact fixed-Node stop, retain the Node volume and anchored runtime,
+    and require recovery without claiming full cleanup.
+17. Write closed `0600` build and journey receipts into private staging, then invoke only the
+    reconciled constrained-mission assembler and checker against the same exact snapshot. Publish
+    the complete checked JSON/Markdown report with one descriptor-relative atomic rename; an
+    assembler, checker, write, or signal failure leaves no success-shaped report and retains an
+    explicit quarantined or verified-but-not-published disposition. Their schema must use
     `image_artifact_inventory_digest`, `license_source_inventory_digest`, Agent Run status `active`,
     exactly two Gateway `tool.execution.completed` events, and mission lifecycle
-    `runner_reported_succeeded`. The current assembler/checker cannot satisfy this stage.
+    `runner_reported_succeeded`. Static fake tests do not authorize this live stage.
 
 Any out-of-order transition, duplicate stage, unknown response field used as authority, or second
 Hermes call fails closed.
@@ -88,8 +108,10 @@ provider, model, service, profile, tool, or image. Dynamic values are limited to
 ID, derived unique project, descriptor-anchored paths, unique image references, and exact inspected
 image IDs.
 
-The only Compose files are `deploy/docker-compose.yml`, the reviewed
-`deploy/hermes-node-bridge/compose.yaml`, and one generated owner-only override. The initial
+The only Compose files are private exact-candidate snapshot copies of
+`deploy/docker-compose.yml` and the reviewed `deploy/hermes-node-bridge/compose.yaml`, plus one
+generated owner-only override. The override replaces every base API bind target with an exact
+private-snapshot or private-runtime source. The initial
 API/UI/ordinary-Node stages omit the reviewed overlay. Fixed-bridge stages add that overlay before
 the generated override. Allowed command tails are exactly the action vocabulary in the JSON gate:
 version/config checks, explicit builds, bounded image metadata inspection, API/UI start, one stdin enrollment,
@@ -99,7 +121,7 @@ queries, exact owned-image removal, and absence queries.
 
 No `exec`, shell, arbitrary `run` argument, logs, Docker socket mount, registry login/pull/push,
 system prune, generic container ID, broad label deletion, ambient Compose project, or host path
-outside the anchored runtime is allowed.
+outside the anchored runtime/private exact-candidate snapshot is allowed.
 
 ## Closed API Operations
 
@@ -124,7 +146,7 @@ host-local Ollama preflight uses only `127.0.0.1:11434`; it does not claim that 
 
 ## Receipt Contracts
 
-The future producer-and-assembler candidate must replace the current build-receipt schema and bind
+The producer-and-assembler candidate replaces the prior build-receipt schema and binds
 candidate
 commit/tree, clean observations around both builds, current bridge/Node/lock/profile source
 digests, pinned Hermes OCI/platform digests, actual inspected bridge and Node image IDs, platform,
@@ -132,14 +154,14 @@ and canonical digests of:
 
 - `image_artifact_inventory_digest`: bounded metadata containing exact reference, image ID,
   platform, config digest, and ordered layer digests for the four run-specific images; and
-- `license_source_inventory_digest`: a tracked-Git-tree inventory produced with no-follow,
-  size-limited reads. Current discovery records exactly `pyproject.toml` and `uv.lock`, plus zero
+- `license_source_inventory_digest`: an exact-candidate private-snapshot inventory produced with
+  no-follow, size-limited reads. Current discovery records exactly `pyproject.toml` and `uv.lock`, plus zero
   tracked `LICENSE*`, `NOTICE*`, or `COPYING*` files.
 
 Image config/layer metadata is not an SBOM. Both inventories declare SBOM completeness, license
 completeness, and compliance claims false.
 
-The future journey receipt must preserve the Gateway Agent Run status `active`, exactly two
+The journey receipt preserves the Gateway Agent Run status `active`, exactly two
 Gateway `tool.execution.completed` events, and mission lifecycle `runner_reported_succeeded`.
 Mission, claim, envelope, correlated run, session, request IDs, tool names, and lifecycle come from
 the Gateway mission/run projections. No synthesized run completion is allowed. The closed Node
@@ -148,21 +170,49 @@ Gateway truth. Cleanup fields become true only after direct absence probes.
 
 ## Cleanup And Recovery
 
-Cleanup runs once in a `finally` path after any mutation. Revocation failure, image-identity
-ambiguity, resource residue, volume residue, runtime removal failure, or source-anchor replacement
-sets `recovery_required`. Ambiguous resources are retained for operator recovery rather than
-broadly removed. Successful cleanup removes runtime plaintext only after extracting closed
-non-secret receipts into the independent receipt directory.
+Cleanup runs once from the first post-gate filesystem creation, including prepare, socket,
+executor-factory, API-factory, and controlled-signal failures. Every independently safe exact-owned
+revocation, stop, down, resource probe, inspected-image removal, image probe, and descriptor-relative
+plaintext removal is attempted monotonically; one failure never suppresses later safe cleanup.
+Before the first Docker mutation milestone, cleanup performs only descriptor-owned local plaintext
+removal and makes zero Docker, API, or provider calls. Docker cleanup becomes eligible only after
+the producer records that mutation may have begun; enrollment and admission are separately tracked.
+An enrollment subprocess nonzero exit, timeout, interruption, or malformed response before a
+validated Node ID leaves `enrollment_outcome_ambiguous=true`, makes no revocation or absence claim,
+performs no destructive project, volume, image, or runtime cleanup, and retains the exact anchored
+runtime and Node volume for reconciliation. Only a validated Node identity clears enrollment
+ambiguity, and only a later closed successful revocation response confirms Node revocation.
+When a shape-valid Node ID is known but revocation is unavailable, invalid, or interrupted, cleanup
+writes and verifies `node-revocation-recovery.json` in the owner-only anchored receipt directory.
+The closed receipt contains only schema/kind, run and exact-candidate identity, workspace and Node
+identity, derived Compose project and Node-volume names, false revocation/release/UAT claims,
+retention booleans, and one fixed reconciliation next action; it contains no token, enrollment
+value, private key, prompt, output, or model-provider material and is never published as successful
+evidence. The producer then attempts the exact fixed-Node stop but skips project down, absence
+claims, image removal, and runtime deletion. Thus `node_revoked`, `volumes_absent`,
+`persistent_profile_volume_absent`, `runtime_plaintext_absent`, and full cleanup remain false and
+`recovery_required` remains true.
+Revocation failure, image-identity ambiguity, resource residue, volume residue, runtime removal
+failure, or source-anchor replacement sets `recovery_required`. No ambiguous or broad deletion is
+allowed. Staged receipts remain non-success evidence until assembler/checker equality and atomic
+publication. A failure or signal after rename removes or quarantines the exact public run-ID object
+through its held descriptors, and rollback succeeds only after the exact public name is absent or
+hidden-quarantined and the held report-base directory is durably synchronized. Permission removal
+alone is never rollback success; removal-plus-quarantine failure or directory-sync failure requires
+`report_publication_recovery_required`. The returned report path is revalidated against the anchored
+report base. Failures carry an explicit non-release, non-UAT quarantine disposition.
 
 The producer never declares release, promotion, production, UAT, non-bypass, sandbox, provider
 truth, output correctness, or process-stop evidence.
 
 ## Runtime-Only Facts Still Unproven
 
-Static implementation and fake tests cannot establish Docker/Compose availability, merged profile
+This static implementation and its fake tests cannot establish Docker/Compose availability, merged profile
 behavior on the target host, local Ollama reachability, `gemma4:e4b` presence, image build success,
 actual OCI platform selection, container routing from Hermes to
 `host.docker.internal:11434`, socket ownership/health, Hermes behavior, Gateway mission outcome,
 artifact inventory values, or residue-free cleanup. A container routing failure consumes the sole
 attempt and permits no retry. Those facts require the later exact-reviewed, separately authorized
-one-attempt run.
+one-attempt run. The sealed private snapshot and descriptor checks reject observed static drift and
+path replacement, but they do not establish operating-system immutability or exclude a malicious
+same-UID process mutating content transiently during Docker's whole-context read.

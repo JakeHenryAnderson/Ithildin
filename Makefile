@@ -55,7 +55,11 @@ local-v1-lv1-003-o4-execution-authorization-check:
 	uv run python scripts/local_v1_lv1_003_o4_execution_authorization_check.py
 
 local-v1-lv1-003-o4-producer-static-check:
-	uv run pytest tests/test_local_v1_lv1_003_o4_execution_authorization_check.py -q
+	uv run pytest \
+		tests/test_local_v1_lv1_003_o4_execution_authorization_check.py \
+		tests/test_local_v1_lv1_003_o4_producer.py \
+		tests/test_local_v1_constrained_mission_journey.py \
+		-q
 
 mission-command-runner-bridge-profile-check:
 	uv run pytest \

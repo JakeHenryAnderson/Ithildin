@@ -32,7 +32,7 @@ CODE_AUTHORIZATION_RECORD_DIGEST = (
     "sha256:f241034bc56219c29ecaa215cdbed1404516130b8093567611a8c56960b1a051"
 )
 PRODUCER_CONTRACT_DIGEST = (
-    "sha256:06edede9058916c6103c9992402597c271886fb30a286565a41e665a84ab6781"
+    "sha256:3c742762465380387153f5ee17686ed540354926c5364c9e73f15100d9bb30e1"
 )
 PROFILE_DIGEST = "sha256:90b94d725640768f1a7d665e979bbe11f263a4ff264591a5348d0b5820db3e92"
 SOURCE_DIGESTS = {
@@ -163,6 +163,7 @@ EXPECTED_COMMAND_CONTRACT: JsonObject = {
         "run_id",
         "unique_compose_project",
         "anchored_runtime_paths",
+        "anchored_exact_candidate_snapshot_paths",
         "run_specific_image_references",
         "exact_inspected_image_ids",
     ],
@@ -196,9 +197,9 @@ EXPECTED_EVIDENCE_CONTRACT: JsonObject = {
     "journey_receipt_mode": "0600",
     "image_artifact_inventory_field": "image_artifact_inventory_digest",
     "license_source_inventory_field": "license_source_inventory_digest",
-    "future_assembler_schema_reconciliation_required": True,
+    "future_assembler_schema_reconciliation_required": False,
     "current_assembler_usable_for_live_producer": False,
-    "future_reconciled_assembler_and_checker_required": True,
+    "future_reconciled_assembler_and_checker_required": False,
     "bounded_image_artifact_inventory_required": True,
     "bounded_image_metadata_fields": [
         "reference",
@@ -208,11 +209,16 @@ EXPECTED_EVIDENCE_CONTRACT: JsonObject = {
         "ordered_layer_digests",
     ],
     "bounded_license_source_inventory_required": True,
-    "license_inventory_source": "tracked_git_tree_no_follow_size_limited",
+    "license_inventory_source": "private_exact_candidate_snapshot_no_follow_size_limited",
     "license_source_file_max_bytes": 1048576,
     "current_tracked_license_inventory_inputs": ["pyproject.toml", "uv.lock"],
     "current_tracked_license_family_files": [],
     "license_family_patterns": ["LICENSE*", "NOTICE*", "COPYING*"],
+    "static_snapshot_enumeration_and_path_replacement_rejection_proven": True,
+    "transient_malicious_same_uid_mutation_during_docker_context_read_proven_absent": (
+        False
+    ),
+    "operating_system_snapshot_immutability_claimed": False,
     "complete_sbom_claimed": False,
     "license_completeness_claimed": False,
     "compliance_claimed": False,
@@ -228,6 +234,41 @@ EXPECTED_CLEANUP_CONTRACT: JsonObject = {
     "runtime_plaintext_absent_required": True,
     "cleanup_failure_requires_recovery": True,
     "cleanup_ambiguity_requires_stop": True,
+    "early_failure_plaintext_cleanup_required": True,
+    "monotonic_best_effort_cleanup_required": True,
+    "enrollment_attempt_recorded_before_subprocess": True,
+    "ambiguous_enrollment_retains_runtime_and_node_volume": True,
+    "ambiguous_enrollment_revocation_claim_allowed": False,
+    "confirmed_node_revocation_required_before_destructive_cleanup": True,
+    "unconfirmed_revocation_retains_runtime_and_node_volume": True,
+    "unconfirmed_revocation_safe_action": "stop_exact_fixed_node_only",
+    "private_secret_free_recovery_identity_receipt_required": True,
+    "recovery_identity_receipt_max_bytes": 4096,
+    "recovery_identity_receipt_fields": [
+        "schema_version",
+        "receipt_kind",
+        "run_id",
+        "candidate_commit",
+        "candidate_tree",
+        "workspace_id",
+        "node_id",
+        "compose_project",
+        "node_volume_name",
+        "revocation_confirmed",
+        "node_volume_retained",
+        "anchored_runtime_retained",
+        "reconciliation_required",
+        "next_action",
+        "release_allowed",
+        "uat_complete",
+    ],
+    "recovery_identity_receipt_contains_credentials": False,
+    "recovery_identity_receipt_published_as_success_evidence": False,
+    "atomic_success_publication_required": True,
+    "failed_receipt_quarantine_required": True,
+    "publication_rollback_requires_name_removal_or_hidden_quarantine": True,
+    "publication_rollback_base_directory_fsync_required": True,
+    "chmod_only_publication_rollback_success_allowed": False,
     "retry_after_failure_automatic": False,
 }
 EXPECTED_AUTHORITY: JsonObject = {key: False for key in AUTHORITY_FIELDS}
@@ -367,8 +408,14 @@ def _validate_document(document: str, failures: list[str]) -> None:
         "Agent Run record status `active`, and exactly two "
         "`tool.execution.completed` timeline events",
         "connected directly to `DEVNULL` when its subprocess is created",
-        "current assembler is unusable for live producer evidence",
+        "candidate remains unusable for live producer evidence until independent exact review",
+        "does not prove absence of transient malicious same-UID mutation while Docker reads "
+        "the build context",
         "host-local only at `http://127.0.0.1:11434`",
+        "permission removal alone is insufficient",
+        "If a validated Node ID exists but revocation is unavailable, invalid, or interrupted",
+        "private recovery receipt is quarantined staged material, not successful published "
+        "evidence",
         "There is no automatic retry",
         "Until then, the live target must fail before any Docker, API, provider",
     ):
@@ -383,10 +430,10 @@ def _validate_producer_contract(
 ) -> None:
     normalized = " ".join(document.split())
     for phrase in (
-        "Status: `design_blocked_on_assembler_reconciliation_pending_"
-        "implementation_and_exact_review`",
-        "does not implement the producer",
-        "current constrained-mission assembler is not usable",
+        "Status: `implementation_candidate_pending_exact_review_and_separate_live_disposition`",
+        "candidate producer and reconciled assembler now implement this contract",
+        "remains unusable for live producer evidence until this producer-and-assembler "
+        "candidate receives independent exact review",
         "before it creates a runtime directory or performs Docker, API, provider, network",
         "One invocation has these exact ordered stages",
         "Create a unique `ithildin-local-v1-o4-<8 lowercase hex>`",
@@ -401,10 +448,16 @@ def _validate_producer_contract(
         "exactly two distinct `tool.execution.completed` timeline events",
         "never trust runner-authored operation counts",
         "`image_artifact_inventory_digest`, never as an SBOM",
-        "tracked Git tree with no-follow reads and a fixed size ceiling",
+        "exact private snapshot with no-follow reads and a fixed size ceiling",
+        "do not prove absence of transient malicious same-UID mutation while Docker reads "
+        "the build context",
         "current discovery is exactly `pyproject.toml` and `uv.lock`, with zero tracked",
-        "future reconciled constrained-mission assembler and checker",
+        "reconciled constrained-mission assembler and checker",
         "Container routing through `host.docker.internal` remains a runtime-only fact",
+        "leaves `enrollment_outcome_ambiguous=true`, makes no revocation or absence claim",
+        "writes and verifies `node-revocation-recovery.json`",
+        "attempts the exact fixed-Node stop but skips project down",
+        "Permission removal alone is never rollback success",
         "recovery_required",
         "Runtime-Only Facts Still Unproven",
     ):
@@ -429,8 +482,11 @@ def _validate_wiring(repo_root: Path, failures: list[str]) -> None:
             "scripts/local_v1_lv1_003_o4_execution_authorization_check.py"
         ),
         PRODUCER_STATIC_TARGET: (
-            "\tuv run pytest "
-            "tests/test_local_v1_lv1_003_o4_execution_authorization_check.py -q"
+            "\tuv run pytest \\\n"
+            "\t\ttests/test_local_v1_lv1_003_o4_execution_authorization_check.py \\\n"
+            "\t\ttests/test_local_v1_lv1_003_o4_producer.py \\\n"
+            "\t\ttests/test_local_v1_constrained_mission_journey.py \\\n"
+            "\t\t-q"
         ),
     }
     for target, expected_body in expected_bodies.items():

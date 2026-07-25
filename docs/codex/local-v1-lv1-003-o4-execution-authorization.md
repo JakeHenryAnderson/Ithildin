@@ -36,13 +36,16 @@ Agent Run completion is forbidden.
 ## Build And Evidence Boundary
 
 The future run must produce actual bounded image artifact and repository-license source inventories.
-Image config/layer metadata is not an SBOM. The future exact producer-and-assembler candidate must
-rename the current `sbom_digest` field to `image_artifact_inventory_digest`, preserve
-`license_source_inventory_digest`, and reconcile the current assembler's synthesized `completed`
-Agent Run status with actual Gateway status `active`. Until its schema, checker, renderer, and tests
-are reconciled, the current assembler is unusable for live producer evidence. The inventories are
-not placeholder hashes and do not claim SBOM coverage, license completeness, compliance,
-provenance custody, or provider truth.
+Image config/layer metadata is not an SBOM. The candidate producer and assembler now use
+`image_artifact_inventory_digest` and `license_source_inventory_digest`, preserve actual Gateway
+Agent Run status `active`, and require exactly two distinctly identified Gateway completion events.
+That candidate remains unusable for live producer evidence until independent exact review and a
+separate post-review disposition bind it. The inventories are not placeholder hashes and do not
+claim SBOM coverage, license completeness, compliance, provenance custody, or provider truth.
+Static fake evidence proves closed private-snapshot enumeration and rejects observed path
+replacement. It does not prove absence of transient malicious same-UID mutation while Docker reads
+the build context; that threat remains outside the Local-v1 evidence boundary, consistent with the
+golden-path limitation.
 
 ## Cleanup And Stop Lines
 
@@ -50,6 +53,21 @@ Cleanup must revoke the synthetic Node, tear down the exact Compose project with
 only reconciled run-specific images, and prove project containers, volumes, network, persistent
 profile volume, run-specific images, and runtime plaintext absent. Any ambiguity retains the
 anchored runtime for recovery, reports `recovery_required`, and stops. There is no automatic retry.
+Before invoking enrollment, the producer must record the attempt as ambiguous. A nonzero exit,
+timeout, interruption, or malformed response before validated Node identity retains the exact
+anchored runtime and Node volume, performs no destructive cleanup, and makes no revocation or
+absence claim. Only validated identity clears ambiguity, and only a closed successful revocation
+response confirms revocation. Post-rename report rollback is successful only when the public name
+is absent or hidden-quarantined and the held base directory is durably synchronized; permission
+removal alone is insufficient, and compound rollback or sync failure requires recovery.
+If a validated Node ID exists but revocation is unavailable, invalid, or interrupted, destructive
+cleanup is forbidden. The producer must write and verify one bounded owner-only secret-free
+`node-revocation-recovery.json` containing the exact Node, project, and Node-volume identity needed
+for reconciliation, attempt only the existing exact fixed-Node stop, and retain the Node volume and
+anchored runtime. That private recovery receipt is quarantined staged material, not successful
+published evidence; it contains no token, enrollment value, private key, prompt, provider output,
+or raw tool result. Revocation, volume absence, runtime-plaintext absence, and full cleanup remain
+unclaimed, and `recovery_required` remains true.
 
 Ambient Docker hosts, contexts, configuration, credential helpers, registry credentials, proxy
 variables, cloud credentials, arbitrary providers/models/tools/commands/arguments/paths, Docker
