@@ -38,12 +38,12 @@ def _closure_child_repository(tmp_path: Path) -> tuple[Path, str, str]:
         ["git", "clone", "-q", str(Path.cwd()), str(repo)],
         check=True,
     )
-    _run_git(repo, "checkout", "--detach", gate.ATTEMPT_005_CANDIDATE_COMMIT)
-    for relative in gate.ATTEMPT_005_CLOSURE_CONTROL_PATH_ALLOWLIST:
+    _run_git(repo, "checkout", "--detach", gate.API_CONTAINER_STATE_DIAGNOSTIC_COMMIT)
+    for relative in gate.ATTEMPT_006_CONTROL_PATH_ALLOWLIST:
         destination = repo / relative
         destination.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(relative, destination)
-    _run_git(repo, "add", "--", *gate.ATTEMPT_005_CLOSURE_CONTROL_PATH_ALLOWLIST)
+    _run_git(repo, "add", "--", *gate.ATTEMPT_006_CONTROL_PATH_ALLOWLIST)
     _run_git(
         repo,
         "-c",
@@ -53,7 +53,7 @@ def _closure_child_repository(tmp_path: Path) -> tuple[Path, str, str]:
         "commit",
         "-q",
         "-m",
-        "test: exact O4 Attempt 005 closure child",
+        "test: exact O4 Attempt 006 authorization child",
     )
     shutil.copytree(
         Path.cwd() / gate.ATTEMPT_002_RECEIPT_BASE,
@@ -74,7 +74,7 @@ def _closure_child_repository(tmp_path: Path) -> tuple[Path, str, str]:
     )
 
 
-def test_attempt_005_exact_closure_child_keeps_all_authority_closed(
+def test_attempt_006_exact_child_authorizes_one_supervised_invocation(
     tmp_path: Path,
 ) -> None:
     repo, execution_commit, execution_tree = _closure_child_repository(tmp_path)
@@ -83,13 +83,13 @@ def test_attempt_005_exact_closure_child_keeps_all_authority_closed(
     assert report["failures"] == []
     assert report["valid"] is True
     assert report["record_status"] == (
-        "ATTEMPT_005_CONSUMED_API_EXIT_DIAGNOSTIC_REQUIRED_NO_LIVE_AUTHORITY"
+        "ATTEMPT_006_EXACT_CHILD_ONE_SHOT_EXECUTION_AUTHORIZED"
     )
     assert report["reviewed_implementation_commit"] == gate.REVIEWED_IMPLEMENTATION_COMMIT
     assert report["code_authorization_commit"] == gate.CODE_AUTHORIZATION_COMMIT
-    assert report["attempt_id"] == gate.ATTEMPT_005_ID
-    assert report["attempted_candidate_commit"] == gate.ATTEMPT_005_CANDIDATE_COMMIT
-    assert report["attempted_candidate_tree"] == gate.ATTEMPT_005_CANDIDATE_TREE
+    assert report["attempt_id"] == gate.ATTEMPT_006_ID
+    assert report["attempted_candidate_commit"] == execution_commit
+    assert report["attempted_candidate_tree"] == execution_tree
     assert report["attempt_002_attempted_candidate_commit"] == gate.ATTEMPT_002_CANDIDATE_COMMIT
     assert report["attempt_002_attempted_candidate_tree"] == gate.ATTEMPT_002_CANDIDATE_TREE
     assert report["attempt_001_history"] == {
@@ -103,7 +103,8 @@ def test_attempt_005_exact_closure_child_keeps_all_authority_closed(
     assert report["attempt_003_consumed"] is True
     assert report["attempt_004_consumed"] is True
     assert report["attempt_005_consumed"] is True
-    assert report["attempt_consumed"] is True
+    assert report["attempt_006_consumed"] is False
+    assert report["attempt_consumed"] is False
     assert report["retry_authorized"] is False
     contract = _contract()
     assert (
@@ -111,8 +112,8 @@ def test_attempt_005_exact_closure_child_keeps_all_authority_closed(
         == gate.CODE_AUTHORIZATION_ORIGIN_RECORD_DIGEST
     )
     assert contract["code_authorization_record_sha256"] == gate.CODE_AUTHORIZATION_RECORD_DIGEST
-    assert contract["candidate_parent_commit"] == gate.ATTEMPT_005_CANDIDATE_COMMIT
-    assert contract["candidate_parent_tree"] == gate.ATTEMPT_005_CANDIDATE_TREE
+    assert contract["candidate_parent_commit"] == gate.API_CONTAINER_STATE_DIAGNOSTIC_COMMIT
+    assert contract["candidate_parent_tree"] == gate.API_CONTAINER_STATE_DIAGNOSTIC_TREE
     assert (
         contract["historical_post_review_candidate_parent_commit"]
         == gate.HISTORICAL_CANDIDATE_PARENT_COMMIT
@@ -123,11 +124,11 @@ def test_attempt_005_exact_closure_child_keeps_all_authority_closed(
     )
     assert report["execution_checkout_commit"] == execution_commit
     assert report["execution_checkout_tree"] == execution_tree
-    assert report["execution_attempt_budget"] == 0
-    assert report["live_execution_authorized"] is False
-    assert report["docker_lifecycle_authorized"] is False
-    assert report["provider_access_authorized"] is False
-    assert report["o4_evidence_execution_authorized"] is False
+    assert report["execution_attempt_budget"] == 1
+    assert report["live_execution_authorized"] is True
+    assert report["docker_lifecycle_authorized"] is True
+    assert report["provider_access_authorized"] is True
+    assert report["o4_evidence_execution_authorized"] is True
     assert report["new_governed_tool"] is False
     assert report["release_allowed"] is False
     assert report["uat_complete"] is False
@@ -143,15 +144,11 @@ def test_attempt_005_exact_closure_child_keeps_all_authority_closed(
         gate._file_digest(gate.ATTEMPT_001_DISPOSITION_DOCUMENT, [])  # noqa: SLF001
         == gate.ATTEMPT_001_DISPOSITION_DOCUMENT_DIGEST
     )
-    with pytest.raises(
-        gate.O4ExecutionAuthorizationError,
-        match="o4_live_execution_not_authorized",
-    ):
-        gate.assert_live_execution_authorized(
-            repo,
-            candidate_commit=execution_commit,
-            candidate_tree=execution_tree,
-        )
+    gate.assert_live_execution_authorized(
+        repo,
+        candidate_commit=execution_commit,
+        candidate_tree=execution_tree,
+    )
 
 
 def test_real_retained_attempt_002_and_003_evidence_is_exact() -> None:
@@ -417,7 +414,7 @@ def test_live_gate_refuses_consumed_attempt_002() -> None:
             "attempt_001_root_absence",
         ),
         (
-            lambda value: value.__setitem__("attempt_consumed", False),
+            lambda value: value.__setitem__("attempt_consumed", True),
             "attempt_consumed",
         ),
         (
@@ -438,7 +435,7 @@ def test_live_gate_refuses_consumed_attempt_002() -> None:
         ),
         (
             lambda value: value.__setitem__(
-                "execution_candidate_binding_mode", "dynamic_current_head_after_all_checks"
+                "execution_candidate_binding_mode", "none_attempt_closed"
             ),
             "execution_candidate_binding_mode",
         ),
@@ -636,27 +633,27 @@ def test_live_gate_refuses_consumed_attempt_002() -> None:
         ),
         (
             lambda value: value["authority"].__setitem__(  # type: ignore[union-attr]
-                "docker_lifecycle_authorized", True
+                "docker_lifecycle_authorized", False
             ),
-            "not exact for Attempt 005",
+            "not exact for Attempt 006",
         ),
         (
             lambda value: value["authority"].__setitem__(  # type: ignore[union-attr]
                 "producer_code_authorized", 1
             ),
-            "not exact for Attempt 005",
+            "not exact for Attempt 006",
         ),
         (
             lambda value: value["authority"].__setitem__(  # type: ignore[union-attr]
                 "shell_execution_authorized", True
             ),
-            "not exact for Attempt 005",
+            "not exact for Attempt 006",
         ),
         (
             lambda value: value["authority"].__setitem__(  # type: ignore[union-attr]
                 "release_allowed", 0
             ),
-            "not exact for Attempt 005",
+            "not exact for Attempt 006",
         ),
         (
             lambda value: value.__setitem__("unexpected", False),
@@ -1335,6 +1332,15 @@ def test_evidence_ignore_patterns_and_closure_scopes_are_exact() -> None:
         "scripts/local_v1_lv1_003_o4_execution_authorization_check.py",
         "tests/test_local_v1_lv1_003_o4_execution_authorization_check.py",
     ]
+    assert gate.ATTEMPT_006_CONTROL_PATH_ALLOWLIST == [
+        "Makefile",
+        "README.md",
+        gate.API_CONTAINER_STATE_DIAGNOSTIC_REVIEW.as_posix(),
+        gate.CONTRACT.as_posix(),
+        gate.DOCUMENT.as_posix(),
+        "scripts/local_v1_lv1_003_o4_execution_authorization_check.py",
+        "tests/test_local_v1_lv1_003_o4_execution_authorization_check.py",
+    ]
 
 
 @pytest.mark.parametrize(
@@ -1445,12 +1451,12 @@ def test_execution_checkout_rejects_sibling_of_reviewed_parent(
 ) -> None:
     repo = tmp_path / "sibling"
     subprocess.run(["git", "clone", "-q", str(Path.cwd()), str(repo)], check=True)
-    _run_git(repo, "checkout", "--detach", f"{gate.DIAGNOSTIC_REPAIR_COMMIT}^")
-    for relative in gate.ATTEMPT_005_CLOSURE_CONTROL_PATH_ALLOWLIST:
+    _run_git(repo, "checkout", "--detach", f"{gate.API_CONTAINER_STATE_DIAGNOSTIC_COMMIT}^")
+    for relative in gate.ATTEMPT_006_CONTROL_PATH_ALLOWLIST:
         destination = repo / relative
         destination.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(relative, destination)
-    _run_git(repo, "add", "--", *gate.ATTEMPT_005_CLOSURE_CONTROL_PATH_ALLOWLIST)
+    _run_git(repo, "add", "--", *gate.ATTEMPT_006_CONTROL_PATH_ALLOWLIST)
     _run_git(
         repo,
         "-c",
@@ -1846,7 +1852,7 @@ def test_wiring_rejects_stale_readme_attempt_guidance(tmp_path: Path) -> None:
             Path("README.md")
             .read_text(encoding="utf-8")
             .replace(
-                "bounded API-exit state without a guessed cause",
+                "reviewed bounded API container-state diagnostic",
                 "currently refuses because Attempt 001 is consumed",
                 1,
             )
@@ -1857,7 +1863,7 @@ def test_wiring_rejects_stale_readme_attempt_guidance(tmp_path: Path) -> None:
     gate._validate_wiring(tmp_path, failures)  # noqa: SLF001
 
     assert any(
-        "README is missing current O4 Attempt 005 guidance" in failure for failure in failures
+        "README is missing current O4 Attempt 006 guidance" in failure for failure in failures
     )
 
 

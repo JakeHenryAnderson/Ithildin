@@ -1,11 +1,12 @@
 # Local v1 LV1-003 O4 Execution Authorization Gate
 
-Status: `ATTEMPT_005_CONSUMED_API_EXIT_DIAGNOSTIC_REQUIRED_NO_LIVE_AUTHORITY`
+Status: `ATTEMPT_006_EXACT_CHILD_ONE_SHOT_EXECUTION_AUTHORIZED`
 
 This gate preserves all five consumed attempt histories, the consumed and closed Attempt 003 image
-recovery, and the consumed Attempt 005 failure evidence. It authorizes no execution, retry,
-recovery action, evidence deletion, release, promotion, production action, or UAT action. Its
-machine contract is
+recovery, and the consumed Attempt 005 failure evidence. It authorizes exactly one
+central-manager-supervised Attempt 006 invocation through the gate-protected producer entrypoint.
+It authorizes no retry, automatic retry, recovery action, evidence deletion, release, promotion,
+production action, or UAT action. Its machine contract is
 `docs/codex/local-v1-lv1-003-o4-execution-authorization.json`.
 
 The gate preserves the reviewed fixed bridge and bounded producer implementation at
@@ -23,9 +24,9 @@ That authorization was exercised once by candidate
 `aa3eecea481dd5c92925ceec3421c051c63cb3cf`, and is no longer live.
 
 The machine contract's generic `candidate_parent_commit` and `candidate_parent_tree` fields now
-refer only to the current Attempt 005 closure parent
-`affba0570ae15e897f92629966d445ad563ec5ff`, tree
-`8b262e7efa55db72b5402f6924ec938e2d06d85f`. The reviewed runtime-native repair
+refer only to the reviewed API container-state diagnostic parent
+`3f207b8f390742b956ed62cea674b0e5c557b514`, tree
+`e3bc1d84ab798e34b297b659fa4698003f3423fe`. The reviewed runtime-native repair
 `49db93d80a71855d9ae223826a9849749377c376`, tree
 `23950855584316daba76acd65be0bfdfd20fbcb9`, remains the explicit historical Attempt 004
 authorization parent. The older
@@ -34,9 +35,9 @@ authorization parent. The older
 code-authorization identity only; it is not the current execution candidate parent.
 
 The machine contract names all inherited Attempt 001 lineage with explicit `attempt_001_*` keys.
-Those fields are historical only. The validator's public current-attempt fields bind the consumed
-Attempt 005 candidate while Attempts 001 through 004 remain explicit history, so generic report
-labels cannot silently substitute Attempt 001 for the current attempt.
+Those fields are historical only. The validator's public current-attempt fields bind the dynamic
+Attempt 006 exact child while Attempts 001 through 005 remain explicit history, so generic report
+labels cannot silently substitute an earlier attempt for the current attempt.
 
 ## Attempt 001 Result
 
@@ -276,6 +277,62 @@ eight-path closure allowlist recorded in the Attempt 005 disposition.
 The next action is a separate reviewed API-exit diagnostic repair. This closure does not guess the
 cause of `service_exited_nonzero`, includes no producer change, and grants no execution authority.
 
+## API Container-State Diagnostic Review And Attempt 006 Authority
+
+Exact API container-state diagnostic commit
+`3f207b8f390742b956ed62cea674b0e5c557b514`, tree
+`e3bc1d84ab798e34b297b659fa4698003f3423fe`, received independent GPT-5.6 Sol xhigh read-only
+review with Critical: 0, High: 0, Medium: 0, Low: 0 and exact-commit disposition `GO`. The durable
+review is
+`docs/codex/local-v1-lv1-003-o4-api-container-state-diagnostic-exact-review.md`.
+
+The review preserves the rejected lineage. Commit
+`77356340bbabbbedff658abba70800a823f3c1ec`, tree
+`4e9f5effd40ea8666df17bb6d57b6a897eafc19d`, was `NO_GO` with one Medium orphan-on-interruption
+finding. Commit `01a38cee52a1d9eb73e21bfeed8a047dd56a07c6`, tree
+`00f408ed329e0bdb7cae341161a66b4563984dc6`, was `NO_GO` with one Medium
+unbounded-or-swallowed-reap finding. The final candidate resolves both findings. The producer and
+focused-test SHA-256 digests are respectively
+`sha256:412b10a4216add1f999f6c1b09e89c29b901512647e9a0c2537bd571a84948be` and
+`sha256:1899f3fd2af0b1b9613095d6e35e1d77f55e94f094b46c53206ef17050c56b03`.
+
+The new diagnostic is reachable only after base-service `up` fails and the closed base-service
+diagnostic classifies the API as `service_exited_nonzero`. It runs the exact Compose
+`ps --all --quiet ithildin-api` identity query and may then inspect only the exact validated and
+bound 64-character container ID. Each command has a ten-second ceiling and a hard incremental
+512-byte combined stdout-plus-stderr cap. Parsing is closed over exact identity, project, service,
+state, Boolean, exit-code, and health scalars.
+
+No raw output, container ID, daemon error, log, environment, mount, configuration, command,
+credential, prompt, provider content, or tool result is persisted. Timeout, overflow, malformed
+output, missing or ambiguous identity, command failure, and interruption produce only closed
+fallback classifications. Process teardown uses bounded kill, wait, and poll attempts and does not
+silently swallow an interruption. The primary failure remains `base_services_start_failed`;
+diagnostic collection does not alter cleanup classification or cleanup behavior. This gate makes
+no root-cause claim and does not claim Attempt 006 will succeed.
+
+Attempt `LV1-003-O4-ATTEMPT-006` is authorized only for a clean, single-parent immediate child of
+the reviewed commit and tree. No future child commit or tree is stated here. The gate derives the
+execution candidate only after every check passes and requires its committed diff to equal exactly:
+
+1. `Makefile`
+2. `README.md`
+3. `docs/codex/local-v1-lv1-003-o4-api-container-state-diagnostic-exact-review.md`
+4. `docs/codex/local-v1-lv1-003-o4-execution-authorization.json`
+5. `docs/codex/local-v1-lv1-003-o4-execution-authorization.md`
+6. `scripts/local_v1_lv1_003_o4_execution_authorization_check.py`
+7. `tests/test_local_v1_lv1_003_o4_execution_authorization_check.py`
+
+The execution budget is one, `attempt_consumed` is false, and retry and automatic retry are false.
+The sole operator command is `make local-v1-lv1-003-o4-producer-run`, whose exact module command
+remains `uv run python -m scripts.local_v1_lv1_003_o4_producer`. The gate does not claim atomic,
+tamper-proof, persistent cross-process budget consumption. Any invocation outcome consumes Attempt
+006 and requires an immediate separate post-attempt disposition before any further execution.
+
+The gate directly validates all four retained Attempt 002 through Attempt 005 receipt roots and the
+consumed Attempt 003 recovery receipt. It rejects missing, mutated, extra, symlink, or special
+entries. No earlier attempt, recovery, retry, or evidence-deletion authority is reopened.
+
 ## Historical Attempt Ceiling
 
 The consumed Attempt 003 authorization limited the producer to one uniquely named isolated Compose project and
@@ -337,14 +394,19 @@ unclaimed, and `recovery_required` remains true.
 Ambient Docker hosts, contexts, configuration, credential helpers, registry credentials, proxy
 variables, cloud credentials, arbitrary providers/models/tools/commands/arguments/paths, Docker
 socket mounts, or host-control APIs are rejected.
-Provider preflight was host-local only at `http://127.0.0.1:11434` and required the exact model
-inventory entry `gemma4:e4b`. This closure makes no provider-route success or absence claim.
+Provider preflight is host-local only at `http://127.0.0.1:11434` and requires the exact model
+inventory entry `gemma4:e4b`. This authorization makes no provider-route success or absence claim.
 
 ## Current Disposition
 
 Attempts 001 through 005 are consumed. Attempt 003 image recovery is consumed and closed. The
-Attempt 005 budget is zero, retry and automatic retry are false, and all 19 authority fields are
-false.
+Attempt 006 budget is one, `attempt_consumed` is false, and retry and automatic retry are false.
+
+Exactly five authority fields are true only for the one dynamically validated,
+central-manager-supervised Attempt 006 invocation: `producer_code_authorized`,
+`docker_lifecycle_authorized`, `live_hermes_execution_authorized`,
+`model_provider_access_authorized`, and `o4_evidence_execution_authorized`. The remaining 14
+authority fields are false.
 
 Credential custody, runner lifecycle, arbitrary host control, generic process control, shell
 execution, general Docker socket authority, network/filesystem non-bypass claims, new powers, new
