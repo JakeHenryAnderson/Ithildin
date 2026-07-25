@@ -1226,12 +1226,43 @@ class SubprocessExecutor:
                 process.wait()
             raise ProducerError("subprocess_unavailable") from exc
         finally:
-            selector.close()
+            if process is not None:
+                self._terminate_and_reap_active_process(process)
+            try:
+                selector.close()
+            except BaseException:
+                pass
             if process is not None:
                 if process.stdout is not None:
-                    process.stdout.close()
+                    try:
+                        process.stdout.close()
+                    except BaseException:
+                        pass
                 if process.stderr is not None:
-                    process.stderr.close()
+                    try:
+                        process.stderr.close()
+                    except BaseException:
+                        pass
+
+    @staticmethod
+    def _terminate_and_reap_active_process(
+        process: subprocess.Popen[bytes],
+    ) -> None:
+        try:
+            if process.poll() is not None:
+                return
+        except BaseException:
+            pass
+        while True:
+            try:
+                process.kill()
+            except BaseException:
+                pass
+            try:
+                process.wait()
+                return
+            except BaseException:
+                continue
 
     def run_hermes(
         self,

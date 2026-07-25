@@ -1842,6 +1842,189 @@ def test_api_container_diagnostic_subprocess_enforces_combined_stream_cap(
         assert result.stderr == ""
 
 
+@pytest.mark.parametrize(
+    ("seam", "interruption_type"),
+    [
+        ("selector", producer.ProducerSignal),
+        ("read", KeyboardInterrupt),
+        ("wait", producer.ProducerSignal),
+    ],
+)
+def test_api_container_diagnostic_interruption_reaps_before_stream_close(
+    monkeypatch: pytest.MonkeyPatch,
+    seam: str,
+    interruption_type: type[BaseException],
+) -> None:
+    interruption = interruption_type(f"synthetic_{seam}")
+
+    class FakePipe:
+        def __init__(self, owner: FakeProcess, descriptor: int) -> None:
+            self.owner = owner
+            self.descriptor = descriptor
+            self.closed = False
+            self.closed_after_reap = False
+
+        def close(self) -> None:
+            self.closed = True
+            self.closed_after_reap = self.owner.reaped
+
+    class FakeProcess:
+        def __init__(self) -> None:
+            self.killed = False
+            self.reaped = False
+            self.kill_calls = 0
+            self.wait_calls = 0
+            self.stdout = FakePipe(self, 1)
+            self.stderr = FakePipe(self, 2)
+
+        def poll(self) -> int | None:
+            return -9 if self.reaped else None
+
+        def kill(self) -> None:
+            self.kill_calls += 1
+            self.killed = True
+
+        def wait(self, timeout: float | None = None) -> int:
+            del timeout
+            self.wait_calls += 1
+            if seam == "wait" and self.wait_calls == 1:
+                raise interruption
+            self.reaped = True
+            return -9 if self.killed else 0
+
+    class FakeKey:
+        def __init__(self, pipe: FakePipe, data: str) -> None:
+            self.fd = pipe.descriptor
+            self.fileobj = pipe
+            self.data = data
+
+    process = FakeProcess()
+
+    class FakeSelector:
+        def __init__(self) -> None:
+            self.keys: dict[FakePipe, FakeKey] = {}
+            self.closed = False
+            self.closed_after_reap = False
+
+        def register(
+            self,
+            pipe: FakePipe,
+            event: int,
+            data: str,
+        ) -> None:
+            del event
+            self.keys[pipe] = FakeKey(pipe, data)
+
+        def get_map(self) -> dict[FakePipe, FakeKey]:
+            return self.keys
+
+        def select(self, timeout: float) -> list[tuple[FakeKey, int]]:
+            del timeout
+            if seam == "selector":
+                raise interruption
+            return [(key, 1) for key in tuple(self.keys.values())]
+
+        def unregister(self, pipe: FakePipe) -> None:
+            del self.keys[pipe]
+
+        def close(self) -> None:
+            self.closed = True
+            self.closed_after_reap = process.reaped
+
+    selector = FakeSelector()
+
+    def fake_popen(
+        command: tuple[str, ...],
+        **options: object,
+    ) -> FakeProcess:
+        del command, options
+        return process
+
+    def fake_read(descriptor: int, maximum: int) -> bytes:
+        del descriptor, maximum
+        if seam == "read":
+            raise interruption
+        return b""
+
+    monkeypatch.setattr(producer.subprocess, "Popen", fake_popen)
+    monkeypatch.setattr(
+        producer.selectors,
+        "DefaultSelector",
+        lambda: selector,
+    )
+    monkeypatch.setattr(producer.os, "read", fake_read)
+
+    with pytest.raises(interruption_type) as caught:
+        producer.SubprocessExecutor(
+            dict(os.environ)
+        )._run_bounded_api_container_diagnostic(  # noqa: SLF001
+            ("synthetic",),
+            timeout=10.0,
+        )
+
+    assert caught.value is interruption
+    assert process.kill_calls == 1
+    assert process.wait_calls == (2 if seam == "wait" else 1)
+    assert process.killed is True
+    assert process.reaped is True
+    assert selector.closed is True
+    assert selector.closed_after_reap is True
+    assert process.stdout.closed is True
+    assert process.stdout.closed_after_reap is True
+    assert process.stderr.closed is True
+    assert process.stderr.closed_after_reap is True
+
+
+@pytest.mark.parametrize("stage", ["query", "inspect"])
+def test_api_container_diagnostic_interruption_is_closed_and_cleanup_once(
+    fake_stack: tuple[
+        FakeRuntimeFactory,
+        FakeExecutorFactory,
+        FakeApiFactory,
+        FakeProvider,
+        FakeAssembler,
+    ],
+    stage: str,
+) -> None:
+    runtime, executors, apis, provider, assembler = fake_stack
+    executor = executors.executor
+    _enable_api_exited_diagnostic(executor)
+    if stage == "query":
+        executor.api_container_query_failure = "interruption"
+    else:
+        executor.api_container_inspect_failure = "interruption"
+
+    with pytest.raises(
+        producer.ProducerError,
+        match="base_services_start_failed",
+    ):
+        producer.run_producer(
+            gate=AllowGate(),
+            runtime_factory=runtime,
+            executor_factory=executors,
+            api_factory=apis,
+            provider=provider,
+            assembler=assembler,
+            candidate=(COMMIT, TREE),
+            environment={},
+            now=datetime(2026, 7, 24, 18, 0, tzinfo=UTC),
+        )
+
+    diagnostic = json.loads(runtime.receipts.files["diagnostic.json"])
+    nested = diagnostic["base_service_start_diagnostic"][
+        "api_container_state_diagnostic"
+    ]
+    assert nested == {
+        "collection_status": "inconclusive",
+        "collection_reason_code": "api_container_state_command_failed",
+        "cause_code": "api_exit_cause_inconclusive",
+        "health_status": "absent",
+    }
+    assert diagnostic["primary_failure_code"] == "base_services_start_failed"
+    assert diagnostic["outward_failure_code"] == "base_services_start_failed"
+    assert sum("down" in command for command in executor.commands) == 1
+
+
 def test_bridge_build_failure_cleans_exact_bound_base_images_and_preserves_primary(
     fake_stack: tuple[
         FakeRuntimeFactory,
