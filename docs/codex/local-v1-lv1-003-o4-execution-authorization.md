@@ -1,92 +1,76 @@
 # Local v1 LV1-003 O4 Execution Authorization Gate
 
 Status:
-`ATTEMPT_013_EXACT_CHILD_ONE_SHOT_EXECUTION_AUTHORIZED`
+`ATTEMPT_013_CONSUMED_FIXED_NODE_PHASE_NOT_REPORTED_CLEANUP_COMPLETE_NO_LIVE_AUTHORITY`
 
-This record prepares exactly one fresh, central-manager-supervised
-`LV1-003-O4-ATTEMPT-013` invocation. It preserves immutable Attempts 001-012 and all tracked
-recovery history. Its machine contract is
-`docs/codex/local-v1-lv1-003-o4-execution-authorization.json`.
+This record closes consumed `LV1-003-O4-ATTEMPT-013`, preserves immutable Attempts 001-012 and all
+tracked recovery history, and grants no live authority. Its machine contract is
+`docs/codex/local-v1-lv1-003-o4-execution-authorization.json`; its exact disposition is
+`docs/codex/local-v1-lv1-003-o4-attempt-013-disposition.json`.
 
-## Attempt 013 Exact Candidate Boundary
+## Attempt 013 Consumed Result
 
-The authorization candidate must be the clean, single-parent immediate child of review-record
-commit `27a4819213b78536aa0008bd0e62b7c6c7435aad`, tree
-`1f984a114976d2c99b78a5e397318018092809fe`, and must change exactly these six control paths:
+Exact execution candidate `8fa31904570d2179c5661fa44ff0ff3ca00eba43`, tree
+`27f5ccbe8b6153ab7dfbcd97c37193d63217a086`, remains fixed by annotated review tag
+`ithildin/lv1-003-o4-attempt013-reviewed`. The sole supervised invocation used
+`make local-v1-lv1-003-o4-producer-run` and
+`uv run python -m scripts.local_v1_lv1_003_o4_producer`. Make exited `2`; the producer exited `1`.
+The private run and Compose project are represented only by domain-separated digests
+`sha256:baf8e92b6d4a52c37cbce9a71a176fca523898476196d01f6be1ab373bfa29e6` and
+`sha256:96abd1a39e6c2ce325c31c6c53cca27185082e6daa1127b07802507cd22a12cb`.
+The raw invocation output is not reproduced; only its 160-byte length and digest
+`sha256:fd9673eeb55fe747baba9605650183eea1691ec0ef555327431d83a8718b9445`
+are retained.
 
-1. `Makefile`
-2. `README.md`
-3. `docs/codex/local-v1-lv1-003-o4-execution-authorization.json`
-4. `docs/codex/local-v1-lv1-003-o4-execution-authorization.md`
-5. `scripts/local_v1_lv1_003_o4_execution_authorization_check.py`
-6. `tests/test_local_v1_lv1_003_o4_execution_authorization_check.py`
+The outward and primary failure were `fixed_node_start_failed`; highest completed stage was `11`.
+Base and bridge builds completed, exactly four image identities were bound, cleanup failures were
+empty, `recovery_required` was false, and cleanup completed under reviewed producer semantics. No
+raw image, container, Node, mission, claim, run, project, or invocation output is tracked. This is
+not a generic Docker, image, container, process, project, runtime, or host absence claim.
 
-The runtime and covered test bytes must equal reviewed implementation candidate
+The exact fourteen-key normalized projection is collection `complete`, reason
+`fixed_node_start_state_collected`, classification
+`fixed_node_exited_observation_noncanonical`, container presence `present`, lifecycle `exited`,
+running state `not_running`, exit class `nonzero`, health `unhealthy`, failure signal `none`,
+observation semantics `sequential_container_then_mission`, mission lifecycle `claimed`, delivery
+`claim_delivered`, evidence `complete`, and phase `not_reported`. It is sequential, nonatomic, and
+noncausal; it proves no root cause, repair, safe retry, success, or authority.
+
+The owner-only mode `0700` receipt root contains exactly a mode `0500` candidate snapshot with 668
+files; a mode `0600`, 97,421-byte manifest with
+`sha256:e4ee51fab03ced9515490873b8f401d45a963ac419625888c5832cb1db2e4890`; a mode `0600`,
+7,754-byte diagnostic with
+`sha256:fadafe39c3dd17ac428c11e44fbb0239649106bbb32bc412fcb613f4aa2ad0b9`; and a mode `0600`,
+125-byte disposition with
+`sha256:dcce687c6e2a0d6f36e36d3c14ac09e25ba4c195e1f16f35bf6ea44521612dd3`.
+The exact run runtime root and exact public report root were absent; the public report base was
+absent at the point of observation. Those are exact-run and point-in-time observations only.
+
+Source inspection explains only the phase projection: a named phase survives when the container is
+exited, not running, has absent health, and reports no OOM, dead, or engine-error signal. Attempt
+013 observed health `unhealthy`, so the conservative terminal-state predicate normalized the phase
+to `not_reported`. This does not explain the underlying fixed-Node exit.
+
+Attempt budget is zero, `attempt_consumed` is true, and retry, automatic retry, recovery, cleanup,
+and successor authority are false. All 19 authority fields are false. Release, promotion,
+production, and UAT remain false; the governed tool count remains exactly 24. The retained live
+target now refuses before activity.
+
+The next action is a separately reviewed source repair or decision for the terminal-health phase
+projection. It is not a fixed-Node root-cause claim, a retry, or successor authorization, and
+grants no execution authority.
+
+## Attempt 013 Historical Authorization Boundary
+
+Attempt 013 was authorized only as the clean six-path, single-parent immediate child of review
+record `27a4819213b78536aa0008bd0e62b7c6c7435aad`, tree
+`1f984a114976d2c99b78a5e397318018092809fe`. Its reviewed runtime candidate was
 `4972606a0677164d8de96a4b3e14ce5bead75033`, tree
-`a7e5cbfb849f974a142c6861f79af26498bebb3d`, across all six paths fixed by the durable review.
-Rejected direct parent `f8af8a0ec471f607490df094ce5df4f4de3e9381` is `NO_GO`; consumed
-Attempt 012 baseline `5446b1d65c09df515592fc61799b368035bfad8f` grants no authority.
-
-The durable review is
+`a7e5cbfb849f974a142c6861f79af26498bebb3d`, bound by
 `docs/codex/local-v1-lv1-003-o4-fixed-bridge-phase-diagnostic-exact-review.md`, digest
 `sha256:97c26627c81e19cdba4949a718ddc45b364377a550fb7af8db085bba50d1f51b`.
-It records `GO_CODE_ONLY` with Critical 0, High 0, Medium 0, and Low 0. That implementation review
-permits preparation of this gate only; it does not authorize activation, tag creation, execution,
-release, promotion, production, or UAT.
-
-The fixed annotated tag `ithildin/lv1-003-o4-attempt013-reviewed` must exist and peel to the exact
-authorization candidate commit and tree. A missing, lightweight, moved, or wrong tag fails closed.
-Before the tag exists, the real checkout reports invalid, attempt budget zero, and all live
-authority false. The required next action is
-`review_attempt_013_execution_authorization_exact_candidate`. This record does not create or
-authorize creation of that tag.
-
-## One-Shot Execution And Disposition
-
-Only the existing gate-first operator entrypoint
-`make local-v1-lv1-003-o4-producer-run`, invoking
-`uv run python -m scripts.local_v1_lv1_003_o4_producer`, is eligible. After all source, contract,
-lineage, exact-path, clean-checkout, and annotated-tag checks pass, the maximum invocation budget is
-one. Concurrent invocation, automatic retry, and post-attempt retry are false. The gate must consume
-the attempt before any producer activity. Immediately after the sole invocation returns or is
-interrupted, a separate consumed disposition is mandatory before any other action.
-
-Exactly five bounded authority fields may be true at the exact reviewed and tagged candidate:
-existing producer code, its closed Docker lifecycle, live Hermes execution, model-provider access,
-and O4 evidence execution. The remaining 14 fields are false. There is no new governed tool or
-power; the governed tool count remains exactly 24. Authority is derived only from this exact
-candidate and tag, never from recovery, history, the reviewed implementation, or the phase value.
-
-## Closed Fourteen-Key Diagnostic Projection
-
-On `fixed_node_start_failed`, the producer may collect exactly once and retain only the existing
-thirteen closed fields plus `fixed_bridge_last_entered_phase`. The closed phase values are:
-
-- `fixed_bridge_entered`
-- `preclaim_validation_entered`
-- `mission_claim_entered`
-- `session_validation_entered`
-- `receipt_persistence_entered`
-- `socket_parent_validation_entered`
-- `socket_bind_entered`
-- `socket_permissions_entered`
-- `listener_accept_entered`
-- `not_reported`
-- `not_applicable`
-- `unknown`
-
-The container observation precedes the mission query. The projection is sequential, nonatomic, and
-noncausal. It contains no raw exit integer, container, Node, image, mission, claim, run, or project
-identity; no process output, logs, exception text, configuration, environment, mount, credential,
-prompt, or provider output. A phase does not prove success, causality, root cause, repair, safe
-retry, or authority.
-
-On fixed-Node wait failure, collection occurs once, Hermes does not run, retry does not occur, and
-cleanup occurs once. Only the normalized phase can be retained; the raw exit is discarded. An
-unexpected successful wait may continue the existing bounded O4 path, but the phase grants nothing.
-The exact command vocabulary and inspection count are unchanged. No extra log, exec, copy beyond
-the existing receipt copy, generic inspect, mount, API, poll, file, host-control, lifecycle, or
-provider action is authorized.
+The rejected direct parent `f8af8a0ec471f607490df094ce5df4f4de3e9381` remains `NO_GO`.
+Historical review and tag existence no longer grant live authority.
 
 ## Preserved Consumed Attempt 012
 
