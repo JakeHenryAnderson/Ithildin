@@ -1,12 +1,98 @@
 # Local v1 LV1-003 O4 Execution Authorization Gate
 
 Status:
-`ATTEMPT_012_CONSUMED_FIXED_NODE_EXITED_NONCANONICAL_CLEANUP_COMPLETE_NO_LIVE_AUTHORITY`
+`ATTEMPT_013_EXACT_CHILD_ONE_SHOT_EXECUTION_AUTHORIZED`
 
-This record closes consumed `LV1-003-O4-ATTEMPT-012`, preserves immutable Attempts 001-011 and all
-tracked recovery history, and grants no live authority. Its machine contract is
-`docs/codex/local-v1-lv1-003-o4-execution-authorization.json`; its exact disposition is
-`docs/codex/local-v1-lv1-003-o4-attempt-012-disposition.json`.
+This record prepares exactly one fresh, central-manager-supervised
+`LV1-003-O4-ATTEMPT-013` invocation. It preserves immutable Attempts 001-012 and all tracked
+recovery history. Its machine contract is
+`docs/codex/local-v1-lv1-003-o4-execution-authorization.json`.
+
+## Attempt 013 Exact Candidate Boundary
+
+The authorization candidate must be the clean, single-parent immediate child of review-record
+commit `27a4819213b78536aa0008bd0e62b7c6c7435aad`, tree
+`1f984a114976d2c99b78a5e397318018092809fe`, and must change exactly these six control paths:
+
+1. `Makefile`
+2. `README.md`
+3. `docs/codex/local-v1-lv1-003-o4-execution-authorization.json`
+4. `docs/codex/local-v1-lv1-003-o4-execution-authorization.md`
+5. `scripts/local_v1_lv1_003_o4_execution_authorization_check.py`
+6. `tests/test_local_v1_lv1_003_o4_execution_authorization_check.py`
+
+The runtime and covered test bytes must equal reviewed implementation candidate
+`4972606a0677164d8de96a4b3e14ce5bead75033`, tree
+`a7e5cbfb849f974a142c6861f79af26498bebb3d`, across all six paths fixed by the durable review.
+Rejected direct parent `f8af8a0ec471f607490df094ce5df4f4de3e9381` is `NO_GO`; consumed
+Attempt 012 baseline `5446b1d65c09df515592fc61799b368035bfad8f` grants no authority.
+
+The durable review is
+`docs/codex/local-v1-lv1-003-o4-fixed-bridge-phase-diagnostic-exact-review.md`, digest
+`sha256:97c26627c81e19cdba4949a718ddc45b364377a550fb7af8db085bba50d1f51b`.
+It records `GO_CODE_ONLY` with Critical 0, High 0, Medium 0, and Low 0. That implementation review
+permits preparation of this gate only; it does not authorize activation, tag creation, execution,
+release, promotion, production, or UAT.
+
+The fixed annotated tag `ithildin/lv1-003-o4-attempt013-reviewed` must exist and peel to the exact
+authorization candidate commit and tree. A missing, lightweight, moved, or wrong tag fails closed.
+Before the tag exists, the real checkout reports invalid, attempt budget zero, all live authority
+false, and next action `review_attempt_013_execution_authorization_exact_candidate`. This record
+does not create or authorize creation of that tag.
+
+## One-Shot Execution And Disposition
+
+Only the existing gate-first operator entrypoint
+`make local-v1-lv1-003-o4-producer-run`, invoking
+`uv run python -m scripts.local_v1_lv1_003_o4_producer`, is eligible. After all source, contract,
+lineage, exact-path, clean-checkout, and annotated-tag checks pass, the maximum invocation budget is
+one. Concurrent invocation, automatic retry, and post-attempt retry are false. The gate must consume
+the attempt before any producer activity. Immediately after the sole invocation returns or is
+interrupted, a separate consumed disposition is mandatory before any other action.
+
+Exactly five bounded authority fields may be true at the exact reviewed and tagged candidate:
+existing producer code, its closed Docker lifecycle, live Hermes execution, model-provider access,
+and O4 evidence execution. The remaining 14 fields are false. There is no new governed tool or
+power; the governed tool count remains exactly 24. Authority is derived only from this exact
+candidate and tag, never from recovery, history, the reviewed implementation, or the phase value.
+
+## Closed Fourteen-Key Diagnostic Projection
+
+On `fixed_node_start_failed`, the producer may collect exactly once and retain only the existing
+thirteen closed fields plus `fixed_bridge_last_entered_phase`. The closed phase values are:
+
+- `fixed_bridge_entered`
+- `preclaim_validation_entered`
+- `mission_claim_entered`
+- `session_validation_entered`
+- `receipt_persistence_entered`
+- `socket_parent_validation_entered`
+- `socket_bind_entered`
+- `socket_permissions_entered`
+- `listener_accept_entered`
+- `not_reported`
+- `not_applicable`
+- `unknown`
+
+The container observation precedes the mission query. The projection is sequential, nonatomic, and
+noncausal. It contains no raw exit integer, container, Node, image, mission, claim, run, or project
+identity; no process output, logs, exception text, configuration, environment, mount, credential,
+prompt, or provider output. A phase does not prove success, causality, root cause, repair, safe
+retry, or authority.
+
+On fixed-Node wait failure, collection occurs once, Hermes does not run, retry does not occur, and
+cleanup occurs once. Only the normalized phase can be retained; the raw exit is discarded. An
+unexpected successful wait may continue the existing bounded O4 path, but the phase grants nothing.
+The exact command vocabulary and inspection count are unchanged. No extra log, exec, copy beyond
+the existing receipt copy, generic inspect, mount, API, poll, file, host-control, lifecycle, or
+provider action is authorized.
+
+## Preserved Consumed Attempt 012
+
+`LV1-003-O4-ATTEMPT-012` remains consumed with budget zero, all 19 authority fields false, retry
+and automatic retry false, and its private digest bindings unchanged at
+`docs/codex/local-v1-lv1-003-o4-attempt-012-disposition.json`. Nothing in Attempt 013 reopens
+Attempt 012 or derives successor authority from its result.
 
 ## Attempt 012 Consumed Result
 
@@ -220,8 +306,10 @@ That authorization was exercised once by candidate
 `aa3eecea481dd5c92925ceec3421c051c63cb3cf`, and is no longer live.
 
 The machine contract's generic `candidate_parent_commit` and `candidate_parent_tree` fields now
-refer only to the consumed Attempt 012 closure parent
-`7585e401003df796b5a2c7d7b3bc952aaa693fc3`, tree
+refer only to the Attempt 013 review-record parent
+`27a4819213b78536aa0008bd0e62b7c6c7435aad`, tree
+`1f984a114976d2c99b78a5e397318018092809fe`. Attempt 012 remains explicit consumed historical
+lineage at `7585e401003df796b5a2c7d7b3bc952aaa693fc3`, tree
 `86321cd58fcab1b8f3879700deaad366d2f3fc14`. Attempt 011 remains explicit consumed historical
 lineage at `e1ea411c46c794130e2196bb0e92267ca8400c35`, tree
 `4d1b90ec2d9efc7740ccdb29e5d6945118956252`. Attempt 010 remains explicit consumed historical
