@@ -439,15 +439,20 @@ def _attempt_017_candidate_repository(
     return repo, commit, tree
 
 
-def _attempt_017_closure_repository(tmp_path: Path) -> tuple[Path, str, str]:
-    repo = tmp_path / "attempt-017-closure"
+def _attempt_017_closure_repair_repository(tmp_path: Path) -> tuple[Path, str, str]:
+    repo = tmp_path / "attempt-017-closure-repair"
     subprocess.run(["git", "clone", "-q", str(Path.cwd()), str(repo)], check=True)
-    _run_git(repo, "checkout", "--detach", gate.ATTEMPT_017_CANDIDATE_COMMIT)
-    for relative in gate.ATTEMPT_017_CLOSURE_CONTROL_PATH_ALLOWLIST:
+    _run_git(repo, "checkout", "--detach", gate.ATTEMPT_017_CLOSURE_COMMIT)
+    for relative in gate.ATTEMPT_017_CLOSURE_REPAIR_CONTROL_PATH_ALLOWLIST:
         destination = repo / relative
         destination.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(relative, destination)
-    _run_git(repo, "add", "--", *gate.ATTEMPT_017_CLOSURE_CONTROL_PATH_ALLOWLIST)
+    _run_git(
+        repo,
+        "add",
+        "--",
+        *gate.ATTEMPT_017_CLOSURE_REPAIR_CONTROL_PATH_ALLOWLIST,
+    )
     _run_git(
         repo,
         "-c",
@@ -457,7 +462,7 @@ def _attempt_017_closure_repository(tmp_path: Path) -> tuple[Path, str, str]:
         "commit",
         "-q",
         "-m",
-        "test: exact O4 Attempt 017 consumed closure",
+        "test: exact O4 Attempt 017 closure repair",
     )
     return (
         repo,
@@ -844,12 +849,12 @@ def _synthetic_attempt_017_receipts(
         "node_receipt_projection_diagnostic": {
             "collection_status": "complete",
             "collection_reason_code": "node_receipt_projection_state_collected",
-            "receipt_shape": "exact",
+            "receipt_shape_state": "exact",
             "mission_identity_binding": "matched",
-            "claim_binding": "valid_format",
-            "envelope_binding": "valid_digest",
-            "handoff_nonce_binding": "valid_digest",
-            "next_operation": "completion_pending",
+            "claim_identity_state": "valid_format",
+            "envelope_identity_state": "valid_digest",
+            "handoff_nonce_digest_state": "valid_digest",
+            "next_operation_state": "completion_pending",
             "last_closed_status": "failed_closed",
         },
     }
@@ -1501,7 +1506,7 @@ def test_attempt_017_consumed_exact_eight_path_closure(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    repo, commit, tree = _attempt_017_closure_repository(tmp_path)
+    repo, commit, tree = _attempt_017_closure_repair_repository(tmp_path)
     _skip_private_evidence(monkeypatch)
 
     report = gate.build_report(repo)
@@ -1513,6 +1518,7 @@ def test_attempt_017_consumed_exact_eight_path_closure(
     assert report["attempt_consumed"] is True
     assert report["live_execution_authorized"] is False
     assert len(gate.ATTEMPT_017_CLOSURE_CONTROL_PATH_ALLOWLIST) == 8
+    assert len(gate.ATTEMPT_017_CLOSURE_REPAIR_CONTROL_PATH_ALLOWLIST) == 2
 
 
 def test_attempt_017_consumed_disposition_has_both_exact_projections(
@@ -1570,7 +1576,9 @@ def test_attempt_017_private_receipt_fixture_rejects_node_projection_drift(
         monkeypatch,
     )
     document = json.loads(diagnostic.read_text(encoding="utf-8"))
-    document["node_receipt_projection_diagnostic"]["next_operation"] = "completion_recorded"
+    document["node_receipt_projection_diagnostic"]["next_operation_state"] = (
+        "completion_recorded"
+    )
     diagnostic_bytes = (
         json.dumps(document, sort_keys=True, separators=(",", ":")) + "\n"
     ).encode()
@@ -2581,7 +2589,7 @@ def test_attempt_009_rejects_node_cli_repair_path_drift(tmp_path: Path) -> None:
     assert report["live_execution_authorized"] is False
 
 
-def test_real_retained_attempt_evidence_through_attempt_016_is_exact() -> None:
+def test_real_retained_attempt_evidence_through_attempt_017_is_exact() -> None:
     failures: list[str] = []
 
     gate._validate_retained_attempt_evidence(ROOT, failures)  # noqa: SLF001
@@ -2616,6 +2624,28 @@ def test_attempt_016_closure_repair_checkout_is_exact() -> None:
     assert checkout == (
         gate.ATTEMPT_016_CLOSURE_REPAIR_COMMIT,
         gate.ATTEMPT_016_CLOSURE_REPAIR_TREE,
+    )
+
+
+def test_attempt_017_closure_checkout_is_exact() -> None:
+    failures: list[str] = []
+
+    checkout = gate._validate_execution_checkout(  # noqa: SLF001
+        ROOT,
+        failures,
+        candidate_parent_commit=gate.ATTEMPT_017_CANDIDATE_COMMIT,
+        candidate_parent_tree=gate.ATTEMPT_017_CANDIDATE_TREE,
+        reviewed_commit=gate.ATTEMPT_017_CANDIDATE_COMMIT,
+        runtime_paths=gate.ATTEMPT_017_RUNTIME_PATHS,
+        control_paths=gate.ATTEMPT_017_CLOSURE_CONTROL_PATH_ALLOWLIST,
+        candidate_ref=gate.ATTEMPT_017_CLOSURE_COMMIT,
+        require_clean_worktree=False,
+    )
+
+    assert failures == []
+    assert checkout == (
+        gate.ATTEMPT_017_CLOSURE_COMMIT,
+        gate.ATTEMPT_017_CLOSURE_TREE,
     )
 
 

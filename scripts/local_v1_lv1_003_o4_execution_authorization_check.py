@@ -1430,6 +1430,12 @@ ATTEMPT_017_CLOSURE_CONTROL_PATH_ALLOWLIST = [
     "scripts/local_v1_lv1_003_o4_execution_authorization_check.py",
     "tests/test_local_v1_lv1_003_o4_execution_authorization_check.py",
 ]
+ATTEMPT_017_CLOSURE_COMMIT = "470c1e49292b5afc1c5a0d3840e98b573d2e3625"
+ATTEMPT_017_CLOSURE_TREE = "42083c086066b79653bc426435e0a76cd3beb27a"
+ATTEMPT_017_CLOSURE_REPAIR_CONTROL_PATH_ALLOWLIST = [
+    "scripts/local_v1_lv1_003_o4_execution_authorization_check.py",
+    "tests/test_local_v1_lv1_003_o4_execution_authorization_check.py",
+]
 IMAGE_READABILITY_REPAIR_PATHS = list(IMAGE_READABILITY_REPAIR_PATH_DIGESTS)
 APPLICATION_STARTUP_STAGE_DIAGNOSTIC_PATHS = list(APPLICATION_STARTUP_STAGE_PATH_DIGESTS)
 DIAGNOSTIC_REPAIR_PATHS = [
@@ -2839,7 +2845,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         candidate_tree=ATTEMPT_010_CANDIDATE_TREE,
         failures=failures,
     )
-    execution_checkout = _validate_execution_checkout(
+    _validate_execution_checkout(
         repo_root,
         failures,
         candidate_parent_commit=CANDIDATE_PARENT_COMMIT,
@@ -2847,6 +2853,17 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         reviewed_commit=ATTEMPT_017_CANDIDATE_COMMIT,
         runtime_paths=ATTEMPT_017_RUNTIME_PATHS,
         control_paths=ATTEMPT_017_CLOSURE_CONTROL_PATH_ALLOWLIST,
+        candidate_ref=ATTEMPT_017_CLOSURE_COMMIT,
+        require_clean_worktree=False,
+    )
+    execution_checkout = _validate_execution_checkout(
+        repo_root,
+        failures,
+        candidate_parent_commit=ATTEMPT_017_CLOSURE_COMMIT,
+        candidate_parent_tree=ATTEMPT_017_CLOSURE_TREE,
+        reviewed_commit=ATTEMPT_017_CANDIDATE_COMMIT,
+        runtime_paths=ATTEMPT_017_RUNTIME_PATHS,
+        control_paths=ATTEMPT_017_CLOSURE_REPAIR_CONTROL_PATH_ALLOWLIST,
         candidate_ref="HEAD",
         require_clean_worktree=True,
     )
@@ -9521,12 +9538,12 @@ def _validate_attempt_diagnostic_bytes(
         {
             "collection_status": "complete",
             "collection_reason_code": "node_receipt_projection_state_collected",
-            "receipt_shape": "exact",
+            "receipt_shape_state": "exact",
             "mission_identity_binding": "matched",
-            "claim_binding": "valid_format",
-            "envelope_binding": "valid_digest",
-            "handoff_nonce_binding": "valid_digest",
-            "next_operation": "completion_pending",
+            "claim_identity_state": "valid_format",
+            "envelope_identity_state": "valid_digest",
+            "handoff_nonce_digest_state": "valid_digest",
+            "next_operation_state": "completion_pending",
             "last_closed_status": "failed_closed",
         },
     ):
