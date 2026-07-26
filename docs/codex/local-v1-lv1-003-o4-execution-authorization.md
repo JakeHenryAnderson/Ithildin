@@ -1,13 +1,64 @@
 # Local v1 LV1-003 O4 Execution Authorization Gate
 
 Status:
-`ATTEMPT_011_CONSUMED_FIXED_NODE_RUNTIME_STATE_INCONSISTENT_CLEANUP_COMPLETE_NO_LIVE_AUTHORITY`
+`ATTEMPT_012_EXACT_CHILD_ONE_SHOT_EXECUTION_AUTHORIZED`
 
-This closure records consumed `LV1-003-O4-ATTEMPT-011`, preserves Attempts 001-010 and all tracked
-recovery history, and grants no live authority. Its machine contract is
+This record prepares `LV1-003-O4-ATTEMPT-012`, preserves consumed Attempts 001-011 and all tracked
+recovery history, and grants no authority before exact-candidate review. Its machine contract is
 `docs/codex/local-v1-lv1-003-o4-execution-authorization.json`.
 
+## Attempt 012 Prepared Boundary
+
+The authorization parent is exactly `00caa1918678982a4f2680d5f12cc62c37c11ba5`, tree
+`c2f7cd890ac7fc6b24b2a91791c2e0fe1f2ed69b`, whose sole parent is reviewed runtime candidate
+`2683641c619e8ae5ac93bdec0d9503f83dd79a35`, tree
+`0bfa56ac2fb4c614c5fcc5695d05a664f804beac`. The reviewed record is
+`docs/codex/local-v1-lv1-003-o4-fixed-node-state-projection-exact-review.md`, digest
+`sha256:17dc6c53922a3cc5c10bba79ecae44ef8145605771a730f7574bc7b9bff97c94`.
+It binds producer digest
+`sha256:e2e7e91e2314fd7322a6dcee8f02e14fb61f02c4afa007e8c29cdd66a1302ae8`
+and producer-test digest
+`sha256:1d704b16729f28f2cc2cecb1957f4478850323c58f89a9279e215df713eb60ea`.
+Independent Sol xhigh review was `GO_CODE_ONLY` with Critical 0, High 0, Medium 0, and Low 0.
+
+The eligible execution candidate must be the clean, single-parent immediate child of that exact
+authorization parent with exactly six changed paths: `Makefile`, `README.md`, this Markdown record,
+its JSON contract, the authorization validator, and its test. Runtime bytes must remain identical
+to reviewed candidate `2683641c619e8ae5ac93bdec0d9503f83dd79a35`. The validator derives the
+candidate commit and tree after all other checks and contains no future self-reference.
+
+Before the future annotated, nonforce tag
+`ithildin/lv1-003-o4-attempt012-reviewed` peels to that exact candidate and tree, the gate is
+invalid, execution budget collapses to zero, all live authority fields collapse to false, and the
+live target refuses before activity. A missing tag, lightweight tag, wrong target, or moved tag is
+rejected. Tag existence by itself grants no authority.
+
+After exact review and the fixed tag, the fresh attempt budget is one and `attempt_consumed` is
+false. Exactly five bounded authority fields may be true: existing producer code, its closed
+Docker lifecycle, live Hermes execution, model-provider access, and O4 evidence execution. The
+other 14 authority fields remain false, including credential custody, runner lifecycle API,
+arbitrary host or process control, shell or general Docker-socket control, network or filesystem
+non-bypass claims, new power or tool, release, promotion, production, and UAT. The governed tool
+count remains exactly 24.
+
+Attempt 012 is a diagnostic successor, not a claimed repair or safe retry. It uses one fresh
+producer-generated run and project only; no Attempt 011 identity, receipt, runtime, report, or
+project may be reused. If `fixed_node_start_failed` recurs, the attempt may retain only the reviewed
+closed thirteen-key sequential state projection and its closed classification. It grants no raw
+container, Node, image, mission, or claim identity; raw exit value or engine error; stdout, stderr,
+logs, environment, mounts, configuration, provider output, whole mission object, or private
+receipt inspection. It adds no command, API request, polling, retry, cleanup action, arbitrary
+path, or general Docker/host power, and it makes no generic absence or root-cause claim.
+
+The exact operator entrypoint remains `make local-v1-lv1-003-o4-producer-run`, whose recipe is
+`uv run python -m scripts.local_v1_lv1_003_o4_producer`. The gate consumes Attempt 012 before any
+activity. Any invocation consumes Attempt 012 whether it succeeds or fails, permits no retry or
+automatic retry, and requires an immediate separate exact disposition and closure. Release,
+promotion, production, and UAT remain false.
+
 ## Attempt 011 Consumed Result
+
+Consumed `LV1-003-O4-ATTEMPT-011` is immutable history.
 
 Exact execution candidate `e1ea411c46c794130e2196bb0e92267ca8400c35`, tree
 `4d1b90ec2d9efc7740ccdb29e5d6945118956252`, is fixed by annotated review tag
@@ -44,10 +95,10 @@ authority fields are false. No retry, recovery, cleanup, successor, release, pro
 production, or UAT authority remains. The durable disposition is
 `docs/codex/local-v1-lv1-003-o4-attempt-011-disposition.json`.
 
-The next bounded action is preparation of a separately reviewed refinement or repair for
-`fixed_node_runtime_state_inconsistent` using only the existing diagnostic boundary. It is not a
-retry and must not present the observed classification as proof of root cause. The governed tool
-count remains exactly 24.
+The reviewed fixed-Node state projection above supersedes the previously generic diagnostic only
+for a separately authorized successor. Attempt 011 remains immutable consumed history; its receipt
+bindings, failure, and closed observed classification do not authorize Attempt 012, retry,
+additional cleanup, or a root-cause claim.
 
 ## Attempt 011 Historical Authorization Boundary
 
@@ -153,9 +204,11 @@ That authorization was exercised once by candidate
 `aa3eecea481dd5c92925ceec3421c051c63cb3cf`, and is no longer live.
 
 The machine contract's generic `candidate_parent_commit` and `candidate_parent_tree` fields now
-refer only to the Attempt 011 authorization parent
-`0aee84f160fb3ce4d80a0772389d529594847013`, tree
-`4041d61f4fd9685e7de3fe17c5a0c01e817693df`. Attempt 010 remains explicit consumed historical
+refer only to the Attempt 012 authorization parent
+`00caa1918678982a4f2680d5f12cc62c37c11ba5`, tree
+`c2f7cd890ac7fc6b24b2a91791c2e0fe1f2ed69b`. Attempt 011 remains explicit consumed historical
+lineage at `e1ea411c46c794130e2196bb0e92267ca8400c35`, tree
+`4d1b90ec2d9efc7740ccdb29e5d6945118956252`. Attempt 010 remains explicit consumed historical
 lineage at `782bc06faed3440de5dc3fe4c192b01f91a8680a`, tree
 `d4afd1b7fe68a65507f1ad230fffd91f6580b676`. The reviewed runtime-native repair
 `49db93d80a71855d9ae223826a9849749377c376`, tree
