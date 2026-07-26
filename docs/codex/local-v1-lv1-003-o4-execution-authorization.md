@@ -1,16 +1,53 @@
 # Local v1 LV1-003 O4 Execution Authorization Gate
 
 Status:
-`ATTEMPT_014_CONSUMED_SOCKET_PARENT_VALIDATION_PHASE_OBSERVED_CLEANUP_COMPLETE_NO_LIVE_AUTHORITY`
+`ATTEMPT_015_PREPARED_PENDING_EXACT_CANDIDATE_REVIEW_NO_LIVE_AUTHORITY`
 
-This record closes consumed `LV1-003-O4-ATTEMPT-014`, preserves immutable Attempts 001-013 and all
-tracked recovery history, and grants no live authority. Its machine contract is
-`docs/codex/local-v1-lv1-003-o4-execution-authorization.json`; its exact disposition is
-`docs/codex/local-v1-lv1-003-o4-attempt-014-disposition.json`.
+This record prepares `LV1-003-O4-ATTEMPT-015` as one distinct diagnostic successor, preserves
+immutable Attempts 001-014 and all tracked recovery history, and grants no authority on the real
+pre-tag checkout. Its machine contract is
+`docs/codex/local-v1-lv1-003-o4-execution-authorization.json`.
+
+## Attempt 015 Prepared Boundary
+
+Attempt 015 may become executable only as the clean exact six-path, single-parent immediate child
+of review-record commit `c30aa3c43a0e51403c04696c473333fd3bc0551a`, tree
+`dbd58923a662977a61d1498cb14b0d1cec04895d`, with fixed annotated tag
+`ithildin/lv1-003-o4-attempt015-reviewed` peeling to that exact child. Before that exact candidate
+and tag exist, the validator reports invalid, effective budget zero, and all live authority false;
+the next action is `review_attempt_015_execution_authorization_exact_candidate`.
+
+The reviewed socket-parent mode repair is commit
+`8f2191a4b3a6b5559f5a9083973c8b2797fe7f45`, tree
+`c5634835d7c2f2280ee2555866cf6c32c346f540`, direct parent
+`f889449420c865299f8d2a08fe62cc323a994fab`. It is bound by
+`docs/codex/local-v1-lv1-003-o4-socket-parent-mode-exact-review.md`, digest
+`sha256:a2dec414e5dd5dbfb1eff972195d3450f8c36c73efcfbab5dc09dfeb665fe43b`,
+with disposition `GO_CODE_ONLY` and Critical 0, High 0, Medium 0, Low 0. The reviewed bridge and
+test digests are respectively
+`sha256:8d9ba5cffcee099e8901fd0124a96b856681073b2adf68e2f25b4f0aeccf6f7b`
+and
+`sha256:cfd1aa52d0bce3385b53341a63cad6af7fbfb3210e55ef033a69ab1b9221bb26`.
+The execution candidate must preserve runtime parity to that exact repair.
+
+The deterministic source contradiction at socket-parent mode validation is repaired, but success
+is not predicted. On the eventual exact tagged candidate only, the attempt budget is one,
+`attempt_consumed` is false, and exactly five fields may be true: producer code, Docker lifecycle,
+live Hermes execution, model-provider access, and O4 evidence execution. The remaining fourteen
+authority fields stay false, including credential custody, runner lifecycle authority, arbitrary
+host/process/shell or Docker-socket control, network/filesystem non-bypass claims, new governed
+power/tool, release, promotion, production, and UAT. The governed tool count remains exactly 24.
+
+This is a fresh, separately authorized diagnostic successor, not a retry, automatic retry,
+recovery, repair, or cleanup action. Concurrent, automatic, and post-attempt retries are false.
+Authority is not derived from history or recovery, and immediate consumed disposition is mandatory
+after the one central-manager-supervised invocation.
 
 ## Attempt 014 Consumed Result
 
-Exact execution candidate `bfb10f037c916a7c7bd5a15a5d748f3d4d3c3a44`, tree
+`LV1-003-O4-ATTEMPT-014` remains closed by
+`docs/codex/local-v1-lv1-003-o4-attempt-014-disposition.json`. Exact execution candidate
+`bfb10f037c916a7c7bd5a15a5d748f3d4d3c3a44`, tree
 `191ca97beae3d4ba31ef3e22fb1533a8620e8347`, remains fixed by annotated review tag
 `ithildin/lv1-003-o4-attempt014-reviewed`. The sole supervised invocation used
 `make local-v1-lv1-003-o4-producer-run` and
