@@ -1,16 +1,51 @@
 # Local v1 LV1-003 O4 Execution Authorization Gate
 
 Status:
-`ATTEMPT_013_CONSUMED_FIXED_NODE_PHASE_NOT_REPORTED_CLEANUP_COMPLETE_NO_LIVE_AUTHORITY`
+`ATTEMPT_014_PREPARED_PENDING_EXACT_CANDIDATE_REVIEW_NO_LIVE_AUTHORITY`
 
-This record closes consumed `LV1-003-O4-ATTEMPT-013`, preserves immutable Attempts 001-012 and all
-tracked recovery history, and grants no live authority. Its machine contract is
-`docs/codex/local-v1-lv1-003-o4-execution-authorization.json`; its exact disposition is
-`docs/codex/local-v1-lv1-003-o4-attempt-013-disposition.json`.
+This record prepares `LV1-003-O4-ATTEMPT-014` as one distinct diagnostic successor, preserves
+immutable Attempts 001-013 and all tracked recovery history, and grants no authority on the real
+pre-tag checkout. Its machine contract is
+`docs/codex/local-v1-lv1-003-o4-execution-authorization.json`.
+
+## Attempt 014 Prepared Boundary
+
+Attempt 014 may become executable only as the clean exact six-path, single-parent immediate child
+of review-record commit `fe4ac6b0da0e38b6feb18b9fb5c7b7c0ad096051`, tree
+`0c212ab813222dece38b49f067cf978adcee583e`, with fixed annotated tag
+`ithildin/lv1-003-o4-attempt014-reviewed` peeling to that exact child. Before that exact candidate
+and tag exist, the validator reports invalid, effective budget zero, and all live authority false;
+the next action is `review_attempt_014_execution_authorization_exact_candidate`.
+
+The reviewed runtime repair is commit `338dc059fa251299502ff31f9274f2a1ffc9c9ea`, tree
+`3428f0148520e629fd5fe50788469fcd55ad2dba`, direct parent
+`0e2ed89b744bcf9a98fd09a5b39a0705656aa001`. It is bound by
+`docs/codex/local-v1-lv1-003-o4-terminal-health-phase-projection-exact-review.md`, digest
+`sha256:573dd1063364cbbd89ca9f865765dc4c7c28001044a17cd5fa7e3e7f40f6a039`,
+with disposition `GO_CODE_ONLY` and Critical 0, High 0, Medium 0, Low 0. The reviewed producer and
+test digests are respectively
+`sha256:036ff3fe0baf2c2d4f8f89f72b6edbcbcf01fff55371ef8752118ded74492292`
+and
+`sha256:2eaba1dfe1835f8ae507af93d74c2d78ae192cf93ae4330e7b296ba94727f50f`.
+The execution candidate must preserve runtime parity to that exact repair.
+
+On the eventual exact tagged candidate only, the attempt budget is one, `attempt_consumed` is false,
+and exactly five fields may be true: producer code, Docker lifecycle, live Hermes execution,
+model-provider access, and O4 evidence execution. The remaining fourteen authority fields stay
+false, including credential custody, runner lifecycle authority, arbitrary host/process/shell or
+Docker-socket control, network/filesystem non-bypass claims, new governed power/tool, release,
+promotion, production, and UAT. The governed tool count remains exactly 24.
+
+This is a fresh, separately authorized diagnostic successor, not a retry, automatic retry,
+recovery, repair, or cleanup action. Concurrent, automatic, and post-attempt retries are false.
+Success is not predicted, authority is not derived from history or recovery, and immediate consumed
+disposition is mandatory after the one central-manager-supervised invocation.
 
 ## Attempt 013 Consumed Result
 
-Exact execution candidate `8fa31904570d2179c5661fa44ff0ff3ca00eba43`, tree
+`LV1-003-O4-ATTEMPT-013` is closed by
+`docs/codex/local-v1-lv1-003-o4-attempt-013-disposition.json`. Exact execution candidate
+`8fa31904570d2179c5661fa44ff0ff3ca00eba43`, tree
 `27f5ccbe8b6153ab7dfbcd97c37193d63217a086`, remains fixed by annotated review tag
 `ithildin/lv1-003-o4-attempt013-reviewed`. The sole supervised invocation used
 `make local-v1-lv1-003-o4-producer-run` and

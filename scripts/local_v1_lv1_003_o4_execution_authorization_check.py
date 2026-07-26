@@ -1,4 +1,4 @@
-"""Validate the fail-closed one-shot LV1-003 O4 Attempt 013 authorization."""
+"""Validate the fail-closed one-shot LV1-003 O4 Attempt 014 authorization."""
 
 from __future__ import annotations
 
@@ -83,6 +83,9 @@ FIXED_NODE_STATE_PROJECTION_REVIEW = Path(
 FIXED_BRIDGE_PHASE_DIAGNOSTIC_REVIEW = Path(
     "docs/codex/local-v1-lv1-003-o4-fixed-bridge-phase-diagnostic-exact-review.md"
 )
+TERMINAL_HEALTH_PHASE_PROJECTION_REVIEW = Path(
+    "docs/codex/local-v1-lv1-003-o4-terminal-health-phase-projection-exact-review.md"
+)
 IMAGE_RECOVERY_AUTHORIZATION = Path(
     "docs/codex/local-v1-lv1-003-o4-image-recovery-authorization.json"
 )
@@ -130,7 +133,8 @@ PRODUCER_STATIC_TARGET = "local-v1-lv1-003-o4-producer-static-check"
 PRODUCER_RUN_TARGET = "local-v1-lv1-003-o4-producer-run"
 PRODUCER_MODULE_INVOCATION = "uv run python -m scripts.local_v1_lv1_003_o4_producer"
 PRODUCER_RUN_COMMENT = (
-    "# CLOSED consumed Attempt 013 entrypoint; the fail-closed gate refuses before activity."
+    "# PREPARED, gate-protected one-shot Attempt 014 entrypoint; "
+    "exact annotated review tag required."
 )
 FAILED_FILE_PATH_INVOCATION = "uv run python scripts/local_v1_lv1_003_o4_producer.py"
 ENTRYPOINT_REPAIR_BASE_COMMIT = "148effd50c69b40a005f86f6217fc3db8b665a06"
@@ -584,9 +588,33 @@ FIXED_NODE_START_DIAGNOSTIC_PRODUCER_DIGEST = (
 FIXED_NODE_START_DIAGNOSTIC_TEST_DIGEST = (
     "sha256:9d276d4e5c71ba84885415f4ec5646a36afb25baaa695400a68952e8051e6690"
 )
-CANDIDATE_PARENT_COMMIT = ATTEMPT_013_CANDIDATE_COMMIT
-CANDIDATE_PARENT_TREE = ATTEMPT_013_CANDIDATE_TREE
-CANDIDATE_PARENT_PARENT = ATTEMPT_013_PARENT_COMMIT
+ATTEMPT_014_ID = "LV1-003-O4-ATTEMPT-014"
+ATTEMPT_014_REVIEW_TAG = "ithildin/lv1-003-o4-attempt014-reviewed"
+TERMINAL_HEALTH_PHASE_PROJECTION_REVIEW_DIGEST = (
+    "sha256:573dd1063364cbbd89ca9f865765dc4c7c28001044a17cd5fa7e3e7f40f6a039"
+)
+TERMINAL_HEALTH_PHASE_PROJECTION_REVIEW_RECORD_COMMIT = (
+    "fe4ac6b0da0e38b6feb18b9fb5c7b7c0ad096051"
+)
+TERMINAL_HEALTH_PHASE_PROJECTION_REVIEW_RECORD_TREE = (
+    "0c212ab813222dece38b49f067cf978adcee583e"
+)
+TERMINAL_HEALTH_PHASE_PROJECTION_COMMIT = "338dc059fa251299502ff31f9274f2a1ffc9c9ea"
+TERMINAL_HEALTH_PHASE_PROJECTION_TREE = "3428f0148520e629fd5fe50788469fcd55ad2dba"
+TERMINAL_HEALTH_PHASE_PROJECTION_PARENT_COMMIT = (
+    "0e2ed89b744bcf9a98fd09a5b39a0705656aa001"
+)
+TERMINAL_HEALTH_PHASE_PROJECTION_PATH_DIGESTS: JsonObject = {
+    "scripts/local_v1_lv1_003_o4_producer.py": (
+        "sha256:036ff3fe0baf2c2d4f8f89f72b6edbcbcf01fff55371ef8752118ded74492292"
+    ),
+    "tests/test_local_v1_lv1_003_o4_producer.py": (
+        "sha256:2eaba1dfe1835f8ae507af93d74c2d78ae192cf93ae4330e7b296ba94727f50f"
+    ),
+}
+CANDIDATE_PARENT_COMMIT = TERMINAL_HEALTH_PHASE_PROJECTION_REVIEW_RECORD_COMMIT
+CANDIDATE_PARENT_TREE = TERMINAL_HEALTH_PHASE_PROJECTION_REVIEW_RECORD_TREE
+CANDIDATE_PARENT_PARENT = TERMINAL_HEALTH_PHASE_PROJECTION_COMMIT
 MCC_AUTHORIZATION_INDEX_RECONCILIATION_REVIEW_DIGEST = (
     "sha256:5e01639bc661da2bec28ebc6a2edb5b7cc30c3bc71d45290c2274d260ea42c9c"
 )
@@ -1078,6 +1106,15 @@ ATTEMPT_013_CLOSURE_CONTROL_PATH_ALLOWLIST = [
     "tests/test_local_v1_lv1_003_o4_execution_authorization_check.py",
 ]
 ATTEMPT_013_RUNTIME_PATHS = list(FIXED_BRIDGE_PHASE_DIAGNOSTIC_PATH_DIGESTS)
+ATTEMPT_014_CONTROL_PATH_ALLOWLIST = [
+    "Makefile",
+    "README.md",
+    CONTRACT.as_posix(),
+    DOCUMENT.as_posix(),
+    "scripts/local_v1_lv1_003_o4_execution_authorization_check.py",
+    "tests/test_local_v1_lv1_003_o4_execution_authorization_check.py",
+]
+ATTEMPT_014_RUNTIME_PATHS = list(TERMINAL_HEALTH_PHASE_PROJECTION_PATH_DIGESTS)
 IMAGE_READABILITY_REPAIR_PATHS = list(IMAGE_READABILITY_REPAIR_PATH_DIGESTS)
 APPLICATION_STARTUP_STAGE_DIAGNOSTIC_PATHS = list(APPLICATION_STARTUP_STAGE_PATH_DIGESTS)
 DIAGNOSTIC_REPAIR_PATHS = [
@@ -1111,7 +1148,7 @@ SOURCE_DIGESTS = {
         Path("scripts/local_v1_lv1_003_o4_producer.py"),
         cast(
             str,
-            FIXED_BRIDGE_PHASE_DIAGNOSTIC_PATH_DIGESTS[
+            TERMINAL_HEALTH_PHASE_PROJECTION_PATH_DIGESTS[
                 "scripts/local_v1_lv1_003_o4_producer.py"
             ],
         ),
@@ -1120,7 +1157,7 @@ SOURCE_DIGESTS = {
         Path("tests/test_local_v1_lv1_003_o4_producer.py"),
         cast(
             str,
-            FIXED_BRIDGE_PHASE_DIAGNOSTIC_PATH_DIGESTS[
+            TERMINAL_HEALTH_PHASE_PROJECTION_PATH_DIGESTS[
                 "tests/test_local_v1_lv1_003_o4_producer.py"
             ],
         ),
@@ -1590,6 +1627,32 @@ TOP_LEVEL_FIELDS = {
     "attempt_013_public_report_base_absent_point_in_time",
     "attempt_013_projection_behavior_source_explained",
     "attempt_013_underlying_fixed_node_root_cause_explained",
+    "terminal_health_phase_projection_review_record",
+    "terminal_health_phase_projection_review_sha256",
+    "terminal_health_phase_projection_review_record_commit",
+    "terminal_health_phase_projection_review_record_tree",
+    "terminal_health_phase_projection_commit",
+    "terminal_health_phase_projection_tree",
+    "terminal_health_phase_projection_parent_commit",
+    "terminal_health_phase_projection_path_digests",
+    "terminal_health_phase_projection_review_disposition",
+    "terminal_health_phase_projection_review_findings",
+    "attempt_014_id",
+    "attempt_014_candidate_parent_commit",
+    "attempt_014_candidate_parent_tree",
+    "attempt_014_operator_command",
+    "attempt_014_module_command",
+    "attempt_014_kind",
+    "attempt_014_run_identity_source",
+    "attempt_014_execution_authorized",
+    "attempt_014_automatic_retry_authorized",
+    "attempt_014_concurrent_invocation_authorized",
+    "attempt_014_post_attempt_retry_authorized",
+    "attempt_014_review_tag",
+    "attempt_014_terminal_health_phase_projection_only",
+    "attempt_014_success_not_predicted",
+    "attempt_014_immediate_consumed_disposition_required",
+    "attempt_014_authority_derived_from_history_or_recovery",
     "mcc_authorization_index_reconciliation_review_record",
     "mcc_authorization_index_reconciliation_review_sha256",
     "mcc_reviewed_candidate_commit",
@@ -1840,14 +1903,14 @@ HISTORICAL_TRUE_AUTHORITY_FIELDS = {
 HISTORICAL_AUTHORITY: JsonObject = {
     key: key in HISTORICAL_TRUE_AUTHORITY_FIELDS for key in AUTHORITY_FIELDS
 }
-TRUE_AUTHORITY_FIELDS: set[str] = set()
+TRUE_AUTHORITY_FIELDS = set(HISTORICAL_TRUE_AUTHORITY_FIELDS)
 CLOSED_AUTHORITY: JsonObject = {key: False for key in AUTHORITY_FIELDS}
 ATTEMPT_002_AUTHORITY: JsonObject = {
     key: key in HISTORICAL_TRUE_AUTHORITY_FIELDS for key in AUTHORITY_FIELDS
 }
 ATTEMPT_003_AUTHORITY: JsonObject = {key: False for key in AUTHORITY_FIELDS}
 ATTEMPT_004_AUTHORITY: JsonObject = {key: False for key in AUTHORITY_FIELDS}
-EXPECTED_AUTHORITY: JsonObject = CLOSED_AUTHORITY
+EXPECTED_AUTHORITY: JsonObject = HISTORICAL_AUTHORITY
 
 
 class O4ExecutionAuthorizationError(RuntimeError):
@@ -2041,6 +2104,10 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         repo_root / FIXED_BRIDGE_PHASE_DIAGNOSTIC_REVIEW,
         failures,
     )
+    terminal_health_phase_projection_review = _read_text(
+        repo_root / TERMINAL_HEALTH_PHASE_PROJECTION_REVIEW,
+        failures,
+    )
     mcc_reconciliation_review = _read_text(
         repo_root / MCC_AUTHORIZATION_INDEX_RECONCILIATION_REVIEW,
         failures,
@@ -2169,6 +2236,11 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         fixed_bridge_phase_diagnostic_review,
         failures,
     )
+    _validate_terminal_health_phase_projection_review(
+        repo_root,
+        terminal_health_phase_projection_review,
+        failures,
+    )
     _validate_mcc_reconciliation_review(repo_root, mcc_reconciliation_review, failures)
     _validate_attempt008_recovery_closure_binding(repo_root, failures)
     _validate_attempt_010_receipts(repo_root, failures)
@@ -2196,9 +2268,9 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         failures,
         candidate_parent_commit=CANDIDATE_PARENT_COMMIT,
         candidate_parent_tree=CANDIDATE_PARENT_TREE,
-        reviewed_commit=ATTEMPT_013_CANDIDATE_COMMIT,
-        runtime_paths=ATTEMPT_013_RUNTIME_PATHS,
-        control_paths=ATTEMPT_013_CLOSURE_CONTROL_PATH_ALLOWLIST,
+        reviewed_commit=TERMINAL_HEALTH_PHASE_PROJECTION_COMMIT,
+        runtime_paths=ATTEMPT_014_RUNTIME_PATHS,
+        control_paths=ATTEMPT_014_CONTROL_PATH_ALLOWLIST,
         candidate_ref="HEAD",
         require_clean_worktree=True,
     )
@@ -2222,6 +2294,12 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         candidate_tree=ATTEMPT_013_CANDIDATE_TREE,
         failures=failures,
     )
+    _validate_attempt_014_review_binding(
+        repo_root,
+        candidate_commit=checkout_commit,
+        candidate_tree=checkout_tree,
+        failures=failures,
+    )
     valid = not failures
     authority_value = contract.get("authority")
     authority = authority_value if isinstance(authority_value, dict) else {}
@@ -2232,11 +2310,11 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "record_status": contract.get("record_status"),
         "reviewed_implementation_commit": contract.get("reviewed_implementation_commit"),
         "code_authorization_commit": contract.get("code_authorization_commit"),
-        "attempt_id": contract.get("attempt_013_id"),
+        "attempt_id": contract.get("attempt_014_id"),
         "attempted_candidate_commit": ATTEMPT_013_CANDIDATE_COMMIT,
         "attempted_candidate_tree": ATTEMPT_013_CANDIDATE_TREE,
-        "closure_candidate_commit": checkout_commit,
-        "closure_candidate_tree": checkout_tree,
+        "execution_candidate_commit": checkout_commit,
+        "execution_candidate_tree": checkout_tree,
         "attempt_002_attempted_candidate_commit": contract.get(
             "attempt_002_attempted_candidate_commit"
         ),
@@ -2285,13 +2363,19 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "attempt_010_consumed": True,
         "attempt_011_consumed": True,
         "attempt_012_consumed": True,
-        "attempt_013_consumed": contract.get("attempt_consumed"),
+        "attempt_013_consumed": True,
+        "attempt_014_consumed": contract.get("attempt_consumed"),
         "attempt_consumed": contract.get("attempt_consumed"),
         "retry_authorized": contract.get("retry_authorized"),
         "execution_checkout_commit": checkout_commit,
         "execution_checkout_tree": checkout_tree,
         "execution_attempt_budget": (
             contract.get("execution_attempt_budget") if valid else 0
+        ),
+        "next_action": (
+            "execute_attempt_014_once_and_record_immediate_consumed_disposition"
+            if valid
+            else "review_attempt_014_execution_authorization_exact_candidate"
         ),
         "producer_code_authorized": (
             authority.get("producer_code_authorized", False)
@@ -2352,8 +2436,7 @@ def _validate_contract(contract: JsonObject, failures: list[str]) -> None:
         "schema_version": "1",
         "record_type": "local_v1_lv1_003_o4_execution_authorization",
         "record_status": (
-            "ATTEMPT_013_CONSUMED_FIXED_NODE_PHASE_NOT_REPORTED_"
-            "CLEANUP_COMPLETE_NO_LIVE_AUTHORITY"
+            "ATTEMPT_014_PREPARED_PENDING_EXACT_CANDIDATE_REVIEW_NO_LIVE_AUTHORITY"
         ),
         "ticket_id": "LV1-003",
         "outcome_id": "O4",
@@ -2363,8 +2446,8 @@ def _validate_contract(contract: JsonObject, failures: list[str]) -> None:
         "candidate_parent_tree": CANDIDATE_PARENT_TREE,
         "historical_post_review_candidate_parent_commit": (HISTORICAL_CANDIDATE_PARENT_COMMIT),
         "historical_post_review_candidate_parent_tree": (HISTORICAL_CANDIDATE_PARENT_TREE),
-        "reviewed_implementation_commit": ATTEMPT_013_REVIEWED_IMPLEMENTATION_COMMIT,
-        "reviewed_implementation_tree": ATTEMPT_013_REVIEWED_IMPLEMENTATION_TREE,
+        "reviewed_implementation_commit": TERMINAL_HEALTH_PHASE_PROJECTION_COMMIT,
+        "reviewed_implementation_tree": TERMINAL_HEALTH_PHASE_PROJECTION_TREE,
         "producer_exact_review_record": PRODUCER_EXACT_REVIEW.as_posix(),
         "producer_exact_review_sha256": PRODUCER_EXACT_REVIEW_DIGEST,
         "code_authorization_origin_commit": CODE_AUTHORIZATION_ORIGIN_COMMIT,
@@ -2941,6 +3024,56 @@ def _validate_contract(contract: JsonObject, failures: list[str]) -> None:
         "attempt_013_public_report_base_absent_point_in_time": True,
         "attempt_013_projection_behavior_source_explained": True,
         "attempt_013_underlying_fixed_node_root_cause_explained": False,
+        "terminal_health_phase_projection_review_record": (
+            TERMINAL_HEALTH_PHASE_PROJECTION_REVIEW.as_posix()
+        ),
+        "terminal_health_phase_projection_review_sha256": (
+            TERMINAL_HEALTH_PHASE_PROJECTION_REVIEW_DIGEST
+        ),
+        "terminal_health_phase_projection_review_record_commit": (
+            TERMINAL_HEALTH_PHASE_PROJECTION_REVIEW_RECORD_COMMIT
+        ),
+        "terminal_health_phase_projection_review_record_tree": (
+            TERMINAL_HEALTH_PHASE_PROJECTION_REVIEW_RECORD_TREE
+        ),
+        "terminal_health_phase_projection_commit": (
+            TERMINAL_HEALTH_PHASE_PROJECTION_COMMIT
+        ),
+        "terminal_health_phase_projection_tree": TERMINAL_HEALTH_PHASE_PROJECTION_TREE,
+        "terminal_health_phase_projection_parent_commit": (
+            TERMINAL_HEALTH_PHASE_PROJECTION_PARENT_COMMIT
+        ),
+        "terminal_health_phase_projection_path_digests": (
+            TERMINAL_HEALTH_PHASE_PROJECTION_PATH_DIGESTS
+        ),
+        "terminal_health_phase_projection_review_disposition": "GO_CODE_ONLY",
+        "terminal_health_phase_projection_review_findings": {
+            "critical": 0,
+            "high": 0,
+            "medium": 0,
+            "low": 0,
+        },
+        "attempt_014_id": ATTEMPT_014_ID,
+        "attempt_014_candidate_parent_commit": CANDIDATE_PARENT_COMMIT,
+        "attempt_014_candidate_parent_tree": CANDIDATE_PARENT_TREE,
+        "attempt_014_operator_command": ATTEMPT_002_OPERATOR_COMMAND,
+        "attempt_014_module_command": PRODUCER_MODULE_INVOCATION,
+        "attempt_014_kind": (
+            "fresh_separately_authorized_diagnostic_successor_"
+            "not_retry_recovery_repair_or_cleanup"
+        ),
+        "attempt_014_run_identity_source": (
+            "producer_generated_fresh_run_project_suffix_runtime_receipt_and_evidence_paths"
+        ),
+        "attempt_014_execution_authorized": True,
+        "attempt_014_automatic_retry_authorized": False,
+        "attempt_014_concurrent_invocation_authorized": False,
+        "attempt_014_post_attempt_retry_authorized": False,
+        "attempt_014_review_tag": ATTEMPT_014_REVIEW_TAG,
+        "attempt_014_terminal_health_phase_projection_only": True,
+        "attempt_014_success_not_predicted": True,
+        "attempt_014_immediate_consumed_disposition_required": True,
+        "attempt_014_authority_derived_from_history_or_recovery": False,
         "mcc_authorization_index_reconciliation_review_record": (
             MCC_AUTHORIZATION_INDEX_RECONCILIATION_REVIEW.as_posix()
         ),
@@ -3015,14 +3148,14 @@ def _validate_contract(contract: JsonObject, failures: list[str]) -> None:
         "attempt_002_execution_authorized": False,
         "attempt_002_automatic_retry_authorized": False,
         "execution_candidate_binding_mode": (
-            "exact_consumed_closure_child_of_immutable_reviewed_attempt_candidate"
+            "exact_clean_six_path_child_of_review_record_parent_with_annotated_tag"
         ),
-        "execution_attempt_budget": 0,
-        "attempt_consumed": True,
+        "execution_attempt_budget": 1,
+        "attempt_consumed": False,
         "retry_authorized": False,
         "attempt_custody": "central_manager_supervised_local_invocation",
         "persistent_cross_process_budget_consumption_claimed": False,
-        "immediate_post_attempt_disposition_recorded": True,
+        "immediate_post_attempt_disposition_recorded": False,
         "prior_attempt_detection_roots": PRIOR_ATTEMPT_ROOTS,
         "external_preflight_requirements": EXTERNAL_PREFLIGHT,
     }
@@ -3046,15 +3179,44 @@ def _validate_contract(contract: JsonObject, failures: list[str]) -> None:
         EXPECTED_CLEANUP_CONTRACT,
     ):
         failures.append("O4 execution cleanup contract is invalid")
-    if not _exact_json_equal(contract.get("authority"), CLOSED_AUTHORITY):
-        failures.append("O4 execution authority is not the exact bounded Attempt 013 posture")
+    if not _exact_json_equal(contract.get("authority"), EXPECTED_AUTHORITY):
+        failures.append("O4 execution authority is not the exact bounded Attempt 014 posture")
 
 
 def _validate_document(document: str, failures: list[str]) -> None:
     normalized = " ".join(document.split())
     for phrase in (
-        "Status: `ATTEMPT_013_CONSUMED_FIXED_NODE_PHASE_NOT_REPORTED_"
-        "CLEANUP_COMPLETE_NO_LIVE_AUTHORITY`",
+        "Status: `ATTEMPT_014_PREPARED_PENDING_EXACT_CANDIDATE_REVIEW_"
+        "NO_LIVE_AUTHORITY`",
+        ATTEMPT_014_ID,
+        ATTEMPT_014_REVIEW_TAG,
+        TERMINAL_HEALTH_PHASE_PROJECTION_REVIEW.as_posix(),
+        TERMINAL_HEALTH_PHASE_PROJECTION_REVIEW_DIGEST,
+        TERMINAL_HEALTH_PHASE_PROJECTION_REVIEW_RECORD_COMMIT,
+        TERMINAL_HEALTH_PHASE_PROJECTION_REVIEW_RECORD_TREE,
+        TERMINAL_HEALTH_PHASE_PROJECTION_COMMIT,
+        TERMINAL_HEALTH_PHASE_PROJECTION_TREE,
+        TERMINAL_HEALTH_PHASE_PROJECTION_PARENT_COMMIT,
+        cast(
+            str,
+            TERMINAL_HEALTH_PHASE_PROJECTION_PATH_DIGESTS[
+                "scripts/local_v1_lv1_003_o4_producer.py"
+            ],
+        ),
+        cast(
+            str,
+            TERMINAL_HEALTH_PHASE_PROJECTION_PATH_DIGESTS[
+                "tests/test_local_v1_lv1_003_o4_producer.py"
+            ],
+        ),
+        "Critical 0, High 0, Medium 0, Low 0",
+        "exact six-path, single-parent immediate child",
+        "reports invalid, effective budget zero, and all live authority false",
+        "review_attempt_014_execution_authorization_exact_candidate",
+        "exactly five fields may be true",
+        "remaining fourteen authority fields stay false",
+        "not a retry, automatic retry, recovery, repair, or cleanup action",
+        "immediate consumed disposition is mandatory",
         ATTEMPT_013_ID,
         ATTEMPT_013_CANDIDATE_COMMIT,
         ATTEMPT_013_CANDIDATE_TREE,
@@ -4624,6 +4786,47 @@ def _validate_attempt_013_review_binding(
         failures.append("O4 Attempt 013 annotated review tag does not peel to the exact candidate")
 
 
+def _validate_attempt_014_review_binding(
+    repo_root: Path,
+    *,
+    candidate_commit: str | None,
+    candidate_tree: str | None,
+    failures: list[str],
+) -> None:
+    if candidate_commit is None or candidate_tree is None:
+        failures.append("O4 Attempt 014 review binding has no exact execution candidate")
+        return
+    reference = f"refs/tags/{ATTEMPT_014_REVIEW_TAG}"
+    object_type = subprocess.run(
+        ["git", "-C", str(repo_root), "cat-file", "-t", reference],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    if object_type.returncode != 0 or object_type.stdout.strip() != "tag":
+        failures.append("O4 Attempt 014 review tag is missing or not annotated")
+        return
+    tagged_commit = subprocess.run(
+        ["git", "-C", str(repo_root), "rev-parse", f"{reference}^{{commit}}"],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    tagged_tree = subprocess.run(
+        ["git", "-C", str(repo_root), "rev-parse", f"{reference}^{{tree}}"],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    if (
+        tagged_commit.returncode != 0
+        or tagged_tree.returncode != 0
+        or tagged_commit.stdout.strip() != candidate_commit
+        or tagged_tree.stdout.strip() != candidate_tree
+    ):
+        failures.append("O4 Attempt 014 annotated review tag does not peel to the exact candidate")
+
+
 def _validate_fixed_node_start_diagnostic_review(
     repo_root: Path,
     document: str,
@@ -4871,7 +5074,7 @@ def _validate_fixed_bridge_phase_diagnostic_review(
         "prior closed sequential projection",
         "does not claim one atomic snapshot",
         "adds no Docker command",
-        "exactly 24 tools",
+        "24 tools",
         "do not prove the fixed-Node root cause or a safe repair",
         "Attempt 012 remains consumed",
     ):
@@ -4927,6 +5130,82 @@ def _validate_fixed_bridge_phase_diagnostic_review(
         observed = "sha256:" + hashlib.sha256(result.stdout).hexdigest()
         if result.returncode != 0 or observed != expected_digest:
             failures.append(f"O4 fixed-bridge phase digest is invalid: {path}")
+
+
+def _validate_terminal_health_phase_projection_review(
+    repo_root: Path,
+    document: str,
+    failures: list[str],
+) -> None:
+    normalized = " ".join(document.split())
+    for phrase in (
+        "Status: `GO_CODE_ONLY`",
+        TERMINAL_HEALTH_PHASE_PROJECTION_COMMIT,
+        TERMINAL_HEALTH_PHASE_PROJECTION_TREE,
+        TERMINAL_HEALTH_PHASE_PROJECTION_PARENT_COMMIT,
+        "Critical: 0",
+        "High: 0",
+        "Medium: 0",
+        "Low: 0",
+        "Docker can retain the final unhealthy health observation",
+        "discards the raw exit integer",
+        "tool count remains exactly 24",
+        "Attempt 013 remains consumed",
+        "does not authorize Docker",
+    ):
+        if phrase not in normalized:
+            failures.append(
+                f"O4 terminal-health phase review is missing phrase: {phrase}"
+            )
+    if _digest(document) != TERMINAL_HEALTH_PHASE_PROJECTION_REVIEW_DIGEST:
+        failures.append("O4 terminal-health phase review digest is invalid")
+    for commit, expected_tree, expected_parents, label in (
+        (
+            TERMINAL_HEALTH_PHASE_PROJECTION_REVIEW_RECORD_COMMIT,
+            TERMINAL_HEALTH_PHASE_PROJECTION_REVIEW_RECORD_TREE,
+            [TERMINAL_HEALTH_PHASE_PROJECTION_COMMIT],
+            "review record",
+        ),
+        (
+            TERMINAL_HEALTH_PHASE_PROJECTION_COMMIT,
+            TERMINAL_HEALTH_PHASE_PROJECTION_TREE,
+            [TERMINAL_HEALTH_PHASE_PROJECTION_PARENT_COMMIT],
+            "implementation",
+        ),
+    ):
+        tree = _git(repo_root, ["show", "-s", "--format=%T", commit], failures)
+        parents = _git(repo_root, ["show", "-s", "--format=%P", commit], failures).split()
+        if tree != expected_tree or parents != expected_parents:
+            failures.append(f"O4 terminal-health phase {label} lineage is invalid")
+    changed = _git(
+        repo_root,
+        [
+            "diff-tree",
+            "--no-commit-id",
+            "--name-only",
+            "-r",
+            TERMINAL_HEALTH_PHASE_PROJECTION_COMMIT,
+        ],
+        failures,
+    ).splitlines()
+    if changed != ATTEMPT_014_RUNTIME_PATHS:
+        failures.append("O4 terminal-health phase changed paths are not exact")
+    for path, expected_digest in TERMINAL_HEALTH_PHASE_PROJECTION_PATH_DIGESTS.items():
+        assert isinstance(expected_digest, str)
+        result = subprocess.run(
+            [
+                "git",
+                "-C",
+                str(repo_root),
+                "show",
+                f"{TERMINAL_HEALTH_PHASE_PROJECTION_COMMIT}:{path}",
+            ],
+            check=False,
+            capture_output=True,
+        )
+        observed = "sha256:" + hashlib.sha256(result.stdout).hexdigest()
+        if result.returncode != 0 or observed != expected_digest:
+            failures.append(f"O4 terminal-health phase digest is invalid: {path}")
 
 
 def _validate_runtime_native_repair_review(
@@ -9218,21 +9497,20 @@ def _validate_wiring(repo_root: Path, failures: list[str]) -> None:
     if PRODUCER_MODULE_INVOCATION not in readme:
         failures.append("README does not bind the O4 module invocation")
     for phrase in (
-        "closed Attempt 013 authorization record",
-        "consumed exact candidate and private receipts",
-        "closed fourteen-key sequential fixed-bridge phase projection",
-        "all 19 authority fields false with budget zero",
-        "local-v1-lv1-003-o4-attempt-013-disposition.md",
-        "`fixed_node_start_failed`",
-        "phase `not_reported`",
-        "retained **closed consumed Attempt 013 entrypoint**",
-        "fail-closed authorization gate now refuses before activity",
-        "one-shot budget is zero and the attempt is consumed",
-        "No retry, automatic retry, recovery, cleanup, successor attempt",
+        "prepared Attempt 014 exact six-path",
+        "immutable Attempts 001-013",
+        "reviewed terminal-health phase projection repair",
+        "real pre-tag checkout remains fail-closed",
+        "exact annotated Attempt 014 tag",
+        "budget one",
+        "exactly five bounded live authority fields",
+        "prepared gate-protected one-shot Attempt 014 entrypoint",
+        "no concurrent, automatic, or post-attempt retry is authorized",
+        "immediate consumed disposition is mandatory",
         "outside release, milestone, and static checks",
     ):
         if phrase not in readme:
-            failures.append(f"README is missing current O4 Attempt 013 guidance: {phrase}")
+            failures.append(f"README is missing current O4 Attempt 014 guidance: {phrase}")
 
 
 def _target_body(makefile: str, target: str) -> str:
@@ -9937,6 +10215,7 @@ def render_report(report: dict[str, Any]) -> str:
         f"attempt_consumed: {str(report['attempt_consumed']).lower()}",
         f"retry_authorized: {str(report['retry_authorized']).lower()}",
         f"execution_attempt_budget: {report['execution_attempt_budget']}",
+        f"next_action: {report['next_action']}",
         f"live_execution_authorized: {str(report['live_execution_authorized']).lower()}",
         f"docker_lifecycle_authorized: {str(report['docker_lifecycle_authorized']).lower()}",
         f"provider_access_authorized: {str(report['provider_access_authorized']).lower()}",
