@@ -251,8 +251,13 @@ class RecordingNodeClient(NodeClient):
                 expected_revision, bool
             )
             revision = expected_revision + 1
+            lifecycle_outcome = (
+                "running"
+                if payload["outcome_code"] == "started"
+                else payload["outcome_code"]
+            )
             return {
-                "gateway_lifecycle_state": f"runner_reported_{payload['outcome_code']}",
+                "gateway_lifecycle_state": f"runner_reported_{lifecycle_outcome}",
                 "gateway_lifecycle_revision": revision,
                 "runner_state_authority": "runner_reported_only",
                 "runner_behavior_proven": False,

@@ -360,8 +360,11 @@ def test_fixed_session_runs_only_two_envelope_operations_then_reports_completion
     completed = session.handle_request(_request(session, "mission.complete"))
 
     assert first["tool_name"] == "project.structure.summary"
+    assert first["next_required_affordance"] == "mission.step.2"
     assert second["tool_name"] == "project.test.summary"
+    assert second["next_required_affordance"] == "mission.complete"
     assert completed["status"] == "runner_reported_succeeded"
+    assert completed["next_required_affordance"] == "none"
     assert session.terminal is True
     assert session.receipt.next_operation_index == 4
     assert session.receipt.last_closed_status == "runner_reported_succeeded"
@@ -428,6 +431,27 @@ def test_fixed_session_denies_reordered_cross_bound_profile_drift_and_unknown_fi
     with pytest.raises(FixedRunnerBridgeError, match=reason):
         session.handle_request(request)
     assert session.receipt.next_operation_index == 1
+
+
+def test_request_denial_closes_before_rendering_terminal_status(
+    tmp_path: Path,
+) -> None:
+    session, _client = _prepared(tmp_path)
+    request = {**_request(session, "mission.step.1"), "unknown": "value"}
+
+    with pytest.raises(FixedRunnerBridgeError) as captured:
+        session.handle_request(request)
+
+    denied = bridge_module._denied_status(  # noqa: SLF001
+        session,
+        captured.value.reason_code,
+    )
+
+    assert denied["status"] == "denied"
+    assert denied["reason_code"] == "request_shape_invalid"
+    assert denied["last_closed_status"] == "failed_closed"
+    assert denied["next_required_affordance"] == "none"
+    assert session.terminal is True
 
 
 def test_fixed_session_restart_receipt_blocks_new_handoff(tmp_path: Path) -> None:
@@ -519,6 +543,64 @@ def test_fixed_session_gateway_ambiguity_closes_without_operation_retry(
     assert session.receipt.next_operation_index == 1
 
 
+@pytest.mark.parametrize(
+    ("affordance", "gateway_state", "expected_index"),
+    [
+        ("mission.step.1", "claimed", 1),
+        ("mission.complete", "runner_reported_running", 3),
+    ],
+)
+def test_fixed_session_refuses_to_record_unadvanced_gateway_report(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    affordance: str,
+    gateway_state: str,
+    expected_index: int,
+) -> None:
+    if affordance == "mission.step.1":
+        client, state, configuration = _cycle_inputs()
+        now = datetime(2026, 7, 16, 12, 0, tzinfo=UTC)
+        envelope = client.claim_mission(state, now=now, nonce="91" * 16)
+        assert envelope is not None
+        session = FixedMissionSession.prepare(
+            client=client,
+            state=state,
+            configuration=configuration,
+            node_version="0.1.0",
+            profile_digest=FIXED_PROFILE_DIGEST,
+            receipt_path=tmp_path / "mission-receipt.json",
+            envelope=envelope,
+            handoff_nonce="8" * 64,
+        )
+    else:
+        session, client = _prepared(tmp_path)
+        session.handle_request(_request(session, "mission.step.1"))
+        session.handle_request(_request(session, "mission.step.2"))
+
+    original_report = client.report_mission
+
+    def unadvanced_report(*args: object, **kwargs: object) -> JsonObject:
+        response = original_report(*args, **kwargs)  # type: ignore[arg-type]
+        return {**response, "gateway_lifecycle_state": gateway_state}
+
+    monkeypatch.setattr(client, "report_mission", unadvanced_report)
+
+    with pytest.raises(FixedRunnerBridgeError, match="gateway_report_not_advanced"):
+        if affordance == "mission.step.1":
+            session.report_running()
+        else:
+            session.handle_request(_request(session, affordance))
+
+    assert session.receipt.last_closed_status == "failed_closed"
+    assert session.receipt.next_operation_index == expected_index
+    denied = bridge_module._denied_status(  # noqa: SLF001
+        session,
+        "gateway_report_not_advanced",
+    )
+    assert denied["last_closed_status"] == "failed_closed"
+    assert denied["next_required_affordance"] == "none"
+
+
 def test_fixed_session_cancel_observation_does_not_claim_runner_exit(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -539,6 +621,12 @@ def test_fixed_session_cancel_observation_does_not_claim_runner_exit(
     with pytest.raises(FixedRunnerBridgeError, match="cancel_requested"):
         session.handle_request(_request(session, "mission.step.1"))
     assert session.receipt.last_closed_status == "cancel_observed"
+    denied = bridge_module._denied_status(  # noqa: SLF001
+        session,
+        "cancel_requested",
+    )
+    assert denied["last_closed_status"] == "cancel_observed"
+    assert denied["next_required_affordance"] == "none"
     reports = [
         payload
         for path, payload, _headers in client.requests

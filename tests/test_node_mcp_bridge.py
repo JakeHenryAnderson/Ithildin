@@ -7,7 +7,9 @@ import socket
 import pytest
 from ithildin_mcp_server import node_bridge
 from ithildin_mcp_server.node_bridge import (
+    AFFORDANCE_DESCRIPTIONS,
     AFFORDANCES,
+    FIXED_MISSION_INSTRUCTIONS,
     FIXED_PROFILE_DIGEST,
     FixedNodeBridgeAdapter,
     NodeBridgeError,
@@ -44,6 +46,9 @@ def test_mcp_bridge_lists_only_three_no_argument_affordances() -> None:
     tools = asyncio.run(adapter.list_tools())
 
     assert [tool.name for tool in tools] == list(AFFORDANCES)
+    assert [tool.description for tool in tools] == [
+        AFFORDANCE_DESCRIPTIONS[name] for name in AFFORDANCES
+    ]
     assert all(
         tool.inputSchema
         == {"type": "object", "additionalProperties": False, "properties": {}}
@@ -51,6 +56,11 @@ def test_mcp_bridge_lists_only_three_no_argument_affordances() -> None:
     )
     assert all(tool.annotations is not None for tool in tools)
     assert all(tool.annotations.readOnlyHint is False for tool in tools if tool.annotations)
+
+    initialization = node_bridge.create_node_bridge_server(
+        adapter
+    ).create_initialization_options()
+    assert initialization.instructions == FIXED_MISSION_INSTRUCTIONS
 
 
 def test_mcp_bridge_invokes_closed_transport_and_denies_arguments() -> None:

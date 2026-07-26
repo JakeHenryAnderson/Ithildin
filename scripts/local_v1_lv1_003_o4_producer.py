@@ -1033,6 +1033,8 @@ class ProducerState:
     license_inventory_digest: str | None = None
     gateway_journey: JsonObject | None = None
     gateway_mission_projection_diagnostic: JsonObject | None = None
+    node_receipt: JsonObject | None = None
+    node_receipt_projection_diagnostic: JsonObject | None = None
 
     def stage(self, number: int) -> None:
         if number != len(self.stages) + 1:
@@ -2094,6 +2096,18 @@ def run_producer(
             if hermes.classification != "exit" or hermes.exit_code != 0:
                 raise ProducerError(f"hermes_{hermes.classification}_failed")
             state.stage(13)
+            try:
+                state.node_receipt = _copy_node_receipt(state, executor)
+                state.node_receipt_projection_diagnostic = (
+                    _node_receipt_projection_diagnostic(
+                        state,
+                        state.node_receipt,
+                    )
+                )
+            except Exception:
+                state.node_receipt_projection_diagnostic = (
+                    _node_receipt_projection_fallback()
+                )
             state.gateway_journey = _gateway_journey(state, api)
             state.stage(14)
             _bind_node_receipt(state, executor)
@@ -3860,9 +3874,12 @@ def _gateway_journey(state: ProducerState, api: Api) -> JsonObject:
     }
 
 
-def _bind_node_receipt(state: ProducerState, executor: Executor) -> None:
-    if state.gateway_journey is None:
-        raise ProducerError("gateway_journey_missing")
+def _copy_node_receipt(
+    state: ProducerState,
+    executor: Executor,
+) -> JsonObject:
+    if state.node_receipt is not None:
+        return state.node_receipt
     destination = state.runtime.file("copied-receipt/node-mission-receipt.json")
     _require_success(
         executor.run(
@@ -3884,6 +3901,110 @@ def _bind_node_receipt(state: ProducerState, executor: Executor) -> None:
         raise ProducerError("node_receipt_invalid") from exc
     if not isinstance(receipt, dict):
         raise ProducerError("node_receipt_invalid")
+    return cast(JsonObject, receipt)
+
+
+def _node_receipt_projection_fallback() -> JsonObject:
+    return {
+        "collection_status": "inconclusive",
+        "collection_reason_code": "node_receipt_projection_unavailable",
+        "receipt_shape_state": "unknown",
+        "mission_identity_binding": "not_reported",
+        "claim_identity_state": "not_reported",
+        "envelope_identity_state": "not_reported",
+        "next_operation_state": "not_reported",
+        "last_closed_status": "not_reported",
+        "handoff_nonce_digest_state": "invalid_or_missing",
+    }
+
+
+def _node_receipt_projection_diagnostic(
+    state: ProducerState,
+    receipt: JsonObject,
+) -> JsonObject:
+    expected_keys = {
+        "mission_id",
+        "claim_id",
+        "envelope_digest",
+        "next_operation_index",
+        "handoff_nonce_digest",
+        "last_closed_status",
+    }
+    next_operation_index = receipt.get("next_operation_index")
+    last_closed_status = receipt.get("last_closed_status")
+    nonce_digest = receipt.get("handoff_nonce_digest")
+    mission_identity = receipt.get("mission_id")
+    return {
+        "collection_status": "complete",
+        "collection_reason_code": "node_receipt_projection_state_collected",
+        "receipt_shape_state": (
+            "exact" if set(receipt) == expected_keys else "unexpected"
+        ),
+        "mission_identity_binding": (
+            "matched"
+            if isinstance(state.mission_id, str)
+            and mission_identity == state.mission_id
+            else "not_reported"
+            if mission_identity is None
+            else "mismatched"
+        ),
+        "claim_identity_state": (
+            "valid_format"
+            if isinstance(receipt.get("claim_id"), str)
+            and _CLAIM_ID.fullmatch(cast(str, receipt.get("claim_id")))
+            else "not_reported"
+            if receipt.get("claim_id") is None
+            else "invalid"
+        ),
+        "envelope_identity_state": (
+            "valid_digest"
+            if isinstance(receipt.get("envelope_digest"), str)
+            and _DIGEST.fullmatch(cast(str, receipt.get("envelope_digest")))
+            else "not_reported"
+            if receipt.get("envelope_digest") is None
+            else "invalid"
+        ),
+        "next_operation_state": (
+            {
+                1: "first_operation_pending",
+                2: "second_operation_pending",
+                3: "completion_pending",
+                4: "completion_recorded",
+            }.get(next_operation_index, "unrecognized")
+            if type(next_operation_index) is int
+            else "unrecognized"
+            if next_operation_index is not None
+            else "not_reported"
+        ),
+        "last_closed_status": (
+            last_closed_status
+            if isinstance(last_closed_status, str)
+            and last_closed_status
+            in {
+                "prepared",
+                "runner_reported_running",
+                "operation_1_closed",
+                "operation_2_closed",
+                "runner_reported_succeeded",
+                "cancel_observed",
+                "failed_closed",
+            }
+            else "not_reported"
+            if last_closed_status is None
+            else "unrecognized"
+        ),
+        "handoff_nonce_digest_state": (
+            "valid_digest"
+            if isinstance(nonce_digest, str) and _DIGEST.fullmatch(nonce_digest)
+            else "invalid_or_missing"
+        ),
+    }
+
+
+def _bind_node_receipt(state: ProducerState, executor: Executor) -> None:
+    if state.gateway_journey is None:
+        raise ProducerError("gateway_journey_missing")
+    receipt = _copy_node_receipt(state, executor)
     expected_keys = {
         "mission_id",
         "claim_id",
@@ -4918,6 +5039,13 @@ def _write_failure_diagnostic(
     ):
         diagnostic["gateway_mission_projection_diagnostic"] = (
             state.gateway_mission_projection_diagnostic
+        )
+    if (
+        state is not None
+        and state.node_receipt_projection_diagnostic is not None
+    ):
+        diagnostic["node_receipt_projection_diagnostic"] = (
+            state.node_receipt_projection_diagnostic
         )
     try:
         receipts.write(

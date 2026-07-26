@@ -284,7 +284,18 @@ class FixedMissionSession:
             report_kind="runner_running",
             outcome_code="started",
         )
-        self.lifecycle_revision = _gateway_revision(response)
+        try:
+            revision = _gateway_report_revision(
+                response,
+                expected_state="runner_reported_running",
+            )
+        except FixedRunnerBridgeError:
+            self.receipt = self.receipt.close(
+                self.receipt_path,
+                status="failed_closed",
+            )
+            raise
+        self.lifecycle_revision = revision
         self.receipt = self.receipt.close(
             self.receipt_path, status="runner_reported_running"
         )
@@ -400,7 +411,18 @@ class FixedMissionSession:
             outcome_code="succeeded",
             artifact_digest=None,
         )
-        self.lifecycle_revision = _gateway_revision(response)
+        try:
+            revision = _gateway_report_revision(
+                response,
+                expected_state="runner_reported_succeeded",
+            )
+        except FixedRunnerBridgeError:
+            self.receipt = self.receipt.close(
+                self.receipt_path,
+                status="failed_closed",
+            )
+            raise
+        self.lifecycle_revision = revision
         self.receipt = self.receipt.advance(
             self.receipt_path, status="runner_reported_succeeded"
         )
@@ -505,13 +527,7 @@ def _serve_session(
             try:
                 response = session.handle_request(request)
             except FixedRunnerBridgeError as exc:
-                _send_frame(
-                    connection,
-                    {
-                        **_closed_status(session, "denied"),
-                        "reason_code": exc.reason_code,
-                    },
-                )
+                _send_frame(connection, _denied_status(session, exc.reason_code))
                 raise
             _send_frame(connection, response)
     except FixedRunnerBridgeError:
@@ -692,6 +708,16 @@ def _validate_closed_envelope(envelope: JsonObject, state: NodeState) -> None:
 
 
 def _closed_status(session: FixedMissionSession, status: str) -> JsonObject:
+    next_required_affordance = (
+        "none"
+        if session.terminal
+        else {
+            1: "mission.step.1",
+            2: "mission.step.2",
+            3: "mission.complete",
+            4: "none",
+        }[session.receipt.next_operation_index]
+    )
     return {
         "status": status,
         "mission_id": session.receipt.mission_id,
@@ -699,10 +725,26 @@ def _closed_status(session: FixedMissionSession, status: str) -> JsonObject:
         "envelope_digest": session.receipt.envelope_digest,
         "profile_digest": session.profile_digest,
         "next_operation_index": session.receipt.next_operation_index,
+        "next_required_affordance": next_required_affordance,
         "handoff_nonce_digest": session.receipt.handoff_nonce_digest,
         "last_closed_status": session.receipt.last_closed_status,
         "runner_state_authority": "runner_reported_only",
         "model_provider_state_known": False,
+    }
+
+
+def _denied_status(
+    session: FixedMissionSession,
+    reason_code: str,
+) -> JsonObject:
+    if not session.terminal:
+        session.receipt = session.receipt.close(
+            session.receipt_path,
+            status="failed_closed",
+        )
+    return {
+        **_closed_status(session, "denied"),
+        "reason_code": reason_code,
     }
 
 
@@ -711,7 +753,13 @@ def _mission_session_id(receipt: BridgeReceipt) -> str:
     return f"mission:{receipt.mission_id}:{receipt.claim_id}:{envelope_prefix}"
 
 
-def _gateway_revision(document: JsonObject) -> int:
+def _gateway_report_revision(
+    document: JsonObject,
+    *,
+    expected_state: str,
+) -> int:
+    if document.get("gateway_lifecycle_state") != expected_state:
+        raise FixedRunnerBridgeError("gateway_report_not_advanced")
     return _required_integer(document, "gateway_lifecycle_revision", minimum=2)
 
 

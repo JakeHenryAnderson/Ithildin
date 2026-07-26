@@ -302,6 +302,14 @@ class FakeExecutor:
         self.interrupt_on: str | None = None
         self.enrollment_failure: str | None = None
         self.enrollment_stdout: str | None = None
+        self.node_receipt_document: object = {
+            "mission_id": MISSION_ID,
+            "claim_id": CLAIM_ID,
+            "envelope_digest": ENVELOPE,
+            "next_operation_index": 4,
+            "handoff_nonce_digest": "sha256:" + "8" * 64,
+            "last_closed_status": "runner_reported_succeeded",
+        }
 
     def bind_image_identity(self, image_id: str) -> None:
         assert producer._DIGEST.fullmatch(image_id)  # noqa: SLF001
@@ -656,16 +664,7 @@ class FakeExecutor:
             )
         if "cp" in tail:
             self.runtime.files["copied-receipt/node-mission-receipt.json"] = (
-                json.dumps(
-                    {
-                        "mission_id": MISSION_ID,
-                        "claim_id": CLAIM_ID,
-                        "envelope_digest": ENVELOPE,
-                        "next_operation_index": 4,
-                        "handoff_nonce_digest": "sha256:" + "8" * 64,
-                        "last_closed_status": "runner_reported_succeeded",
-                    }
-                ).encode()
+                json.dumps(self.node_receipt_document).encode()
             )
         return producer.CommandResult(0, "")
 
@@ -5276,6 +5275,107 @@ def test_gateway_mission_projection_hostile_type_is_written_to_failure_receipt(
     assert projection["mission_lifecycle_state"] == "unrecognized"
     assert MISSION_ID not in canonical_json(projection)
     assert NODE_ID not in canonical_json(projection)
+
+
+@pytest.mark.parametrize(
+    ("next_operation_index", "last_closed_status", "expected_operation_state"),
+    [
+        (3, "operation_2_closed", "completion_pending"),
+        (4, "runner_reported_succeeded", "completion_recorded"),
+    ],
+)
+def test_gateway_failure_retains_identity_free_node_receipt_convergence_projection(
+    fake_stack: tuple[
+        FakeRuntimeFactory,
+        FakeExecutorFactory,
+        FakeApiFactory,
+        FakeProvider,
+        FakeAssembler,
+    ],
+    next_operation_index: int,
+    last_closed_status: str,
+    expected_operation_state: str,
+) -> None:
+    runtime, executors, apis, provider, assembler = fake_stack
+    executor = executors.executor
+    api = apis.api
+    api.mission_lifecycle_state = "runner_reported_running"
+    assert isinstance(executor.node_receipt_document, dict)
+    executor.node_receipt_document = {
+        **executor.node_receipt_document,
+        "next_operation_index": next_operation_index,
+        "last_closed_status": last_closed_status,
+    }
+
+    with pytest.raises(producer.ProducerError, match="gateway_mission_projection_invalid"):
+        producer.run_producer(
+            gate=AllowGate(),
+            runtime_factory=runtime,
+            executor_factory=executors,
+            api_factory=apis,
+            provider=provider,
+            assembler=assembler,
+            candidate=(COMMIT, TREE),
+            environment={},
+            now=datetime(2026, 7, 24, 18, 0, tzinfo=UTC),
+        )
+
+    diagnostic = json.loads(runtime.receipts.files["diagnostic.json"])
+    receipt_projection = diagnostic["node_receipt_projection_diagnostic"]
+    assert receipt_projection == {
+        "collection_status": "complete",
+        "collection_reason_code": "node_receipt_projection_state_collected",
+        "receipt_shape_state": "exact",
+        "mission_identity_binding": "matched",
+        "claim_identity_state": "valid_format",
+        "envelope_identity_state": "valid_digest",
+        "next_operation_state": expected_operation_state,
+        "last_closed_status": last_closed_status,
+        "handoff_nonce_digest_state": "valid_digest",
+    }
+    rendered = canonical_json(receipt_projection)
+    assert MISSION_ID not in rendered
+    assert CLAIM_ID not in rendered
+    assert ENVELOPE not in rendered
+    assert diagnostic["gateway_mission_projection_diagnostic"][
+        "mission_lifecycle_state"
+    ] == "runner_reported_running"
+    assert diagnostic["primary_failure_code"] == "gateway_mission_projection_invalid"
+    assert assembler.calls == 0
+    assert len(executor.hermes_commands) == 1
+    assert sum("cp" in command for command in executor.commands) == 1
+
+
+def test_node_receipt_projection_hostile_types_are_closed_and_identity_free(
+    tmp_path: Path,
+) -> None:
+    state = _fixed_node_diagnostic_state(tmp_path)
+    state.node_id = NODE_ID
+    projection = producer._node_receipt_projection_diagnostic(  # noqa: SLF001
+        state,
+        {
+            "mission_id": ["not", "an", "identity"],
+            "claim_id": {},
+            "envelope_digest": False,
+            "next_operation_index": True,
+            "handoff_nonce_digest": [],
+            "last_closed_status": {"unexpected": "value"},
+            "extra": "private-value",
+        },
+    )
+
+    assert projection == {
+        "collection_status": "complete",
+        "collection_reason_code": "node_receipt_projection_state_collected",
+        "receipt_shape_state": "unexpected",
+        "mission_identity_binding": "mismatched",
+        "claim_identity_state": "invalid",
+        "envelope_identity_state": "invalid",
+        "next_operation_state": "unrecognized",
+        "last_closed_status": "unrecognized",
+        "handoff_nonce_digest_state": "invalid_or_missing",
+    }
+    assert "private-value" not in canonical_json(projection)
 
 
 @pytest.mark.parametrize(

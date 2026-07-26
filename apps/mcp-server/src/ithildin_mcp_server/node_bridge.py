@@ -17,6 +17,24 @@ MAX_FRAME_BYTES = 16_384
 OPERATION_TIMEOUT_SECONDS = 120
 FIXED_PROFILE_DIGEST = "sha256:90b94d725640768f1a7d665e979bbe11f263a4ff264591a5348d0b5820db3e92"
 AFFORDANCES = ("mission.step.1", "mission.step.2", "mission.complete")
+FIXED_MISSION_INSTRUCTIONS = (
+    "Complete the fixed mission by invoking all three no-argument affordances exactly once "
+    "and in order: mission.step.1, mission.step.2, then mission.complete. A final text "
+    "response before mission.complete succeeds does not complete the mission."
+)
+AFFORDANCE_DESCRIPTIONS = {
+    "mission.step.1": (
+        "Required first governed mission step. After it succeeds, invoke mission.step.2."
+    ),
+    "mission.step.2": (
+        "Required second governed mission step. After it succeeds, invoke mission.complete; "
+        "do not stop or return a final response."
+    ),
+    "mission.complete": (
+        "Required final mission affordance. The mission remains incomplete until this "
+        "affordance succeeds."
+    ),
+}
 _HANDOFF_KEYS = {
     "protocol_version",
     "mission_id",
@@ -112,7 +130,7 @@ class FixedNodeBridgeAdapter:
             types.Tool(
                 name=name,
                 title=name,
-                description="Fixed Ithildin mission affordance",
+                description=AFFORDANCE_DESCRIPTIONS[name],
                 inputSchema={
                     "type": "object",
                     "additionalProperties": False,
@@ -146,7 +164,10 @@ class FixedNodeBridgeAdapter:
 
 
 def create_node_bridge_server(adapter: FixedNodeBridgeAdapter) -> Server:
-    server = Server("ithildin-fixed-node-bridge")
+    server = Server(
+        "ithildin-fixed-node-bridge",
+        instructions=FIXED_MISSION_INSTRUCTIONS,
+    )
 
     @server.list_tools()  # type: ignore[no-untyped-call,untyped-decorator]
     async def list_tools() -> list[types.Tool]:
