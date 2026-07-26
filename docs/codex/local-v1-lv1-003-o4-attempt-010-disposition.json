@@ -1,0 +1,96 @@
+{
+  "schema_version": "1",
+  "record_type": "local_v1_lv1_003_o4_attempt_010_disposition",
+  "record_status": "ATTEMPT_010_CONSUMED_FIXED_NODE_START_FAILED_CLEANUP_COMPLETE_NO_LIVE_AUTHORITY",
+  "attempt_id": "LV1-003-O4-ATTEMPT-010",
+  "execution_candidate_commit": "782bc06faed3440de5dc3fe4c192b01f91a8680a",
+  "execution_candidate_tree": "d4afd1b7fe68a65507f1ad230fffd91f6580b676",
+  "review_tag": "ithildin/lv1-003-o4-attempt010-reviewed",
+  "operator_command": "make local-v1-lv1-003-o4-producer-run",
+  "module_command": "uv run python -m scripts.local_v1_lv1_003_o4_producer",
+  "invocation": {
+    "make_exit_code": 2,
+    "producer_exit_code": 1,
+    "run_id": "20260726T082552Z-8aa38742",
+    "compose_project": "ithildin-local-v1-o4-8aa38742"
+  },
+  "bounded_result": {
+    "outward_failure_code": "fixed_node_start_failed",
+    "primary_failure_code": "fixed_node_start_failed",
+    "highest_completed_stage": 11,
+    "base_build_completed": true,
+    "bridge_build_completed": true,
+    "bound_image_identity_count": 4,
+    "raw_image_ids_recorded": false,
+    "raw_node_id_recorded": false,
+    "cleanup_failure_codes": [],
+    "recovery_required": false,
+    "cleanup_completed_under_reviewed_producer_semantics": true,
+    "generic_docker_absence_claimed": false,
+    "generic_process_absence_claimed": false,
+    "full_project_absence_claimed": false
+  },
+  "retained_receipt_binding": {
+    "root": "var/local-v1-lv1-003-o4-receipts/20260726T082552Z-8aa38742",
+    "root_mode": "0700",
+    "entries": [
+      {
+        "path": "diagnostic.json",
+        "mode": "0600",
+        "size": 7149,
+        "sha256": "sha256:8b647d26255b90c607eac85528f3f20881c8deda366befabefc500373dd88cc6"
+      },
+      {
+        "path": "disposition.json",
+        "mode": "0600",
+        "size": 125,
+        "sha256": "sha256:dcce687c6e2a0d6f36e36d3c14ac09e25ba4c195e1f16f35bf6ea44521612dd3"
+      }
+    ],
+    "disposition_fields": {
+      "status": "quarantined_not_published",
+      "failure_code": "fixed_node_start_failed",
+      "release_allowed": false,
+      "uat_complete": false
+    },
+    "private_contents_reproduced": false
+  },
+  "bounded_absence_observations": {
+    "exact_run_runtime_root_absent": true,
+    "exact_public_report_root_absent": true,
+    "generic_runtime_absence_claimed": false,
+    "generic_report_absence_claimed": false
+  },
+  "attempt_contract": {
+    "execution_attempt_budget": 0,
+    "attempt_consumed": true,
+    "retry_authorized": false,
+    "automatic_retry_authorized": false,
+    "recovery_authorized": false,
+    "cleanup_authorized": false,
+    "successor_attempt_authorized": false
+  },
+  "authority": {
+    "producer_code_authorized": false,
+    "docker_lifecycle_authorized": false,
+    "live_hermes_execution_authorized": false,
+    "model_provider_access_authorized": false,
+    "o4_evidence_execution_authorized": false,
+    "credential_custody_authorized": false,
+    "runner_lifecycle_authority": false,
+    "arbitrary_host_control_authorized": false,
+    "generic_process_control_authorized": false,
+    "shell_execution_authorized": false,
+    "docker_socket_authorized": false,
+    "network_non_bypass_claimed": false,
+    "filesystem_non_bypass_claimed": false,
+    "new_governed_power_authorized": false,
+    "new_governed_tool": false,
+    "release_allowed": false,
+    "promotion_allowed": false,
+    "production_authorized": false,
+    "uat_complete": false
+  },
+  "next_action": "prepare_bounded_fixed_node_start_diagnostic_for_separate_exact_review_not_retry",
+  "tool_count": 24
+}

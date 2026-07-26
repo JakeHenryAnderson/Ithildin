@@ -39,11 +39,11 @@ def _attempt_010_control_child_repository(tmp_path: Path) -> tuple[Path, str, st
         check=True,
     )
     _run_git(repo, "checkout", "--detach", gate.CANDIDATE_PARENT_COMMIT)
-    for relative in gate.ATTEMPT_010_CONTROL_PATH_ALLOWLIST:
+    for relative in gate.ATTEMPT_010_CLOSURE_CONTROL_PATH_ALLOWLIST:
         destination = repo / relative
         destination.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(relative, destination)
-    _run_git(repo, "add", "--", *gate.ATTEMPT_010_CONTROL_PATH_ALLOWLIST)
+    _run_git(repo, "add", "--", *gate.ATTEMPT_010_CLOSURE_CONTROL_PATH_ALLOWLIST)
     _run_git(
         repo,
         "-c",
@@ -53,7 +53,7 @@ def _attempt_010_control_child_repository(tmp_path: Path) -> tuple[Path, str, st
         "commit",
         "-q",
         "-m",
-        "test: exact O4 Attempt 010 authorization child",
+        "test: exact O4 Attempt 010 closure child",
     )
     return (
         repo,
@@ -64,7 +64,6 @@ def _attempt_010_control_child_repository(tmp_path: Path) -> tuple[Path, str, st
 
 def _attempt_010_child_repository(tmp_path: Path) -> tuple[Path, str, str]:
     repo, commit, tree = _attempt_010_control_child_repository(tmp_path)
-    _run_git(repo, "tag", gate.ATTEMPT_010_REVIEW_TAG, commit)
     shutil.copytree(
         Path.cwd() / gate.ATTEMPT_002_RECEIPT_BASE,
         repo / gate.ATTEMPT_002_RECEIPT_BASE,
@@ -88,7 +87,41 @@ def _attempt_010_child_repository(tmp_path: Path) -> tuple[Path, str, str]:
 _attempt_009_closure_child_repository = _attempt_010_child_repository
 
 
-def test_attempt_010_exact_control_child_is_clean_parent_bound_and_runtime_equal(
+def _synthetic_attempt_010_receipts(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> tuple[Path, Path, Path, Path]:
+    receipt_base = Path("receipts")
+    receipt_root = receipt_base / "attempt-010"
+    runtime_base = Path("runtime")
+    runtime_root = runtime_base / "attempt-010"
+    report_root = Path("reports") / "attempt-010"
+    diagnostic_bytes = b"x" * gate.ATTEMPT_010_DIAGNOSTIC_SIZE
+    absolute_receipt_root = tmp_path / receipt_root
+    absolute_receipt_root.mkdir(parents=True)
+    (tmp_path / receipt_base).chmod(0o700)
+    absolute_receipt_root.chmod(0o700)
+    (tmp_path / runtime_base).mkdir(mode=0o700)
+    diagnostic = absolute_receipt_root / "diagnostic.json"
+    disposition = absolute_receipt_root / "disposition.json"
+    diagnostic.write_bytes(diagnostic_bytes)
+    disposition.write_bytes(gate.ATTEMPT_010_DISPOSITION_BYTES)
+    diagnostic.chmod(0o600)
+    disposition.chmod(0o600)
+    monkeypatch.setattr(gate, "ATTEMPT_002_RECEIPT_BASE", receipt_base)
+    monkeypatch.setattr(gate, "ATTEMPT_010_RECEIPT_ROOT", receipt_root)
+    monkeypatch.setattr(gate, "ATTEMPT_002_RUNTIME_BASE", runtime_base)
+    monkeypatch.setattr(gate, "ATTEMPT_010_RUNTIME_ROOT", runtime_root)
+    monkeypatch.setattr(gate, "ATTEMPT_010_REPORT_ROOT", report_root)
+    monkeypatch.setattr(
+        gate,
+        "ATTEMPT_010_DIAGNOSTIC_RECEIPT_DIGEST",
+        "sha256:" + hashlib.sha256(diagnostic_bytes).hexdigest(),
+    )
+    return tmp_path, diagnostic, disposition, absolute_receipt_root
+
+
+def test_attempt_010_exact_closure_child_is_clean_parent_bound_and_runtime_equal(
     tmp_path: Path,
 ) -> None:
     repo, commit, tree = _attempt_010_control_child_repository(tmp_path)
@@ -100,94 +133,33 @@ def test_attempt_010_exact_control_child_is_clean_parent_bound_and_runtime_equal
     assert result == (commit, tree)
 
 
-def test_attempt_010_exact_child_authorizes_one_supervised_invocation(
+def test_attempt_010_descendant_resolves_immutable_first_closure_child(
     tmp_path: Path,
 ) -> None:
-    repo, execution_commit, execution_tree = _attempt_010_child_repository(tmp_path)
-    report = gate.build_report(repo)
-
-    assert report["failures"] == []
-    assert report["valid"] is True
-    assert report["record_status"] == "ATTEMPT_010_EXACT_CHILD_ONE_SHOT_EXECUTION_AUTHORIZED"
-    assert report["reviewed_implementation_commit"] == gate.REVIEWED_IMPLEMENTATION_COMMIT
-    assert report["code_authorization_commit"] == gate.CODE_AUTHORIZATION_COMMIT
-    assert report["attempt_id"] == gate.ATTEMPT_010_ID
-    assert report["attempted_candidate_commit"] == execution_commit
-    assert report["attempted_candidate_tree"] == execution_tree
-    assert report["attempt_002_attempted_candidate_commit"] == gate.ATTEMPT_002_CANDIDATE_COMMIT
-    assert report["attempt_002_attempted_candidate_tree"] == gate.ATTEMPT_002_CANDIDATE_TREE
-    assert report["attempt_001_history"] == {
-        "attempt_id": gate.ATTEMPT_001_ID,
-        "attempted_candidate_commit": gate.ATTEMPT_001_CANDIDATE_COMMIT,
-        "attempted_candidate_tree": gate.ATTEMPT_001_CANDIDATE_TREE,
-        "attempt_consumed": True,
-    }
-    assert report["attempt_001_consumed"] is True
-    assert report["attempt_002_consumed"] is True
-    assert report["attempt_003_consumed"] is True
-    assert report["attempt_004_consumed"] is True
-    assert report["attempt_005_consumed"] is True
-    assert report["attempt_006_consumed"] is True
-    assert report["attempt_007_consumed"] is True
-    assert report["attempt_008_consumed"] is True
-    assert report["attempt_009_consumed"] is True
-    assert report["attempt_010_consumed"] is False
-    assert report["attempt_consumed"] is False
-    assert report["retry_authorized"] is False
-    contract = _contract()
-    assert (
-        contract["code_authorization_origin_record_sha256"]
-        == gate.CODE_AUTHORIZATION_ORIGIN_RECORD_DIGEST
+    repo, closure_commit, _ = _attempt_010_control_child_repository(tmp_path)
+    readme = repo / "README.md"
+    readme.write_text(
+        readme.read_text(encoding="utf-8") + "\n<!-- descendant test -->\n",
+        encoding="utf-8",
     )
-    assert contract["code_authorization_record_sha256"] == gate.CODE_AUTHORIZATION_RECORD_DIGEST
-    assert contract["candidate_parent_commit"] == gate.CANDIDATE_PARENT_COMMIT
-    assert contract["candidate_parent_tree"] == gate.CANDIDATE_PARENT_TREE
-    assert contract["enrollment_output_projection_contract"] == {
-        "field_names": ["node_id", "principal_id", "workspace_id"],
-        "field_types": {
-            "node_id": "string",
-            "principal_id": "string",
-            "workspace_id": "string",
-        },
-        "principal_id_derivation": "agent:node.{node_id}",
-        "canonical_json_terminated_by_one_lf": True,
-        "extra_fields_allowed": False,
-    }
-    assert (
-        contract["historical_post_review_candidate_parent_commit"]
-        == gate.HISTORICAL_CANDIDATE_PARENT_COMMIT
-    )
-    assert (
-        contract["historical_post_review_candidate_parent_tree"]
-        == gate.HISTORICAL_CANDIDATE_PARENT_TREE
-    )
-    assert report["execution_checkout_commit"] == execution_commit
-    assert report["execution_checkout_tree"] == execution_tree
-    assert report["execution_attempt_budget"] == 1
-    assert report["live_execution_authorized"] is True
-    assert report["docker_lifecycle_authorized"] is True
-    assert report["provider_access_authorized"] is True
-    assert report["o4_evidence_execution_authorized"] is True
-    assert report["new_governed_tool"] is False
-    assert report["release_allowed"] is False
-    assert report["uat_complete"] is False
-    authority = _contract()["authority"]
-    assert isinstance(authority, dict)
-    assert set(authority) == gate.AUTHORITY_FIELDS
-    assert {key for key, value in authority.items() if value is True} == gate.TRUE_AUTHORITY_FIELDS
-    assert (
-        gate._file_digest(gate.ATTEMPT_001_DISPOSITION_JSON, [])  # noqa: SLF001
-        == gate.ATTEMPT_001_DISPOSITION_JSON_DIGEST
-    )
-    assert (
-        gate._file_digest(gate.ATTEMPT_001_DISPOSITION_DOCUMENT, [])  # noqa: SLF001
-        == gate.ATTEMPT_001_DISPOSITION_DOCUMENT_DIGEST
-    )
-    gate.assert_live_execution_authorized(
+    _run_git(repo, "add", "README.md")
+    _run_git(
         repo,
-        candidate_commit=execution_commit,
-        candidate_tree=execution_tree,
+        "-c",
+        "user.name=Ithildin Test",
+        "-c",
+        "user.email=ithildin-test@example.invalid",
+        "commit",
+        "-q",
+        "-m",
+        "test: descendant after O4 Attempt 010 closure",
     )
+    failures: list[str] = []
+
+    resolved = gate._attempt_010_closure_candidate_ref(repo, failures)  # noqa: SLF001
+
+    assert failures == []
+    assert resolved == closure_commit
 
 
 def test_enrollment_repair_review_binds_three_field_derived_principal_projection() -> None:
@@ -202,19 +174,33 @@ def test_enrollment_repair_review_binds_three_field_derived_principal_projection
         assert stale not in normalized
 
 
-def test_attempt_010_contract_binds_review_budget_authority_and_recovery() -> None:
+def test_attempt_010_contract_binds_consumed_closure_and_no_authority() -> None:
     contract = _contract()
 
+    assert (
+        contract["record_status"]
+        == "ATTEMPT_010_CONSUMED_FIXED_NODE_START_FAILED_CLEANUP_COMPLETE_NO_LIVE_AUTHORITY"
+    )
     assert contract["attempt_010_id"] == gate.ATTEMPT_010_ID
     assert contract["attempt_010_review_tag"] == gate.ATTEMPT_010_REVIEW_TAG
+    assert contract["attempt_010_attempted_candidate_commit"] == gate.ATTEMPT_010_CANDIDATE_COMMIT
+    assert contract["attempt_010_attempted_candidate_tree"] == gate.ATTEMPT_010_CANDIDATE_TREE
+    assert contract["attempt_010_failure_code"] == "fixed_node_start_failed"
+    assert contract["attempt_010_highest_completed_stage"] == 11
+    assert contract["attempt_010_cleanup_failure_codes"] == []
+    assert contract["attempt_010_recovery_required"] is False
     assert contract["candidate_parent_commit"] == gate.CANDIDATE_PARENT_COMMIT
     assert contract["candidate_parent_tree"] == gate.CANDIDATE_PARENT_TREE
-    assert contract["execution_candidate_binding_mode"] == "dynamic_current_head_after_all_checks"
-    assert contract["execution_attempt_budget"] == 1
-    assert contract["attempt_consumed"] is False
+    assert (
+        contract["execution_candidate_binding_mode"]
+        == "dynamic_exact_immediate_child_then_immutable_first_descendant"
+    )
+    assert contract["execution_attempt_budget"] == 0
+    assert contract["attempt_consumed"] is True
     assert contract["retry_authorized"] is False
+    assert contract["attempt_010_automatic_retry_authorized"] is False
     assert contract["persistent_cross_process_budget_consumption_claimed"] is False
-    assert contract["immediate_post_attempt_disposition_recorded"] is False
+    assert contract["immediate_post_attempt_disposition_recorded"] is True
     assert contract["mcc_review_disposition"] == "GO_CODE_ONLY"
     assert contract["mcc_review_findings"] == {
         "critical": 0,
@@ -224,13 +210,148 @@ def test_attempt_010_contract_binds_review_budget_authority_and_recovery() -> No
     }
     authority = contract["authority"]
     assert isinstance(authority, dict)
-    assert {key for key, value in authority.items() if value is True} == gate.TRUE_AUTHORITY_FIELDS
+    assert authority == gate.CLOSED_AUTHORITY
+    assert gate.TRUE_AUTHORITY_FIELDS == set()
     recovery = contract["attempt008_recovery_closure_binding"]
     assert isinstance(recovery, dict)
     assert recovery["recovery_closed"] is True
     assert recovery["successor_authority_derived_from_recovery"] is False
     assert recovery["cleanup_or_full_project_removal_claimed"] is False
     assert recovery["general_absence_claimed"] is False
+
+
+def test_attempt_010_tracked_disposition_is_closed_and_exact() -> None:
+    disposition = json.loads(gate.ATTEMPT_010_DISPOSITION_JSON.read_text(encoding="utf-8"))
+    failures: list[str] = []
+
+    gate._validate_attempt_010_disposition(  # type: ignore[arg-type] # noqa: SLF001
+        disposition,
+        gate.ATTEMPT_010_DISPOSITION_DOCUMENT.read_text(encoding="utf-8"),
+        failures,
+    )
+
+    assert failures == []
+    assert disposition["attempt_contract"]["execution_attempt_budget"] == 0
+    assert disposition["attempt_contract"]["attempt_consumed"] is True
+    assert disposition["authority"] == gate.CLOSED_AUTHORITY
+
+
+def test_attempt_010_synthetic_receipts_are_exact(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    repo, _, _, _ = _synthetic_attempt_010_receipts(tmp_path, monkeypatch)
+    failures: list[str] = []
+
+    gate._validate_attempt_010_receipts(repo, failures)  # noqa: SLF001
+
+    assert failures == []
+
+
+@pytest.mark.parametrize(
+    "mutation",
+    [
+        "root_mode",
+        "diagnostic_mode",
+        "diagnostic_size",
+        "diagnostic_digest",
+        "diagnostic_symlink",
+        "disposition_mode",
+        "disposition_size",
+        "disposition_digest",
+        "disposition_symlink",
+        "extra_entry",
+    ],
+)
+def test_attempt_010_synthetic_receipts_reject_metadata_or_content_drift(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    mutation: str,
+) -> None:
+    repo, diagnostic, disposition, receipt_root = _synthetic_attempt_010_receipts(
+        tmp_path,
+        monkeypatch,
+    )
+    if mutation == "root_mode":
+        receipt_root.chmod(0o755)
+    elif mutation == "diagnostic_mode":
+        diagnostic.chmod(0o644)
+    elif mutation == "diagnostic_size":
+        diagnostic.write_bytes(b"short")
+        diagnostic.chmod(0o600)
+    elif mutation == "diagnostic_digest":
+        diagnostic.write_bytes(b"y" * gate.ATTEMPT_010_DIAGNOSTIC_SIZE)
+        diagnostic.chmod(0o600)
+    elif mutation == "diagnostic_symlink":
+        diagnostic.unlink()
+        diagnostic.symlink_to("disposition.json")
+    elif mutation == "disposition_mode":
+        disposition.chmod(0o644)
+    elif mutation == "disposition_size":
+        disposition.write_bytes(b"{}")
+        disposition.chmod(0o600)
+    elif mutation == "disposition_digest":
+        disposition.write_bytes(b"x" * gate.ATTEMPT_010_DISPOSITION_SIZE)
+        disposition.chmod(0o600)
+    elif mutation == "disposition_symlink":
+        disposition.unlink()
+        disposition.symlink_to("diagnostic.json")
+    else:
+        extra = receipt_root / "unexpected.json"
+        extra.write_text("{}\n", encoding="utf-8")
+        extra.chmod(0o600)
+    failures: list[str] = []
+
+    gate._validate_attempt_010_receipts(repo, failures)  # noqa: SLF001
+
+    assert failures
+
+
+@pytest.mark.parametrize("present_root", ["runtime", "report"])
+def test_attempt_010_synthetic_receipts_reject_exact_root_presence(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    present_root: str,
+) -> None:
+    repo, _, _, _ = _synthetic_attempt_010_receipts(tmp_path, monkeypatch)
+    relative = (
+        gate.ATTEMPT_010_RUNTIME_ROOT
+        if present_root == "runtime"
+        else gate.ATTEMPT_010_REPORT_ROOT
+    )
+    (repo / relative).mkdir(parents=True)
+    failures: list[str] = []
+
+    gate._validate_attempt_010_receipts(repo, failures)  # noqa: SLF001
+
+    label = "runtime" if present_root == "runtime" else "public report"
+    assert any(f"O4 exact Attempt 010 {label} root is present" in item for item in failures)
+
+
+def test_attempt_010_assert_live_always_refuses(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        gate,
+        "build_report",
+        lambda _repo: {
+            "valid": True,
+            "live_execution_authorized": False,
+            "execution_attempt_budget": 0,
+            "execution_checkout_commit": "a" * 40,
+            "execution_checkout_tree": "b" * 40,
+        },
+    )
+
+    with pytest.raises(
+        gate.O4ExecutionAuthorizationError,
+        match="o4_live_execution_not_authorized",
+    ):
+        gate.assert_live_execution_authorized(
+            ROOT,
+            candidate_commit="a" * 40,
+            candidate_tree="b" * 40,
+        )
 
 
 def test_mcc_reconciliation_review_and_attempt008_recovery_bindings_are_exact() -> None:
@@ -260,33 +381,39 @@ def test_tampered_mcc_reconciliation_review_is_rejected() -> None:
 
 
 def test_attempt_010_review_tag_is_required_and_exact(tmp_path: Path) -> None:
-    repo, commit, tree = _attempt_010_control_child_repository(tmp_path)
+    repo, closure_commit, _ = _attempt_010_control_child_repository(tmp_path)
     failures: list[str] = []
 
     gate._validate_attempt_010_review_binding(  # noqa: SLF001
         repo,
-        candidate_commit=commit,
-        candidate_tree=tree,
+        candidate_commit=gate.ATTEMPT_010_CANDIDATE_COMMIT,
+        candidate_tree=gate.ATTEMPT_010_CANDIDATE_TREE,
+        failures=failures,
+    )
+    assert failures == []
+
+    _run_git(repo, "tag", "-f", gate.ATTEMPT_010_REVIEW_TAG, closure_commit)
+    failures = []
+    gate._validate_attempt_010_review_binding(  # noqa: SLF001
+        repo,
+        candidate_commit=gate.ATTEMPT_010_CANDIDATE_COMMIT,
+        candidate_tree=gate.ATTEMPT_010_CANDIDATE_TREE,
         failures=failures,
     )
     assert "O4 Attempt 010 independent review tag is not exact" in failures
 
-    _run_git(repo, "tag", gate.ATTEMPT_010_REVIEW_TAG, gate.CANDIDATE_PARENT_COMMIT)
-    failures = []
-    gate._validate_attempt_010_review_binding(  # noqa: SLF001
+    _run_git(
         repo,
-        candidate_commit=commit,
-        candidate_tree=tree,
-        failures=failures,
+        "tag",
+        "-f",
+        gate.ATTEMPT_010_REVIEW_TAG,
+        gate.ATTEMPT_010_CANDIDATE_COMMIT,
     )
-    assert "O4 Attempt 010 independent review tag is not exact" in failures
-
-    _run_git(repo, "tag", "-f", gate.ATTEMPT_010_REVIEW_TAG, commit)
     failures = []
     gate._validate_attempt_010_review_binding(  # noqa: SLF001
         repo,
-        candidate_commit=commit,
-        candidate_tree=tree,
+        candidate_commit=gate.ATTEMPT_010_CANDIDATE_COMMIT,
+        candidate_tree=gate.ATTEMPT_010_CANDIDATE_TREE,
         failures=failures,
     )
     assert failures == []
@@ -647,7 +774,7 @@ def test_live_gate_refuses_consumed_attempt_002() -> None:
             "attempt_001_root_absence",
         ),
         (
-            lambda value: value.__setitem__("attempt_consumed", True),
+            lambda value: value.__setitem__("attempt_consumed", False),
             "attempt_consumed",
         ),
         (
@@ -890,27 +1017,27 @@ def test_live_gate_refuses_consumed_attempt_002() -> None:
         ),
         (
             lambda value: value["authority"].__setitem__(  # type: ignore[union-attr]
-                "docker_lifecycle_authorized", False
+                "docker_lifecycle_authorized", True
             ),
-            "not exact for Attempt 010",
+            "not closed for consumed Attempt 010",
         ),
         (
             lambda value: value["authority"].__setitem__(  # type: ignore[union-attr]
-                "producer_code_authorized", False
+                "producer_code_authorized", True
             ),
-            "not exact for Attempt 010",
+            "not closed for consumed Attempt 010",
         ),
         (
             lambda value: value["authority"].__setitem__(  # type: ignore[union-attr]
                 "shell_execution_authorized", True
             ),
-            "not exact for Attempt 010",
+            "not closed for consumed Attempt 010",
         ),
         (
             lambda value: value["authority"].__setitem__(  # type: ignore[union-attr]
                 "release_allowed", 0
             ),
-            "not exact for Attempt 010",
+            "not closed for consumed Attempt 010",
         ),
         (
             lambda value: value.__setitem__("unexpected", False),
@@ -1676,6 +1803,16 @@ def test_evidence_ignore_patterns_and_closure_scopes_are_exact() -> None:
             "tests/test_local_v1_lv1_003_o4_execution_authorization_check.py",
         ]
     )
+    assert gate.ATTEMPT_010_CLOSURE_CONTROL_PATH_ALLOWLIST == [
+        "Makefile",
+        "README.md",
+        gate.ATTEMPT_010_DISPOSITION_JSON.as_posix(),
+        gate.ATTEMPT_010_DISPOSITION_DOCUMENT.as_posix(),
+        gate.CONTRACT.as_posix(),
+        gate.DOCUMENT.as_posix(),
+        "scripts/local_v1_lv1_003_o4_execution_authorization_check.py",
+        "tests/test_local_v1_lv1_003_o4_execution_authorization_check.py",
+    ]
 
 
 @pytest.mark.parametrize(

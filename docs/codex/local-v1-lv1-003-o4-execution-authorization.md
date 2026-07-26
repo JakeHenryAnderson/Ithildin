@@ -1,20 +1,43 @@
 # Local v1 LV1-003 O4 Execution Authorization Gate
 
 Status:
-`ATTEMPT_010_EXACT_CHILD_ONE_SHOT_EXECUTION_AUTHORIZED`
+`ATTEMPT_010_CONSUMED_FIXED_NODE_START_FAILED_CLEANUP_COMPLETE_NO_LIVE_AUTHORITY`
 
-This candidate prepares `LV1-003-O4-ATTEMPT-010` as a fresh isolated attempt, not a retry,
-recovery, or cleanup operation. It permits exactly one central-manager supervised invocation through the existing
-`make local-v1-lv1-003-o4-producer-run` target and exact module command, with a producer-generated
-fresh run and Compose-project identity. Its machine contract is
+This closure records consumed `LV1-003-O4-ATTEMPT-010`. It preserves the exact reviewed
+authorization candidate and all Attempts 001-009 and Attempt 008 recovery history, but grants no
+live authority. Its machine contract is
 `docs/codex/local-v1-lv1-003-o4-execution-authorization.json`.
 
-Implementation preparation alone grants no live execution. Live use begins only after independent
-exact review of the frozen Attempt 010 candidate. The exact seven-path immediate-child gate
-derives the candidate commit and tree dynamically only after all checks pass; it contains no future
-self-reference. The live checker requires review tag
-`ithildin/lv1-003-o4-attempt010-reviewed` to resolve to that exact candidate commit and tree. The
-tag is absent during preparation and may be created only after the independent review returns GO.
+The consumed attempt ran only through the existing
+`make local-v1-lv1-003-o4-producer-run` target and exact
+`uv run python -m scripts.local_v1_lv1_003_o4_producer` module command after independent review.
+The current closure always refuses execution.
+
+## Attempt 010 Consumed Result
+
+Exact reviewed candidate `782bc06faed3440de5dc3fe4c192b01f91a8680a`, tree
+`d4afd1b7fe68a65507f1ad230fffd91f6580b676`, is fixed by review tag
+`ithildin/lv1-003-o4-attempt010-reviewed`. Make exited `2`; the producer exited `1`. Fresh run
+`20260726T082552Z-8aa38742` used project `ithildin-local-v1-o4-8aa38742`.
+
+The outward and primary failure were `fixed_node_start_failed`; highest completed stage was `11`.
+Base and bridge builds completed, and exactly four bound image identities were recorded without
+placing any raw image ID or Node ID in tracked closure records. Cleanup reported no failure,
+`recovery_required` was false, and cleanup completed without reported failure under reviewed
+producer semantics. This does not establish generic Docker, image, container, project, process,
+runtime, or host absence.
+
+The exact owner-only receipt root is mode `0700`. Its `0600` `diagnostic.json` is 7,149 bytes with
+digest `sha256:8b647d26255b90c607eac85528f3f20881c8deda366befabefc500373dd88cc6`.
+Its exact closed `0600` `disposition.json` is 125 bytes with digest
+`sha256:dcce687c6e2a0d6f36e36d3c14ac09e25ba4c195e1f16f35bf6ea44521612dd3`.
+The exact run runtime root and exact public report root were absent. These bounded observations do
+not claim general runtime or report absence. The durable tracked disposition is
+`docs/codex/local-v1-lv1-003-o4-attempt-010-disposition.json`.
+
+Attempt budget is zero, `attempt_consumed` is true, retry and automatic retry are false, and all 19
+authority fields are false. There is no retry, recovery, cleanup, successor, release, promotion,
+production, or UAT authority.
 
 The candidate preserves all nine consumed attempt histories, the consumed and closed Attempt 003
 image recovery, the immutable Attempt 009 preflight failure and closure, and the completed tracked
@@ -67,9 +90,9 @@ That authorization was exercised once by candidate
 `aa3eecea481dd5c92925ceec3421c051c63cb3cf`, and is no longer live.
 
 The machine contract's generic `candidate_parent_commit` and `candidate_parent_tree` fields now
-refer only to the fresh Attempt 010 parent
-`660309ba00b9f7cea6fe2cbc5b34000474c2cd8e`, tree
-`dbcada823a66447714fe00233be5cc6f77e63442`. The reviewed runtime-native repair
+refer only to the consumed Attempt 010 execution candidate
+`782bc06faed3440de5dc3fe4c192b01f91a8680a`, tree
+`d4afd1b7fe68a65507f1ad230fffd91f6580b676`. The reviewed runtime-native repair
 `49db93d80a71855d9ae223826a9849749377c376`, tree
 `23950855584316daba76acd65be0bfdfd20fbcb9`, remains the explicit historical Attempt 004
 authorization parent. The older
@@ -715,15 +738,15 @@ Attempts 001 through 009 are consumed. Attempt 003 image recovery is consumed an
 full-project-removal, or general-absence claim. Attempt 009 has budget zero; its
 `attempt_consumed` was true, and retry and automatic retry remain false.
 
-Attempt 010 has execution budget one, `attempt_consumed` is false, retry and automatic retry are
-false, persistent cross-process budget consumption is not claimed, and no immediate post-attempt
-disposition is recorded. Any invocation outcome consumes the one attempt and requires a separate
-durable disposition. No retry, recovery, cleanup, or automatic rerun follows from this record. The
-live gate remains closed unless review tag `ithildin/lv1-003-o4-attempt010-reviewed` resolves to the
-exact clean candidate commit and tree.
+Attempt 010 is consumed with execution budget zero. `attempt_consumed` is true, retry and automatic
+retry are false, and its immediate post-attempt disposition is recorded. The review tag
+`ithildin/lv1-003-o4-attempt010-reviewed` remains immutable at the exact attempted candidate commit
+and tree, but grants no live authority. No retry, recovery, cleanup, successor, release, promotion,
+production, or UAT action follows from this closure. The next bounded action is fixed-node-start
+diagnostic preparation; the evidence does not prove a repair, and this is not another invocation.
 
 Credential custody, runner lifecycle, arbitrary host control, generic process control, shell
 execution, general Docker socket authority, network/filesystem non-bypass claims, new powers, new
-tools, evidence deletion, release, promotion, production, and UAT remain unauthorized. Exactly five
-bounded live authority fields are true and the remaining 14 authority fields are false. The
-24-tool/no-new-powers boundary is unchanged and the governed tool count remains exactly 24.
+tools, evidence deletion, release, promotion, production, and UAT remain unauthorized. All 19
+authority fields are false. The 24-tool/no-new-powers boundary is unchanged and the governed tool
+count remains exactly 24.
