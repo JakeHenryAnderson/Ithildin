@@ -1,4 +1,4 @@
-"""Validate the fail-closed LV1-003 O4 Attempt 008 one-shot authorization."""
+"""Validate the fail-closed LV1-003 O4 Attempt 009 one-shot authorization."""
 
 from __future__ import annotations
 
@@ -69,12 +69,15 @@ APPLICATION_STARTUP_STAGE_DIAGNOSTIC_REVIEW = Path(
 IMAGE_READABILITY_REPAIR_REVIEW = Path(
     "docs/codex/local-v1-lv1-003-o4-image-readability-repair-exact-review.md"
 )
+ENROLLMENT_OUTPUT_PROJECTION_REPAIR_REVIEW = Path(
+    "docs/codex/local-v1-lv1-003-o4-enrollment-output-projection-repair-exact-review.md"
+)
 AUTHORIZATION_TARGET = "local-v1-lv1-003-o4-execution-authorization-check"
 PRODUCER_STATIC_TARGET = "local-v1-lv1-003-o4-producer-static-check"
 PRODUCER_RUN_TARGET = "local-v1-lv1-003-o4-producer-run"
 PRODUCER_MODULE_INVOCATION = "uv run python -m scripts.local_v1_lv1_003_o4_producer"
 PRODUCER_RUN_COMMENT = (
-    "# LIVE, gate-protected entrypoint. Attempt 008 is consumed; current closure always refuses."
+    "# LIVE, gate-protected entrypoint. Attempt 009 allows one exact supervised invocation."
 )
 FAILED_FILE_PATH_INVOCATION = "uv run python scripts/local_v1_lv1_003_o4_producer.py"
 ENTRYPOINT_REPAIR_BASE_COMMIT = "148effd50c69b40a005f86f6217fc3db8b665a06"
@@ -97,7 +100,7 @@ CODE_AUTHORIZATION_ORIGIN_RECORD_DIGEST = (
 HISTORICAL_PRODUCER_CONTRACT_DIGEST = (
     "sha256:3c742762465380387153f5ee17686ed540354926c5364c9e73f15100d9bb30e1"
 )
-PRODUCER_CONTRACT_DIGEST = "sha256:ef13427da1991dc4f176fe91ca90da29ca8605bfa2435a15d1a7868fc76370b6"
+PRODUCER_CONTRACT_DIGEST = "sha256:e972cf112ca0bc659f889cc50d2902d9d68137724e3f4d508bcc8e149d4af18b"
 PRODUCER_EXACT_REVIEW_DIGEST = (
     "sha256:5d023bb589636fc991a86768fb97f737cae2cdd58da369c94f99a99d20245c76"
 )
@@ -321,8 +324,35 @@ ATTEMPT_008_DISPOSITION_JSON_DIGEST = (
 ATTEMPT_008_DISPOSITION_DOCUMENT_DIGEST = (
     "sha256:6d993a2bfa41b649cb3eb78fe6b659edb8ec066dc8d5857a860627bdd21a5b7e"
 )
-CANDIDATE_PARENT_COMMIT = ATTEMPT_008_CANDIDATE_COMMIT
-CANDIDATE_PARENT_TREE = ATTEMPT_008_CANDIDATE_TREE
+ENROLLMENT_OUTPUT_PROJECTION_REPAIR_REJECTED_COMMIT = "dd96e47adba2baf49b890d821098e326bad93f84"
+ENROLLMENT_OUTPUT_PROJECTION_REPAIR_REJECTED_TREE = "9e57f240ac65ffad38a66387648836bd1afdc489"
+ENROLLMENT_OUTPUT_PROJECTION_REPAIR_BASE_COMMIT = "6fcea4cad23c051abfbf09227948328975ccf724"
+ENROLLMENT_OUTPUT_PROJECTION_REPAIR_COMMIT = "8cd307e3ce2ca20e6fdc1b53fc1937bfa5568685"
+ENROLLMENT_OUTPUT_PROJECTION_REPAIR_TREE = "4dacc4015a51d61b29dc3e089900b2e12ab1d7b6"
+ENROLLMENT_OUTPUT_PROJECTION_REPAIR_REVIEW_DIGEST = (
+    "sha256:79c6ca4354895005c499b1bea8c62e03001fdc63d8a1b5c376f8c956a71005a0"
+)
+ENROLLMENT_OUTPUT_PROJECTION_REPAIR_PATH_DIGESTS: JsonObject = {
+    "apps/node/src/ithildin_node/__main__.py": (
+        "sha256:b7b3e9988f9351b25f24cf000f424bce1390cbb6be3010c41dce767987ac358d"
+    ),
+    "docs/codex/local-v1-lv1-003-o4-producer-contract.md": (
+        "sha256:e972cf112ca0bc659f889cc50d2902d9d68137724e3f4d508bcc8e149d4af18b"
+    ),
+    "scripts/local_v1_lv1_003_o4_producer.py": (
+        "sha256:cd5be3b081afda05a93ef29013a8d67bbac683d0f4118b77111939396c490bd4"
+    ),
+    "tests/test_local_v1_lv1_003_o4_producer.py": (
+        "sha256:299fe6d8c5dbf1de2ebcdef1f745223d460b649312ad693a34bf7133a82c59d7"
+    ),
+    "tests/test_node_cli.py": (
+        "sha256:8446ca4b6328d395cb93018ff765961a1ba81b9a5e2e7f5b690f712306abd100"
+    ),
+}
+ENROLLMENT_OUTPUT_PROJECTION_REPAIR_PATHS = list(ENROLLMENT_OUTPUT_PROJECTION_REPAIR_PATH_DIGESTS)
+ATTEMPT_009_ID = "LV1-003-O4-ATTEMPT-009"
+CANDIDATE_PARENT_COMMIT = ENROLLMENT_OUTPUT_PROJECTION_REPAIR_COMMIT
+CANDIDATE_PARENT_TREE = ENROLLMENT_OUTPUT_PROJECTION_REPAIR_TREE
 ATTEMPT_002_RECEIPT_BASE = Path("var/local-v1-lv1-003-o4-receipts")
 ATTEMPT_002_RECEIPT_ROOT = ATTEMPT_002_RECEIPT_BASE / ATTEMPT_002_RUN_ID
 ATTEMPT_002_DISPOSITION_RECEIPT = ATTEMPT_002_RECEIPT_ROOT / "disposition.json"
@@ -597,6 +627,15 @@ ATTEMPT_008_CLOSURE_CONTROL_PATH_ALLOWLIST = [
     "scripts/local_v1_lv1_003_o4_execution_authorization_check.py",
     "tests/test_local_v1_lv1_003_o4_execution_authorization_check.py",
 ]
+ATTEMPT_009_CONTROL_PATH_ALLOWLIST = [
+    "Makefile",
+    "README.md",
+    ENROLLMENT_OUTPUT_PROJECTION_REPAIR_REVIEW.as_posix(),
+    CONTRACT.as_posix(),
+    DOCUMENT.as_posix(),
+    "scripts/local_v1_lv1_003_o4_execution_authorization_check.py",
+    "tests/test_local_v1_lv1_003_o4_execution_authorization_check.py",
+]
 IMAGE_READABILITY_REPAIR_PATHS = list(IMAGE_READABILITY_REPAIR_PATH_DIGESTS)
 APPLICATION_STARTUP_STAGE_DIAGNOSTIC_PATHS = list(APPLICATION_STARTUP_STAGE_PATH_DIGESTS)
 DIAGNOSTIC_REPAIR_PATHS = [
@@ -629,14 +668,19 @@ SOURCE_DIGESTS = {
     "producer_source_sha256": (
         Path("scripts/local_v1_lv1_003_o4_producer.py"),
         cast(
-            str, APPLICATION_STARTUP_STAGE_PATH_DIGESTS["scripts/local_v1_lv1_003_o4_producer.py"]
+            str,
+            ENROLLMENT_OUTPUT_PROJECTION_REPAIR_PATH_DIGESTS[
+                "scripts/local_v1_lv1_003_o4_producer.py"
+            ],
         ),
     ),
     "producer_test_sha256": (
         Path("tests/test_local_v1_lv1_003_o4_producer.py"),
         cast(
             str,
-            APPLICATION_STARTUP_STAGE_PATH_DIGESTS["tests/test_local_v1_lv1_003_o4_producer.py"],
+            ENROLLMENT_OUTPUT_PROJECTION_REPAIR_PATH_DIGESTS[
+                "tests/test_local_v1_lv1_003_o4_producer.py"
+            ],
         ),
     ),
     "bridge_dockerfile_sha256": (
@@ -898,6 +942,24 @@ TOP_LEVEL_FIELDS = {
     "attempt_008_disposition_document_sha256",
     "attempt_008_execution_authorized",
     "attempt_008_automatic_retry_authorized",
+    "enrollment_output_projection_repair_review_record",
+    "enrollment_output_projection_repair_review_sha256",
+    "enrollment_output_projection_repair_rejected_commit",
+    "enrollment_output_projection_repair_rejected_tree",
+    "enrollment_output_projection_repair_commit",
+    "enrollment_output_projection_repair_tree",
+    "enrollment_output_projection_repair_path_digests",
+    "enrollment_output_projection_contract",
+    "attempt_009_id",
+    "attempt_009_candidate_parent_commit",
+    "attempt_009_candidate_parent_tree",
+    "attempt_009_operator_command",
+    "attempt_009_module_command",
+    "attempt_009_kind",
+    "attempt_009_run_identity_source",
+    "attempt_009_preflight_fail_closed_before_live_work",
+    "attempt_009_execution_authorized",
+    "attempt_009_automatic_retry_authorized",
     "attempt_002_id",
     "attempt_002_candidate_parent_commit",
     "attempt_002_candidate_parent_tree",
@@ -1136,14 +1198,20 @@ HISTORICAL_TRUE_AUTHORITY_FIELDS = {
 HISTORICAL_AUTHORITY: JsonObject = {
     key: key in HISTORICAL_TRUE_AUTHORITY_FIELDS for key in AUTHORITY_FIELDS
 }
-TRUE_AUTHORITY_FIELDS: set[str] = set()
+TRUE_AUTHORITY_FIELDS = {
+    "producer_code_authorized",
+    "docker_lifecycle_authorized",
+    "live_hermes_execution_authorized",
+    "model_provider_access_authorized",
+    "o4_evidence_execution_authorized",
+}
 CLOSED_AUTHORITY: JsonObject = {key: False for key in AUTHORITY_FIELDS}
 ATTEMPT_002_AUTHORITY: JsonObject = {
     key: key in HISTORICAL_TRUE_AUTHORITY_FIELDS for key in AUTHORITY_FIELDS
 }
 ATTEMPT_003_AUTHORITY: JsonObject = {key: False for key in AUTHORITY_FIELDS}
 ATTEMPT_004_AUTHORITY: JsonObject = {key: False for key in AUTHORITY_FIELDS}
-EXPECTED_AUTHORITY: JsonObject = CLOSED_AUTHORITY
+EXPECTED_AUTHORITY: JsonObject = {key: key in TRUE_AUTHORITY_FIELDS for key in AUTHORITY_FIELDS}
 
 
 class O4ExecutionAuthorizationError(RuntimeError):
@@ -1281,6 +1349,10 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         repo_root / ATTEMPT_008_DISPOSITION_DOCUMENT,
         failures,
     )
+    enrollment_output_projection_repair_review = _read_text(
+        repo_root / ENROLLMENT_OUTPUT_PROJECTION_REPAIR_REVIEW,
+        failures,
+    )
     _validate_contract(contract, failures)
     _validate_document(document, failures)
     _validate_producer_contract(producer_contract, contract, failures)
@@ -1361,6 +1433,10 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         attempt_008_disposition_document,
         failures,
     )
+    _validate_enrollment_output_projection_repair_review(
+        enrollment_output_projection_repair_review,
+        failures,
+    )
     _validate_retained_attempt_evidence(repo_root, failures)
     _validate_evidence_ignore_patterns(repo_root, failures)
     _validate_bound_documents(repo_root, failures)
@@ -1374,11 +1450,11 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     execution_checkout = _validate_execution_checkout(
         repo_root,
         failures,
-        candidate_parent_commit=ATTEMPT_008_CANDIDATE_COMMIT,
-        candidate_parent_tree=ATTEMPT_008_CANDIDATE_TREE,
-        reviewed_commit=IMAGE_READABILITY_REPAIR_COMMIT,
-        control_paths=ATTEMPT_008_CLOSURE_CONTROL_PATH_ALLOWLIST,
-        repair_paths=IMAGE_READABILITY_REPAIR_PATHS,
+        candidate_parent_commit=ENROLLMENT_OUTPUT_PROJECTION_REPAIR_COMMIT,
+        candidate_parent_tree=ENROLLMENT_OUTPUT_PROJECTION_REPAIR_TREE,
+        reviewed_commit=ENROLLMENT_OUTPUT_PROJECTION_REPAIR_COMMIT,
+        control_paths=ATTEMPT_009_CONTROL_PATH_ALLOWLIST,
+        repair_paths=ENROLLMENT_OUTPUT_PROJECTION_REPAIR_PATHS,
     )
     checkout_commit = execution_checkout[0] if execution_checkout is not None else None
     checkout_tree = execution_checkout[1] if execution_checkout is not None else None
@@ -1390,9 +1466,9 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "record_status": contract.get("record_status"),
         "reviewed_implementation_commit": contract.get("reviewed_implementation_commit"),
         "code_authorization_commit": contract.get("code_authorization_commit"),
-        "attempt_id": contract.get("attempt_008_id"),
-        "attempted_candidate_commit": contract.get("attempt_008_attempted_candidate_commit"),
-        "attempted_candidate_tree": contract.get("attempt_008_attempted_candidate_tree"),
+        "attempt_id": contract.get("attempt_009_id"),
+        "attempted_candidate_commit": checkout_commit,
+        "attempted_candidate_tree": checkout_tree,
         "attempt_002_attempted_candidate_commit": contract.get(
             "attempt_002_attempted_candidate_commit"
         ),
@@ -1437,15 +1513,16 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "attempt_006_consumed": True,
         "attempt_007_consumed": True,
         "attempt_008_consumed": True,
+        "attempt_009_consumed": contract.get("attempt_consumed"),
         "attempt_consumed": contract.get("attempt_consumed"),
         "retry_authorized": contract.get("retry_authorized"),
         "execution_checkout_commit": checkout_commit,
         "execution_checkout_tree": checkout_tree,
-        "execution_attempt_budget": 0,
-        "live_execution_authorized": False,
-        "docker_lifecycle_authorized": False,
-        "provider_access_authorized": False,
-        "o4_evidence_execution_authorized": False,
+        "execution_attempt_budget": 1 if valid else 0,
+        "live_execution_authorized": valid,
+        "docker_lifecycle_authorized": valid,
+        "provider_access_authorized": valid,
+        "o4_evidence_execution_authorized": valid,
         "new_governed_tool": False,
         "release_allowed": False,
         "uat_complete": False,
@@ -1475,10 +1552,7 @@ def _validate_contract(contract: JsonObject, failures: list[str]) -> None:
     expected = {
         "schema_version": "1",
         "record_type": "local_v1_lv1_003_o4_execution_authorization",
-        "record_status": (
-            "ATTEMPT_008_CONSUMED_ENROLLMENT_OUTPUT_PROJECTION_REPAIR_REQUIRED_"
-            "RECOVERY_REQUIRED_NO_LIVE_AUTHORITY"
-        ),
+        "record_status": "ATTEMPT_009_EXACT_CHILD_ONE_SHOT_EXECUTION_AUTHORIZED",
         "ticket_id": "LV1-003",
         "outcome_id": "O4",
         "producer_contract_path": PRODUCER_CONTRACT.as_posix(),
@@ -1714,6 +1788,48 @@ def _validate_contract(contract: JsonObject, failures: list[str]) -> None:
         "attempt_008_disposition_document_sha256": (ATTEMPT_008_DISPOSITION_DOCUMENT_DIGEST),
         "attempt_008_execution_authorized": False,
         "attempt_008_automatic_retry_authorized": False,
+        "enrollment_output_projection_repair_review_record": (
+            ENROLLMENT_OUTPUT_PROJECTION_REPAIR_REVIEW.as_posix()
+        ),
+        "enrollment_output_projection_repair_review_sha256": (
+            ENROLLMENT_OUTPUT_PROJECTION_REPAIR_REVIEW_DIGEST
+        ),
+        "enrollment_output_projection_repair_rejected_commit": (
+            ENROLLMENT_OUTPUT_PROJECTION_REPAIR_REJECTED_COMMIT
+        ),
+        "enrollment_output_projection_repair_rejected_tree": (
+            ENROLLMENT_OUTPUT_PROJECTION_REPAIR_REJECTED_TREE
+        ),
+        "enrollment_output_projection_repair_commit": (ENROLLMENT_OUTPUT_PROJECTION_REPAIR_COMMIT),
+        "enrollment_output_projection_repair_tree": ENROLLMENT_OUTPUT_PROJECTION_REPAIR_TREE,
+        "enrollment_output_projection_repair_path_digests": (
+            ENROLLMENT_OUTPUT_PROJECTION_REPAIR_PATH_DIGESTS
+        ),
+        "enrollment_output_projection_contract": {
+            "field_names": ["node_id", "principal_id", "workspace_id"],
+            "field_types": {
+                "node_id": "string",
+                "principal_id": "string",
+                "workspace_id": "string",
+            },
+            "principal_id_derivation": "agent:node.{node_id}",
+            "canonical_json_terminated_by_one_lf": True,
+            "extra_fields_allowed": False,
+        },
+        "attempt_009_id": ATTEMPT_009_ID,
+        "attempt_009_candidate_parent_commit": ENROLLMENT_OUTPUT_PROJECTION_REPAIR_COMMIT,
+        "attempt_009_candidate_parent_tree": ENROLLMENT_OUTPUT_PROJECTION_REPAIR_TREE,
+        "attempt_009_operator_command": ATTEMPT_002_OPERATOR_COMMAND,
+        "attempt_009_module_command": PRODUCER_MODULE_INVOCATION,
+        "attempt_009_kind": (
+            "new_separately_authorized_isolated_attempt_not_retry_cleanup_or_reconciliation"
+        ),
+        "attempt_009_run_identity_source": (
+            "producer_generated_fresh_run_project_suffix_runtime_receipt_and_evidence_paths"
+        ),
+        "attempt_009_preflight_fail_closed_before_live_work": True,
+        "attempt_009_execution_authorized": True,
+        "attempt_009_automatic_retry_authorized": False,
         "attempt_002_id": ATTEMPT_002_ID,
         "attempt_002_candidate_parent_commit": ENTRYPOINT_REPAIR_COMMIT,
         "attempt_002_candidate_parent_tree": ENTRYPOINT_REPAIR_TREE,
@@ -1726,13 +1842,13 @@ def _validate_contract(contract: JsonObject, failures: list[str]) -> None:
         "attempt_002_compose_project": ATTEMPT_002_PROJECT,
         "attempt_002_execution_authorized": False,
         "attempt_002_automatic_retry_authorized": False,
-        "execution_candidate_binding_mode": "none_attempt_closed",
-        "execution_attempt_budget": 0,
-        "attempt_consumed": True,
+        "execution_candidate_binding_mode": "dynamic_current_head_after_all_checks",
+        "execution_attempt_budget": 1,
+        "attempt_consumed": False,
         "retry_authorized": False,
         "attempt_custody": "central_manager_supervised_local_invocation",
         "persistent_cross_process_budget_consumption_claimed": False,
-        "immediate_post_attempt_disposition_recorded": True,
+        "immediate_post_attempt_disposition_recorded": False,
         "prior_attempt_detection_roots": PRIOR_ATTEMPT_ROOTS,
         "external_preflight_requirements": EXTERNAL_PREFLIGHT,
     }
@@ -1757,22 +1873,20 @@ def _validate_contract(contract: JsonObject, failures: list[str]) -> None:
     ):
         failures.append("O4 execution cleanup contract is invalid")
     if not _exact_json_equal(contract.get("authority"), EXPECTED_AUTHORITY):
-        failures.append("O4 execution authority is not exact for Attempt 008 closure")
+        failures.append("O4 execution authority is not exact for Attempt 009")
 
 
 def _validate_document(document: str, failures: list[str]) -> None:
     normalized = " ".join(document.split())
     for phrase in (
-        "Status: "
-        "`ATTEMPT_008_CONSUMED_ENROLLMENT_OUTPUT_PROJECTION_REPAIR_REQUIRED_"
-        "RECOVERY_REQUIRED_NO_LIVE_AUTHORITY`",
+        "Status: `ATTEMPT_009_EXACT_CHILD_ONE_SHOT_EXECUTION_AUTHORIZED`",
         REVIEWED_IMPLEMENTATION_COMMIT,
         CANDIDATE_PARENT_COMMIT,
         HISTORICAL_CANDIDATE_PARENT_COMMIT,
         CODE_AUTHORIZATION_COMMIT,
         "all inherited Attempt 001 lineage with explicit `attempt_001_*` keys",
         "Those fields are historical only",
-        "public current-attempt fields bind the consumed Attempt 008 candidate",
+        "public current-attempt fields bind the dynamic Attempt 009 child",
         ATTEMPT_001_CANDIDATE_COMMIT,
         ATTEMPT_001_CANDIDATE_TREE,
         ATTEMPT_001_COMMAND,
@@ -2014,6 +2128,30 @@ def _validate_document(document: str, failures: list[str]) -> None:
         "separately reviewed enrollment-output projection repair, not a retry",
         "Attempts 001 through 008 are consumed",
         "all 19 authority fields are false",
+        ENROLLMENT_OUTPUT_PROJECTION_REPAIR_REJECTED_COMMIT,
+        ENROLLMENT_OUTPUT_PROJECTION_REPAIR_REJECTED_TREE,
+        "one Medium finding (`M1`)",
+        ENROLLMENT_OUTPUT_PROJECTION_REPAIR_COMMIT,
+        ENROLLMENT_OUTPUT_PROJECTION_REPAIR_TREE,
+        ENROLLMENT_OUTPUT_PROJECTION_REPAIR_REVIEW.as_posix(),
+        "Critical: 0, High: 0, Medium: 0, Low: 0",
+        "captures subprocess streams as bytes",
+        "strict UTF-8",
+        "closed canonical projection with exactly three string fields",
+        "`node_id`, `principal_id`, and `workspace_id`",
+        "`principal_id == agent:node.{node_id}`",
+        ATTEMPT_009_ID,
+        "new separately authorized isolated attempt",
+        "not a retry, cleanup, revocation, or reconciliation of Attempt 008",
+        "generate a fresh run ID, Compose project, suffix, runtime root, receipt root, and "
+        "evidence path",
+        "preflight fails closed before live work",
+        "exact seven-path control allowlist",
+        "execution budget is one",
+        "`attempt_consumed` is false",
+        "Any invocation outcome consumes Attempt 009",
+        "Exactly five bounded live authority fields are true",
+        "remaining 14 authority fields are false",
         "24-tool/no-new-powers boundary is unchanged",
         "governed tool count remains exactly 24",
     ):
@@ -3091,6 +3229,61 @@ def _validate_image_readability_repair_review(
             failures.append(f"O4 image-readability review path binding is missing: {path}")
     if _digest(document) != IMAGE_READABILITY_REPAIR_REVIEW_DIGEST:
         failures.append("O4 image-readability repair review digest is invalid")
+
+
+def _validate_enrollment_output_projection_repair_review(
+    document: str,
+    failures: list[str],
+) -> None:
+    normalized = " ".join(document.split())
+    for phrase in (
+        "Status: `GO`",
+        ENROLLMENT_OUTPUT_PROJECTION_REPAIR_REJECTED_COMMIT,
+        ENROLLMENT_OUTPUT_PROJECTION_REPAIR_REJECTED_TREE,
+        "one Medium finding (`M1`)",
+        "not authorized for execution",
+        ENROLLMENT_OUTPUT_PROJECTION_REPAIR_COMMIT,
+        ENROLLMENT_OUTPUT_PROJECTION_REPAIR_TREE,
+        ENROLLMENT_OUTPUT_PROJECTION_REPAIR_BASE_COMMIT,
+        "Critical: 0",
+        "High: 0",
+        "Medium: 0",
+        "Low: 0",
+        "exact-commit disposition is `GO`",
+        "captures subprocess input and output as bytes",
+        "strict UTF-8",
+        "closed canonical projection containing exactly three string fields",
+        "`node_id`, `principal_id`, and `workspace_id`",
+        "`principal_id` must equal `agent:node.{node_id}`",
+        "`private_key_present`",
+        "does not execute Attempt 009",
+        "separate exact Attempt 009 one-shot execution authorization only",
+        "new isolated attempt",
+        "not a retry, cleanup, revocation, or reconciliation of Attempt 008",
+        "preflight must fail closed before live work",
+        "do not prove that the retained Attempt 008 enrollment was absent or revoked",
+        "does not revoke or reconcile the ambiguous Attempt 008 enrollment",
+        "governed tool or power",
+        "release, promotion, production, credential custody, or UAT",
+    ):
+        if phrase not in normalized:
+            failures.append(
+                f"O4 enrollment-output projection repair review is missing phrase: {phrase}"
+            )
+    for path, digest in ENROLLMENT_OUTPUT_PROJECTION_REPAIR_PATH_DIGESTS.items():
+        path_digest = cast(str, digest)
+        if path not in normalized or path_digest not in normalized:
+            failures.append(
+                f"O4 enrollment-output projection repair path binding is missing: {path}"
+            )
+    for forbidden in ("`agent_id`", "`gateway`", "`registered`", "five-field"):
+        if forbidden in normalized:
+            failures.append(
+                "O4 enrollment-output projection repair review contains stale projection "
+                f"vocabulary: {forbidden}"
+            )
+    if _digest(document) != ENROLLMENT_OUTPUT_PROJECTION_REPAIR_REVIEW_DIGEST:
+        failures.append("O4 enrollment-output projection repair review digest is invalid")
 
 
 def _validate_attempt_008_disposition(
@@ -5295,6 +5488,11 @@ def _validate_bound_documents(repo_root: Path, failures: list[str]) -> None:
             ATTEMPT_008_DISPOSITION_DOCUMENT_DIGEST,
             "Attempt 008 disposition document",
         ),
+        (
+            ENROLLMENT_OUTPUT_PROJECTION_REPAIR_REVIEW,
+            ENROLLMENT_OUTPUT_PROJECTION_REPAIR_REVIEW_DIGEST,
+            "enrollment-output projection repair exact review",
+        ),
     ):
         if _file_digest(repo_root / path, failures) != expected:
             failures.append(f"O4 {label} digest is invalid")
@@ -5304,9 +5502,9 @@ def _validate_execution_checkout(
     repo_root: Path,
     failures: list[str],
     *,
-    candidate_parent_commit: str = ATTEMPT_008_CANDIDATE_COMMIT,
-    candidate_parent_tree: str = ATTEMPT_008_CANDIDATE_TREE,
-    reviewed_commit: str = IMAGE_READABILITY_REPAIR_COMMIT,
+    candidate_parent_commit: str = ENROLLMENT_OUTPUT_PROJECTION_REPAIR_COMMIT,
+    candidate_parent_tree: str = ENROLLMENT_OUTPUT_PROJECTION_REPAIR_TREE,
+    reviewed_commit: str = ENROLLMENT_OUTPUT_PROJECTION_REPAIR_COMMIT,
     runtime_paths: list[str] | None = None,
     control_paths: list[str] | None = None,
     repair_paths: list[str] | None = None,
@@ -5314,9 +5512,7 @@ def _validate_execution_checkout(
     runtime_paths = (
         list(code_authorization.ALLOWED_RUNTIME_PATHS) if runtime_paths is None else runtime_paths
     )
-    control_paths = (
-        ATTEMPT_008_CLOSURE_CONTROL_PATH_ALLOWLIST if control_paths is None else control_paths
-    )
+    control_paths = ATTEMPT_009_CONTROL_PATH_ALLOWLIST if control_paths is None else control_paths
     repair_paths = [] if repair_paths is None else repair_paths
     head = _git(repo_root, ["rev-parse", "HEAD"], failures)
     tree = _git(repo_root, ["show", "-s", "--format=%T", "HEAD"], failures)
@@ -5497,20 +5693,23 @@ def _validate_wiring(repo_root: Path, failures: list[str]) -> None:
     if PRODUCER_MODULE_INVOCATION not in readme:
         failures.append("README does not bind the O4 module invocation")
     for phrase in (
-        "consumed Attempt 008 closure",
-        "zero attempt budget",
+        "Attempt 009 exact-child one-shot authorization",
+        "one attempt budget",
         "retained Attempt 001-008 and recovery evidence",
         "recovery required with no cleanup or Docker-absence claim",
         "without retained raw-stdout proof",
-        "all 19 authority fields false",
-        "Attempt 008 is consumed",
-        "current closure always refuses before live work",
+        "Attempt 008 remains consumed",
+        "separately reviewed enrollment-output projection repair",
+        "new isolated attempt, not a retry, cleanup, revocation, or reconciliation",
+        "producer-generated fresh run and project identity",
+        "preflight fails closed before live work",
+        "exactly five bounded live authority fields true and the other 14 false",
         "It is not part of release, milestone, or static checks",
         "producer contract itself grants no execution authority",
-        "consumed Attempt 008 closure grants none",
+        "release and UAT remain false",
     ):
         if phrase not in readme:
-            failures.append(f"README is missing current O4 Attempt 008 guidance: {phrase}")
+            failures.append(f"README is missing current O4 Attempt 009 guidance: {phrase}")
 
 
 def _target_body(makefile: str, target: str) -> str:
@@ -5562,6 +5761,10 @@ def _validate_git_bindings(repo_root: Path, failures: list[str]) -> None:
         (ATTEMPT_007_CANDIDATE_COMMIT, ATTEMPT_007_CANDIDATE_TREE),
         (IMAGE_READABILITY_REPAIR_COMMIT, IMAGE_READABILITY_REPAIR_TREE),
         (ATTEMPT_008_CANDIDATE_COMMIT, ATTEMPT_008_CANDIDATE_TREE),
+        (
+            ENROLLMENT_OUTPUT_PROJECTION_REPAIR_COMMIT,
+            ENROLLMENT_OUTPUT_PROJECTION_REPAIR_TREE,
+        ),
     ):
         tree = _git(repo_root, ["show", "-s", "--format=%T", commit], failures)
         if tree != expected_tree:
@@ -5686,6 +5889,13 @@ def _validate_git_bindings(repo_root: Path, failures: list[str]) -> None:
     ).split()
     if attempt_008_parents != [IMAGE_READABILITY_REPAIR_COMMIT]:
         failures.append("O4 Attempt 008 candidate parent is not exact")
+    enrollment_repair_parents = _git(
+        repo_root,
+        ["show", "-s", "--format=%P", ENROLLMENT_OUTPUT_PROJECTION_REPAIR_COMMIT],
+        failures,
+    ).split()
+    if enrollment_repair_parents != [ENROLLMENT_OUTPUT_PROJECTION_REPAIR_BASE_COMMIT]:
+        failures.append("O4 enrollment-output projection repair parent is not exact")
     runtime_native_changed = _git(
         repo_root,
         [
@@ -5815,6 +6025,28 @@ def _validate_git_bindings(repo_root: Path, failures: list[str]) -> None:
     ).splitlines()
     if attempt_008_changed != ATTEMPT_008_CONTROL_PATH_ALLOWLIST:
         failures.append("O4 Attempt 008 authorization changed paths are not exact")
+    enrollment_repair_changed = _git(
+        repo_root,
+        [
+            "diff-tree",
+            "--no-commit-id",
+            "--name-only",
+            "-r",
+            ENROLLMENT_OUTPUT_PROJECTION_REPAIR_COMMIT,
+        ],
+        failures,
+    ).splitlines()
+    if enrollment_repair_changed != ENROLLMENT_OUTPUT_PROJECTION_REPAIR_PATHS:
+        failures.append("O4 enrollment-output projection repair changed paths are not exact")
+    for path, expected_digest in ENROLLMENT_OUTPUT_PROJECTION_REPAIR_PATH_DIGESTS.items():
+        contents = _git(
+            repo_root,
+            ["show", f"{ENROLLMENT_OUTPUT_PROJECTION_REPAIR_COMMIT}:{path}"],
+            failures,
+            strip=False,
+        )
+        if not contents or _digest(contents) != expected_digest:
+            failures.append(f"O4 enrollment-output projection repair digest is invalid: {path}")
     historical = _git(
         repo_root,
         [
@@ -5977,10 +6209,10 @@ def _validate_source_bindings(
     for key, (path, expected) in SOURCE_DIGESTS.items():
         if _file_digest(repo_root / path, failures) != expected:
             failures.append(f"O4 execution current source differs for {key}")
-    for relative, expected_digest in APPLICATION_STARTUP_STAGE_PATH_DIGESTS.items():
-        stage_expected_digest = cast(str, expected_digest)
-        if _file_digest(repo_root / relative, failures) != stage_expected_digest:
-            failures.append(f"O4 application startup-stage source differs for {relative}")
+    for relative, expected_digest in ENROLLMENT_OUTPUT_PROJECTION_REPAIR_PATH_DIGESTS.items():
+        repair_expected_digest = cast(str, expected_digest)
+        if _file_digest(repo_root / relative, failures) != repair_expected_digest:
+            failures.append(f"O4 enrollment-output projection repair differs for {relative}")
     try:
         raw_profile = json.loads(
             (repo_root / "deploy/hermes-node-bridge/profile.json").read_text(encoding="utf-8"),
