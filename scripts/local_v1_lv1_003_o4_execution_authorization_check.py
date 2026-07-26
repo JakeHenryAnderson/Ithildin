@@ -355,6 +355,8 @@ ENROLLMENT_OUTPUT_PROJECTION_REPAIR_PATHS = list(ENROLLMENT_OUTPUT_PROJECTION_RE
 ATTEMPT_009_ID = "LV1-003-O4-ATTEMPT-009"
 ATTEMPT_009_CANDIDATE_COMMIT = "26a003f7949e4bef5f3c0f66c9e1490b37103d9b"
 ATTEMPT_009_CANDIDATE_TREE = "a5403df311e3d6c7769a975d75433bca2442c435"
+ATTEMPT_009_CLOSURE_COMMIT = "8211ba3ee0064dcf63d5eb80060d6ae4129fa4e1"
+ATTEMPT_009_CLOSURE_TREE = "c5bf9fd82d76e9d48fdf93c0ea624f6e696bcd39"
 ATTEMPT_009_RUN_ID = "20260726T014141Z-f6681bd3"
 ATTEMPT_009_PROJECT = "ithildin-local-v1-o4-f6681bd3"
 ATTEMPT_009_DISPOSITION_JSON_DIGEST = (
@@ -1506,6 +1508,46 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     _validate_source_bindings(repo_root, contract, failures)
     _validate_current_license_discovery(repo_root, failures)
     _validate_wiring(repo_root, failures)
+    head_parents = _git(
+        repo_root,
+        ["show", "-s", "--format=%P", "HEAD"],
+        failures,
+    ).split()
+    execution_candidate = (
+        "HEAD"
+        if head_parents == [ATTEMPT_009_CANDIDATE_COMMIT]
+        else ATTEMPT_009_CLOSURE_COMMIT
+    )
+    if execution_candidate == "HEAD":
+        current_authorization = _file_digest(
+            repo_root / code_authorization.AUTHORIZATION,
+            failures,
+        )
+        if current_authorization != CODE_AUTHORIZATION_RECORD_DIGEST:
+            failures.append(
+                "O4 execution candidate code authorization record digest is invalid"
+            )
+    else:
+        current_code_authorization = code_authorization.build_report(repo_root)
+        if not current_code_authorization["valid"]:
+            failures.append("O4 current code authorization is not valid")
+    if execution_candidate != "HEAD":
+        closure_ancestry = subprocess.run(
+            [
+                "git",
+                "-C",
+                str(repo_root),
+                "merge-base",
+                "--is-ancestor",
+                ATTEMPT_009_CLOSURE_COMMIT,
+                "HEAD",
+            ],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        if closure_ancestry.returncode != 0:
+            failures.append("O4 Attempt 009 closure is not an ancestor of HEAD")
     execution_checkout = _validate_execution_checkout(
         repo_root,
         failures,
@@ -1514,7 +1556,15 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         reviewed_commit=ENROLLMENT_OUTPUT_PROJECTION_REPAIR_COMMIT,
         control_paths=ATTEMPT_009_CLOSURE_CONTROL_PATH_ALLOWLIST,
         repair_paths=ENROLLMENT_OUTPUT_PROJECTION_REPAIR_PATHS,
+        candidate_ref=execution_candidate,
+        require_clean_worktree=execution_candidate == "HEAD",
     )
+    if (
+        execution_candidate == ATTEMPT_009_CLOSURE_COMMIT
+        and execution_checkout is not None
+        and execution_checkout[1] != ATTEMPT_009_CLOSURE_TREE
+    ):
+        failures.append("O4 Attempt 009 closure tree is not exact")
     checkout_commit = execution_checkout[0] if execution_checkout is not None else None
     checkout_tree = execution_checkout[1] if execution_checkout is not None else None
     valid = not failures
@@ -5781,6 +5831,8 @@ def _validate_execution_checkout(
     runtime_paths: list[str] | None = None,
     control_paths: list[str] | None = None,
     repair_paths: list[str] | None = None,
+    candidate_ref: str = "HEAD",
+    require_clean_worktree: bool = True,
 ) -> tuple[str, str] | None:
     runtime_paths = (
         list(code_authorization.ALLOWED_RUNTIME_PATHS) if runtime_paths is None else runtime_paths
@@ -5789,9 +5841,17 @@ def _validate_execution_checkout(
         ATTEMPT_009_CLOSURE_CONTROL_PATH_ALLOWLIST if control_paths is None else control_paths
     )
     repair_paths = [] if repair_paths is None else repair_paths
-    head = _git(repo_root, ["rev-parse", "HEAD"], failures)
-    tree = _git(repo_root, ["show", "-s", "--format=%T", "HEAD"], failures)
-    parents = _git(repo_root, ["show", "-s", "--format=%P", "HEAD"], failures).split()
+    head = _git(repo_root, ["rev-parse", candidate_ref], failures)
+    tree = _git(
+        repo_root,
+        ["show", "-s", "--format=%T", candidate_ref],
+        failures,
+    )
+    parents = _git(
+        repo_root,
+        ["show", "-s", "--format=%P", candidate_ref],
+        failures,
+    ).split()
     if parents != [candidate_parent_commit]:
         failures.append(
             "O4 execution checkout is not a single immediate child of the authorized parent"
@@ -5803,16 +5863,17 @@ def _validate_execution_checkout(
     )
     if parent_tree != candidate_parent_tree:
         failures.append("O4 execution candidate parent tree is not exact")
-    status = _git(
-        repo_root,
-        ["status", "--porcelain=v1", "--untracked-files=all"],
-        failures,
-    )
-    if status:
-        failures.append("O4 execution checkout is not clean")
+    if require_clean_worktree:
+        status = _git(
+            repo_root,
+            ["status", "--porcelain=v1", "--untracked-files=all"],
+            failures,
+        )
+        if status:
+            failures.append("O4 execution checkout is not clean")
     changed = _git(
         repo_root,
-        ["diff-tree", "--no-commit-id", "--name-only", "-r", "HEAD"],
+        ["diff-tree", "--no-commit-id", "--name-only", "-r", candidate_ref],
         failures,
     ).splitlines()
     if changed != control_paths:
@@ -5825,7 +5886,7 @@ def _validate_execution_checkout(
             "diff",
             "--quiet",
             reviewed_commit,
-            "HEAD",
+            candidate_ref,
             "--",
             *runtime_paths,
         ],
@@ -5844,7 +5905,7 @@ def _validate_execution_checkout(
                 "diff",
                 "--quiet",
                 candidate_parent_commit,
-                "HEAD",
+                candidate_ref,
                 "--",
                 *repair_paths,
             ],
@@ -6363,12 +6424,6 @@ def _validate_git_bindings(repo_root: Path, failures: list[str]) -> None:
     )
     if current_historical and _digest(current_historical) != CODE_AUTHORIZATION_RECORD_DIGEST:
         failures.append("O4 execution bound code authorization record digest is invalid")
-    current_authorization = _file_digest(
-        repo_root / code_authorization.AUTHORIZATION,
-        failures,
-    )
-    if current_authorization != CODE_AUTHORIZATION_RECORD_DIGEST:
-        failures.append("O4 execution current code authorization record digest is invalid")
 
 
 def _validate_attempted_candidate_binding(

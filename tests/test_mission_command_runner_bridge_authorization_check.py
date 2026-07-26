@@ -56,6 +56,22 @@ def test_authorization_contract_binds_exact_review_lineage_and_inventory() -> No
         "disposition": "GO",
     }
     assert (
+        authorization["authorized_runtime_tip_commit"]
+        == authorization_check.AUTHORIZED_RUNTIME_TIP_COMMIT
+    )
+    assert (
+        authorization["authorized_runtime_tip_tree"]
+        == authorization_check.AUTHORIZED_RUNTIME_TIP_TREE
+    )
+    assert (
+        authorization["authorized_runtime_lineage"]
+        == authorization_check.AUTHORIZED_RUNTIME_LINEAGE
+    )
+    assert len(authorization["authorized_runtime_lineage"]) == 7
+    assert authorization["authorized_runtime_lineage"][-1]["reviewed_commit"] == (
+        authorization_check.AUTHORIZED_RUNTIME_TIP_COMMIT
+    )
+    assert (
         "scripts/local_v1_lv1_003_o4_producer.py"
         in authorization["allowed_runtime_paths"]
     )
@@ -181,6 +197,20 @@ def test_authorized_runtime_state_rejects_staged_runtime_change(
 
     assert valid is False
     assert any("index differs" in failure for failure in failures)
+
+
+def test_authorized_runtime_lineage_is_exact_and_terminates_at_tip() -> None:
+    failures: list[str] = []
+
+    authorization_check._validate_authorized_runtime_lineage(  # noqa: SLF001
+        Path("."),
+        failures,
+    )
+
+    assert failures == []
+    assert authorization_check.AUTHORIZED_RUNTIME_LINEAGE[-1]["reviewed_commit"] == (
+        authorization_check.AUTHORIZED_RUNTIME_TIP_COMMIT
+    )
 
 
 def test_authorization_rejects_decision_substitution() -> None:

@@ -40,6 +40,157 @@ ALLOWED_RUNTIME_PATHS = [
     "scripts/local_v1_lv1_003_o4_producer.py",
     "tests/test_local_v1_lv1_003_o4_producer.py",
 ]
+AUTHORIZED_RUNTIME_TIP_COMMIT = "8cd307e3ce2ca20e6fdc1b53fc1937bfa5568685"
+AUTHORIZED_RUNTIME_TIP_TREE = "4dacc4015a51d61b29dc3e089900b2e12ab1d7b6"
+AUTHORIZED_RUNTIME_LINEAGE = [
+    {
+        "stage": "compose_repair",
+        "reviewed_commit": "7e6eb9f0fcad35016f611096543fa4a81017259c",
+        "reviewed_tree": "fef080b85db9b44675150954d6af5afd5d6fec0d",
+        "review_document": (
+            "docs/codex/local-v1-lv1-003-o4-compose-repair-exact-review.md"
+        ),
+        "review_document_sha256": (
+            "sha256:3209b958f6a7810e753e0c50dccdd113349faf96d6a9b45329d1966924d009dc"
+        ),
+        "authorized_runtime_delta_paths": [
+            "deploy/hermes-node-bridge/compose.yaml",
+            "scripts/local_v1_lv1_003_o4_producer.py",
+            "tests/test_local_v1_lv1_003_o4_producer.py",
+            "tests/test_node_fixed_runner_bridge.py",
+        ],
+        "critical": 0,
+        "high": 0,
+        "medium": 0,
+        "low": 0,
+        "disposition": "GO",
+    },
+    {
+        "stage": "runtime_native_repair",
+        "reviewed_commit": "49db93d80a71855d9ae223826a9849749377c376",
+        "reviewed_tree": "23950855584316daba76acd65be0bfdfd20fbcb9",
+        "review_document": (
+            "docs/codex/local-v1-lv1-003-o4-runtime-native-repair-exact-review.md"
+        ),
+        "review_document_sha256": (
+            "sha256:635f2e473985f4eef18d541c455ddabb7c09ec782c8c67d37b37da0fbf45e551"
+        ),
+        "authorized_runtime_delta_paths": [
+            "deploy/hermes-node-bridge/Dockerfile",
+            "scripts/local_v1_lv1_003_o4_producer.py",
+            "tests/test_local_v1_lv1_003_o4_producer.py",
+            "tests/test_node_fixed_runner_bridge.py",
+        ],
+        "critical": 0,
+        "high": 0,
+        "medium": 0,
+        "low": 0,
+        "disposition": "GO",
+    },
+    {
+        "stage": "diagnostic_repair",
+        "reviewed_commit": "dea1e48acb411e9afd3c6e2c777c05c08e0c5386",
+        "reviewed_tree": "40e1a7c862b1031dbab1bba9a7f7a30af0beb976",
+        "review_document": (
+            "docs/codex/local-v1-lv1-003-o4-diagnostic-repair-exact-review.md"
+        ),
+        "review_document_sha256": (
+            "sha256:f4307fb338c82b6513228641c9437d08c33c948d05b1689102a574b39e60f716"
+        ),
+        "authorized_runtime_delta_paths": [
+            "scripts/local_v1_lv1_003_o4_producer.py",
+            "tests/test_local_v1_lv1_003_o4_producer.py",
+        ],
+        "critical": 0,
+        "high": 0,
+        "medium": 0,
+        "low": 0,
+        "disposition": "GO",
+    },
+    {
+        "stage": "api_container_state_diagnostic",
+        "reviewed_commit": "3f207b8f390742b956ed62cea674b0e5c557b514",
+        "reviewed_tree": "e3bc1d84ab798e34b297b659fa4698003f3423fe",
+        "review_document": (
+            "docs/codex/"
+            "local-v1-lv1-003-o4-api-container-state-diagnostic-exact-review.md"
+        ),
+        "review_document_sha256": (
+            "sha256:561411e152df0f8f49210ec3380fd39df138a170053c99d48a315a34d498a8d2"
+        ),
+        "authorized_runtime_delta_paths": [
+            "scripts/local_v1_lv1_003_o4_producer.py",
+            "tests/test_local_v1_lv1_003_o4_producer.py",
+        ],
+        "critical": 0,
+        "high": 0,
+        "medium": 0,
+        "low": 0,
+        "disposition": "GO",
+    },
+    {
+        "stage": "application_startup_stage_diagnostic",
+        "reviewed_commit": "cce80b5cc71e9387237d18b588d294c39351a362",
+        "reviewed_tree": "4701443cd266cd86d6654a295f6277caddc117f2",
+        "review_document": (
+            "docs/codex/"
+            "local-v1-lv1-003-o4-application-startup-stage-diagnostic-exact-review.md"
+        ),
+        "review_document_sha256": (
+            "sha256:4d14b14e6fe881b0d1d5487ed7d4e2a84dd671520e7e7c917e7e9e525e6e76b4"
+        ),
+        "authorized_runtime_delta_paths": [
+            "scripts/local_v1_lv1_003_o4_producer.py",
+            "tests/test_api_service.py",
+            "tests/test_local_v1_lv1_003_o4_producer.py",
+        ],
+        "critical": 0,
+        "high": 0,
+        "medium": 0,
+        "low": 0,
+        "disposition": "GO",
+    },
+    {
+        "stage": "image_readability_repair",
+        "reviewed_commit": "7cc1da575074895a7210c5f15a34ae136f4f932a",
+        "reviewed_tree": "b448eb922619e59af74275cf1070deb33b6813ef",
+        "review_document": (
+            "docs/codex/local-v1-lv1-003-o4-image-readability-repair-exact-review.md"
+        ),
+        "review_document_sha256": (
+            "sha256:3d95c58d0c50d1ae229f0484b3a27cabfaee8d181f39b3285772b54384d0b423"
+        ),
+        "authorized_runtime_delta_paths": [
+            "deploy/hermes-node-bridge/Dockerfile",
+        ],
+        "critical": 0,
+        "high": 0,
+        "medium": 0,
+        "low": 0,
+        "disposition": "GO",
+    },
+    {
+        "stage": "enrollment_output_projection_repair",
+        "reviewed_commit": AUTHORIZED_RUNTIME_TIP_COMMIT,
+        "reviewed_tree": AUTHORIZED_RUNTIME_TIP_TREE,
+        "review_document": (
+            "docs/codex/"
+            "local-v1-lv1-003-o4-enrollment-output-projection-repair-exact-review.md"
+        ),
+        "review_document_sha256": (
+            "sha256:79c6ca4354895005c499b1bea8c62e03001fdc63d8a1b5c376f8c956a71005a0"
+        ),
+        "authorized_runtime_delta_paths": [
+            "scripts/local_v1_lv1_003_o4_producer.py",
+            "tests/test_local_v1_lv1_003_o4_producer.py",
+        ],
+        "critical": 0,
+        "high": 0,
+        "medium": 0,
+        "low": 0,
+        "disposition": "GO",
+    },
+]
 REVIEWED_PATH_INVENTORY = [
     "Makefile",
     "README.md",
@@ -157,6 +308,9 @@ EXPECTED_KEYS = {
     "reviewer",
     "review_disposition",
     "review_lineage",
+    "authorized_runtime_tip_commit",
+    "authorized_runtime_tip_tree",
+    "authorized_runtime_lineage",
     *TRUE_FIELDS,
     *FALSE_FIELDS,
     "allowed_runtime_paths",
@@ -271,7 +425,9 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     authorized_runtime_matches_reviewed_candidate = _validate_authorized_runtime_state(
         repo_root,
         failures,
+        reviewed_commit=AUTHORIZED_RUNTIME_TIP_COMMIT,
     )
+    _validate_authorized_runtime_lineage(repo_root, failures)
     _validate_text(authorization_text, failures)
     _validate_review_text(review_text, failures)
     if _digest(previous_review_text) != PREVIOUS_REVIEW_DOCUMENT_DIGEST:
@@ -333,6 +489,9 @@ def _validate_contract(
         "reviewer": "independent GPT-5.6 Sol xhigh",
         "review_disposition": "GO_CODE_ONLY",
         "review_lineage": REVIEW_LINEAGE,
+        "authorized_runtime_tip_commit": AUTHORIZED_RUNTIME_TIP_COMMIT,
+        "authorized_runtime_tip_tree": AUTHORIZED_RUNTIME_TIP_TREE,
+        "authorized_runtime_lineage": AUTHORIZED_RUNTIME_LINEAGE,
         "allowed_runtime_paths": ALLOWED_RUNTIME_PATHS,
         "forbidden_runtime_paths": FORBIDDEN_RUNTIME_PATHS,
         "reviewed_path_inventory": REVIEWED_PATH_INVENTORY,
@@ -374,7 +533,7 @@ def _reject_duplicates(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
 
 def _validate_text(text: str, failures: list[str]) -> None:
     for token in (
-        "authorizes only the exact-reviewed code candidate",
+        "authorizes the original exact-reviewed code candidate",
         "It does not authorize a live",
         "`0/3/1/1`",
         "`0/2/1/1`",
@@ -382,8 +541,9 @@ def _validate_text(text: str, failures: list[str]) -> None:
         "`0/0/0/0`",
         "`producer_exact_review`",
         "`GO_CODE_ONLY`",
-        "Any staged, unstaged, deleted, renamed, or",
         "untracked runtime-path delta invalidates code authority",
+        "seven exact-reviewed repair stages",
+        "authorized runtime tip",
         "If an implementation owner needs any unauthorized path or power",
         "separate live-evidence",
         "Sol Ultra remains prohibited",
@@ -491,6 +651,97 @@ def _validate_authorized_runtime_state(
             "authorized runtime paths contain untracked files outside the exact reviewed candidate"
         )
     return len(failures) == initial_failure_count
+
+
+def _validate_authorized_runtime_lineage(
+    repo_root: Path,
+    failures: list[str],
+) -> None:
+    previous_commit = REVIEWED_COMMIT
+    for stage in AUTHORIZED_RUNTIME_LINEAGE:
+        stage_name = str(stage["stage"])
+        reviewed_commit = str(stage["reviewed_commit"])
+        reviewed_tree = _git(
+            repo_root,
+            ["show", "-s", "--format=%T", reviewed_commit],
+            failures,
+        )
+        if reviewed_tree != stage["reviewed_tree"]:
+            failures.append(
+                f"authorized runtime lineage {stage_name} tree does not match"
+            )
+        ancestry = subprocess.run(
+            [
+                "git",
+                "-C",
+                str(repo_root),
+                "merge-base",
+                "--is-ancestor",
+                previous_commit,
+                reviewed_commit,
+            ],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        if ancestry.returncode != 0:
+            failures.append(
+                f"authorized runtime lineage {stage_name} is not ordered after its predecessor"
+            )
+        head_ancestry = subprocess.run(
+            [
+                "git",
+                "-C",
+                str(repo_root),
+                "merge-base",
+                "--is-ancestor",
+                reviewed_commit,
+                "HEAD",
+            ],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        if head_ancestry.returncode != 0:
+            failures.append(
+                f"authorized runtime lineage {stage_name} is not an ancestor of HEAD"
+            )
+        runtime_delta = _git(
+            repo_root,
+            [
+                "diff",
+                "--name-only",
+                f"{previous_commit}..{reviewed_commit}",
+                "--",
+                *ALLOWED_RUNTIME_PATHS,
+            ],
+            failures,
+        ).splitlines()
+        if runtime_delta != stage["authorized_runtime_delta_paths"]:
+            failures.append(
+                f"authorized runtime lineage {stage_name} path inventory does not match"
+            )
+        review_document = _read(
+            repo_root / str(stage["review_document"]),
+            failures,
+        )
+        if _digest(review_document) != stage["review_document_sha256"]:
+            failures.append(
+                f"authorized runtime lineage {stage_name} review digest does not match"
+            )
+        for token in (
+            "Status: `GO`",
+            reviewed_commit,
+            str(stage["reviewed_tree"]),
+        ):
+            if token not in review_document:
+                failures.append(
+                    f"authorized runtime lineage {stage_name} review is missing "
+                    f"required token: {token}"
+                )
+        previous_commit = reviewed_commit
+    if previous_commit != AUTHORIZED_RUNTIME_TIP_COMMIT:
+        failures.append("authorized runtime lineage does not terminate at its declared tip")
 
 
 def _validate_wiring(repo_root: Path, failures: list[str]) -> None:

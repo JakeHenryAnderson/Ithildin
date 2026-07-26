@@ -1666,6 +1666,23 @@ def test_execution_checkout_rejects_descendant_dirty_and_extra_path(
     assert any("not the exact control allowlist" in value for value in failures)
 
 
+def test_historical_attempt_009_closure_remains_exact_for_descendants() -> None:
+    failures: list[str] = []
+
+    result = gate._validate_execution_checkout(  # noqa: SLF001
+        ROOT,
+        failures,
+        candidate_ref=gate.ATTEMPT_009_CLOSURE_COMMIT,
+        require_clean_worktree=False,
+    )
+
+    assert failures == []
+    assert result == (
+        gate.ATTEMPT_009_CLOSURE_COMMIT,
+        gate.ATTEMPT_009_CLOSURE_TREE,
+    )
+
+
 def test_execution_checkout_rejects_sibling_of_reviewed_parent(
     tmp_path: Path,
 ) -> None:
