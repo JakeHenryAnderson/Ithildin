@@ -395,6 +395,7 @@ def _skip_private_evidence(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(gate, "_validate_attempt_013_receipts", lambda *_: None)
     monkeypatch.setattr(gate, "_validate_attempt_014_receipts", lambda *_: None)
     monkeypatch.setattr(gate, "_validate_attempt_015_receipts", lambda *_: None)
+    monkeypatch.setattr(gate, "_validate_attempt_016_receipts", lambda *_: None)
     monkeypatch.setattr(gate, "_validate_retained_attempt_evidence", lambda *_: None)
 
 
@@ -2238,12 +2239,41 @@ def test_attempt_009_rejects_node_cli_repair_path_drift(tmp_path: Path) -> None:
     assert report["live_execution_authorized"] is False
 
 
-def test_real_retained_attempt_002_and_003_evidence_is_exact() -> None:
+def test_real_retained_attempt_evidence_through_attempt_016_is_exact() -> None:
     failures: list[str] = []
 
     gate._validate_retained_attempt_evidence(ROOT, failures)  # noqa: SLF001
 
     assert failures == []
+
+
+def test_real_attempt_016_private_receipts_are_exact() -> None:
+    failures: list[str] = []
+
+    gate._validate_attempt_016_receipts(ROOT, failures)  # noqa: SLF001
+
+    assert failures == []
+
+
+def test_attempt_016_closure_repair_checkout_is_exact() -> None:
+    failures: list[str] = []
+
+    checkout = gate._validate_execution_checkout(  # noqa: SLF001
+        ROOT,
+        failures,
+        candidate_parent_commit=gate.ATTEMPT_016_CLOSURE_COMMIT,
+        candidate_parent_tree=gate.ATTEMPT_016_CLOSURE_TREE,
+        reviewed_commit=gate.ATTEMPT_016_CANDIDATE_COMMIT,
+        runtime_paths=gate.ATTEMPT_016_RUNTIME_PATHS,
+        control_paths=gate.ATTEMPT_016_CLOSURE_REPAIR_CONTROL_PATH_ALLOWLIST,
+        require_clean_worktree=False,
+    )
+
+    assert failures == []
+    assert checkout == (
+        _run_git(ROOT, "rev-parse", "HEAD"),
+        _run_git(ROOT, "show", "-s", "--format=%T", "HEAD"),
+    )
 
 
 def test_attempt_009_disposition_is_closed_and_exact() -> None:

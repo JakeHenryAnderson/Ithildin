@@ -663,6 +663,8 @@ ATTEMPT_016_RUN_IDENTITY_DIGEST = (
 ATTEMPT_016_PROJECT_IDENTITY_DIGEST = (
     "sha256:d1e77d220d1f53a2f99fc1e1b8a46ffa989bfdb4a49a1d7aa4b420c476f95cde"
 )
+ATTEMPT_016_RUN_DIGEST_PREFIX = "ithildin-lv1-003-o4-attempt016-run-v1:"
+ATTEMPT_016_PROJECT_DIGEST_PREFIX = "ithildin-lv1-003-o4-attempt016-project-v1:"
 ATTEMPT_016_RAW_OUTPUT_DIGEST = ATTEMPT_015_RAW_OUTPUT_DIGEST
 ATTEMPT_016_RAW_OUTPUT_SIZE = 171
 ATTEMPT_016_DISPOSITION_JSON_DIGEST = (
@@ -1028,6 +1030,7 @@ ATTEMPT_015_MANIFEST_RECEIPT_DIGEST = (
 )
 ATTEMPT_015_MANIFEST_SIZE = 97421
 ATTEMPT_015_SNAPSHOT_FILE_COUNT = 668
+ATTEMPT_016_DISPOSITION_BYTES = ATTEMPT_015_DISPOSITION_BYTES
 MAX_RETAINED_SNAPSHOT_FILE_BYTES = 16 * 1_048_576
 MAX_RETAINED_SNAPSHOT_BYTES = 64 * 1_048_576
 EVIDENCE_IGNORE_PATTERNS = [
@@ -1321,6 +1324,12 @@ ATTEMPT_016_CLOSURE_CONTROL_PATH_ALLOWLIST = [
     ATTEMPT_016_DISPOSITION_DOCUMENT.as_posix(),
     CONTRACT.as_posix(),
     DOCUMENT.as_posix(),
+    "scripts/local_v1_lv1_003_o4_execution_authorization_check.py",
+    "tests/test_local_v1_lv1_003_o4_execution_authorization_check.py",
+]
+ATTEMPT_016_CLOSURE_COMMIT = "49910186386191325c47fb306e9deca06eaaeecc"
+ATTEMPT_016_CLOSURE_TREE = "fb9d1319ab01773b5c8b3369b7cbac0f03acbe67"
+ATTEMPT_016_CLOSURE_REPAIR_CONTROL_PATH_ALLOWLIST = [
     "scripts/local_v1_lv1_003_o4_execution_authorization_check.py",
     "tests/test_local_v1_lv1_003_o4_execution_authorization_check.py",
 ]
@@ -2641,6 +2650,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     _validate_attempt_013_receipts(repo_root, failures)
     _validate_attempt_014_receipts(repo_root, failures)
     _validate_attempt_015_receipts(repo_root, failures)
+    _validate_attempt_016_receipts(repo_root, failures)
     _validate_retained_attempt_evidence(repo_root, failures)
     _validate_evidence_ignore_patterns(repo_root, failures)
     _validate_bound_documents(repo_root, failures)
@@ -2660,11 +2670,11 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     execution_checkout = _validate_execution_checkout(
         repo_root,
         failures,
-        candidate_parent_commit=CANDIDATE_PARENT_COMMIT,
-        candidate_parent_tree=CANDIDATE_PARENT_TREE,
+        candidate_parent_commit=ATTEMPT_016_CLOSURE_COMMIT,
+        candidate_parent_tree=ATTEMPT_016_CLOSURE_TREE,
         reviewed_commit=ATTEMPT_016_CANDIDATE_COMMIT,
         runtime_paths=ATTEMPT_016_RUNTIME_PATHS,
-        control_paths=ATTEMPT_016_CLOSURE_CONTROL_PATH_ALLOWLIST,
+        control_paths=ATTEMPT_016_CLOSURE_REPAIR_CONTROL_PATH_ALLOWLIST,
         candidate_ref="HEAD",
         require_clean_worktree=True,
     )
@@ -8838,6 +8848,8 @@ def _validate_attempt_diagnostic_bytes(
         expected_fields.add("base_service_start_diagnostic")
     if attempt in {12, 13, 14}:
         expected_fields.add("fixed_node_start_diagnostic")
+    if attempt == 16:
+        expected_fields.add("gateway_mission_projection_diagnostic")
     if not isinstance(diagnostic, dict) or set(diagnostic) != expected_fields:
         failures.append(f"O4 Attempt {attempt:03d} failure diagnostic fields are not exact")
         return
@@ -8896,8 +8908,21 @@ def _validate_attempt_diagnostic_bytes(
         "primary_failure_code": "fixed_node_start_failed",
         "recovery_required": False,
     }
+    attempt_016_scalars: JsonObject = {
+        "schema_version": "1",
+        "record_type": "local_v1_lv1_003_o4_producer_failure_diagnostic",
+        "base_build_completed": True,
+        "bridge_build_completed": True,
+        "cleanup_failure_codes": [],
+        "highest_completed_stage": 13,
+        "outward_failure_code": "gateway_mission_projection_invalid",
+        "primary_failure_code": "gateway_mission_projection_invalid",
+        "recovery_required": False,
+    }
     expected_scalars = (
-        attempt_012_scalars
+        attempt_016_scalars
+        if attempt == 16
+        else attempt_012_scalars
         if attempt in {12, 13, 14}
         else attempt_009_scalars
         if attempt == 9
@@ -8973,6 +8998,19 @@ def _validate_attempt_diagnostic_bytes(
         },
     ):
         failures.append("O4 Attempt 014 fixed-Node diagnostic projection is not exact")
+    if attempt == 16 and not _exact_json_equal(
+        diagnostic.get("gateway_mission_projection_diagnostic"),
+        {
+            "collection_status": "complete",
+            "collection_reason_code": "gateway_mission_projection_state_collected",
+            "mission_identity_binding": "matched",
+            "mission_lifecycle_state": "runner_reported_running",
+            "target_node_identity_binding": "matched",
+            "delivery_projection_state": "present_object",
+            "governed_agent_runs_projection_state": "present_object",
+        },
+    ):
+        failures.append("O4 Attempt 016 Gateway mission projection is not exact")
     if attempt == 5 and not _exact_json_equal(
         diagnostic.get("base_service_start_diagnostic"),
         {
@@ -9030,7 +9068,7 @@ def _validate_attempt_diagnostic_bytes(
     if not isinstance(identities, list) or len(identities) != 4:
         failures.append(f"O4 Attempt {attempt:03d} bound diagnostic identities are not exact")
         return
-    if attempt in {12, 13, 14}:
+    if attempt in {12, 13, 14, 16}:
         identity_fields = {
             "reference",
             "image_id",
@@ -10032,6 +10070,33 @@ def _private_attempt_015_run_name(receipt_base: int, failures: list[str]) -> str
     return matching[0]
 
 
+def _private_attempt_016_run_name(receipt_base: int, failures: list[str]) -> str | None:
+    try:
+        candidates = os.listdir(receipt_base)
+    except OSError:
+        failures.append("O4 Attempt 016 private receipt selection is unavailable")
+        return None
+    matching = [
+        candidate
+        for candidate in candidates
+        if re.fullmatch(r"[0-9]{8}T[0-9]{6}Z-[0-9a-f]{8}", candidate) is not None
+        and _domain_identity_digest(ATTEMPT_016_RUN_DIGEST_PREFIX, candidate)
+        == ATTEMPT_016_RUN_IDENTITY_DIGEST
+    ]
+    if len(matching) != 1:
+        failures.append(
+            "O4 Attempt 016 private receipt selection did not resolve exactly one root"
+        )
+        return None
+    project_digest = _domain_identity_digest(
+        ATTEMPT_016_PROJECT_DIGEST_PREFIX,
+        f"ithildin-local-v1-o4-{matching[0].rsplit('-', 1)[-1]}",
+    )
+    if project_digest != ATTEMPT_016_PROJECT_IDENTITY_DIGEST:
+        failures.append("O4 Attempt 016 private project binding is not exact")
+    return matching[0]
+
+
 def _validate_attempt_015_receipts(repo_root: Path, failures: list[str]) -> None:
     repository_descriptor = _open_repository_root(repo_root, failures)
     if repository_descriptor is None:
@@ -10123,6 +10188,99 @@ def _validate_attempt_015_receipts(repo_root: Path, failures: list[str]) -> None
         failures.append("O4 Attempt 015 disposition bytes are not closed and exact")
 
 
+def _validate_attempt_016_receipts(repo_root: Path, failures: list[str]) -> None:
+    repository_descriptor = _open_repository_root(repo_root, failures)
+    if repository_descriptor is None:
+        return
+    receipt_base: int | None = None
+    receipt_root: int | None = None
+    try:
+        receipt_base = _open_repo_relative_directory(
+            repository_descriptor,
+            ATTEMPT_002_RECEIPT_BASE,
+            expected_modes={ATTEMPT_002_RECEIPT_BASE.as_posix(): 0o700},
+            label="O4 Attempt 016 receipt base",
+            failures=failures,
+        )
+        run_name = (
+            _private_attempt_016_run_name(receipt_base, failures)
+            if receipt_base is not None
+            else None
+        )
+        if run_name is not None and receipt_base is not None:
+            receipt_root = _open_owned_child_directory(
+                receipt_base,
+                run_name,
+                0o700,
+                "O4 Attempt 016 receipt root",
+                failures,
+            )
+            _validate_repo_relative_absence(
+                repository_descriptor,
+                ATTEMPT_002_RUNTIME_BASE / run_name,
+                expected_parent_modes={ATTEMPT_002_RUNTIME_BASE.as_posix(): 0o700},
+                label="O4 exact Attempt 016 runtime root",
+                failures=failures,
+            )
+            _validate_repo_relative_absence(
+                repository_descriptor,
+                ATTEMPT_002_REPORT_BASE / run_name,
+                expected_parent_modes={},
+                label="O4 exact Attempt 016 public report root",
+                failures=failures,
+            )
+            _validate_repo_relative_absence(
+                repository_descriptor,
+                ATTEMPT_002_REPORT_BASE,
+                expected_parent_modes={},
+                label="O4 Attempt 016 point-in-time public report base",
+                failures=failures,
+            )
+    finally:
+        os.close(repository_descriptor)
+        if receipt_base is not None:
+            os.close(receipt_base)
+    if receipt_root is None:
+        return
+    try:
+        try:
+            if sorted(os.listdir(receipt_root)) != [
+                "candidate",
+                "candidate-manifest.json",
+                "diagnostic.json",
+                "disposition.json",
+            ]:
+                failures.append("O4 Attempt 016 receipt entries are not exact")
+        except OSError:
+            failures.append("O4 Attempt 016 receipt root cannot be enumerated")
+        diagnostic = _read_owned_child_file(
+            receipt_root,
+            "diagnostic.json",
+            mode=0o600,
+            size=ATTEMPT_016_DIAGNOSTIC_SIZE,
+            digest=ATTEMPT_016_DIAGNOSTIC_RECEIPT_DIGEST,
+            label="O4 Attempt 016 diagnostic",
+            failures=failures,
+        )
+        disposition = _read_owned_child_file(
+            receipt_root,
+            "disposition.json",
+            mode=0o600,
+            size=ATTEMPT_016_DISPOSITION_SIZE,
+            digest=ATTEMPT_016_DISPOSITION_RECEIPT_DIGEST,
+            label="O4 Attempt 016 disposition",
+            failures=failures,
+        )
+    finally:
+        os.close(receipt_root)
+    if diagnostic is None:
+        failures.append("O4 Attempt 016 diagnostic is unavailable")
+    else:
+        _validate_attempt_diagnostic_bytes(diagnostic, failures, attempt=16)
+    if disposition != ATTEMPT_016_DISPOSITION_BYTES:
+        failures.append("O4 Attempt 016 disposition bytes are not closed and exact")
+
+
 def _validate_retained_attempt_evidence(
     repo_root: Path,
     failures: list[str],
@@ -10148,6 +10306,7 @@ def _validate_retained_attempt_evidence(
     attempt_013_run_name = _private_attempt_013_run_name(receipt_base, failures)
     attempt_014_run_name = _private_attempt_014_run_name(receipt_base, failures)
     attempt_015_run_name = _private_attempt_015_run_name(receipt_base, failures)
+    attempt_016_run_name = _private_attempt_016_run_name(receipt_base, failures)
     try:
         try:
             expected_runs = sorted(
@@ -10180,6 +10339,11 @@ def _validate_retained_attempt_evidence(
                     *(
                         [attempt_015_run_name]
                         if attempt_015_run_name is not None
+                        else []
+                    ),
+                    *(
+                        [attempt_016_run_name]
+                        if attempt_016_run_name is not None
                         else []
                     ),
                 ]
@@ -10420,6 +10584,24 @@ def _validate_retained_attempt_evidence(
                 snapshot_file_count=ATTEMPT_015_SNAPSHOT_FILE_COUNT,
                 diagnostic_size=ATTEMPT_015_DIAGNOSTIC_SIZE,
                 diagnostic_digest=ATTEMPT_015_DIAGNOSTIC_RECEIPT_DIGEST,
+            )
+        if attempt_016_run_name is not None:
+            _validate_retained_attempt_receipt(
+                repo_root,
+                receipt_base,
+                failures,
+                label="O4 Attempt 016",
+                run_id=attempt_016_run_name,
+                disposition_bytes=ATTEMPT_016_DISPOSITION_BYTES,
+                disposition_digest=ATTEMPT_016_DISPOSITION_RECEIPT_DIGEST,
+                manifest_size=ATTEMPT_016_MANIFEST_SIZE,
+                manifest_digest=ATTEMPT_016_MANIFEST_RECEIPT_DIGEST,
+                candidate_commit=ATTEMPT_016_CANDIDATE_COMMIT,
+                candidate_tree=ATTEMPT_016_CANDIDATE_TREE,
+                snapshot_file_count=ATTEMPT_016_SNAPSHOT_FILE_COUNT,
+                diagnostic_size=ATTEMPT_016_DIAGNOSTIC_SIZE,
+                diagnostic_digest=ATTEMPT_016_DIAGNOSTIC_RECEIPT_DIGEST,
+                diagnostic_attempt=16,
             )
     finally:
         os.close(receipt_base)
