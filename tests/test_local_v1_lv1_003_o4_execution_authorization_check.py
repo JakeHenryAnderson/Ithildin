@@ -1126,11 +1126,12 @@ def test_enrollment_repair_review_binds_three_field_derived_principal_projection
         assert stale not in normalized
 
 
-def test_prepared_gate_017_preserves_prior_consumed_history() -> None:
+def test_consumed_gate_017_preserves_prior_consumed_history() -> None:
     contract = _contract()
 
     assert contract["record_status"] == (
-        "ATTEMPT_017_PREPARED_PENDING_EXACT_CANDIDATE_REVIEW_NO_LIVE_AUTHORITY"
+        "ATTEMPT_017_CONSUMED_GATEWAY_MISSION_PROJECTION_INVALID_"
+        "CLEANUP_COMPLETE_NO_LIVE_AUTHORITY"
     )
     assert contract["attempt_010_id"] == gate.ATTEMPT_010_ID
     assert contract["attempt_010_review_tag"] == gate.ATTEMPT_010_REVIEW_TAG
@@ -1144,7 +1145,7 @@ def test_prepared_gate_017_preserves_prior_consumed_history() -> None:
     assert contract["candidate_parent_tree"] == gate.CANDIDATE_PARENT_TREE
     assert (
         contract["execution_candidate_binding_mode"]
-        == "exact_clean_six_path_child_of_review_record_parent_with_annotated_tag"
+        == "exact_consumed_closure_child_of_immutable_reviewed_attempt_candidate"
     )
     assert contract["attempt_011_id"] == gate.ATTEMPT_011_ID
     assert contract["attempt_011_review_tag"] == gate.ATTEMPT_011_REVIEW_TAG
@@ -1314,13 +1315,23 @@ def test_prepared_gate_017_preserves_prior_consumed_history() -> None:
     assert contract["attempt_015_compose_project_identity_sha256"] == (
         gate.ATTEMPT_015_PROJECT_IDENTITY_DIGEST
     )
-    assert contract["execution_attempt_budget"] == 1
-    assert contract["attempt_consumed"] is False
+    assert contract["attempt_017_id"] == gate.ATTEMPT_017_ID
+    assert contract["attempt_017_execution_authorized"] is False
+    assert contract["attempt_017_automatic_retry_authorized"] is False
+    assert contract["attempt_017_concurrent_invocation_authorized"] is False
+    assert contract["attempt_017_post_attempt_retry_authorized"] is False
+    assert contract["attempt_017_failure_code"] == "gateway_mission_projection_invalid"
+    assert contract["attempt_017_highest_completed_stage"] == 13
+    assert contract["attempt_017_cleanup_failure_codes"] == []
+    assert contract["attempt_017_recovery_required"] is False
+    assert contract["attempt_017_root_cause_proven"] is False
+    assert contract["execution_attempt_budget"] == 0
+    assert contract["attempt_consumed"] is True
     assert contract["retry_authorized"] is False
     assert contract["attempt_011_automatic_retry_authorized"] is False
     assert contract["attempt_010_automatic_retry_authorized"] is False
     assert contract["persistent_cross_process_budget_consumption_claimed"] is False
-    assert contract["immediate_post_attempt_disposition_recorded"] is False
+    assert contract["immediate_post_attempt_disposition_recorded"] is True
     assert contract["mcc_review_disposition"] == "GO_CODE_ONLY"
     assert contract["mcc_review_findings"] == {
         "critical": 0,
