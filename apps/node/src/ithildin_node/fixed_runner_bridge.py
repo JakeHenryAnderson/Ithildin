@@ -35,6 +35,7 @@ MAX_FRAME_BYTES = 16_384
 OPERATION_TIMEOUT_SECONDS = 120
 MISSION_WALL_TIME_SECONDS = 900
 FIXED_RUNNER_ADAPTER = "hermes_fixed_node_bridge"
+FIXED_DEPLOYMENT_TOPOLOGY = "docker_sidecar"
 FIXED_PROFILE_DIGEST = "sha256:90b94d725640768f1a7d665e979bbe11f263a4ff264591a5348d0b5820db3e92"
 FIXED_OPERATIONS = (
     ("mission.step.1", "project.structure.summary"),
@@ -91,6 +92,7 @@ _RECEIPT_KEYS = {
     "next_operation_index",
     "handoff_nonce_digest",
     "last_closed_status",
+    "last_closed_reason_code",
 }
 
 
@@ -114,6 +116,7 @@ class BridgeReceipt:
     next_operation_index: int
     handoff_nonce_digest: str
     last_closed_status: str
+    last_closed_reason_code: str
 
     def document(self) -> JsonObject:
         return {
@@ -123,6 +126,7 @@ class BridgeReceipt:
             "next_operation_index": self.next_operation_index,
             "handoff_nonce_digest": self.handoff_nonce_digest,
             "last_closed_status": self.last_closed_status,
+            "last_closed_reason_code": self.last_closed_reason_code,
         }
 
     @classmethod
@@ -142,6 +146,7 @@ class BridgeReceipt:
             next_operation_index=1,
             handoff_nonce_digest=sha256_digest(handoff_nonce),
             last_closed_status="prepared",
+            last_closed_reason_code="none",
         )
         _validate_receipt(receipt)
         _write_new_private(path, receipt.document())
@@ -158,6 +163,7 @@ class BridgeReceipt:
         next_operation_index = document["next_operation_index"]
         handoff_nonce_digest = document["handoff_nonce_digest"]
         last_closed_status = document["last_closed_status"]
+        last_closed_reason_code = document["last_closed_reason_code"]
         if (
             not isinstance(mission_id, str)
             or not isinstance(claim_id, str)
@@ -166,6 +172,7 @@ class BridgeReceipt:
             or isinstance(next_operation_index, bool)
             or not isinstance(handoff_nonce_digest, str)
             or not isinstance(last_closed_status, str)
+            or not isinstance(last_closed_reason_code, str)
         ):
             raise FixedRunnerBridgeError("receipt_shape_invalid")
         receipt = cls(
@@ -175,22 +182,40 @@ class BridgeReceipt:
             next_operation_index=next_operation_index,
             handoff_nonce_digest=handoff_nonce_digest,
             last_closed_status=last_closed_status,
+            last_closed_reason_code=last_closed_reason_code,
         )
         _validate_receipt(receipt)
         return receipt
 
-    def advance(self, path: Path, *, status: str) -> BridgeReceipt:
+    def advance(
+        self,
+        path: Path,
+        *,
+        status: str,
+        reason_code: str = "none",
+    ) -> BridgeReceipt:
         next_receipt = replace(
             self,
             next_operation_index=self.next_operation_index + 1,
             last_closed_status=status,
+            last_closed_reason_code=reason_code,
         )
         _validate_receipt(next_receipt)
         _write_private_atomic(path, next_receipt.document())
         return next_receipt
 
-    def close(self, path: Path, *, status: str) -> BridgeReceipt:
-        next_receipt = replace(self, last_closed_status=status)
+    def close(
+        self,
+        path: Path,
+        *,
+        status: str,
+        reason_code: str = "none",
+    ) -> BridgeReceipt:
+        next_receipt = replace(
+            self,
+            last_closed_status=status,
+            last_closed_reason_code=reason_code,
+        )
         _validate_receipt(next_receipt)
         _write_private_atomic(path, next_receipt.document())
         return next_receipt
@@ -204,6 +229,7 @@ class FixedMissionSession:
     state: NodeState
     configuration: StoredNodeConfiguration
     node_version: str
+    deployment_topology: str
     profile_digest: str
     handoff_nonce: str
     receipt_path: Path
@@ -218,6 +244,7 @@ class FixedMissionSession:
         state: NodeState,
         configuration: StoredNodeConfiguration,
         node_version: str,
+        deployment_topology: str = FIXED_DEPLOYMENT_TOPOLOGY,
         profile_digest: str,
         receipt_path: Path,
         envelope: JsonObject,
@@ -247,6 +274,7 @@ class FixedMissionSession:
             state=state,
             configuration=configuration,
             node_version=node_version,
+            deployment_topology=deployment_topology,
             profile_digest=profile_digest,
             handoff_nonce=nonce,
             receipt_path=receipt_path,
@@ -274,27 +302,28 @@ class FixedMissionSession:
         }
 
     def report_running(self) -> JsonObject:
-        response = self.client.report_mission(
-            self.state,
-            mission_id=self.receipt.mission_id,
-            claim_id=self.receipt.claim_id,
-            envelope_digest=self.receipt.envelope_digest,
-            expected_lifecycle_revision=self.lifecycle_revision,
-            report_id=_report_id(),
-            report_kind="runner_running",
-            outcome_code="started",
-        )
         try:
+            self._refresh_heartbeat()
+            response = self.client.report_mission(
+                self.state,
+                mission_id=self.receipt.mission_id,
+                claim_id=self.receipt.claim_id,
+                envelope_digest=self.receipt.envelope_digest,
+                expected_lifecycle_revision=self.lifecycle_revision,
+                report_id=_report_id(),
+                report_kind="runner_running",
+                outcome_code="started",
+            )
             revision = _gateway_report_revision(
                 response,
                 expected_state="runner_reported_running",
             )
-        except FixedRunnerBridgeError:
-            self.receipt = self.receipt.close(
-                self.receipt_path,
-                status="failed_closed",
-            )
+        except FixedRunnerBridgeError as exc:
+            self._fail_closed(exc.reason_code)
             raise
+        except NodeClientError as exc:
+            self._fail_closed("gateway_ambiguity")
+            raise FixedRunnerBridgeError("gateway_ambiguity") from exc
         self.lifecycle_revision = revision
         self.receipt = self.receipt.close(
             self.receipt_path, status="runner_reported_running"
@@ -312,10 +341,12 @@ class FixedMissionSession:
             if operation_index == 3:
                 return self._complete()
             raise FixedRunnerBridgeError("operation_index_invalid")
-        except FixedRunnerBridgeError:
+        except FixedRunnerBridgeError as exc:
+            if not self.terminal:
+                self._fail_closed(exc.reason_code)
             raise
         except NodeClientError as exc:
-            self.receipt = self.receipt.close(self.receipt_path, status="failed_closed")
+            self._fail_closed("gateway_ambiguity")
             raise FixedRunnerBridgeError("gateway_ambiguity") from exc
 
     def _validate_request(self, document: JsonObject) -> None:
@@ -341,6 +372,7 @@ class FixedMissionSession:
             raise FixedRunnerBridgeError("operation_order_conflict")
 
     def _poll_control(self) -> JsonObject:
+        self._refresh_heartbeat()
         control = self.client.poll_mission_control(
             self.state,
             mission_id=self.receipt.mission_id,
@@ -364,7 +396,11 @@ class FixedMissionSession:
                 report_kind="cancel_observed",
                 outcome_code="cancellation_observed",
             )
-            self.receipt = self.receipt.close(self.receipt_path, status="cancel_observed")
+            self.receipt = self.receipt.close(
+                self.receipt_path,
+                status="cancel_observed",
+                reason_code="cancel_requested",
+            )
             raise FixedRunnerBridgeError("cancel_requested")
         raise FixedRunnerBridgeError("control_decision_invalid")
 
@@ -385,7 +421,7 @@ class FixedMissionSession:
             or result.get("tool_name") != tool_name
             or not isinstance(result.get("content"), dict)
         ):
-            self.receipt = self.receipt.close(self.receipt_path, status="failed_closed")
+            self._fail_closed("governed_result_invalid")
             raise FixedRunnerBridgeError("governed_result_invalid")
         self.receipt = self.receipt.advance(
             self.receipt_path, status=f"operation_{operation_index}_closed"
@@ -416,17 +452,41 @@ class FixedMissionSession:
                 response,
                 expected_state="runner_reported_succeeded",
             )
-        except FixedRunnerBridgeError:
-            self.receipt = self.receipt.close(
-                self.receipt_path,
-                status="failed_closed",
-            )
+        except FixedRunnerBridgeError as exc:
+            self._fail_closed(exc.reason_code)
             raise
         self.lifecycle_revision = revision
         self.receipt = self.receipt.advance(
             self.receipt_path, status="runner_reported_succeeded"
         )
         return _closed_status(self, "runner_reported_succeeded")
+
+    def _refresh_heartbeat(self) -> None:
+        try:
+            heartbeat = self.client.heartbeat(
+                self.state,
+                node_version=self.node_version,
+                runner_adapter=FIXED_RUNNER_ADAPTER,
+                deployment_topology=self.deployment_topology,
+                configuration_digest=self.configuration.configuration_digest,
+                mission_id=self.receipt.mission_id,
+            )
+        except NodeClientError as exc:
+            raise FixedRunnerBridgeError("gateway_heartbeat_unavailable") from exc
+        if (
+            heartbeat.get("observed_state") != "observed_connected"
+            or heartbeat.get("last_configuration_digest")
+            != self.configuration.configuration_digest
+            or heartbeat.get("last_mission_id") != self.receipt.mission_id
+        ):
+            raise FixedRunnerBridgeError("gateway_heartbeat_invalid")
+
+    def _fail_closed(self, reason_code: str) -> None:
+        self.receipt = self.receipt.close(
+            self.receipt_path,
+            status="failed_closed",
+            reason_code=reason_code,
+        )
 
 
 def run_fixed_mission_cycle(
@@ -435,6 +495,7 @@ def run_fixed_mission_cycle(
     state: NodeState,
     configuration: StoredNodeConfiguration,
     node_version: str,
+    deployment_topology: str = FIXED_DEPLOYMENT_TOPOLOGY,
     socket_path: Path = SOCKET_PATH,
     receipt_path: Path = RECEIPT_PATH,
     profile_digest: str = FIXED_PROFILE_DIGEST,
@@ -473,25 +534,31 @@ def run_fixed_mission_cycle(
         state=state,
         configuration=configuration,
         node_version=node_version,
+        deployment_topology=deployment_topology,
         profile_digest=profile_digest,
         receipt_path=receipt_path,
         envelope=envelope,
         phase_hook=phase_hook,
     )
-    _serve_session(
-        session,
-        socket_path=socket_path,
-        expected_peer_uid=expected_peer_uid,
-        expected_socket_gid=(
-            EXPECTED_SOCKET_GID
-            if expected_socket_gid is None and socket_path == SOCKET_PATH
-            else os.getegid()
-            if expected_socket_gid is None
-            else expected_socket_gid
-        ),
-        wall_time_seconds=wall_time_seconds,
-        phase_hook=phase_hook,
-    )
+    try:
+        _serve_session(
+            session,
+            socket_path=socket_path,
+            expected_peer_uid=expected_peer_uid,
+            expected_socket_gid=(
+                EXPECTED_SOCKET_GID
+                if expected_socket_gid is None and socket_path == SOCKET_PATH
+                else os.getegid()
+                if expected_socket_gid is None
+                else expected_socket_gid
+            ),
+            wall_time_seconds=wall_time_seconds,
+            phase_hook=phase_hook,
+        )
+    except FixedRunnerBridgeError as exc:
+        if not session.terminal:
+            session._fail_closed(exc.reason_code)
+        raise
     return _closed_status(session, session.receipt.last_closed_status)
 
 
@@ -530,21 +597,15 @@ def _serve_session(
                 _send_frame(connection, _denied_status(session, exc.reason_code))
                 raise
             _send_frame(connection, response)
-    except FixedRunnerBridgeError:
+    except FixedRunnerBridgeError as exc:
         if not session.terminal:
-            session.receipt = session.receipt.close(
-                session.receipt_path, status="failed_closed"
-            )
+            session._fail_closed(exc.reason_code)
         raise
     except NodeClientError as exc:
-        session.receipt = session.receipt.close(
-            session.receipt_path, status="failed_closed"
-        )
+        session._fail_closed("gateway_ambiguity")
         raise FixedRunnerBridgeError("gateway_ambiguity") from exc
     except TimeoutError as exc:
-        session.receipt = session.receipt.close(
-            session.receipt_path, status="failed_closed"
-        )
+        session._fail_closed("bridge_timeout")
         raise FixedRunnerBridgeError("bridge_timeout") from exc
     finally:
         if connection is not None:
@@ -741,6 +802,7 @@ def _denied_status(
         session.receipt = session.receipt.close(
             session.receipt_path,
             status="failed_closed",
+            reason_code=reason_code,
         )
     return {
         **_closed_status(session, "denied"),
@@ -775,6 +837,10 @@ def _validate_receipt(receipt: BridgeReceipt) -> None:
         or not _DIGEST.fullmatch(receipt.handoff_nonce_digest)
         or receipt.next_operation_index not in {1, 2, 3, 4}
         or not re.fullmatch(r"[a-z][a-z0-9_]{2,63}", receipt.last_closed_status)
+        or not re.fullmatch(
+            r"[a-z][a-z0-9_]{2,63}",
+            receipt.last_closed_reason_code,
+        )
     ):
         raise FixedRunnerBridgeError("receipt_invalid")
 

@@ -309,6 +309,7 @@ class FakeExecutor:
             "next_operation_index": 4,
             "handoff_nonce_digest": "sha256:" + "8" * 64,
             "last_closed_status": "runner_reported_succeeded",
+            "last_closed_reason_code": "none",
         }
 
     def bind_image_identity(self, image_id: str) -> None:
@@ -5281,6 +5282,7 @@ def test_gateway_mission_projection_hostile_type_is_written_to_failure_receipt(
     ("next_operation_index", "last_closed_status", "expected_operation_state"),
     [
         (3, "operation_2_closed", "completion_pending"),
+        (3, "failed_closed", "completion_pending"),
         (4, "runner_reported_succeeded", "completion_recorded"),
     ],
 )
@@ -5305,6 +5307,11 @@ def test_gateway_failure_retains_identity_free_node_receipt_convergence_projecti
         **executor.node_receipt_document,
         "next_operation_index": next_operation_index,
         "last_closed_status": last_closed_status,
+        "last_closed_reason_code": (
+            "gateway_heartbeat_invalid"
+            if last_closed_status == "failed_closed"
+            else "none"
+        ),
     }
 
     with pytest.raises(producer.ProducerError, match="gateway_mission_projection_invalid"):
@@ -5331,6 +5338,11 @@ def test_gateway_failure_retains_identity_free_node_receipt_convergence_projecti
         "envelope_identity_state": "valid_digest",
         "next_operation_state": expected_operation_state,
         "last_closed_status": last_closed_status,
+        "last_closed_reason_code": (
+            "gateway_heartbeat_invalid"
+            if last_closed_status == "failed_closed"
+            else "none"
+        ),
         "handoff_nonce_digest_state": "valid_digest",
     }
     rendered = canonical_json(receipt_projection)
@@ -5360,6 +5372,7 @@ def test_node_receipt_projection_hostile_types_are_closed_and_identity_free(
             "next_operation_index": True,
             "handoff_nonce_digest": [],
             "last_closed_status": {"unexpected": "value"},
+            "last_closed_reason_code": "private-value",
             "extra": "private-value",
         },
     )
@@ -5373,6 +5386,7 @@ def test_node_receipt_projection_hostile_types_are_closed_and_identity_free(
         "envelope_identity_state": "invalid",
         "next_operation_state": "unrecognized",
         "last_closed_status": "unrecognized",
+        "last_closed_reason_code": "unrecognized",
         "handoff_nonce_digest_state": "invalid_or_missing",
     }
     assert "private-value" not in canonical_json(projection)

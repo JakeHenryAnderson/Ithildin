@@ -117,6 +117,31 @@ _RUN_RECORD_ID = re.compile(r"^run_[0-9a-f]{32}$")
 _REQUEST_ID = re.compile(r"^req_[0-9a-f]{32}$")
 _EVENT_ID = re.compile(r"^evt_[0-9a-f]{32}$")
 _DIGEST = re.compile(r"^sha256:[0-9a-f]{64}$")
+_NODE_TERMINAL_REASON_CODES = frozenset(
+    {
+        "none",
+        "bridge_disconnected",
+        "bridge_timeout",
+        "cancel_requested",
+        "control_decision_invalid",
+        "duplicate_frame_key",
+        "frame_invalid",
+        "frame_not_canonical",
+        "frame_too_large",
+        "gateway_ambiguity",
+        "gateway_heartbeat_invalid",
+        "gateway_heartbeat_unavailable",
+        "gateway_report_not_advanced",
+        "governed_result_invalid",
+        "mission_wall_time_exceeded",
+        "operation_index_invalid",
+        "operation_order_conflict",
+        "peer_identity_denied",
+        "peer_identity_unavailable",
+        "request_binding_conflict",
+        "request_shape_invalid",
+    }
+)
 _IMAGE_REFERENCE = re.compile(
     r"^ithildin/(?:api|ui|node|hermes-node-bridge)-o4:[0-9a-f]{8}$"
 )
@@ -3914,6 +3939,7 @@ def _node_receipt_projection_fallback() -> JsonObject:
         "envelope_identity_state": "not_reported",
         "next_operation_state": "not_reported",
         "last_closed_status": "not_reported",
+        "last_closed_reason_code": "not_reported",
         "handoff_nonce_digest_state": "invalid_or_missing",
     }
 
@@ -3929,9 +3955,11 @@ def _node_receipt_projection_diagnostic(
         "next_operation_index",
         "handoff_nonce_digest",
         "last_closed_status",
+        "last_closed_reason_code",
     }
     next_operation_index = receipt.get("next_operation_index")
     last_closed_status = receipt.get("last_closed_status")
+    last_closed_reason_code = receipt.get("last_closed_reason_code")
     nonce_digest = receipt.get("handoff_nonce_digest")
     mission_identity = receipt.get("mission_id")
     return {
@@ -3993,6 +4021,14 @@ def _node_receipt_projection_diagnostic(
             if last_closed_status is None
             else "unrecognized"
         ),
+        "last_closed_reason_code": (
+            last_closed_reason_code
+            if isinstance(last_closed_reason_code, str)
+            and last_closed_reason_code in _NODE_TERMINAL_REASON_CODES
+            else "not_reported"
+            if last_closed_reason_code is None
+            else "unrecognized"
+        ),
         "handoff_nonce_digest_state": (
             "valid_digest"
             if isinstance(nonce_digest, str) and _DIGEST.fullmatch(nonce_digest)
@@ -4012,6 +4048,7 @@ def _bind_node_receipt(state: ProducerState, executor: Executor) -> None:
         "next_operation_index",
         "handoff_nonce_digest",
         "last_closed_status",
+        "last_closed_reason_code",
     }
     journey = state.gateway_journey
     nonce_digest = receipt.get("handoff_nonce_digest")
@@ -4024,6 +4061,7 @@ def _bind_node_receipt(state: ProducerState, executor: Executor) -> None:
         or not _DIGEST.fullmatch(nonce_digest)
         or receipt.get("next_operation_index") != 4
         or receipt.get("last_closed_status") != "runner_reported_succeeded"
+        or receipt.get("last_closed_reason_code") != "none"
     ):
         raise ProducerError("node_receipt_binding_invalid")
     journey["handoff_nonce_digest"] = nonce_digest

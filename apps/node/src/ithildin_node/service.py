@@ -97,6 +97,7 @@ def synchronize_once(
             state=pulled.state,
             configuration=pulled.configuration,
             node_version=node_version,
+            deployment_topology=deployment_topology,
             phase_hook=phase_hook,
         )
         mission_status = _response_string(mission_result, "status", "failed_closed")

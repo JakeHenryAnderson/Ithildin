@@ -230,6 +230,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
             "next_operation_index",
             "handoff_nonce_digest",
             "last_closed_status",
+            "last_closed_reason_code",
         ],
         "max_frame_bytes": 16384,
         "operation_timeout_seconds": 120,

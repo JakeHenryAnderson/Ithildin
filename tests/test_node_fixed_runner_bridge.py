@@ -110,6 +110,7 @@ def test_fixed_bridge_top_level_phase_boundaries_are_ordered_and_last_entered(
 ) -> None:
     client, state, configuration = _cycle_inputs()
     observed: list[FixedBridgePhase] = []
+    receipt_path = tmp_path / "mission-receipt.json"
 
     def stop_before_listener(*_args: object, **_kwargs: object) -> None:
         raise FixedRunnerBridgeError("synthetic_listener_stop")
@@ -123,12 +124,15 @@ def test_fixed_bridge_top_level_phase_boundaries_are_ordered_and_last_entered(
             configuration=configuration,
             node_version="0.1.0",
             socket_path=tmp_path / "socket" / "mission.sock",
-            receipt_path=tmp_path / "mission-receipt.json",
+            receipt_path=receipt_path,
             expected_socket_gid=tmp_path.stat().st_gid,
             phase_hook=observed.append,
         )
 
     assert observed == list(FixedBridgePhase)[:5]
+    assert BridgeReceipt.load(receipt_path).last_closed_reason_code == (
+        "synthetic_listener_stop"
+    )
 
 
 def test_fixed_bridge_listener_setup_phase_boundaries_precede_their_operations(
@@ -368,6 +372,7 @@ def test_fixed_session_runs_only_two_envelope_operations_then_reports_completion
     assert session.terminal is True
     assert session.receipt.next_operation_index == 4
     assert session.receipt.last_closed_status == "runner_reported_succeeded"
+    assert session.receipt.last_closed_reason_code == "none"
     receipt_text = session.receipt_path.read_text(encoding="utf-8")
     assert stat.S_IMODE(session.receipt_path.stat().st_mode) == 0o600
     assert "88888888" not in receipt_text
@@ -379,6 +384,7 @@ def test_fixed_session_runs_only_two_envelope_operations_then_reports_completion
         "next_operation_index",
         "handoff_nonce_digest",
         "last_closed_status",
+        "last_closed_reason_code",
     }
     mission_requests = [
         (path.rsplit("/", 1)[-1], payload)
@@ -407,6 +413,24 @@ def test_fixed_session_runs_only_two_envelope_operations_then_reports_completion
         f"{session.receipt.envelope_digest.removeprefix('sha256:')[:16]}"
     )
     assert all(payload["session_id"] == expected_session for payload in governed)
+    heartbeats = [
+        payload
+        for path, payload, _headers in client.requests
+        if path.endswith("/heartbeat")
+    ]
+    assert len(heartbeats) == 4
+    assert all(
+        heartbeat
+        == {
+            "protocol_version": "1",
+            "node_version": "0.1.0",
+            "runner_adapter": "hermes_fixed_node_bridge",
+            "deployment_topology": "docker_sidecar",
+            "configuration_digest": session.configuration.configuration_digest,
+            "mission_id": session.receipt.mission_id,
+        }
+        for heartbeat in heartbeats
+    )
     with pytest.raises(FixedRunnerBridgeError, match="mission_already_closed"):
         session.handle_request(_request(session, "mission.complete"))
 
@@ -450,6 +474,7 @@ def test_request_denial_closes_before_rendering_terminal_status(
     assert denied["status"] == "denied"
     assert denied["reason_code"] == "request_shape_invalid"
     assert denied["last_closed_status"] == "failed_closed"
+    assert session.receipt.last_closed_reason_code == "request_shape_invalid"
     assert denied["next_required_affordance"] == "none"
     assert session.terminal is True
 
@@ -540,7 +565,47 @@ def test_fixed_session_gateway_ambiguity_closes_without_operation_retry(
     with pytest.raises(FixedRunnerBridgeError, match="gateway_ambiguity"):
         session.handle_request(_request(session, "mission.step.1"))
     assert session.receipt.last_closed_status == "failed_closed"
+    assert session.receipt.last_closed_reason_code == "gateway_ambiguity"
     assert session.receipt.next_operation_index == 1
+
+
+def test_fixed_session_refreshes_heartbeat_before_completion_and_records_rejection(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    session, client = _prepared(tmp_path)
+    session.handle_request(_request(session, "mission.step.1"))
+    session.handle_request(_request(session, "mission.step.2"))
+    reports_before = sum(
+        path.endswith("/mission-reports")
+        for path, _payload, _headers in client.requests
+    )
+
+    monkeypatch.setattr(
+        client,
+        "heartbeat",
+        lambda *_args, **_kwargs: {
+            "status": "active",
+            "observed_state": "observed_stale",
+            "last_configuration_digest": session.configuration.configuration_digest,
+            "last_mission_id": session.receipt.mission_id,
+        },
+    )
+
+    with pytest.raises(FixedRunnerBridgeError, match="gateway_heartbeat_invalid"):
+        session.handle_request(_request(session, "mission.complete"))
+
+    assert session.receipt.next_operation_index == 3
+    assert session.receipt.last_closed_status == "failed_closed"
+    assert session.receipt.last_closed_reason_code == "gateway_heartbeat_invalid"
+    assert BridgeReceipt.load(session.receipt_path) == session.receipt
+    assert (
+        sum(
+            path.endswith("/mission-reports")
+            for path, _payload, _headers in client.requests
+        )
+        == reports_before
+    )
 
 
 @pytest.mark.parametrize(
@@ -592,6 +657,7 @@ def test_fixed_session_refuses_to_record_unadvanced_gateway_report(
             session.handle_request(_request(session, affordance))
 
     assert session.receipt.last_closed_status == "failed_closed"
+    assert session.receipt.last_closed_reason_code == "gateway_report_not_advanced"
     assert session.receipt.next_operation_index == expected_index
     denied = bridge_module._denied_status(  # noqa: SLF001
         session,
@@ -621,6 +687,7 @@ def test_fixed_session_cancel_observation_does_not_claim_runner_exit(
     with pytest.raises(FixedRunnerBridgeError, match="cancel_requested"):
         session.handle_request(_request(session, "mission.step.1"))
     assert session.receipt.last_closed_status == "cancel_observed"
+    assert session.receipt.last_closed_reason_code == "cancel_requested"
     denied = bridge_module._denied_status(  # noqa: SLF001
         session,
         "cancel_requested",

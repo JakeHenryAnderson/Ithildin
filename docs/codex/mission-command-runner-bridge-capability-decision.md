@@ -60,6 +60,13 @@ relative, no-follow, owner-bound, mode `0600`, and fsync-backed. Restart ambigui
 zero new claim requests. A same-UID host actor remains part of the stated TCB; no kernel-grade host
 isolation or filesystem non-bypass claim is made.
 
+After a claim is bound, the fixed Node sends a signed heartbeat bound to that mission immediately
+before each runner report or mission-control poll. The Gateway response must confirm connected
+posture, the stored configuration digest, and the mission binding before the Node proceeds. A
+missing, rejected, stale, or mismatched response fails the bridge closed. The private receipt keeps
+only the closed internal reason code needed to distinguish that failure; it does not retain response
+bodies, credentials, runner output, or model-provider state.
+
 The operator owns teardown and deletion. The exact profile container and tmpfs must be absent before
 another separately authorized run. A crash or failed removal blocks retry. Ithildin never updates,
 starts, stops, kills, or inspects Hermes.
@@ -189,7 +196,8 @@ without prior user approval.
     "envelope_digest",
     "next_operation_index",
     "handoff_nonce_digest",
-    "last_closed_status"
+    "last_closed_status",
+    "last_closed_reason_code"
   ],
   "max_frame_bytes": 16384,
   "operation_timeout_seconds": 120,

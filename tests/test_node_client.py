@@ -210,6 +210,13 @@ class RecordingNodeClient(NodeClient):
                 "configuration_state": "stored_current_not_enforced",
                 "configuration_acknowledgment_status": "stored_not_enforced",
             }
+        if path.endswith("/heartbeat"):
+            return {
+                "status": "active",
+                "observed_state": "observed_connected",
+                "last_configuration_digest": payload["configuration_digest"],
+                "last_mission_id": payload.get("mission_id"),
+            }
         if path.endswith("/governed-tool-calls"):
             return {
                 "status": "completed",
