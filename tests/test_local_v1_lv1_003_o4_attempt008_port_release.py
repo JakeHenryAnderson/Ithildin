@@ -1327,6 +1327,16 @@ def _static_report_patches(
         "validate_attempt_001_port_release_receipts",
         lambda _root: None,
     )
+    monkeypatch.setattr(
+        release,
+        "validate_attempt_002_port_release_disposition",
+        lambda _root: None,
+    )
+    monkeypatch.setattr(
+        release,
+        "validate_attempt_002_port_release_receipts",
+        lambda _root: None,
+    )
     monkeypatch.setattr(release, "validate_retained_receipts", lambda _root: None)
     monkeypatch.setattr(release, "_validate_git_executable", _fake_identity)
     monkeypatch.setattr(release, "_validate_docker_executable", _fake_identity)
@@ -1338,24 +1348,44 @@ def test_report_separates_static_validity_from_durable_execution_state(
 ) -> None:
     (tmp_path / "var").mkdir()
     _static_report_patches(monkeypatch)
-    before = release.build_report(tmp_path)
-    assert before["valid"] is True
-    assert before["static_candidate_valid"] is True
-    assert before["execution_available"] is True
-    assert before["attempt_budget"] == 1
-    assert before["consumed"] is False
-
     release.consume_budget(
         tmp_path,
-        candidate_commit="a" * 40,
-        candidate_tree="b" * 40,
+        candidate_commit=release.PARENT_COMMIT,
+        candidate_tree=release.PARENT_TREE,
     )
-    after = release.build_report(tmp_path)
-    assert after["valid"] is True
-    assert after["static_candidate_valid"] is True
-    assert after["execution_available"] is False
-    assert after["attempt_budget"] == 0
-    assert after["consumed"] is True
+    report = release.build_report(tmp_path)
+    assert report["valid"] is True
+    assert report["static_candidate_valid"] is True
+    assert report["execution_available"] is False
+    assert report["attempt_budget"] == 0
+    assert report["consumed"] is True
+    assert report["consumption_status"] == "consumed"
+    assert report["execution_failures"] == ["attempt_budget_already_consumed"]
+
+
+def test_closed_live_entrypoint_refuses_before_any_runtime_action(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        release,
+        "build_report",
+        lambda _root: {
+            "static_candidate_valid": True,
+            "execution_available": False,
+        },
+    )
+
+    def forbidden(*_args: object, **_kwargs: object) -> None:
+        raise AssertionError("runtime action reached")
+
+    monkeypatch.setattr(release, "consume_budget", forbidden)
+    monkeypatch.setattr(release, "_local_docker_socket", forbidden)
+
+    with pytest.raises(
+        release.PortReleaseError,
+        match="port_release_not_authorized",
+    ):
+        release.run_live({})
 
 
 def test_corrupt_post_consumption_lane_is_nonvalid_and_never_reopens_budget(
@@ -1366,8 +1396,8 @@ def test_corrupt_post_consumption_lane_is_nonvalid_and_never_reopens_budget(
     _static_report_patches(monkeypatch)
     release.consume_budget(
         tmp_path,
-        candidate_commit="a" * 40,
-        candidate_tree="b" * 40,
+        candidate_commit=release.PARENT_COMMIT,
+        candidate_tree=release.PARENT_TREE,
     )
     extra = _receipt_path(tmp_path, "unexpected.json")
     extra.write_text("{}\n", encoding="utf-8")
@@ -1579,8 +1609,8 @@ def test_attempt_001_disposition_is_exact_and_attempt_002_is_not_retry() -> None
     )
     assert record == release._attempt_001_port_release_disposition_record()  # noqa: SLF001
     release.validate_attempt_001_port_release_disposition(release.ROOT)
-    assert record["candidate_commit"] == release.PARENT_COMMIT
-    assert record["candidate_tree"] == release.PARENT_TREE
+    assert record["candidate_commit"] == release.ATTEMPT_001_CANDIDATE_COMMIT
+    assert record["candidate_tree"] == release.ATTEMPT_001_CANDIDATE_TREE
     assert record["attempt_budget"] == 0
     assert record["retry_authorized"] is False
     assert record["derived_execution_nonclaims"]["docker_command_executed"] is False
@@ -1606,6 +1636,82 @@ def test_attempt_001_disposition_is_exact_and_attempt_002_is_not_retry() -> None
     )
     assert record["release_allowed"] is False
     assert record["uat_complete"] is False
+
+
+def test_attempt_002_disposition_is_exact_consumed_success() -> None:
+    record = json.loads(
+        release.PORT_RELEASE_ATTEMPT_002_DISPOSITION_JSON.read_text(
+            encoding="utf-8"
+        )
+    )
+    assert record == release._attempt_002_port_release_disposition_record()  # noqa: SLF001
+    release.validate_attempt_002_port_release_disposition(release.ROOT)
+    assert record["execution_candidate_commit"] == release.PARENT_COMMIT
+    assert record["execution_candidate_tree"] == release.PARENT_TREE
+    assert record["record_status"] == "CONSUMED_COMPLETED"
+    assert record["attempt_budget"] == 0
+    assert record["consumed"] is True
+    assert record["execution_available"] is False
+    assert record["retry_authorized"] is False
+    assert record["successor_o4_authority"] == {
+        "authorized": False,
+        "recovery_id": None,
+    }
+    observed = record["observed_receipt_disposition"]
+    assert observed["status"] == "completed"
+    assert observed["ports_point_in_time_available"] is True
+    assert observed["future_port_availability_claimed"] is False
+    assert observed["generic_port_owner_claimed"] is False
+    assert set(observed["preservation"].values()) == {
+        "not_targeted_by_recovery"
+    }
+    assert set(record["authority_exercised_true"]) == release.TRUE_AUTHORITY
+    assert set(record["authority_exercised_false"]) == release.FALSE_AUTHORITY
+    assert record["release_allowed"] is False
+    assert record["uat_complete"] is False
+
+
+@pytest.mark.parametrize("mutation", ["json", "document"])
+def test_attempt_002_tracked_disposition_rejects_drift(
+    tmp_path: Path,
+    mutation: str,
+) -> None:
+    target_json = (
+        tmp_path / release.PORT_RELEASE_ATTEMPT_002_DISPOSITION_JSON
+    )
+    target_document = (
+        tmp_path / release.PORT_RELEASE_ATTEMPT_002_DISPOSITION_DOCUMENT
+    )
+    target_json.parent.mkdir(parents=True)
+    target_json.write_bytes(
+        release.PORT_RELEASE_ATTEMPT_002_DISPOSITION_JSON.read_bytes()
+    )
+    target_document.write_bytes(
+        release.PORT_RELEASE_ATTEMPT_002_DISPOSITION_DOCUMENT.read_bytes()
+    )
+    target_json.chmod(0o644)
+    target_document.chmod(0o644)
+    release.validate_attempt_002_port_release_disposition(tmp_path)
+    if mutation == "json":
+        record = json.loads(target_json.read_text(encoding="utf-8"))
+        record["execution_candidate_tree"] = "f" * 40
+        target_json.write_text(
+            canonical_json(record) + "\n",
+            encoding="utf-8",
+        )
+    else:
+        target_document.write_text(
+            target_document.read_text(encoding="utf-8").replace(
+                "No successor O4 authority exists",
+                "Successor status omitted",
+            ),
+            encoding="utf-8",
+        )
+    with pytest.raises(
+        release.PortReleaseError,
+        match="attempt_002_disposition_invalid",
+    ):
+        release.validate_attempt_002_port_release_disposition(tmp_path)
 
 
 @pytest.mark.parametrize("mutation", ["json", "document"])
@@ -1728,6 +1834,91 @@ def test_attempt_001_receipt_binding_rejects_drift(
         match="attempt_001_receipt_invalid",
     ):
         release.validate_attempt_001_port_release_receipts(tmp_path)
+
+
+@pytest.mark.parametrize(
+    "mutation",
+    ["content", "mode", "extra", "journal_extra"],
+)
+def test_attempt_002_receipt_binding_rejects_drift(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    mutation: str,
+) -> None:
+    consumed = b"synthetic-attempt-002-consumed\n"
+    disposition = b"synthetic-attempt-002-disposition\n"
+    journal_bindings: list[tuple[str, int, str]] = []
+    journal_contents: dict[str, bytes] = {}
+    for index in range(1, 11):
+        name = f"{index:04d}-synthetic-event.json"
+        content = f"synthetic-journal-{index}\\n".encode()
+        journal_contents[name] = content
+        journal_bindings.append(
+            (
+                name,
+                len(content),
+                "sha256:" + hashlib.sha256(content).hexdigest(),
+            )
+        )
+    monkeypatch.setattr(release, "ATTEMPT_002_CONSUMED_SIZE", len(consumed))
+    monkeypatch.setattr(
+        release,
+        "ATTEMPT_002_CONSUMED_DIGEST",
+        "sha256:" + hashlib.sha256(consumed).hexdigest(),
+    )
+    monkeypatch.setattr(
+        release,
+        "ATTEMPT_002_DISPOSITION_SIZE",
+        len(disposition),
+    )
+    monkeypatch.setattr(
+        release,
+        "ATTEMPT_002_DISPOSITION_DIGEST",
+        "sha256:" + hashlib.sha256(disposition).hexdigest(),
+    )
+    monkeypatch.setattr(
+        release,
+        "ATTEMPT_002_JOURNAL_BINDINGS",
+        tuple(journal_bindings),
+    )
+    (tmp_path / "var").mkdir()
+    root = tmp_path / release.RECEIPT_ROOT
+    root.parent.mkdir(mode=0o700)
+    root.mkdir(mode=0o700)
+    journal = root / release.JOURNAL_DIRECTORY
+    journal.mkdir(mode=0o700)
+    leaves = {
+        root / release.CONSUMED_RECEIPT: consumed,
+        root / release.DISPOSITION_RECEIPT: disposition,
+        **{
+            journal / name: content
+            for name, content in journal_contents.items()
+        },
+    }
+    for path, content in leaves.items():
+        path.write_bytes(content)
+        path.chmod(0o600)
+    release.validate_attempt_002_port_release_receipts(tmp_path)
+
+    if mutation == "content":
+        path = journal / journal_bindings[4][0]
+        path.write_bytes(b"x" * len(journal_contents[path.name]))
+        path.chmod(0o600)
+    elif mutation == "mode":
+        (root / release.DISPOSITION_RECEIPT).chmod(0o644)
+    elif mutation == "extra":
+        extra = root / "unexpected.json"
+        extra.write_bytes(b"x")
+        extra.chmod(0o600)
+    else:
+        extra = journal / "0011-unexpected.json"
+        extra.write_bytes(b"x")
+        extra.chmod(0o600)
+    with pytest.raises(
+        release.PortReleaseError,
+        match="attempt_002_receipt_invalid",
+    ):
+        release.validate_attempt_002_port_release_receipts(tmp_path)
 
 
 def test_executable_digest_mode_and_replacement_fail_closed(
@@ -2302,6 +2493,14 @@ def test_live_target_is_separate_and_not_aggregate_wired() -> None:
 def test_tool_surface_and_authority_remain_closed() -> None:
     record = json.loads(release.AUTHORIZATION_JSON.read_text(encoding="utf-8"))
     assert record["recovery_id"].endswith("PORT-RELEASE-002")
+    assert record["record_status"] == "CONSUMED_CLOSED_COMPLETED"
+    assert record["attempt_budget"] == 0
+    assert record["consumed"] is True
+    assert record["execution_available"] is False
+    assert record["successor_o4_authority"] == {
+        "authorized": False,
+        "recovery_id": None,
+    }
     assert record["previous_attempt_closure"]["recovery_id"].endswith(
         "PORT-RELEASE-001"
     )
@@ -2312,8 +2511,10 @@ def test_tool_surface_and_authority_remain_closed() -> None:
     assert record["target"]["sealed_copy_inherited_gid_permission_bearing"] is False
     assert record["target"]["sealed_copy_inherited_gid_recorded_and_revalidated"] is True
     assert record["tool_count"] == 24
-    assert set(record["authority_true"]) == release.TRUE_AUTHORITY
-    assert set(record["authority_false"]) == release.FALSE_AUTHORITY
+    assert set(record["authority_granted_true"]) == release.TRUE_AUTHORITY
+    assert set(record["authority_granted_false"]) == release.FALSE_AUTHORITY
+    assert set(record["authority_exercised_true"]) == release.TRUE_AUTHORITY
+    assert set(record["authority_exercised_false"]) == release.FALSE_AUTHORITY
     assert record["release_allowed"] is False
     assert record["uat_complete"] is False
     assert "docker compose" not in canonical_json(record).lower()

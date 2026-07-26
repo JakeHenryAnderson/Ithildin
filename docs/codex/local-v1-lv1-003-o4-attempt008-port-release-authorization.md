@@ -1,13 +1,13 @@
 # Attempt 008 API/UI Port-Release Authorization
 
-Status: `AUTHORIZED_UNCONSUMED_EXACT_ONE_SHOT`
+Status: `CONSUMED_CLOSED_COMPLETED`
 
-Recovery `LV1-003-O4-ATTEMPT-008-PORT-RELEASE-002` is a separate, exact, one-shot
-port-release suspension for the retained Attempt 008 project. Its parent is commit
-`1e57990b82d3c912bf158e0b06cbfb0ca417bb33`, tree
-`b5fffdcc0b91f7d798763a0f1381fe78831ca22a`. The candidate must be its clean,
-single-parent immediate child with the exact seven-path allowlist. No future candidate commit or
-tree is claimed.
+Recovery `LV1-003-O4-ATTEMPT-008-PORT-RELEASE-002` completed successfully on execution
+candidate commit `66b4c1ca66a142466a2b487941488c072c1ec4d0`, tree
+`63bf4b6060a8e3082d1b5fdbeb2437f1b7236dcf`. This closure candidate must be that
+candidate's clean, single-parent immediate child with the exact seven-path allowlist. The execution
+candidate binding remains historical and is not rebound to the closure commit.
+Attempt 002 completed successfully.
 
 Attempt 001, recovery `LV1-003-O4-ATTEMPT-008-PORT-RELEASE-001`, is closed separately by
 [its exact disposition](local-v1-lv1-003-o4-attempt008-port-release-attempt-001-disposition.md).
@@ -15,18 +15,22 @@ It consumed its budget after `sealed_directory_invalid` before any Docker comman
 inspection, mutation, or port observation. Attempt 002 is a separate authority, not a retry of
 Attempt 001, and derives no authority from that consumed disposition.
 
-The Attempt 002 budget is one and unconsumed. Retry and automatic retry are false. The persistent cross-process
-claim is false; the immutable owner-only consumption receipt is still created with `O_EXCL` before
-any Docker access, and an observed failure consumes the budget permanently.
-Static candidate validity is separate from execution availability: a valid consumed lane remains a
-valid static candidate with budget zero. Only a valid empty or missing lane is `unconsumed` with
-budget one. Any nonempty invalid or unknown lane is `presumed_consumed_unknown`, has budget zero,
-and is never executable.
+The Attempt 002 budget is zero and consumed. Retry and automatic retry are false, and execution
+availability is false. The immutable owner-only consumption receipt was created with `O_EXCL`
+before Docker access; the persistent cross-process claim is false. Static candidate validity is
+separate from execution availability: this valid
+consumed lane remains a valid static candidate with budget zero. Any receipt drift fails closed and
+cannot reopen execution; an invalid nonempty lane remains `presumed_consumed_unknown`.
 
-## Narrow authority
+All five narrow granted authorities were exercised: retained-receipt validation, exact-project
+container inspection, exact API/UI stop, point-in-time port-release observation, and private receipt
+writing. No false authority was exercised. No successor O4 authority exists.
 
-The only true authority is retained-receipt validation, exact-project container inspection, exact
-API/UI stop, point-in-time port-release observation, and private receipt writing. The sealed
+## Closed narrow authority
+
+The only authority granted to the completed attempt was retained-receipt validation, exact-project
+container inspection, exact API/UI stop, point-in-time port-release observation, and private
+receipt writing. The sealed
 inspection projection exposes only container ID, exact image ID, exact project/service labels,
 running/status state, and published-port mappings.
 
@@ -50,7 +54,7 @@ group. This narrow correction reflects macOS `/private/tmp` group inheritance. I
 the separate group requirements for receipt directories or the reviewed Git/Docker source
 executable identities.
 
-The private evidence lane is repository-descriptor anchored. Its append-only journal uses owner-only
+The private evidence lane is repository-descriptor anchored. Its append-only journal used owner-only
 `O_EXCL` leaves with file and directory `fsync`: complete pre-inspection precedes mutation, each
 stop has durable intent and result/post-observation evidence when possible, and final projections
 and individual point-in-time bind observations are recorded. Termination after durable intent
@@ -66,12 +70,10 @@ Every receipt leaf read compares device, inode, size, modification time, change 
 and mode across the path-before, opened descriptor, post-read descriptor, and path-after views.
 Replacement and in-place same-size mutation therefore fail closed.
 
-The only mutation targets are the unique exact Attempt 008 API and UI containers. Node and Hermes
-are never stop targets. Final evidence distinguishes Node/Hermes observed unchanged from resources
-that were only not targeted by recovery; it never converts a no-delete/no-stop boundary into an
-unobserved preservation claim. The named Node volume, project network, all four images, retained
-runtime and receipts remain outside mutation authority, while ambiguous enrollment posture and lack
-of a revocation claim remain explicit.
+The only mutation targets were the unique exact Attempt 008 API and UI containers. Node and Hermes
+are never stop targets. Node, Hermes, volumes, networks, images, and retained runtime and evidence
+are recorded only as `not_targeted_by_recovery`; no observed-unchanged or absence claim is inferred.
+Ambiguous enrollment posture and lack of a revocation claim remain explicit.
 The exact run is `20260726T001909Z-d801f37b`, project
 `ithildin-local-v1-o4-d801f37b`. API must retain
 `127.0.0.1:8000->8000/tcp`; UI must retain `127.0.0.1:5173->8080/tcp`. The JSON authorization
@@ -90,6 +92,7 @@ cleanup or confirm Node revocation.
 
 `make local-v1-lv1-003-o4-attempt008-port-release-check` is fake-only and non-live.
 
-`make local-v1-lv1-003-o4-attempt008-port-release-run` is the separate Attempt 002 live operator entrypoint.
-It is excluded from aggregate gates and must not run until an exact-candidate review authorizes
-execution. This authorization record is evidence only; it is not execution, release, or UAT.
+`make local-v1-lv1-003-o4-attempt008-port-release-run` is retained as a closed operator entrypoint.
+It now refuses before consumption, socket discovery, sealed executable creation, or any Docker
+action because the budget is consumed and execution availability is false. This closure record is
+evidence only. Release and UAT remain false.

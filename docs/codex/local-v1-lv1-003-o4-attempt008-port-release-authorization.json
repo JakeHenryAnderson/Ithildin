@@ -1,10 +1,10 @@
 {
   "schema_version": "1",
   "record_type": "local_v1_lv1_003_o4_attempt008_port_release_authorization",
-  "record_status": "AUTHORIZED_UNCONSUMED_EXACT_ONE_SHOT",
+  "record_status": "CONSUMED_CLOSED_COMPLETED",
   "recovery_id": "LV1-003-O4-ATTEMPT-008-PORT-RELEASE-002",
-  "parent_commit": "1e57990b82d3c912bf158e0b06cbfb0ca417bb33",
-  "parent_tree": "b5fffdcc0b91f7d798763a0f1381fe78831ca22a",
+  "parent_commit": "66b4c1ca66a142466a2b487941488c072c1ec4d0",
+  "parent_tree": "63bf4b6060a8e3082d1b5fdbeb2437f1b7236dcf",
   "candidate_binding": {
     "mode": "dynamic_clean_single_parent_immediate_child",
     "candidate_commit": null,
@@ -14,8 +14,8 @@
   },
   "candidate_path_allowlist": [
     "README.md",
-    "docs/codex/local-v1-lv1-003-o4-attempt008-port-release-attempt-001-disposition.json",
-    "docs/codex/local-v1-lv1-003-o4-attempt008-port-release-attempt-001-disposition.md",
+    "docs/codex/local-v1-lv1-003-o4-attempt008-port-release-attempt-002-disposition.json",
+    "docs/codex/local-v1-lv1-003-o4-attempt008-port-release-attempt-002-disposition.md",
     "docs/codex/local-v1-lv1-003-o4-attempt008-port-release-authorization.json",
     "docs/codex/local-v1-lv1-003-o4-attempt008-port-release-authorization.md",
     "scripts/local_v1_lv1_003_o4_attempt008_port_release.py",
@@ -53,9 +53,10 @@
     "api_port_binding": "127.0.0.1:8000->8000/tcp",
     "ui_port_binding": "127.0.0.1:5173->8080/tcp"
   },
-  "attempt_budget": 1,
-  "consumed": false,
+  "attempt_budget": 0,
+  "consumed": true,
   "retry_authorized": false,
+  "execution_available": false,
   "previous_attempt_closure": {
     "recovery_id": "LV1-003-O4-ATTEMPT-008-PORT-RELEASE-001",
     "candidate_commit": "1e57990b82d3c912bf158e0b06cbfb0ca417bb33",
@@ -118,16 +119,91 @@
     "actions_preservation_and_ports_crosslinked": true,
     "maximum_entries": 16
   },
+  "attempt_002_closure": {
+    "recovery_id": "LV1-003-O4-ATTEMPT-008-PORT-RELEASE-002",
+    "execution_candidate_commit": "66b4c1ca66a142466a2b487941488c072c1ec4d0",
+    "execution_candidate_tree": "63bf4b6060a8e3082d1b5fdbeb2437f1b7236dcf",
+    "disposition_json": "docs/codex/local-v1-lv1-003-o4-attempt008-port-release-attempt-002-disposition.json",
+    "disposition_document": "docs/codex/local-v1-lv1-003-o4-attempt008-port-release-attempt-002-disposition.md",
+    "private_receipt_root": "var/local-v1-lv1-003-o4-reconciliation-receipts/attempt-008-port-release-002",
+    "receipt_bindings": [
+      {
+        "path": "var/local-v1-lv1-003-o4-reconciliation-receipts/attempt-008-port-release-002/consumed.json",
+        "size": 913,
+        "sha256": "sha256:9e6d32fe244fb1b98609561e617c0533700092139fc5ac1b6b70ef02aa8bff6f"
+      },
+      {
+        "path": "var/local-v1-lv1-003-o4-reconciliation-receipts/attempt-008-port-release-002/disposition.json",
+        "size": 3427,
+        "sha256": "sha256:9a90ac1dca563f2117b1fed6a058b8f38d66e36928d063274bfd1a834d44d6ad"
+      },
+      {
+        "path": "var/local-v1-lv1-003-o4-reconciliation-receipts/attempt-008-port-release-002/journal/0001-pre-inspection.json",
+        "size": 855,
+        "sha256": "sha256:aa8f3032c4b8672a28c9755912027e705de53165dbb0542483c7f030d0a726dd"
+      },
+      {
+        "path": "var/local-v1-lv1-003-o4-reconciliation-receipts/attempt-008-port-release-002/journal/0002-api-stop-intent.json",
+        "size": 444,
+        "sha256": "sha256:e888e31d68a40adea60ea49d84ea6035cae6931fda70e9b87727a3f7d46aaed2"
+      },
+      {
+        "path": "var/local-v1-lv1-003-o4-reconciliation-receipts/attempt-008-port-release-002/journal/0003-api-stop-result.json",
+        "size": 586,
+        "sha256": "sha256:67fd315601762fc562a5c0e0027d1fa7b42445ca716983201d20829df34f4754"
+      },
+      {
+        "path": "var/local-v1-lv1-003-o4-reconciliation-receipts/attempt-008-port-release-002/journal/0004-ui-stop-intent.json",
+        "size": 442,
+        "sha256": "sha256:8f3504605bfb7b8b62fdd4416816eb7d2fc07cb965d8bdf7cdc3a8d46f51a568"
+      },
+      {
+        "path": "var/local-v1-lv1-003-o4-reconciliation-receipts/attempt-008-port-release-002/journal/0005-ui-stop-result.json",
+        "size": 583,
+        "sha256": "sha256:605fc57c42cdd5029cbbba5be7df4b9ed487a709477f07b308ed596147c8ea0e"
+      },
+      {
+        "path": "var/local-v1-lv1-003-o4-reconciliation-receipts/attempt-008-port-release-002/journal/0006-final-post-inspection.json",
+        "size": 756,
+        "sha256": "sha256:118c996bcf3f2cfeed14cbe01e1ac65d2bcb5bfa2efbcba2e2e9dbc0560a9335"
+      },
+      {
+        "path": "var/local-v1-lv1-003-o4-reconciliation-receipts/attempt-008-port-release-002/journal/0007-port-8000-bind-observation.json",
+        "size": 278,
+        "sha256": "sha256:c7012865961dd549e4fa29f7d87cccd723e1334c86f7f93e810e461cd15d50f1"
+      },
+      {
+        "path": "var/local-v1-lv1-003-o4-reconciliation-receipts/attempt-008-port-release-002/journal/0008-port-5173-bind-observation.json",
+        "size": 278,
+        "sha256": "sha256:b534f3602dc75d8389275c872f2c78237f2fdec4840e12061d69ad531b2a5029"
+      },
+      {
+        "path": "var/local-v1-lv1-003-o4-reconciliation-receipts/attempt-008-port-release-002/journal/0009-simultaneous-port-set-observation.json",
+        "size": 281,
+        "sha256": "sha256:ae28c3811eddd5cdd0997686d819af2ad946a8ae81bd350569fa4a9640dd7ed5"
+      },
+      {
+        "path": "var/local-v1-lv1-003-o4-reconciliation-receipts/attempt-008-port-release-002/journal/0010-disposition-intent.json",
+        "size": 2923,
+        "sha256": "sha256:1e54d401787c663c7d3e16154bb3ec5ddc159b96cc02e32c848975a999329988"
+      }
+    ],
+    "status": "completed",
+    "consumed": true,
+    "attempt_budget": 0,
+    "retry_authorized": false,
+    "execution_available": false
+  },
   "operator_command": "make local-v1-lv1-003-o4-attempt008-port-release-run",
   "module_command": "uv run python -m scripts.local_v1_lv1_003_o4_attempt008_port_release",
-  "authority_true": [
+  "authority_granted_true": [
     "exact_api_ui_stop",
     "exact_project_container_inspection",
     "point_in_time_port_release_observation",
     "private_receipt_write",
     "retained_receipt_validation"
   ],
-  "authority_false": [
+  "authority_granted_false": [
     "compose_use",
     "container_deletion",
     "credential_access",
@@ -150,6 +226,40 @@
     "uat",
     "volume_deletion"
   ],
+  "authority_exercised_true": [
+    "exact_api_ui_stop",
+    "exact_project_container_inspection",
+    "point_in_time_port_release_observation",
+    "private_receipt_write",
+    "retained_receipt_validation"
+  ],
+  "authority_exercised_false": [
+    "compose_use",
+    "container_deletion",
+    "credential_access",
+    "evidence_deletion",
+    "generic_docker_queries",
+    "generic_process_control",
+    "generic_process_discovery",
+    "hermes_stop",
+    "image_deletion",
+    "network_deletion",
+    "new_governed_power",
+    "new_governed_tool",
+    "node_revocation",
+    "node_stop",
+    "project_down",
+    "promotion",
+    "provider_access",
+    "release",
+    "runtime_deletion",
+    "uat",
+    "volume_deletion"
+  ],
+  "successor_o4_authority": {
+    "authorized": false,
+    "recovery_id": null
+  },
   "tool_count": 24,
   "release_allowed": false,
   "uat_complete": false

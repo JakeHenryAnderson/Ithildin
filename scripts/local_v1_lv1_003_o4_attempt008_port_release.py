@@ -25,8 +25,10 @@ from ithildin_schemas import JsonObject, JsonValue, canonical_json
 ROOT = Path(__file__).resolve().parents[1]
 RECOVERY_ID = "LV1-003-O4-ATTEMPT-008-PORT-RELEASE-002"
 PREVIOUS_RECOVERY_ID = "LV1-003-O4-ATTEMPT-008-PORT-RELEASE-001"
-PARENT_COMMIT = "1e57990b82d3c912bf158e0b06cbfb0ca417bb33"
-PARENT_TREE = "b5fffdcc0b91f7d798763a0f1381fe78831ca22a"
+PARENT_COMMIT = "66b4c1ca66a142466a2b487941488c072c1ec4d0"
+PARENT_TREE = "63bf4b6060a8e3082d1b5fdbeb2437f1b7236dcf"
+ATTEMPT_001_CANDIDATE_COMMIT = "1e57990b82d3c912bf158e0b06cbfb0ca417bb33"
+ATTEMPT_001_CANDIDATE_TREE = "b5fffdcc0b91f7d798763a0f1381fe78831ca22a"
 RUN_ID = "20260726T001909Z-d801f37b"
 PROJECT = "ithildin-local-v1-o4-d801f37b"
 RUN_TARGET = "local-v1-lv1-003-o4-attempt008-port-release-run"
@@ -45,6 +47,12 @@ PORT_RELEASE_ATTEMPT_001_DISPOSITION_JSON = Path(
 )
 PORT_RELEASE_ATTEMPT_001_DISPOSITION_DOCUMENT = Path(
     "docs/codex/local-v1-lv1-003-o4-attempt008-port-release-attempt-001-disposition.md"
+)
+PORT_RELEASE_ATTEMPT_002_DISPOSITION_JSON = Path(
+    "docs/codex/local-v1-lv1-003-o4-attempt008-port-release-attempt-002-disposition.json"
+)
+PORT_RELEASE_ATTEMPT_002_DISPOSITION_DOCUMENT = Path(
+    "docs/codex/local-v1-lv1-003-o4-attempt008-port-release-attempt-002-disposition.md"
 )
 ATTEMPT_DISPOSITION_JSON = Path(
     "docs/codex/local-v1-lv1-003-o4-attempt-008-disposition.json"
@@ -81,6 +89,66 @@ ATTEMPT_001_JOURNAL_DIGEST = (
 ATTEMPT_001_DISPOSITION_SIZE = 1_172
 ATTEMPT_001_DISPOSITION_DIGEST = (
     "sha256:e87493b5e5aa2ff596180371bdb6ebb68172790cf4f769176af269a47b3098b1"
+)
+ATTEMPT_002_CONSUMED_SIZE = 913
+ATTEMPT_002_CONSUMED_DIGEST = (
+    "sha256:9e6d32fe244fb1b98609561e617c0533700092139fc5ac1b6b70ef02aa8bff6f"
+)
+ATTEMPT_002_DISPOSITION_SIZE = 3_427
+ATTEMPT_002_DISPOSITION_DIGEST = (
+    "sha256:9a90ac1dca563f2117b1fed6a058b8f38d66e36928d063274bfd1a834d44d6ad"
+)
+ATTEMPT_002_JOURNAL_BINDINGS = (
+    (
+        "0001-pre-inspection.json",
+        855,
+        "sha256:aa8f3032c4b8672a28c9755912027e705de53165dbb0542483c7f030d0a726dd",
+    ),
+    (
+        "0002-api-stop-intent.json",
+        444,
+        "sha256:e888e31d68a40adea60ea49d84ea6035cae6931fda70e9b87727a3f7d46aaed2",
+    ),
+    (
+        "0003-api-stop-result.json",
+        586,
+        "sha256:67fd315601762fc562a5c0e0027d1fa7b42445ca716983201d20829df34f4754",
+    ),
+    (
+        "0004-ui-stop-intent.json",
+        442,
+        "sha256:8f3504605bfb7b8b62fdd4416816eb7d2fc07cb965d8bdf7cdc3a8d46f51a568",
+    ),
+    (
+        "0005-ui-stop-result.json",
+        583,
+        "sha256:605fc57c42cdd5029cbbba5be7df4b9ed487a709477f07b308ed596147c8ea0e",
+    ),
+    (
+        "0006-final-post-inspection.json",
+        756,
+        "sha256:118c996bcf3f2cfeed14cbe01e1ac65d2bcb5bfa2efbcba2e2e9dbc0560a9335",
+    ),
+    (
+        "0007-port-8000-bind-observation.json",
+        278,
+        "sha256:c7012865961dd549e4fa29f7d87cccd723e1334c86f7f93e810e461cd15d50f1",
+    ),
+    (
+        "0008-port-5173-bind-observation.json",
+        278,
+        "sha256:b534f3602dc75d8389275c872f2c78237f2fdec4840e12061d69ad531b2a5029",
+    ),
+    (
+        "0009-simultaneous-port-set-observation.json",
+        281,
+        "sha256:ae28c3811eddd5cdd0997686d819af2ad946a8ae81bd350569fa4a9640dd7ed5",
+    ),
+    (
+        "0010-disposition-intent.json",
+        2_923,
+        "sha256:1e54d401787c663c7d3e16154bb3ec5ddc159b96cc02e32c848975a999329988",
+    ),
 )
 MAX_DOCKER_OUTPUT_BYTES = 32_768
 MAX_HASH_BYTES = 131_072
@@ -144,8 +212,8 @@ INSPECT_FORMAT = (
 )
 CANDIDATE_PATH_ALLOWLIST = [
     "README.md",
-    PORT_RELEASE_ATTEMPT_001_DISPOSITION_JSON.as_posix(),
-    PORT_RELEASE_ATTEMPT_001_DISPOSITION_DOCUMENT.as_posix(),
+    PORT_RELEASE_ATTEMPT_002_DISPOSITION_JSON.as_posix(),
+    PORT_RELEASE_ATTEMPT_002_DISPOSITION_DOCUMENT.as_posix(),
     AUTHORIZATION_JSON.as_posix(),
     AUTHORIZATION_DOCUMENT.as_posix(),
     "scripts/local_v1_lv1_003_o4_attempt008_port_release.py",
@@ -1066,6 +1134,32 @@ def candidate_identity(repo_root: Path) -> tuple[str, str]:
     return commit, tree
 
 
+def _attempt_002_receipt_bindings() -> list[JsonObject]:
+    bindings: list[JsonObject] = [
+        {
+            "path": (RECEIPT_ROOT / CONSUMED_RECEIPT).as_posix(),
+            "size": ATTEMPT_002_CONSUMED_SIZE,
+            "sha256": ATTEMPT_002_CONSUMED_DIGEST,
+        },
+        {
+            "path": (RECEIPT_ROOT / DISPOSITION_RECEIPT).as_posix(),
+            "size": ATTEMPT_002_DISPOSITION_SIZE,
+            "sha256": ATTEMPT_002_DISPOSITION_DIGEST,
+        },
+    ]
+    bindings.extend(
+        {
+            "path": (
+                RECEIPT_ROOT / JOURNAL_DIRECTORY / name
+            ).as_posix(),
+            "size": size,
+            "sha256": digest,
+        }
+        for name, size, digest in ATTEMPT_002_JOURNAL_BINDINGS
+    )
+    return bindings
+
+
 def validate_authorization(
     repo_root: Path,
     *,
@@ -1076,7 +1170,7 @@ def validate_authorization(
     expected = {
         "schema_version": "1",
         "record_type": "local_v1_lv1_003_o4_attempt008_port_release_authorization",
-        "record_status": "AUTHORIZED_UNCONSUMED_EXACT_ONE_SHOT",
+        "record_status": "CONSUMED_CLOSED_COMPLETED",
         "recovery_id": RECOVERY_ID,
         "parent_commit": PARENT_COMMIT,
         "parent_tree": PARENT_TREE,
@@ -1120,13 +1214,14 @@ def validate_authorization(
             "api_port_binding": "127.0.0.1:8000->8000/tcp",
             "ui_port_binding": "127.0.0.1:5173->8080/tcp",
         },
-        "attempt_budget": 1,
-        "consumed": False,
+        "attempt_budget": 0,
+        "consumed": True,
         "retry_authorized": False,
+        "execution_available": False,
         "previous_attempt_closure": {
             "recovery_id": PREVIOUS_RECOVERY_ID,
-            "candidate_commit": PARENT_COMMIT,
-            "candidate_tree": PARENT_TREE,
+            "candidate_commit": ATTEMPT_001_CANDIDATE_COMMIT,
+            "candidate_tree": ATTEMPT_001_CANDIDATE_TREE,
             "disposition_json": (
                 PORT_RELEASE_ATTEMPT_001_DISPOSITION_JSON.as_posix()
             ),
@@ -1199,10 +1294,34 @@ def validate_authorization(
             "actions_preservation_and_ports_crosslinked": True,
             "maximum_entries": MAX_JOURNAL_ENTRIES,
         },
+        "attempt_002_closure": {
+            "recovery_id": RECOVERY_ID,
+            "execution_candidate_commit": PARENT_COMMIT,
+            "execution_candidate_tree": PARENT_TREE,
+            "disposition_json": (
+                PORT_RELEASE_ATTEMPT_002_DISPOSITION_JSON.as_posix()
+            ),
+            "disposition_document": (
+                PORT_RELEASE_ATTEMPT_002_DISPOSITION_DOCUMENT.as_posix()
+            ),
+            "private_receipt_root": RECEIPT_ROOT.as_posix(),
+            "receipt_bindings": _attempt_002_receipt_bindings(),
+            "status": "completed",
+            "consumed": True,
+            "attempt_budget": 0,
+            "retry_authorized": False,
+            "execution_available": False,
+        },
         "operator_command": f"make {RUN_TARGET}",
         "module_command": MODULE_COMMAND,
-        "authority_true": sorted(TRUE_AUTHORITY),
-        "authority_false": sorted(FALSE_AUTHORITY),
+        "authority_granted_true": sorted(TRUE_AUTHORITY),
+        "authority_granted_false": sorted(FALSE_AUTHORITY),
+        "authority_exercised_true": sorted(TRUE_AUTHORITY),
+        "authority_exercised_false": sorted(FALSE_AUTHORITY),
+        "successor_o4_authority": {
+            "authorized": False,
+            "recovery_id": None,
+        },
         "tool_count": 24,
         "release_allowed": False,
         "uat_complete": False,
@@ -1215,10 +1334,10 @@ def validate_authorization(
         PARENT_COMMIT,
         PARENT_TREE,
         "exact seven-path allowlist",
-        "budget is one and unconsumed",
+        "budget is zero and consumed",
         "persistent cross-process claim is false",
         PREVIOUS_RECOVERY_ID,
-        "Attempt 002 is a separate authority, not a retry",
+        "Attempt 002 completed successfully",
         "owner and mode are the permission boundary",
         "inherited gid is recorded and revalidated",
         "reviewed Docker source is never executed",
@@ -1230,9 +1349,11 @@ def validate_authorization(
         "presumed_consumed_unknown",
         "final disposition-intent",
         "Static candidate validity is separate from execution availability",
+        "execution availability is false",
         "Node and Hermes are never stop targets",
         "point-in-time port availability only",
         "tool count remains 24",
+        "No successor O4 authority exists",
         f"make {RUN_TARGET}",
         f"make {CHECK_TARGET}",
     ):
@@ -1289,8 +1410,8 @@ def _attempt_001_port_release_disposition_record() -> JsonObject:
         "record_status": "CONSUMED_FAILED_BEFORE_DOCKER_COMMAND",
         "attempt_id": "LV1-003-O4-ATTEMPT-008-PORT-RELEASE-ATTEMPT-001",
         "recovery_id": PREVIOUS_RECOVERY_ID,
-        "candidate_commit": PARENT_COMMIT,
-        "candidate_tree": PARENT_TREE,
+        "candidate_commit": ATTEMPT_001_CANDIDATE_COMMIT,
+        "candidate_tree": ATTEMPT_001_CANDIDATE_TREE,
         "run_id": RUN_ID,
         "compose_project": PROJECT,
         "failure": {
@@ -1420,8 +1541,8 @@ def validate_attempt_001_port_release_disposition(repo_root: Path) -> None:
     normalized = " ".join(document.split())
     for phrase in (
         PREVIOUS_RECOVERY_ID,
-        PARENT_COMMIT,
-        PARENT_TREE,
+        ATTEMPT_001_CANDIDATE_COMMIT,
+        ATTEMPT_001_CANDIDATE_TREE,
         "sealed_directory_invalid",
         ATTEMPT_001_CONSUMED_DIGEST,
         ATTEMPT_001_JOURNAL_DIGEST,
@@ -1498,6 +1619,287 @@ def validate_attempt_001_port_release_receipts(repo_root: Path) -> None:
             size=ATTEMPT_001_JOURNAL_SIZE,
             digest=ATTEMPT_001_JOURNAL_DIGEST,
         )
+
+
+def _attempt_002_observed_outcome() -> JsonObject:
+    api_before = ContainerProjection(
+        "0bc38e9961ef6d190f5cc3d67b1c047077c2e143b541ee402032a06ecb292b85",
+        SERVICES["ithildin-api"].image_id,
+        "ithildin-api",
+        True,
+        "running",
+        {
+            "8000/tcp": [
+                {"HostIp": "127.0.0.1", "HostPort": "8000"}
+            ]
+        },
+    )
+    ui_before = ContainerProjection(
+        "5bc1d0a6d75db49d7501a8d1bdccc5ffe60d09ab54110d0a6eef6a99ca734d63",
+        SERVICES["ithildin-ui"].image_id,
+        "ithildin-ui",
+        True,
+        "running",
+        {
+            "8080/tcp": [
+                {"HostIp": "127.0.0.1", "HostPort": "5173"}
+            ]
+        },
+    )
+    api_after = ContainerProjection(
+        api_before.container_id,
+        api_before.image_id,
+        api_before.service,
+        False,
+        "exited",
+        {},
+    )
+    ui_after = ContainerProjection(
+        ui_before.container_id,
+        ui_before.image_id,
+        ui_before.service,
+        False,
+        "exited",
+        {},
+    )
+    api_after_record = _projection_record(api_after)
+    ui_after_record = _projection_record(ui_after)
+    return {
+        "before_projections": {
+            "ithildin-api": _projection_record(api_before),
+            "ithildin-ui": _projection_record(ui_before),
+        },
+        "after_projections": {
+            "ithildin-api": api_after_record,
+            "ithildin-ui": ui_after_record,
+        },
+        "actions": {
+            "api": {
+                "service": "ithildin-api",
+                "container_id": api_before.container_id,
+                "image_id": api_before.image_id,
+                "pre_running": True,
+                "status": "stopped_observed",
+                "stop_returncode": 0,
+                "post_observation": api_after_record,
+            },
+            "ui": {
+                "service": "ithildin-ui",
+                "container_id": ui_before.container_id,
+                "image_id": ui_before.image_id,
+                "pre_running": True,
+                "status": "stopped_observed",
+                "stop_returncode": 0,
+                "post_observation": ui_after_record,
+            },
+        },
+        "preservation": {
+            "ithildin-node": "not_targeted_by_recovery",
+            "hermes": "not_targeted_by_recovery",
+            "volumes": "not_targeted_by_recovery",
+            "networks": "not_targeted_by_recovery",
+            "images": "not_targeted_by_recovery",
+            "retained_runtime_and_evidence": "not_targeted_by_recovery",
+        },
+        "port_observations": [
+            {
+                "host": "127.0.0.1",
+                "port": 8000,
+                "status": "confirmed_simultaneously_bound_point_in_time",
+            },
+            {
+                "host": "127.0.0.1",
+                "port": 5173,
+                "status": "confirmed_simultaneously_bound_point_in_time",
+            },
+        ],
+    }
+
+
+def _attempt_002_port_release_disposition_record() -> JsonObject:
+    outcome = _attempt_002_observed_outcome()
+    return {
+        "schema_version": "1",
+        "record_type": (
+            "local_v1_lv1_003_o4_attempt008_port_release_attempt_002_disposition"
+        ),
+        "record_status": "CONSUMED_COMPLETED",
+        "attempt_id": "LV1-003-O4-ATTEMPT-008-PORT-RELEASE-ATTEMPT-002",
+        "recovery_id": RECOVERY_ID,
+        "execution_candidate_commit": PARENT_COMMIT,
+        "execution_candidate_tree": PARENT_TREE,
+        "run_id": RUN_ID,
+        "compose_project": PROJECT,
+        "observed_receipt_disposition": _disposition(
+            status="completed",
+            outcome=outcome,
+            failure_code=None,
+        ),
+        "derived_nonclaims": {
+            "container_deletion_performed": False,
+            "compose_used": False,
+            "full_project_cleanup_completed": False,
+            "node_revocation_confirmed": False,
+            "node_enrollment_ambiguous": True,
+            "generic_port_owner_claimed": False,
+            "future_port_availability_claimed": False,
+            "sealed_directory_leftover_observed": False,
+        },
+        "receipt_binding": {
+            "root": RECEIPT_ROOT.as_posix(),
+            "root_mode": "0700",
+            "root_uid": 501,
+            "root_gid": 20,
+            "journal_mode": "0700",
+            "journal_uid": 501,
+            "journal_gid": 20,
+            "leaf_mode": "0600",
+            "owner_only": True,
+            "entries": cast(
+                list[JsonValue],
+                _attempt_002_receipt_bindings(),
+            ),
+        },
+        "attempt_budget": 0,
+        "consumed": True,
+        "retry_authorized": False,
+        "execution_available": False,
+        "successor_o4_authority": {
+            "authorized": False,
+            "recovery_id": None,
+        },
+        "authority_granted_true": cast(
+            list[JsonValue],
+            sorted(TRUE_AUTHORITY),
+        ),
+        "authority_granted_false": cast(
+            list[JsonValue],
+            sorted(FALSE_AUTHORITY),
+        ),
+        "authority_exercised_true": cast(
+            list[JsonValue],
+            sorted(TRUE_AUTHORITY),
+        ),
+        "authority_exercised_false": cast(
+            list[JsonValue],
+            sorted(FALSE_AUTHORITY),
+        ),
+        "tool_count": 24,
+        "release_allowed": False,
+        "uat_complete": False,
+    }
+
+
+def validate_attempt_002_port_release_disposition(repo_root: Path) -> None:
+    path = repo_root / PORT_RELEASE_ATTEMPT_002_DISPOSITION_JSON
+    document_path = (
+        repo_root / PORT_RELEASE_ATTEMPT_002_DISPOSITION_DOCUMENT
+    )
+    try:
+        details = path.lstat()
+        document_details = document_path.lstat()
+        document = document_path.read_text(encoding="utf-8")
+    except (OSError, UnicodeError) as exc:
+        raise PortReleaseError("attempt_002_disposition_invalid") from exc
+    if (
+        not stat.S_ISREG(details.st_mode)
+        or stat.S_IMODE(details.st_mode) != 0o644
+        or details.st_uid != os.geteuid()
+        or details.st_gid != os.getegid()
+        or not stat.S_ISREG(document_details.st_mode)
+        or stat.S_IMODE(document_details.st_mode) != 0o644
+        or document_details.st_uid != os.geteuid()
+        or document_details.st_gid != os.getegid()
+        or _load_closed_json(path)
+        != _attempt_002_port_release_disposition_record()
+    ):
+        raise PortReleaseError("attempt_002_disposition_invalid")
+    normalized = " ".join(document.split())
+    for phrase in (
+        RECOVERY_ID,
+        PARENT_COMMIT,
+        PARENT_TREE,
+        "CONSUMED_COMPLETED",
+        ATTEMPT_002_CONSUMED_DIGEST,
+        ATTEMPT_002_DISPOSITION_DIGEST,
+        "All five narrow granted authorities were exercised",
+        "not_targeted_by_recovery",
+        "point-in-time",
+        "budget is zero",
+        "execution availability is false",
+        "No successor O4 authority exists",
+        "Release and UAT remain false",
+    ):
+        if phrase not in normalized:
+            raise PortReleaseError("attempt_002_disposition_invalid")
+
+
+def _validate_attempt_002_receipt_leaf(
+    chain: _DirectoryChain,
+    name: str,
+    *,
+    size: int,
+    digest: str,
+) -> None:
+    content = _read_leaf(
+        chain,
+        name,
+        expected_mode=0o600,
+        maximum_size=MAX_HASH_BYTES,
+        error_code="attempt_002_receipt_invalid",
+    )
+    if len(content) != size or _sha256_bytes(content) != digest:
+        raise PortReleaseError("attempt_002_receipt_invalid")
+
+
+def validate_attempt_002_port_release_receipts(repo_root: Path) -> None:
+    root = _open_relative_chain(
+        repo_root,
+        RECEIPT_ROOT,
+        create=False,
+        error_code="attempt_002_receipt_invalid",
+    )
+    if root is None:
+        raise PortReleaseError("attempt_002_receipt_invalid")
+    with root:
+        if root.entries() != [
+            CONSUMED_RECEIPT,
+            DISPOSITION_RECEIPT,
+            JOURNAL_DIRECTORY,
+        ]:
+            raise PortReleaseError("attempt_002_receipt_invalid")
+        _validate_attempt_002_receipt_leaf(
+            root,
+            CONSUMED_RECEIPT,
+            size=ATTEMPT_002_CONSUMED_SIZE,
+            digest=ATTEMPT_002_CONSUMED_DIGEST,
+        )
+        _validate_attempt_002_receipt_leaf(
+            root,
+            DISPOSITION_RECEIPT,
+            size=ATTEMPT_002_DISPOSITION_SIZE,
+            digest=ATTEMPT_002_DISPOSITION_DIGEST,
+        )
+    journal = _open_relative_chain(
+        repo_root,
+        RECEIPT_ROOT / JOURNAL_DIRECTORY,
+        create=False,
+        error_code="attempt_002_receipt_invalid",
+    )
+    if journal is None:
+        raise PortReleaseError("attempt_002_receipt_invalid")
+    with journal:
+        if journal.entries() != [
+            name for name, _size, _digest_value in ATTEMPT_002_JOURNAL_BINDINGS
+        ]:
+            raise PortReleaseError("attempt_002_receipt_invalid")
+        for name, size, digest in ATTEMPT_002_JOURNAL_BINDINGS:
+            _validate_attempt_002_receipt_leaf(
+                journal,
+                name,
+                size=size,
+                digest=digest,
+            )
 
 
 def _same_inode(first: os.stat_result, second: os.stat_result) -> bool:
@@ -2832,6 +3234,10 @@ def build_report(repo_root: Path = ROOT) -> JsonObject:
                 repo_root
             ),
             lambda: validate_attempt_001_port_release_receipts(repo_root),
+            lambda: validate_attempt_002_port_release_disposition(
+                repo_root
+            ),
+            lambda: validate_attempt_002_port_release_receipts(repo_root),
             lambda: validate_retained_receipts(repo_root),
             lambda: _validate_git_executable(),
             lambda: _validate_docker_executable(),
@@ -2853,8 +3259,8 @@ def build_report(repo_root: Path = ROOT) -> JsonObject:
     if not static_failures:
         receipt_state = inspect_receipt_lane(
             repo_root,
-            candidate_commit=commit,
-            candidate_tree=tree,
+            candidate_commit=PARENT_COMMIT,
+            candidate_tree=PARENT_TREE,
         )
         if not receipt_state.valid:
             execution_failures.append(
