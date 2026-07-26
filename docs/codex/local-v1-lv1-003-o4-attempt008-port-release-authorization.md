@@ -2,14 +2,20 @@
 
 Status: `AUTHORIZED_UNCONSUMED_EXACT_ONE_SHOT`
 
-Recovery `LV1-003-O4-ATTEMPT-008-PORT-RELEASE-001` is a separate, exact, one-shot
+Recovery `LV1-003-O4-ATTEMPT-008-PORT-RELEASE-002` is a separate, exact, one-shot
 port-release suspension for the retained Attempt 008 project. Its parent is commit
-`8211ba3ee0064dcf63d5eb80060d6ae4129fa4e1`, tree
-`c5bf9fd82d76e9d48fdf93c0ea624f6e696bcd39`. The candidate must be its clean,
+`1e57990b82d3c912bf158e0b06cbfb0ca417bb33`, tree
+`b5fffdcc0b91f7d798763a0f1381fe78831ca22a`. The candidate must be its clean,
 single-parent immediate child with the exact seven-path allowlist. No future candidate commit or
 tree is claimed.
 
-The budget is one and unconsumed. Retry and automatic retry are false. The persistent cross-process
+Attempt 001, recovery `LV1-003-O4-ATTEMPT-008-PORT-RELEASE-001`, is closed separately by
+[its exact disposition](local-v1-lv1-003-o4-attempt008-port-release-attempt-001-disposition.md).
+It consumed its budget after `sealed_directory_invalid` before any Docker command, target
+inspection, mutation, or port observation. Attempt 002 is a separate authority, not a retry of
+Attempt 001, and derives no authority from that consumed disposition.
+
+The Attempt 002 budget is one and unconsumed. Retry and automatic retry are false. The persistent cross-process
 claim is false; the immutable owner-only consumption receipt is still created with `O_EXCL` before
 any Docker access, and an observed failure consumes the budget permanently.
 Static candidate validity is separate from execution availability: a valid consumed lane remains a
@@ -36,6 +42,13 @@ the executor lifetime, and the sealed leaf is revalidated before and after every
 required after use: successful cleanup removes the sealed leaf and private directory, while cleanup
 failure is terminal and fails the run. Docker child PATH inheritance is false; a hostile ambient
 `PATH` cannot select an executable.
+
+For the sealed child directory and executable leaf, owner and mode are the permission boundary:
+stable effective-UID ownership and exact 0700 or 0500 mode. The inherited gid is recorded and revalidated across the
+descriptor and path views, but it is not permission-bearing and need not equal the process effective
+group. This narrow correction reflects macOS `/private/tmp` group inheritance. It does not weaken
+the separate group requirements for receipt directories or the reviewed Git/Docker source
+executable identities.
 
 The private evidence lane is repository-descriptor anchored. Its append-only journal uses owner-only
 `O_EXCL` leaves with file and directory `fsync`: complete pre-inspection precedes mutation, each
@@ -77,6 +90,6 @@ cleanup or confirm Node revocation.
 
 `make local-v1-lv1-003-o4-attempt008-port-release-check` is fake-only and non-live.
 
-`make local-v1-lv1-003-o4-attempt008-port-release-run` is the separate live operator entrypoint.
+`make local-v1-lv1-003-o4-attempt008-port-release-run` is the separate Attempt 002 live operator entrypoint.
 It is excluded from aggregate gates and must not run until an exact-candidate review authorizes
 execution. This authorization record is evidence only; it is not execution, release, or UAT.

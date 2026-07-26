@@ -2,9 +2,9 @@
   "schema_version": "1",
   "record_type": "local_v1_lv1_003_o4_attempt008_port_release_authorization",
   "record_status": "AUTHORIZED_UNCONSUMED_EXACT_ONE_SHOT",
-  "recovery_id": "LV1-003-O4-ATTEMPT-008-PORT-RELEASE-001",
-  "parent_commit": "8211ba3ee0064dcf63d5eb80060d6ae4129fa4e1",
-  "parent_tree": "c5bf9fd82d76e9d48fdf93c0ea624f6e696bcd39",
+  "recovery_id": "LV1-003-O4-ATTEMPT-008-PORT-RELEASE-002",
+  "parent_commit": "1e57990b82d3c912bf158e0b06cbfb0ca417bb33",
+  "parent_tree": "b5fffdcc0b91f7d798763a0f1381fe78831ca22a",
   "candidate_binding": {
     "mode": "dynamic_clean_single_parent_immediate_child",
     "candidate_commit": null,
@@ -13,9 +13,9 @@
     "persistent_cross_process_claim": false
   },
   "candidate_path_allowlist": [
-    ".gitignore",
-    "Makefile",
     "README.md",
+    "docs/codex/local-v1-lv1-003-o4-attempt008-port-release-attempt-001-disposition.json",
+    "docs/codex/local-v1-lv1-003-o4-attempt008-port-release-attempt-001-disposition.md",
     "docs/codex/local-v1-lv1-003-o4-attempt008-port-release-authorization.json",
     "docs/codex/local-v1-lv1-003-o4-attempt008-port-release-authorization.md",
     "scripts/local_v1_lv1_003_o4_attempt008_port_release.py",
@@ -25,7 +25,7 @@
     "run_id": "20260726T001909Z-d801f37b",
     "compose_project": "ithildin-local-v1-o4-d801f37b",
     "retained_receipt_root": "var/local-v1-lv1-003-o4-receipts/20260726T001909Z-d801f37b",
-    "private_receipt_root": "var/local-v1-lv1-003-o4-reconciliation-receipts/attempt-008-port-release-001",
+    "private_receipt_root": "var/local-v1-lv1-003-o4-reconciliation-receipts/attempt-008-port-release-002",
     "git_executable": "/usr/bin/git",
     "docker_alias": "/usr/local/bin/docker",
     "docker_resolved_executable": "/Applications/Docker.app/Contents/Resources/bin/docker",
@@ -36,6 +36,9 @@
     "sealed_copy_random_directory_bytes": 16,
     "sealed_copy_directory_mode": "0700",
     "sealed_copy_executable_mode": "0500",
+    "sealed_copy_permission_boundary": "stable_effective_uid_owner_and_mode",
+    "sealed_copy_inherited_gid_permission_bearing": false,
+    "sealed_copy_inherited_gid_recorded_and_revalidated": true,
     "sealed_copy_source_postmetadata_size_digest_revalidated": true,
     "sealed_copy_revalidated_before_after_each_command": true,
     "sealed_copy_cleanup_required": true,
@@ -53,6 +56,38 @@
   "attempt_budget": 1,
   "consumed": false,
   "retry_authorized": false,
+  "previous_attempt_closure": {
+    "recovery_id": "LV1-003-O4-ATTEMPT-008-PORT-RELEASE-001",
+    "candidate_commit": "1e57990b82d3c912bf158e0b06cbfb0ca417bb33",
+    "candidate_tree": "b5fffdcc0b91f7d798763a0f1381fe78831ca22a",
+    "disposition_json": "docs/codex/local-v1-lv1-003-o4-attempt008-port-release-attempt-001-disposition.json",
+    "disposition_document": "docs/codex/local-v1-lv1-003-o4-attempt008-port-release-attempt-001-disposition.md",
+    "private_receipt_root": "var/local-v1-lv1-003-o4-reconciliation-receipts/attempt-008-port-release-001",
+    "receipt_bindings": [
+      {
+        "path": "var/local-v1-lv1-003-o4-reconciliation-receipts/attempt-008-port-release-001/consumed.json",
+        "size": 913,
+        "sha256": "sha256:ba871180cad089f4a325060167ea5bf6fa800010a0f12562b63d00e32ea7de49"
+      },
+      {
+        "path": "var/local-v1-lv1-003-o4-reconciliation-receipts/attempt-008-port-release-001/journal/0001-disposition-intent.json",
+        "size": 666,
+        "sha256": "sha256:a8f8bbbc670d68392d0376d14a1754a81d9d556fa155699a95006f3d368a1ec3"
+      },
+      {
+        "path": "var/local-v1-lv1-003-o4-reconciliation-receipts/attempt-008-port-release-001/disposition.json",
+        "size": 1172,
+        "sha256": "sha256:e87493b5e5aa2ff596180371bdb6ebb68172790cf4f769176af269a47b3098b1"
+      }
+    ],
+    "failure_code": "sealed_directory_invalid",
+    "consumed": true,
+    "attempt_budget": 0,
+    "retry_authorized": false,
+    "docker_command_executed": false,
+    "successor_is_separate_authority": true,
+    "successor_is_retry": false
+  },
   "receipt_contract": {
     "empty_or_missing_lane_consumption_status": "unconsumed",
     "valid_consumed_lane_consumption_status": "consumed",

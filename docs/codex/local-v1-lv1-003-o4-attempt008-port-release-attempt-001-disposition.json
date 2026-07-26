@@ -1,0 +1,141 @@
+{
+  "schema_version": "1",
+  "record_type": "local_v1_lv1_003_o4_attempt008_port_release_attempt_001_disposition",
+  "record_status": "CONSUMED_FAILED_BEFORE_DOCKER_COMMAND",
+  "attempt_id": "LV1-003-O4-ATTEMPT-008-PORT-RELEASE-ATTEMPT-001",
+  "recovery_id": "LV1-003-O4-ATTEMPT-008-PORT-RELEASE-001",
+  "candidate_commit": "1e57990b82d3c912bf158e0b06cbfb0ca417bb33",
+  "candidate_tree": "b5fffdcc0b91f7d798763a0f1381fe78831ca22a",
+  "run_id": "20260726T001909Z-d801f37b",
+  "compose_project": "ithildin-local-v1-o4-d801f37b",
+  "failure": {
+    "observed_code": "sealed_directory_invalid",
+    "diagnosed_phase": "sealed_private_directory_validation",
+    "diagnosed_cause": "private_tmp_child_inherited_gid_differed_from_effective_gid"
+  },
+  "observed_receipt_outcome": {
+    "before_projections": {},
+    "after_projections": {},
+    "actions": {
+      "api": {
+        "status": "not_attempted"
+      },
+      "ui": {
+        "status": "not_attempted"
+      }
+    },
+    "port_observations": [],
+    "report": {
+      "valid": true,
+      "consumption_status": "consumed",
+      "attempt_budget": 0,
+      "execution_available": false
+    }
+  },
+  "derived_execution_nonclaims": {
+    "basis": "default_outcome_and_disposition_intent_only_journal",
+    "docker_command_executed": false,
+    "target_container_inspection_performed": false,
+    "target_container_mutation_performed": false,
+    "point_in_time_port_observation_performed": false
+  },
+  "post_failure_observation": {
+    "sealed_directory_leftover_observed": false,
+    "evidence_source": "operator_post_failure_filesystem_observation"
+  },
+  "receipt_binding": {
+    "root": "var/local-v1-lv1-003-o4-reconciliation-receipts/attempt-008-port-release-001",
+    "root_mode": "0700",
+    "leaf_mode": "0600",
+    "owner_only": true,
+    "entries": [
+      {
+        "path": "var/local-v1-lv1-003-o4-reconciliation-receipts/attempt-008-port-release-001/consumed.json",
+        "size": 913,
+        "sha256": "sha256:ba871180cad089f4a325060167ea5bf6fa800010a0f12562b63d00e32ea7de49"
+      },
+      {
+        "path": "var/local-v1-lv1-003-o4-reconciliation-receipts/attempt-008-port-release-001/journal/0001-disposition-intent.json",
+        "size": 666,
+        "sha256": "sha256:a8f8bbbc670d68392d0376d14a1754a81d9d556fa155699a95006f3d368a1ec3"
+      },
+      {
+        "path": "var/local-v1-lv1-003-o4-reconciliation-receipts/attempt-008-port-release-001/disposition.json",
+        "size": 1172,
+        "sha256": "sha256:e87493b5e5aa2ff596180371bdb6ebb68172790cf4f769176af269a47b3098b1"
+      }
+    ]
+  },
+  "attempt_budget": 0,
+  "consumed": true,
+  "retry_authorized": false,
+  "successor_authorization": {
+    "recovery_id": "LV1-003-O4-ATTEMPT-008-PORT-RELEASE-002",
+    "separate_authority": true,
+    "retry_of_attempt_001": false,
+    "authority_derived_from_attempt_001_disposition": false
+  },
+  "authority_granted_true": [
+    "exact_api_ui_stop",
+    "exact_project_container_inspection",
+    "point_in_time_port_release_observation",
+    "private_receipt_write",
+    "retained_receipt_validation"
+  ],
+  "authority_granted_false": [
+    "compose_use",
+    "container_deletion",
+    "credential_access",
+    "evidence_deletion",
+    "generic_docker_queries",
+    "generic_process_control",
+    "generic_process_discovery",
+    "hermes_stop",
+    "image_deletion",
+    "network_deletion",
+    "new_governed_power",
+    "new_governed_tool",
+    "node_revocation",
+    "node_stop",
+    "project_down",
+    "promotion",
+    "provider_access",
+    "release",
+    "runtime_deletion",
+    "uat",
+    "volume_deletion"
+  ],
+  "authority_exercised_true": [
+    "private_receipt_write",
+    "retained_receipt_validation"
+  ],
+  "authority_exercised_false": [
+    "compose_use",
+    "container_deletion",
+    "credential_access",
+    "evidence_deletion",
+    "exact_api_ui_stop",
+    "exact_project_container_inspection",
+    "generic_docker_queries",
+    "generic_process_control",
+    "generic_process_discovery",
+    "hermes_stop",
+    "image_deletion",
+    "network_deletion",
+    "new_governed_power",
+    "new_governed_tool",
+    "node_revocation",
+    "node_stop",
+    "point_in_time_port_release_observation",
+    "project_down",
+    "promotion",
+    "provider_access",
+    "release",
+    "runtime_deletion",
+    "uat",
+    "volume_deletion"
+  ],
+  "tool_count": 24,
+  "release_allowed": false,
+  "uat_complete": false
+}

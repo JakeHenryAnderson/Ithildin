@@ -6,6 +6,7 @@ import os
 import socket
 import stat
 import subprocess
+import sys
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Any
@@ -1316,6 +1317,16 @@ def _static_report_patches(
     )
     monkeypatch.setattr(release, "validate_authorization", lambda *_a, **_k: None)
     monkeypatch.setattr(release, "validate_tracked_disposition", lambda _root: None)
+    monkeypatch.setattr(
+        release,
+        "validate_attempt_001_port_release_disposition",
+        lambda _root: None,
+    )
+    monkeypatch.setattr(
+        release,
+        "validate_attempt_001_port_release_receipts",
+        lambda _root: None,
+    )
     monkeypatch.setattr(release, "validate_retained_receipts", lambda _root: None)
     monkeypatch.setattr(release, "_validate_git_executable", _fake_identity)
     monkeypatch.setattr(release, "_validate_docker_executable", _fake_identity)
@@ -1392,6 +1403,28 @@ def test_nonempty_unknown_receipt_lane_presumes_consumption_and_budget_zero(
     assert report["consumed"] is None
     assert report["consumption_status"] == "presumed_consumed_unknown"
     assert report["execution_failures"] == ["receipt_lane_invalid"]
+
+
+def test_attempt_002_execution_requires_exact_attempt_001_closure(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    (tmp_path / "var").mkdir()
+    _static_report_patches(monkeypatch)
+
+    def invalid_previous_receipts(_root: Path) -> None:
+        raise release.PortReleaseError("attempt_001_receipt_invalid")
+
+    monkeypatch.setattr(
+        release,
+        "validate_attempt_001_port_release_receipts",
+        invalid_previous_receipts,
+    )
+    report = release.build_report(tmp_path)
+    assert report["static_candidate_valid"] is False
+    assert report["execution_available"] is False
+    assert report["attempt_budget"] == 0
+    assert report["failures"] == ["attempt_001_receipt_invalid"]
 
 
 def test_retained_validator_is_anchored_and_does_not_traverse_candidate(
@@ -1538,6 +1571,165 @@ def test_authorization_record_is_exact_json() -> None:
     )
 
 
+def test_attempt_001_disposition_is_exact_and_attempt_002_is_not_retry() -> None:
+    record = json.loads(
+        release.PORT_RELEASE_ATTEMPT_001_DISPOSITION_JSON.read_text(
+            encoding="utf-8"
+        )
+    )
+    assert record == release._attempt_001_port_release_disposition_record()  # noqa: SLF001
+    release.validate_attempt_001_port_release_disposition(release.ROOT)
+    assert record["candidate_commit"] == release.PARENT_COMMIT
+    assert record["candidate_tree"] == release.PARENT_TREE
+    assert record["attempt_budget"] == 0
+    assert record["retry_authorized"] is False
+    assert record["derived_execution_nonclaims"]["docker_command_executed"] is False
+    assert record["observed_receipt_outcome"]["actions"] == {
+        "api": {"status": "not_attempted"},
+        "ui": {"status": "not_attempted"},
+    }
+    assert record["successor_authorization"] == {
+        "recovery_id": release.RECOVERY_ID,
+        "separate_authority": True,
+        "retry_of_attempt_001": False,
+        "authority_derived_from_attempt_001_disposition": False,
+    }
+    assert set(record["authority_granted_true"]) == release.TRUE_AUTHORITY
+    assert set(record["authority_granted_false"]) == release.FALSE_AUTHORITY
+    assert set(record["authority_exercised_true"]) == {
+        "private_receipt_write",
+        "retained_receipt_validation",
+    }
+    assert set(record["authority_exercised_false"]) == (
+        (release.TRUE_AUTHORITY | release.FALSE_AUTHORITY)
+        - {"private_receipt_write", "retained_receipt_validation"}
+    )
+    assert record["release_allowed"] is False
+    assert record["uat_complete"] is False
+
+
+@pytest.mark.parametrize("mutation", ["json", "document"])
+def test_attempt_001_tracked_disposition_rejects_drift(
+    tmp_path: Path,
+    mutation: str,
+) -> None:
+    target_json = (
+        tmp_path / release.PORT_RELEASE_ATTEMPT_001_DISPOSITION_JSON
+    )
+    target_document = (
+        tmp_path / release.PORT_RELEASE_ATTEMPT_001_DISPOSITION_DOCUMENT
+    )
+    target_json.parent.mkdir(parents=True)
+    target_json.write_bytes(
+        release.PORT_RELEASE_ATTEMPT_001_DISPOSITION_JSON.read_bytes()
+    )
+    target_document.write_bytes(
+        release.PORT_RELEASE_ATTEMPT_001_DISPOSITION_DOCUMENT.read_bytes()
+    )
+    target_json.chmod(0o644)
+    target_document.chmod(0o644)
+    release.validate_attempt_001_port_release_disposition(tmp_path)
+    if mutation == "json":
+        record = json.loads(target_json.read_text(encoding="utf-8"))
+        record["candidate_tree"] = "f" * 40
+        target_json.write_text(
+            canonical_json(record) + "\n",
+            encoding="utf-8",
+        )
+    else:
+        target_document.write_text(
+            target_document.read_text(encoding="utf-8").replace(
+                "Release and UAT remain false",
+                "Release status omitted",
+            ),
+            encoding="utf-8",
+        )
+    with pytest.raises(
+        release.PortReleaseError,
+        match="attempt_001_disposition_invalid",
+    ):
+        release.validate_attempt_001_port_release_disposition(tmp_path)
+
+
+@pytest.mark.parametrize(
+    "mutation",
+    ["content", "mode", "extra", "journal_extra"],
+)
+def test_attempt_001_receipt_binding_rejects_drift(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    mutation: str,
+) -> None:
+    consumed = b"synthetic-consumed\n"
+    journal_content = b"synthetic-disposition-intent\n"
+    disposition = b"synthetic-disposition\n"
+    monkeypatch.setattr(
+        release,
+        "ATTEMPT_001_CONSUMED_SIZE",
+        len(consumed),
+    )
+    monkeypatch.setattr(
+        release,
+        "ATTEMPT_001_CONSUMED_DIGEST",
+        "sha256:" + hashlib.sha256(consumed).hexdigest(),
+    )
+    monkeypatch.setattr(
+        release,
+        "ATTEMPT_001_JOURNAL_SIZE",
+        len(journal_content),
+    )
+    monkeypatch.setattr(
+        release,
+        "ATTEMPT_001_JOURNAL_DIGEST",
+        "sha256:" + hashlib.sha256(journal_content).hexdigest(),
+    )
+    monkeypatch.setattr(
+        release,
+        "ATTEMPT_001_DISPOSITION_SIZE",
+        len(disposition),
+    )
+    monkeypatch.setattr(
+        release,
+        "ATTEMPT_001_DISPOSITION_DIGEST",
+        "sha256:" + hashlib.sha256(disposition).hexdigest(),
+    )
+    (tmp_path / "var").mkdir()
+    root = tmp_path / release.PREVIOUS_RECEIPT_ROOT
+    root.parent.mkdir(mode=0o700)
+    root.mkdir(mode=0o700)
+    journal = root / release.JOURNAL_DIRECTORY
+    journal.mkdir(mode=0o700)
+    leaves = {
+        root / release.CONSUMED_RECEIPT: consumed,
+        journal / "0001-disposition-intent.json": journal_content,
+        root / release.DISPOSITION_RECEIPT: disposition,
+    }
+    for path, content in leaves.items():
+        path.write_bytes(content)
+        path.chmod(0o600)
+    release.validate_attempt_001_port_release_receipts(tmp_path)
+
+    if mutation == "content":
+        path = root / release.CONSUMED_RECEIPT
+        path.write_bytes(b"x" * len(consumed))
+        path.chmod(0o600)
+    elif mutation == "mode":
+        (root / release.DISPOSITION_RECEIPT).chmod(0o644)
+    elif mutation == "extra":
+        extra = root / "unexpected.json"
+        extra.write_bytes(b"x")
+        extra.chmod(0o600)
+    else:
+        extra = journal / "0002-unexpected.json"
+        extra.write_bytes(b"x")
+        extra.chmod(0o600)
+    with pytest.raises(
+        release.PortReleaseError,
+        match="attempt_001_receipt_invalid",
+    ):
+        release.validate_attempt_001_port_release_receipts(tmp_path)
+
+
 def test_executable_digest_mode_and_replacement_fail_closed(
     tmp_path: Path,
 ) -> None:
@@ -1675,6 +1867,87 @@ def test_reviewed_docker_is_copied_to_private_seal_and_only_seal_executes(
         assert observed["command"][0] != source.as_posix()
         assert "PATH" not in observed["environment"]
     assert not sealed_directory.exists()
+    assert list(sealed_parent.iterdir()) == []
+
+
+def test_real_private_tmp_inherited_group_is_stable_but_not_permission_boundary(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    real_private_tmp = Path("/private/tmp")
+    if (
+        sys.platform != "darwin"
+        or not real_private_tmp.is_dir()
+        or not os.access(real_private_tmp, os.W_OK | os.X_OK)
+        or stat.S_IMODE(real_private_tmp.stat().st_mode) != 0o1777
+    ):
+        pytest.skip("requires usable Darwin /private/tmp sticky root")
+    _source, _alias, _synthetic_parent = _patch_synthetic_docker_source(
+        tmp_path,
+        monkeypatch,
+    )
+    monkeypatch.setattr(release, "SEALED_TEMP_PARENT", real_private_tmp)
+    sealed_directory: Path | None = None
+    with release.SealedDockerExecutable.create() as sealed:
+        sealed_path = Path(sealed.path)
+        sealed_directory = sealed_path.parent
+        directory_details = sealed_directory.lstat()
+        leaf_details = sealed_path.lstat()
+        assert directory_details.st_uid == os.geteuid()
+        assert stat.S_IMODE(directory_details.st_mode) == 0o700
+        assert leaf_details.st_uid == os.geteuid()
+        assert stat.S_IMODE(leaf_details.st_mode) == 0o500
+        assert (
+            directory_details.st_gid
+            == sealed._directory_opened.st_gid  # noqa: SLF001
+        )
+        assert leaf_details.st_gid == sealed._file_opened.st_gid  # noqa: SLF001
+        assert directory_details.st_gid != os.getegid()
+        sealed.verify()
+    assert sealed_directory is not None
+    assert not sealed_directory.exists()
+
+
+@pytest.mark.parametrize("target", ["directory", "leaf"])
+def test_sealed_inherited_group_change_fails_closed(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    target: str,
+) -> None:
+    _source, _alias, sealed_parent = _patch_synthetic_docker_source(
+        tmp_path,
+        monkeypatch,
+    )
+    sealed = release.SealedDockerExecutable.create()
+    target_descriptor = (
+        sealed._directory_descriptor  # noqa: SLF001
+        if target == "directory"
+        else sealed._file_descriptor  # noqa: SLF001
+    )
+    original_fstat = release.os.fstat
+
+    class ChangedGroup:
+        def __init__(self, details: os.stat_result) -> None:
+            self._details = details
+            self.st_gid = details.st_gid + 1
+
+        def __getattr__(self, name: str) -> object:
+            return getattr(self._details, name)
+
+    def changed_fstat(descriptor: int) -> os.stat_result:
+        details = original_fstat(descriptor)
+        if descriptor == target_descriptor:
+            return ChangedGroup(details)  # type: ignore[return-value]
+        return details
+
+    monkeypatch.setattr(release.os, "fstat", changed_fstat)
+    with pytest.raises(
+        release.PortReleaseError,
+        match="sealed_executable_changed",
+    ):
+        sealed.verify()
+    monkeypatch.setattr(release.os, "fstat", original_fstat)
+    sealed.close()
     assert list(sealed_parent.iterdir()) == []
 
 
@@ -2028,6 +2301,16 @@ def test_live_target_is_separate_and_not_aggregate_wired() -> None:
 
 def test_tool_surface_and_authority_remain_closed() -> None:
     record = json.loads(release.AUTHORIZATION_JSON.read_text(encoding="utf-8"))
+    assert record["recovery_id"].endswith("PORT-RELEASE-002")
+    assert record["previous_attempt_closure"]["recovery_id"].endswith(
+        "PORT-RELEASE-001"
+    )
+    assert record["previous_attempt_closure"]["successor_is_retry"] is False
+    assert record["target"]["sealed_copy_permission_boundary"] == (
+        "stable_effective_uid_owner_and_mode"
+    )
+    assert record["target"]["sealed_copy_inherited_gid_permission_bearing"] is False
+    assert record["target"]["sealed_copy_inherited_gid_recorded_and_revalidated"] is True
     assert record["tool_count"] == 24
     assert set(record["authority_true"]) == release.TRUE_AUTHORITY
     assert set(record["authority_false"]) == release.FALSE_AUTHORITY

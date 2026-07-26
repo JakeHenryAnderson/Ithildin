@@ -23,9 +23,10 @@ from typing import Any, Protocol, cast
 from ithildin_schemas import JsonObject, JsonValue, canonical_json
 
 ROOT = Path(__file__).resolve().parents[1]
-RECOVERY_ID = "LV1-003-O4-ATTEMPT-008-PORT-RELEASE-001"
-PARENT_COMMIT = "8211ba3ee0064dcf63d5eb80060d6ae4129fa4e1"
-PARENT_TREE = "c5bf9fd82d76e9d48fdf93c0ea624f6e696bcd39"
+RECOVERY_ID = "LV1-003-O4-ATTEMPT-008-PORT-RELEASE-002"
+PREVIOUS_RECOVERY_ID = "LV1-003-O4-ATTEMPT-008-PORT-RELEASE-001"
+PARENT_COMMIT = "1e57990b82d3c912bf158e0b06cbfb0ca417bb33"
+PARENT_TREE = "b5fffdcc0b91f7d798763a0f1381fe78831ca22a"
 RUN_ID = "20260726T001909Z-d801f37b"
 PROJECT = "ithildin-local-v1-o4-d801f37b"
 RUN_TARGET = "local-v1-lv1-003-o4-attempt008-port-release-run"
@@ -38,6 +39,12 @@ AUTHORIZATION_JSON = Path(
 )
 AUTHORIZATION_DOCUMENT = Path(
     "docs/codex/local-v1-lv1-003-o4-attempt008-port-release-authorization.md"
+)
+PORT_RELEASE_ATTEMPT_001_DISPOSITION_JSON = Path(
+    "docs/codex/local-v1-lv1-003-o4-attempt008-port-release-attempt-001-disposition.json"
+)
+PORT_RELEASE_ATTEMPT_001_DISPOSITION_DOCUMENT = Path(
+    "docs/codex/local-v1-lv1-003-o4-attempt008-port-release-attempt-001-disposition.md"
 )
 ATTEMPT_DISPOSITION_JSON = Path(
     "docs/codex/local-v1-lv1-003-o4-attempt-008-disposition.json"
@@ -52,13 +59,29 @@ ATTEMPT_DISPOSITION_DOCUMENT_DIGEST = (
     "sha256:6d993a2bfa41b649cb3eb78fe6b659edb8ec066dc8d5857a860627bdd21a5b7e"
 )
 RETAINED_ROOT = Path("var/local-v1-lv1-003-o4-receipts") / RUN_ID
-RECEIPT_ROOT = (
+PREVIOUS_RECEIPT_ROOT = (
     Path("var/local-v1-lv1-003-o4-reconciliation-receipts")
     / "attempt-008-port-release-001"
+)
+RECEIPT_ROOT = (
+    Path("var/local-v1-lv1-003-o4-reconciliation-receipts")
+    / "attempt-008-port-release-002"
 )
 CONSUMED_RECEIPT = "consumed.json"
 DISPOSITION_RECEIPT = "disposition.json"
 JOURNAL_DIRECTORY = "journal"
+ATTEMPT_001_CONSUMED_SIZE = 913
+ATTEMPT_001_CONSUMED_DIGEST = (
+    "sha256:ba871180cad089f4a325060167ea5bf6fa800010a0f12562b63d00e32ea7de49"
+)
+ATTEMPT_001_JOURNAL_SIZE = 666
+ATTEMPT_001_JOURNAL_DIGEST = (
+    "sha256:a8f8bbbc670d68392d0376d14a1754a81d9d556fa155699a95006f3d368a1ec3"
+)
+ATTEMPT_001_DISPOSITION_SIZE = 1_172
+ATTEMPT_001_DISPOSITION_DIGEST = (
+    "sha256:e87493b5e5aa2ff596180371bdb6ebb68172790cf4f769176af269a47b3098b1"
+)
 MAX_DOCKER_OUTPUT_BYTES = 32_768
 MAX_HASH_BYTES = 131_072
 MAX_JOURNAL_ENTRIES = 16
@@ -120,9 +143,9 @@ INSPECT_FORMAT = (
     "{{json .NetworkSettings.Ports}}"
 )
 CANDIDATE_PATH_ALLOWLIST = [
-    ".gitignore",
-    "Makefile",
     "README.md",
+    PORT_RELEASE_ATTEMPT_001_DISPOSITION_JSON.as_posix(),
+    PORT_RELEASE_ATTEMPT_001_DISPOSITION_DOCUMENT.as_posix(),
     AUTHORIZATION_JSON.as_posix(),
     AUTHORIZATION_DOCUMENT.as_posix(),
     "scripts/local_v1_lv1_003_o4_attempt008_port_release.py",
@@ -740,9 +763,10 @@ class SealedDockerExecutable:
                 not stat.S_ISDIR(directory_opened.st_mode)
                 or stat.S_IMODE(directory_opened.st_mode) != 0o700
                 or directory_opened.st_uid != os.geteuid()
-                or directory_opened.st_gid != os.getegid()
                 or not _same_inode(directory_before, directory_opened)
                 or not _same_inode(directory_opened, directory_after)
+                or directory_before.st_gid != directory_opened.st_gid
+                or directory_opened.st_gid != directory_after.st_gid
             ):
                 raise PortReleaseError("sealed_directory_invalid")
 
@@ -809,13 +833,34 @@ class SealedDockerExecutable:
                 dir_fd=directory_descriptor,
             )
             file_opened = os.fstat(read_descriptor)
+            directory_sealed = os.fstat(directory_descriptor)
+            directory_sealed_from_parent = os.stat(
+                directory_name,
+                dir_fd=parent_descriptor,
+                follow_symlinks=False,
+            )
+            directory_sealed_path = directory_path.lstat()
+            if (
+                not stat.S_ISDIR(directory_sealed.st_mode)
+                or stat.S_IMODE(directory_sealed.st_mode) != 0o700
+                or directory_sealed.st_uid != os.geteuid()
+                or not _same_file_metadata(
+                    directory_sealed,
+                    directory_sealed_from_parent,
+                )
+                or not _same_file_metadata(
+                    directory_sealed_from_parent,
+                    directory_sealed_path,
+                )
+            ):
+                raise PortReleaseError("sealed_directory_invalid")
             instance = cls(
                 parent_descriptor=parent_descriptor,
                 parent_opened=parent_opened,
                 directory_name=directory_name,
                 directory_path=directory_path,
                 directory_descriptor=directory_descriptor,
-                directory_opened=directory_opened,
+                directory_opened=directory_sealed,
                 file_descriptor=read_descriptor,
                 file_opened=file_opened,
             )
@@ -898,11 +943,20 @@ class SealedDockerExecutable:
                 self._directory_opened,
                 directory_from_parent,
             )
-            or not _same_inode(directory_from_parent, directory_now)
-            or not _same_inode(directory_now, directory_path)
+            or not _same_file_metadata(
+                self._directory_opened,
+                directory_from_parent,
+            )
+            or not _same_file_metadata(
+                directory_from_parent,
+                directory_now,
+            )
+            or not _same_file_metadata(
+                directory_now,
+                directory_path,
+            )
             or stat.S_IMODE(directory_now.st_mode) != 0o700
             or directory_now.st_uid != os.geteuid()
-            or directory_now.st_gid != os.getegid()
             or not _same_file_metadata(self._file_opened, file_before)
             or not _same_file_metadata(file_before, file_from_directory)
             or not _same_file_metadata(file_from_directory, file_path)
@@ -910,7 +964,6 @@ class SealedDockerExecutable:
             or not stat.S_ISREG(file_after.st_mode)
             or stat.S_IMODE(file_after.st_mode) != 0o500
             or file_after.st_uid != os.geteuid()
-            or file_after.st_gid != os.getegid()
             or file_after.st_size != DOCKER_EXECUTABLE_SIZE
             or remaining
             or extra
@@ -1050,6 +1103,11 @@ def validate_authorization(
             "sealed_copy_random_directory_bytes": 16,
             "sealed_copy_directory_mode": "0700",
             "sealed_copy_executable_mode": "0500",
+            "sealed_copy_permission_boundary": (
+                "stable_effective_uid_owner_and_mode"
+            ),
+            "sealed_copy_inherited_gid_permission_bearing": False,
+            "sealed_copy_inherited_gid_recorded_and_revalidated": True,
             "sealed_copy_source_postmetadata_size_digest_revalidated": True,
             "sealed_copy_revalidated_before_after_each_command": True,
             "sealed_copy_cleanup_required": True,
@@ -1065,6 +1123,50 @@ def validate_authorization(
         "attempt_budget": 1,
         "consumed": False,
         "retry_authorized": False,
+        "previous_attempt_closure": {
+            "recovery_id": PREVIOUS_RECOVERY_ID,
+            "candidate_commit": PARENT_COMMIT,
+            "candidate_tree": PARENT_TREE,
+            "disposition_json": (
+                PORT_RELEASE_ATTEMPT_001_DISPOSITION_JSON.as_posix()
+            ),
+            "disposition_document": (
+                PORT_RELEASE_ATTEMPT_001_DISPOSITION_DOCUMENT.as_posix()
+            ),
+            "private_receipt_root": PREVIOUS_RECEIPT_ROOT.as_posix(),
+            "receipt_bindings": [
+                {
+                    "path": (
+                        PREVIOUS_RECEIPT_ROOT / CONSUMED_RECEIPT
+                    ).as_posix(),
+                    "size": ATTEMPT_001_CONSUMED_SIZE,
+                    "sha256": ATTEMPT_001_CONSUMED_DIGEST,
+                },
+                {
+                    "path": (
+                        PREVIOUS_RECEIPT_ROOT
+                        / JOURNAL_DIRECTORY
+                        / "0001-disposition-intent.json"
+                    ).as_posix(),
+                    "size": ATTEMPT_001_JOURNAL_SIZE,
+                    "sha256": ATTEMPT_001_JOURNAL_DIGEST,
+                },
+                {
+                    "path": (
+                        PREVIOUS_RECEIPT_ROOT / DISPOSITION_RECEIPT
+                    ).as_posix(),
+                    "size": ATTEMPT_001_DISPOSITION_SIZE,
+                    "sha256": ATTEMPT_001_DISPOSITION_DIGEST,
+                },
+            ],
+            "failure_code": "sealed_directory_invalid",
+            "consumed": True,
+            "attempt_budget": 0,
+            "retry_authorized": False,
+            "docker_command_executed": False,
+            "successor_is_separate_authority": True,
+            "successor_is_retry": False,
+        },
         "receipt_contract": {
             "empty_or_missing_lane_consumption_status": "unconsumed",
             "valid_consumed_lane_consumption_status": "consumed",
@@ -1115,6 +1217,10 @@ def validate_authorization(
         "exact seven-path allowlist",
         "budget is one and unconsumed",
         "persistent cross-process claim is false",
+        PREVIOUS_RECOVERY_ID,
+        "Attempt 002 is a separate authority, not a retry",
+        "owner and mode are the permission boundary",
+        "inherited gid is recorded and revalidated",
         "reviewed Docker source is never executed",
         "random private 0700 directory",
         "sealed 0500 copy",
@@ -1172,6 +1278,226 @@ def validate_tracked_disposition(repo_root: Path) -> None:
         or attempt_contract.get("recovery_required") is not True
     ):
         raise PortReleaseError("tracked_disposition_invalid")
+
+
+def _attempt_001_port_release_disposition_record() -> JsonObject:
+    return {
+        "schema_version": "1",
+        "record_type": (
+            "local_v1_lv1_003_o4_attempt008_port_release_attempt_001_disposition"
+        ),
+        "record_status": "CONSUMED_FAILED_BEFORE_DOCKER_COMMAND",
+        "attempt_id": "LV1-003-O4-ATTEMPT-008-PORT-RELEASE-ATTEMPT-001",
+        "recovery_id": PREVIOUS_RECOVERY_ID,
+        "candidate_commit": PARENT_COMMIT,
+        "candidate_tree": PARENT_TREE,
+        "run_id": RUN_ID,
+        "compose_project": PROJECT,
+        "failure": {
+            "observed_code": "sealed_directory_invalid",
+            "diagnosed_phase": "sealed_private_directory_validation",
+            "diagnosed_cause": (
+                "private_tmp_child_inherited_gid_differed_from_effective_gid"
+            ),
+        },
+        "observed_receipt_outcome": {
+            "before_projections": {},
+            "after_projections": {},
+            "actions": {
+                "api": {"status": "not_attempted"},
+                "ui": {"status": "not_attempted"},
+            },
+            "port_observations": [],
+            "report": {
+                "valid": True,
+                "consumption_status": "consumed",
+                "attempt_budget": 0,
+                "execution_available": False,
+            },
+        },
+        "derived_execution_nonclaims": {
+            "basis": (
+                "default_outcome_and_disposition_intent_only_journal"
+            ),
+            "docker_command_executed": False,
+            "target_container_inspection_performed": False,
+            "target_container_mutation_performed": False,
+            "point_in_time_port_observation_performed": False,
+        },
+        "post_failure_observation": {
+            "sealed_directory_leftover_observed": False,
+            "evidence_source": "operator_post_failure_filesystem_observation",
+        },
+        "receipt_binding": {
+            "root": PREVIOUS_RECEIPT_ROOT.as_posix(),
+            "root_mode": "0700",
+            "leaf_mode": "0600",
+            "owner_only": True,
+            "entries": [
+                {
+                    "path": (
+                        PREVIOUS_RECEIPT_ROOT / CONSUMED_RECEIPT
+                    ).as_posix(),
+                    "size": ATTEMPT_001_CONSUMED_SIZE,
+                    "sha256": ATTEMPT_001_CONSUMED_DIGEST,
+                },
+                {
+                    "path": (
+                        PREVIOUS_RECEIPT_ROOT
+                        / JOURNAL_DIRECTORY
+                        / "0001-disposition-intent.json"
+                    ).as_posix(),
+                    "size": ATTEMPT_001_JOURNAL_SIZE,
+                    "sha256": ATTEMPT_001_JOURNAL_DIGEST,
+                },
+                {
+                    "path": (
+                        PREVIOUS_RECEIPT_ROOT / DISPOSITION_RECEIPT
+                    ).as_posix(),
+                    "size": ATTEMPT_001_DISPOSITION_SIZE,
+                    "sha256": ATTEMPT_001_DISPOSITION_DIGEST,
+                },
+            ],
+        },
+        "attempt_budget": 0,
+        "consumed": True,
+        "retry_authorized": False,
+        "successor_authorization": {
+            "recovery_id": RECOVERY_ID,
+            "separate_authority": True,
+            "retry_of_attempt_001": False,
+            "authority_derived_from_attempt_001_disposition": False,
+        },
+        "authority_granted_true": cast(
+            list[JsonValue],
+            sorted(TRUE_AUTHORITY),
+        ),
+        "authority_granted_false": cast(
+            list[JsonValue],
+            sorted(FALSE_AUTHORITY),
+        ),
+        "authority_exercised_true": [
+            "private_receipt_write",
+            "retained_receipt_validation",
+        ],
+        "authority_exercised_false": cast(
+            list[JsonValue],
+            sorted(
+                (TRUE_AUTHORITY | FALSE_AUTHORITY)
+                - {"private_receipt_write", "retained_receipt_validation"}
+            ),
+        ),
+        "tool_count": 24,
+        "release_allowed": False,
+        "uat_complete": False,
+    }
+
+
+def validate_attempt_001_port_release_disposition(repo_root: Path) -> None:
+    path = repo_root / PORT_RELEASE_ATTEMPT_001_DISPOSITION_JSON
+    document_path = (
+        repo_root / PORT_RELEASE_ATTEMPT_001_DISPOSITION_DOCUMENT
+    )
+    try:
+        details = path.lstat()
+        document_details = document_path.lstat()
+        document = document_path.read_text(encoding="utf-8")
+    except (OSError, UnicodeError) as exc:
+        raise PortReleaseError("attempt_001_disposition_invalid") from exc
+    if (
+        not stat.S_ISREG(details.st_mode)
+        or stat.S_IMODE(details.st_mode) != 0o644
+        or details.st_uid != os.geteuid()
+        or details.st_gid != os.getegid()
+        or not stat.S_ISREG(document_details.st_mode)
+        or stat.S_IMODE(document_details.st_mode) != 0o644
+        or document_details.st_uid != os.geteuid()
+        or document_details.st_gid != os.getegid()
+        or _load_closed_json(path)
+        != _attempt_001_port_release_disposition_record()
+    ):
+        raise PortReleaseError("attempt_001_disposition_invalid")
+    normalized = " ".join(document.split())
+    for phrase in (
+        PREVIOUS_RECOVERY_ID,
+        PARENT_COMMIT,
+        PARENT_TREE,
+        "sealed_directory_invalid",
+        ATTEMPT_001_CONSUMED_DIGEST,
+        ATTEMPT_001_JOURNAL_DIGEST,
+        ATTEMPT_001_DISPOSITION_DIGEST,
+        "no Docker command was executed",
+        "not a retry",
+        "budget is zero",
+        "Release and UAT remain false",
+    ):
+        if phrase not in normalized:
+            raise PortReleaseError("attempt_001_disposition_invalid")
+
+
+def _validate_attempt_001_receipt_leaf(
+    chain: _DirectoryChain,
+    name: str,
+    *,
+    size: int,
+    digest: str,
+) -> None:
+    content = _read_leaf(
+        chain,
+        name,
+        expected_mode=0o600,
+        maximum_size=MAX_HASH_BYTES,
+        error_code="attempt_001_receipt_invalid",
+    )
+    if len(content) != size or _sha256_bytes(content) != digest:
+        raise PortReleaseError("attempt_001_receipt_invalid")
+
+
+def validate_attempt_001_port_release_receipts(repo_root: Path) -> None:
+    root = _open_relative_chain(
+        repo_root,
+        PREVIOUS_RECEIPT_ROOT,
+        create=False,
+        error_code="attempt_001_receipt_invalid",
+    )
+    if root is None:
+        raise PortReleaseError("attempt_001_receipt_invalid")
+    with root:
+        if root.entries() != [
+            CONSUMED_RECEIPT,
+            DISPOSITION_RECEIPT,
+            JOURNAL_DIRECTORY,
+        ]:
+            raise PortReleaseError("attempt_001_receipt_invalid")
+        _validate_attempt_001_receipt_leaf(
+            root,
+            CONSUMED_RECEIPT,
+            size=ATTEMPT_001_CONSUMED_SIZE,
+            digest=ATTEMPT_001_CONSUMED_DIGEST,
+        )
+        _validate_attempt_001_receipt_leaf(
+            root,
+            DISPOSITION_RECEIPT,
+            size=ATTEMPT_001_DISPOSITION_SIZE,
+            digest=ATTEMPT_001_DISPOSITION_DIGEST,
+        )
+    journal = _open_relative_chain(
+        repo_root,
+        PREVIOUS_RECEIPT_ROOT / JOURNAL_DIRECTORY,
+        create=False,
+        error_code="attempt_001_receipt_invalid",
+    )
+    if journal is None:
+        raise PortReleaseError("attempt_001_receipt_invalid")
+    with journal:
+        if journal.entries() != ["0001-disposition-intent.json"]:
+            raise PortReleaseError("attempt_001_receipt_invalid")
+        _validate_attempt_001_receipt_leaf(
+            journal,
+            "0001-disposition-intent.json",
+            size=ATTEMPT_001_JOURNAL_SIZE,
+            digest=ATTEMPT_001_JOURNAL_DIGEST,
+        )
 
 
 def _same_inode(first: os.stat_result, second: os.stat_result) -> bool:
@@ -2502,6 +2828,10 @@ def build_report(repo_root: Path = ROOT) -> JsonObject:
                 candidate_tree=tree,
             ),
             lambda: validate_tracked_disposition(repo_root),
+            lambda: validate_attempt_001_port_release_disposition(
+                repo_root
+            ),
+            lambda: validate_attempt_001_port_release_receipts(repo_root),
             lambda: validate_retained_receipts(repo_root),
             lambda: _validate_git_executable(),
             lambda: _validate_docker_executable(),
