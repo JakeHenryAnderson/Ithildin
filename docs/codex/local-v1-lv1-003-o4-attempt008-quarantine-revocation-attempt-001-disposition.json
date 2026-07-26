@@ -1,0 +1,65 @@
+{
+  "schema_version": "1",
+  "record_type": "local_v1_lv1_003_o4_attempt008_quarantine_revocation_attempt_001_disposition",
+  "record_status": "CONSUMED_FAILED_CLOSED",
+  "recovery_id": "LV1-003-O4-ATTEMPT-008-QUARANTINE-REVOCATION-001",
+  "execution_candidate_commit": "cbf304512965fbd10df6b72b78777750ac4cc6d5",
+  "execution_candidate_tree": "654193cf9456433bcafc6da7c5dc6d2d076af54e",
+  "review_tag": "ithildin/lv1-003-o4-attempt008-quarantine-revocation-reviewed",
+  "invocations": [
+    {
+      "sequence": 1,
+      "result": "docker_trust_boundary_invalid",
+      "last_durable_stage": "identity-receipts-validated",
+      "docker_command_executed": false,
+      "storage_mutation_executed": false
+    },
+    {
+      "sequence": 2,
+      "result": "project_container_set_invalid",
+      "last_durable_stage": "identity-receipts-validated",
+      "exact_project_query_executed": true,
+      "docker_mutation_executed": false,
+      "storage_mutation_executed": false
+    }
+  ],
+  "receipt_binding": {
+    "consumed_size": 494,
+    "consumed_sha256": "sha256:b1873a883817b7171e1483ec84fde65c14f6a65df5fb36ea59da756a3197110a",
+    "identity_journal_size": 806,
+    "identity_journal_sha256": "sha256:9db067d2261b53404280c9487c0fe704b6d79796144e383e7f8c64e991adf1a7",
+    "project_preinspection_absent": true,
+    "database_alias_absent": true,
+    "audit_alias_absent": true,
+    "disposition_absent": true,
+    "uv_lock_preserved_outside_authority": true
+  },
+  "bounded_diagnostic": {
+    "exact_project_container_count": 2,
+    "services": {
+      "ithildin-api": {
+        "reviewed_identity_match": true,
+        "running": false,
+        "status": "exited"
+      },
+      "ithildin-ui": {
+        "reviewed_identity_match": true,
+        "running": false,
+        "status": "exited"
+      }
+    },
+    "ithildin_node": "not_observed_in_exact_project_query_at_preinspection",
+    "hermes": "not_observed_in_exact_project_query_at_preinspection",
+    "generic_container_absence_claimed": false,
+    "generic_process_absence_claimed": false
+  },
+  "attempt_budget": 0,
+  "retry_authorized": false,
+  "same_operation_resume_authorized": false,
+  "old_tag_move_authorized": false,
+  "cleanup_authorized": false,
+  "successor_o4_authorized": false,
+  "tool_count": 24,
+  "release_allowed": false,
+  "uat_complete": false
+}
