@@ -2375,7 +2375,7 @@ def test_wiring_rejects_stale_readme_attempt_guidance(tmp_path: Path) -> None:
     gate._validate_wiring(tmp_path, failures)  # noqa: SLF001
 
     assert any(
-        "README is missing current O4 Attempt 009 guidance" in failure for failure in failures
+        "README is missing current O4 Attempt 010 guidance" in failure for failure in failures
     )
 
 
