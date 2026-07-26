@@ -86,6 +86,12 @@ ATTEMPT_015_DISPOSITION_JSON = Path(
 ATTEMPT_015_DISPOSITION_DOCUMENT = Path(
     "docs/codex/local-v1-lv1-003-o4-attempt-015-disposition.md"
 )
+ATTEMPT_016_DISPOSITION_JSON = Path(
+    "docs/codex/local-v1-lv1-003-o4-attempt-016-disposition.json"
+)
+ATTEMPT_016_DISPOSITION_DOCUMENT = Path(
+    "docs/codex/local-v1-lv1-003-o4-attempt-016-disposition.md"
+)
 FIXED_NODE_START_DIAGNOSTIC_REVIEW = Path(
     "docs/codex/local-v1-lv1-003-o4-fixed-node-start-diagnostic-exact-review.md"
 )
@@ -151,8 +157,7 @@ PRODUCER_STATIC_TARGET = "local-v1-lv1-003-o4-producer-static-check"
 PRODUCER_RUN_TARGET = "local-v1-lv1-003-o4-producer-run"
 PRODUCER_MODULE_INVOCATION = "uv run python -m scripts.local_v1_lv1_003_o4_producer"
 PRODUCER_RUN_COMMENT = (
-    "# PREPARED, gate-protected one-shot Attempt 016 entrypoint; "
-    "exact annotated review tag required."
+    "# CLOSED consumed Attempt 016 entrypoint; budget zero and no live authority."
 )
 FAILED_FILE_PATH_INVOCATION = "uv run python scripts/local_v1_lv1_003_o4_producer.py"
 ENTRYPOINT_REPAIR_BASE_COMMIT = "148effd50c69b40a005f86f6217fc3db8b665a06"
@@ -650,6 +655,35 @@ ATTEMPT_015_DISPOSITION_DOCUMENT_DIGEST = (
 )
 ATTEMPT_016_ID = "LV1-003-O4-ATTEMPT-016"
 ATTEMPT_016_REVIEW_TAG = "ithildin/lv1-003-o4-attempt016-reviewed"
+ATTEMPT_016_CANDIDATE_COMMIT = "fef4205299c16da702f729ecfd7b66a1c0c5a6cf"
+ATTEMPT_016_CANDIDATE_TREE = "f246c857c0bf0fa17513bf8d2b45db979d058db6"
+ATTEMPT_016_RUN_IDENTITY_DIGEST = (
+    "sha256:05354c9ad532193142f84cd4abebbefab35a866658d4b30dd47b8c8dc9e5b035"
+)
+ATTEMPT_016_PROJECT_IDENTITY_DIGEST = (
+    "sha256:d1e77d220d1f53a2f99fc1e1b8a46ffa989bfdb4a49a1d7aa4b420c476f95cde"
+)
+ATTEMPT_016_RAW_OUTPUT_DIGEST = ATTEMPT_015_RAW_OUTPUT_DIGEST
+ATTEMPT_016_RAW_OUTPUT_SIZE = 171
+ATTEMPT_016_DISPOSITION_JSON_DIGEST = (
+    "sha256:3c8d0dead1609faf7eef2a42dbf7421766b053be7bdcc38c807e8ed221dc200d"
+)
+ATTEMPT_016_DISPOSITION_DOCUMENT_DIGEST = (
+    "sha256:7713892c393545bbf63ad211fa1aeebaee0499074e3f5499df268b5e511d770c"
+)
+ATTEMPT_016_MANIFEST_RECEIPT_DIGEST = (
+    "sha256:8079ac5100afe2fc99c9af07e0aa05dc700f67eb21ee5b82c1749fdd9750a070"
+)
+ATTEMPT_016_DIAGNOSTIC_RECEIPT_DIGEST = (
+    "sha256:c6fae45136de76bb0638e80fc3d58220594e8e94ba3634ebbfb745c25e663b04"
+)
+ATTEMPT_016_DISPOSITION_RECEIPT_DIGEST = (
+    "sha256:76111fb55e47a53554a22326499aa8a1b98fc9280ffb80b471e953cc4b645762"
+)
+ATTEMPT_016_MANIFEST_SIZE = 97421
+ATTEMPT_016_DIAGNOSTIC_SIZE = 7545
+ATTEMPT_016_DISPOSITION_SIZE = 136
+ATTEMPT_016_SNAPSHOT_FILE_COUNT = 668
 GATEWAY_MISSION_PROJECTION_REVIEW_DIGEST = (
     "sha256:6818b2f752d48f031a1ffaac13a6414ca2abf89337fa792a0561bba607a0a62c"
 )
@@ -710,9 +744,9 @@ TERMINAL_HEALTH_PHASE_PROJECTION_PATH_DIGESTS: JsonObject = {
         "sha256:2eaba1dfe1835f8ae507af93d74c2d78ae192cf93ae4330e7b296ba94727f50f"
     ),
 }
-CANDIDATE_PARENT_COMMIT = GATEWAY_MISSION_PROJECTION_REVIEW_RECORD_COMMIT
-CANDIDATE_PARENT_TREE = GATEWAY_MISSION_PROJECTION_REVIEW_RECORD_TREE
-CANDIDATE_PARENT_PARENT = GATEWAY_MISSION_PROJECTION_COMMIT
+CANDIDATE_PARENT_COMMIT = ATTEMPT_016_CANDIDATE_COMMIT
+CANDIDATE_PARENT_TREE = ATTEMPT_016_CANDIDATE_TREE
+CANDIDATE_PARENT_PARENT = GATEWAY_MISSION_PROJECTION_REVIEW_RECORD_COMMIT
 MCC_AUTHORIZATION_INDEX_RECONCILIATION_REVIEW_DIGEST = (
     "sha256:5e01639bc661da2bec28ebc6a2edb5b7cc30c3bc71d45290c2274d260ea42c9c"
 )
@@ -1280,6 +1314,16 @@ ATTEMPT_016_CONTROL_PATH_ALLOWLIST = [
     "tests/test_local_v1_lv1_003_o4_execution_authorization_check.py",
 ]
 ATTEMPT_016_RUNTIME_PATHS = list(GATEWAY_MISSION_PROJECTION_PATH_DIGESTS)
+ATTEMPT_016_CLOSURE_CONTROL_PATH_ALLOWLIST = [
+    "Makefile",
+    "README.md",
+    ATTEMPT_016_DISPOSITION_JSON.as_posix(),
+    ATTEMPT_016_DISPOSITION_DOCUMENT.as_posix(),
+    CONTRACT.as_posix(),
+    DOCUMENT.as_posix(),
+    "scripts/local_v1_lv1_003_o4_execution_authorization_check.py",
+    "tests/test_local_v1_lv1_003_o4_execution_authorization_check.py",
+]
 IMAGE_READABILITY_REPAIR_PATHS = list(IMAGE_READABILITY_REPAIR_PATH_DIGESTS)
 APPLICATION_STARTUP_STAGE_DIAGNOSTIC_PATHS = list(APPLICATION_STARTUP_STAGE_PATH_DIGESTS)
 DIAGNOSTIC_REPAIR_PATHS = [
@@ -1919,6 +1963,31 @@ TOP_LEVEL_FIELDS = {
     "attempt_016_success_not_predicted",
     "attempt_016_immediate_consumed_disposition_required",
     "attempt_016_authority_derived_from_history_or_recovery",
+    "attempt_016_attempted_candidate_commit",
+    "attempt_016_attempted_candidate_tree",
+    "attempt_016_make_exit_code",
+    "attempt_016_producer_exit_code",
+    "attempt_016_failure_code",
+    "attempt_016_primary_failure_code",
+    "attempt_016_highest_completed_stage",
+    "attempt_016_base_build_completed",
+    "attempt_016_bridge_build_completed",
+    "attempt_016_bound_image_identity_count",
+    "attempt_016_cleanup_failure_codes",
+    "attempt_016_recovery_required",
+    "attempt_016_run_identity_sha256",
+    "attempt_016_compose_project_identity_sha256",
+    "attempt_016_raw_invocation_output_sha256",
+    "attempt_016_raw_invocation_output_size",
+    "attempt_016_identity_free_gateway_mission_projection",
+    "attempt_016_root_cause_proven",
+    "attempt_016_disposition_json",
+    "attempt_016_disposition_json_sha256",
+    "attempt_016_disposition_document",
+    "attempt_016_disposition_document_sha256",
+    "attempt_016_runtime_root_absent",
+    "attempt_016_public_report_root_absent",
+    "attempt_016_public_report_base_absent_point_in_time",
     "mcc_authorization_index_reconciliation_review_record",
     "mcc_authorization_index_reconciliation_review_sha256",
     "mcc_reviewed_candidate_commit",
@@ -2169,14 +2238,14 @@ HISTORICAL_TRUE_AUTHORITY_FIELDS = {
 HISTORICAL_AUTHORITY: JsonObject = {
     key: key in HISTORICAL_TRUE_AUTHORITY_FIELDS for key in AUTHORITY_FIELDS
 }
-TRUE_AUTHORITY_FIELDS = set(HISTORICAL_TRUE_AUTHORITY_FIELDS)
+TRUE_AUTHORITY_FIELDS: set[str] = set()
 CLOSED_AUTHORITY: JsonObject = {key: False for key in AUTHORITY_FIELDS}
 ATTEMPT_002_AUTHORITY: JsonObject = {
     key: key in HISTORICAL_TRUE_AUTHORITY_FIELDS for key in AUTHORITY_FIELDS
 }
 ATTEMPT_003_AUTHORITY: JsonObject = {key: False for key in AUTHORITY_FIELDS}
 ATTEMPT_004_AUTHORITY: JsonObject = {key: False for key in AUTHORITY_FIELDS}
-EXPECTED_AUTHORITY: JsonObject = HISTORICAL_AUTHORITY
+EXPECTED_AUTHORITY: JsonObject = {key: False for key in AUTHORITY_FIELDS}
 
 
 class O4ExecutionAuthorizationError(RuntimeError):
@@ -2374,6 +2443,14 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         repo_root / ATTEMPT_015_DISPOSITION_DOCUMENT,
         failures,
     )
+    attempt_016_disposition = _read_contract(
+        repo_root / ATTEMPT_016_DISPOSITION_JSON,
+        failures,
+    )
+    attempt_016_disposition_document = _read_text(
+        repo_root / ATTEMPT_016_DISPOSITION_DOCUMENT,
+        failures,
+    )
     fixed_node_start_diagnostic_review = _read_text(
         repo_root / FIXED_NODE_START_DIAGNOSTIC_REVIEW,
         failures,
@@ -2521,6 +2598,11 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         attempt_015_disposition_document,
         failures,
     )
+    _validate_attempt_016_disposition(
+        attempt_016_disposition,
+        attempt_016_disposition_document,
+        failures,
+    )
     _validate_fixed_node_start_diagnostic_review(
         repo_root,
         fixed_node_start_diagnostic_review,
@@ -2580,9 +2662,9 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         failures,
         candidate_parent_commit=CANDIDATE_PARENT_COMMIT,
         candidate_parent_tree=CANDIDATE_PARENT_TREE,
-        reviewed_commit=GATEWAY_MISSION_PROJECTION_COMMIT,
+        reviewed_commit=ATTEMPT_016_CANDIDATE_COMMIT,
         runtime_paths=ATTEMPT_016_RUNTIME_PATHS,
-        control_paths=ATTEMPT_016_CONTROL_PATH_ALLOWLIST,
+        control_paths=ATTEMPT_016_CLOSURE_CONTROL_PATH_ALLOWLIST,
         candidate_ref="HEAD",
         require_clean_worktree=True,
     )
@@ -2620,8 +2702,8 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     )
     _validate_attempt_016_review_binding(
         repo_root,
-        candidate_commit=checkout_commit,
-        candidate_tree=checkout_tree,
+        candidate_commit=ATTEMPT_016_CANDIDATE_COMMIT,
+        candidate_tree=ATTEMPT_016_CANDIDATE_TREE,
         failures=failures,
     )
     valid = not failures
@@ -2699,9 +2781,8 @@ def build_report(repo_root: Path) -> dict[str, Any]:
             contract.get("execution_attempt_budget") if valid else 0
         ),
         "next_action": (
-            "execute_attempt_016_once_and_record_immediate_consumed_disposition"
-            if valid
-            else "review_attempt_016_execution_authorization_exact_candidate"
+            "prepare_separately_reviewed_bounded_gateway_mission_convergence_or_"
+            "polling_design_not_attempt_017_or_repair_authority"
         ),
         "producer_code_authorized": (
             authority.get("producer_code_authorized", False)
@@ -2762,7 +2843,8 @@ def _validate_contract(contract: JsonObject, failures: list[str]) -> None:
         "schema_version": "1",
         "record_type": "local_v1_lv1_003_o4_execution_authorization",
         "record_status": (
-            "ATTEMPT_016_PREPARED_PENDING_EXACT_CANDIDATE_REVIEW_NO_LIVE_AUTHORITY"
+            "ATTEMPT_016_CONSUMED_GATEWAY_MISSION_PROJECTION_INVALID_"
+            "CLEANUP_COMPLETE_NO_LIVE_AUTHORITY"
         ),
         "ticket_id": "LV1-003",
         "outcome_id": "O4",
@@ -3546,8 +3628,12 @@ def _validate_contract(contract: JsonObject, failures: list[str]) -> None:
             "low": 0,
         },
         "attempt_016_id": ATTEMPT_016_ID,
-        "attempt_016_candidate_parent_commit": CANDIDATE_PARENT_COMMIT,
-        "attempt_016_candidate_parent_tree": CANDIDATE_PARENT_TREE,
+        "attempt_016_candidate_parent_commit": (
+            GATEWAY_MISSION_PROJECTION_REVIEW_RECORD_COMMIT
+        ),
+        "attempt_016_candidate_parent_tree": (
+            GATEWAY_MISSION_PROJECTION_REVIEW_RECORD_TREE
+        ),
         "attempt_016_operator_command": ATTEMPT_002_OPERATOR_COMMAND,
         "attempt_016_module_command": PRODUCER_MODULE_INVOCATION,
         "attempt_016_kind": (
@@ -3557,7 +3643,7 @@ def _validate_contract(contract: JsonObject, failures: list[str]) -> None:
         "attempt_016_run_identity_source": (
             "producer_generated_fresh_run_project_suffix_runtime_receipt_and_evidence_paths"
         ),
-        "attempt_016_execution_authorized": True,
+        "attempt_016_execution_authorized": False,
         "attempt_016_automatic_retry_authorized": False,
         "attempt_016_concurrent_invocation_authorized": False,
         "attempt_016_post_attempt_retry_authorized": False,
@@ -3566,6 +3652,45 @@ def _validate_contract(contract: JsonObject, failures: list[str]) -> None:
         "attempt_016_success_not_predicted": True,
         "attempt_016_immediate_consumed_disposition_required": True,
         "attempt_016_authority_derived_from_history_or_recovery": False,
+        "attempt_016_attempted_candidate_commit": ATTEMPT_016_CANDIDATE_COMMIT,
+        "attempt_016_attempted_candidate_tree": ATTEMPT_016_CANDIDATE_TREE,
+        "attempt_016_make_exit_code": 2,
+        "attempt_016_producer_exit_code": 1,
+        "attempt_016_failure_code": "gateway_mission_projection_invalid",
+        "attempt_016_primary_failure_code": "gateway_mission_projection_invalid",
+        "attempt_016_highest_completed_stage": 13,
+        "attempt_016_base_build_completed": True,
+        "attempt_016_bridge_build_completed": True,
+        "attempt_016_bound_image_identity_count": 4,
+        "attempt_016_cleanup_failure_codes": [],
+        "attempt_016_recovery_required": False,
+        "attempt_016_run_identity_sha256": ATTEMPT_016_RUN_IDENTITY_DIGEST,
+        "attempt_016_compose_project_identity_sha256": (
+            ATTEMPT_016_PROJECT_IDENTITY_DIGEST
+        ),
+        "attempt_016_raw_invocation_output_sha256": ATTEMPT_016_RAW_OUTPUT_DIGEST,
+        "attempt_016_raw_invocation_output_size": ATTEMPT_016_RAW_OUTPUT_SIZE,
+        "attempt_016_identity_free_gateway_mission_projection": {
+            "collection_status": "complete",
+            "collection_reason_code": "gateway_mission_projection_state_collected",
+            "mission_identity_binding": "matched",
+            "mission_lifecycle_state": "runner_reported_running",
+            "target_node_identity_binding": "matched",
+            "delivery_projection_state": "present_object",
+            "governed_agent_runs_projection_state": "present_object",
+        },
+        "attempt_016_root_cause_proven": False,
+        "attempt_016_disposition_json": ATTEMPT_016_DISPOSITION_JSON.as_posix(),
+        "attempt_016_disposition_json_sha256": ATTEMPT_016_DISPOSITION_JSON_DIGEST,
+        "attempt_016_disposition_document": (
+            ATTEMPT_016_DISPOSITION_DOCUMENT.as_posix()
+        ),
+        "attempt_016_disposition_document_sha256": (
+            ATTEMPT_016_DISPOSITION_DOCUMENT_DIGEST
+        ),
+        "attempt_016_runtime_root_absent": True,
+        "attempt_016_public_report_root_absent": True,
+        "attempt_016_public_report_base_absent_point_in_time": True,
         "mcc_authorization_index_reconciliation_review_record": (
             MCC_AUTHORIZATION_INDEX_RECONCILIATION_REVIEW.as_posix()
         ),
@@ -3640,14 +3765,14 @@ def _validate_contract(contract: JsonObject, failures: list[str]) -> None:
         "attempt_002_execution_authorized": False,
         "attempt_002_automatic_retry_authorized": False,
         "execution_candidate_binding_mode": (
-            "exact_clean_six_path_child_of_review_record_parent_with_annotated_tag"
+            "exact_consumed_closure_child_of_immutable_reviewed_attempt_candidate"
         ),
-        "execution_attempt_budget": 1,
-        "attempt_consumed": False,
+        "execution_attempt_budget": 0,
+        "attempt_consumed": True,
         "retry_authorized": False,
         "attempt_custody": "central_manager_supervised_local_invocation",
         "persistent_cross_process_budget_consumption_claimed": False,
-        "immediate_post_attempt_disposition_recorded": False,
+        "immediate_post_attempt_disposition_recorded": True,
         "prior_attempt_detection_roots": PRIOR_ATTEMPT_ROOTS,
         "external_preflight_requirements": EXTERNAL_PREFLIGHT,
     }
@@ -3678,38 +3803,27 @@ def _validate_contract(contract: JsonObject, failures: list[str]) -> None:
 def _validate_document(document: str, failures: list[str]) -> None:
     normalized = " ".join(document.split())
     for phrase in (
-        "Status: `ATTEMPT_016_PREPARED_PENDING_EXACT_CANDIDATE_REVIEW_"
-        "NO_LIVE_AUTHORITY`",
+        "Status: `ATTEMPT_016_CONSUMED_GATEWAY_MISSION_PROJECTION_INVALID_"
+        "CLEANUP_COMPLETE_NO_LIVE_AUTHORITY`",
         ATTEMPT_016_ID,
         ATTEMPT_016_REVIEW_TAG,
-        GATEWAY_MISSION_PROJECTION_REVIEW.as_posix(),
-        GATEWAY_MISSION_PROJECTION_REVIEW_DIGEST,
+        ATTEMPT_016_CANDIDATE_COMMIT,
+        ATTEMPT_016_CANDIDATE_TREE,
+        ATTEMPT_016_RUN_IDENTITY_DIGEST,
+        ATTEMPT_016_PROJECT_IDENTITY_DIGEST,
+        ATTEMPT_016_MANIFEST_RECEIPT_DIGEST,
+        ATTEMPT_016_DIAGNOSTIC_RECEIPT_DIGEST,
+        ATTEMPT_016_DISPOSITION_RECEIPT_DIGEST,
+        ATTEMPT_016_DISPOSITION_JSON.as_posix(),
         GATEWAY_MISSION_PROJECTION_REVIEW_RECORD_COMMIT,
         GATEWAY_MISSION_PROJECTION_REVIEW_RECORD_TREE,
         GATEWAY_MISSION_PROJECTION_COMMIT,
         GATEWAY_MISSION_PROJECTION_TREE,
-        GATEWAY_MISSION_PROJECTION_PARENT_COMMIT,
-        cast(
-            str,
-            GATEWAY_MISSION_PROJECTION_PATH_DIGESTS[
-                "scripts/local_v1_lv1_003_o4_producer.py"
-            ],
-        ),
-        cast(
-            str,
-            GATEWAY_MISSION_PROJECTION_PATH_DIGESTS[
-                "tests/test_local_v1_lv1_003_o4_producer.py"
-            ],
-        ),
-        "Critical 0, High 0, Medium 0, Low 0",
-        "clean exact six-path, single-parent immediate child",
-        "reports invalid, effective budget zero, and all live authority false",
-        "review_attempt_016_execution_authorization_exact_candidate",
-        "identity-free Gateway mission projection diagnostic",
-        "success is not predicted",
-        "exactly five fields may be true",
-        "remaining fourteen authority fields stay false",
-        "immediate consumed disposition is mandatory",
+        "runner_reported_running",
+        "future separately reviewed bounded convergence or polling design",
+        "proves no root cause",
+        "all 19 authority fields are false",
+        "not Attempt 017 or repair authority",
         ATTEMPT_015_ID,
         ATTEMPT_015_REVIEW_TAG,
         ATTEMPT_015_CANDIDATE_COMMIT,
@@ -7355,6 +7469,79 @@ def _validate_attempt_015_disposition(
         failures.append("O4 Attempt 015 disposition document digest is invalid")
 
 
+def _validate_attempt_016_disposition(
+    disposition: JsonObject,
+    document: str,
+    failures: list[str],
+) -> None:
+    expected_status = (
+        "ATTEMPT_016_CONSUMED_GATEWAY_MISSION_PROJECTION_INVALID_"
+        "CLEANUP_COMPLETE_NO_LIVE_AUTHORITY"
+    )
+    projection = {
+        "collection_status": "complete",
+        "collection_reason_code": "gateway_mission_projection_state_collected",
+        "mission_identity_binding": "matched",
+        "mission_lifecycle_state": "runner_reported_running",
+        "target_node_identity_binding": "matched",
+        "delivery_projection_state": "present_object",
+        "governed_agent_runs_projection_state": "present_object",
+    }
+    if (
+        disposition.get("record_status") != expected_status
+        or disposition.get("attempt_id") != ATTEMPT_016_ID
+        or disposition.get("execution_candidate_commit") != ATTEMPT_016_CANDIDATE_COMMIT
+        or disposition.get("execution_candidate_tree") != ATTEMPT_016_CANDIDATE_TREE
+        or disposition.get("review_tag") != ATTEMPT_016_REVIEW_TAG
+        or disposition.get("identity_free_gateway_mission_projection") != projection
+        or disposition.get("authority") != CLOSED_AUTHORITY
+        or disposition.get("tool_count") != 24
+    ):
+        failures.append("O4 Attempt 016 disposition fields are not closed and exact")
+    invocation = disposition.get("invocation")
+    if (
+        not isinstance(invocation, dict)
+        or invocation.get("run_identity_sha256") != ATTEMPT_016_RUN_IDENTITY_DIGEST
+        or invocation.get("compose_project_identity_sha256")
+        != ATTEMPT_016_PROJECT_IDENTITY_DIGEST
+        or invocation.get("raw_invocation_output_sha256") != ATTEMPT_016_RAW_OUTPUT_DIGEST
+        or invocation.get("raw_invocation_output_size") != ATTEMPT_016_RAW_OUTPUT_SIZE
+        or invocation.get("raw_run_project_or_output_recorded") is not False
+    ):
+        failures.append("O4 Attempt 016 invocation binding is not exact")
+    claims = disposition.get("diagnostic_claims")
+    if (
+        not isinstance(claims, dict)
+        or claims.get("root_cause_proven") is not False
+        or claims.get("future_convergence_or_polling_design_supported") is not True
+        or claims.get("future_convergence_or_polling_authorized") is not False
+        or claims.get("attempt_017_authorized") is not False
+        or claims.get("raw_identity_or_private_content_recorded") is not False
+    ):
+        failures.append("O4 Attempt 016 diagnostic claims are not bounded")
+    normalized = " ".join(document.split())
+    for phrase in (
+        f"Status: `{expected_status}`",
+        ATTEMPT_016_CANDIDATE_COMMIT,
+        ATTEMPT_016_CANDIDATE_TREE,
+        ATTEMPT_016_REVIEW_TAG,
+        ATTEMPT_016_RUN_IDENTITY_DIGEST,
+        ATTEMPT_016_PROJECT_IDENTITY_DIGEST,
+        ATTEMPT_016_MANIFEST_RECEIPT_DIGEST,
+        ATTEMPT_016_DIAGNOSTIC_RECEIPT_DIGEST,
+        ATTEMPT_016_DISPOSITION_RECEIPT_DIGEST,
+        "runner_reported_running",
+        "proves no root cause",
+        "authorizes no Attempt 017 or repair",
+        "all 19 authority fields are false",
+        "exactly 24",
+    ):
+        if phrase not in normalized:
+            failures.append(f"O4 Attempt 016 disposition doc is missing phrase: {phrase}")
+    if _digest(document) != ATTEMPT_016_DISPOSITION_DOCUMENT_DIGEST:
+        failures.append("O4 Attempt 016 disposition document digest is invalid")
+
+
 def _validate_attempt_004_disposition(
     disposition: JsonObject,
     document: str,
@@ -10499,6 +10686,16 @@ def _validate_bound_documents(repo_root: Path, failures: list[str]) -> None:
             "Attempt 015 disposition document",
         ),
         (
+            ATTEMPT_016_DISPOSITION_JSON,
+            ATTEMPT_016_DISPOSITION_JSON_DIGEST,
+            "Attempt 016 disposition JSON",
+        ),
+        (
+            ATTEMPT_016_DISPOSITION_DOCUMENT,
+            ATTEMPT_016_DISPOSITION_DOCUMENT_DIGEST,
+            "Attempt 016 disposition document",
+        ),
+        (
             SOCKET_PARENT_MODE_REVIEW,
             SOCKET_PARENT_MODE_REVIEW_DIGEST,
             "socket-parent mode exact review",
@@ -10801,16 +10998,14 @@ def _validate_wiring(repo_root: Path, failures: list[str]) -> None:
     if PRODUCER_MODULE_INVOCATION not in readme:
         failures.append("README does not bind the O4 module invocation")
     for phrase in (
-        "prepared Attempt 016 exact six-path",
-        "immutable consumed Attempts 001-015",
-        "reviewed identity-free Gateway mission projection diagnostic",
-        "real pre-tag checkout remains fail-closed",
-        "exact annotated Attempt 016 tag",
-        "budget one",
-        "exactly five bounded live authority fields",
-        "prepared gate-protected one-shot Attempt 016 entrypoint",
-        "no concurrent, automatic, or post-attempt retry is authorized",
-        "immediate consumed disposition is mandatory",
+        "closed consumed Attempt 016 gate",
+        "immutable Attempts 001-015",
+        "budget zero",
+        "all 19 authority fields false",
+        "runner_reported_running",
+        "no Attempt 017 or repair authority",
+        "retained closed consumed Attempt 016 entrypoint",
+        "refuses before activity",
         "outside release, milestone, and static checks",
     ):
         if phrase not in readme:
