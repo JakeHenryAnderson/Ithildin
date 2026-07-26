@@ -1,15 +1,53 @@
 # Local v1 LV1-003 O4 Execution Authorization Gate
 
 Status:
-`ATTEMPT_015_CONSUMED_GATEWAY_MISSION_PROJECTION_INVALID_CLEANUP_COMPLETE_NO_LIVE_AUTHORITY`
+`ATTEMPT_016_PREPARED_PENDING_EXACT_CANDIDATE_REVIEW_NO_LIVE_AUTHORITY`
 
-This record closes `LV1-003-O4-ATTEMPT-015`, preserves immutable Attempts 001-014 and all tracked
-recovery history, and grants no live or successor authority. Its machine contract is
+This record prepares `LV1-003-O4-ATTEMPT-016`, preserves immutable consumed Attempts 001-015 and
+all tracked recovery history, and grants no authority on the real pre-tag checkout. Its machine
+contract is
 `docs/codex/local-v1-lv1-003-o4-execution-authorization.json`.
+
+## Attempt 016 Prepared Boundary
+
+Attempt 016 may become executable only as the clean exact six-path, single-parent immediate child
+of review-record commit `fb3d0ac5a495d39bf440755d86464de4db401ab3`, tree
+`e86f7fe03e0bdb5076ded9e5baeb651910198cf6`, with fixed annotated tag
+`ithildin/lv1-003-o4-attempt016-reviewed` peeling to that exact child. Before that exact candidate
+and tag exist, the validator reports invalid, effective budget zero, and all live authority false;
+the next action is `review_attempt_016_execution_authorization_exact_candidate`.
+
+The reviewed identity-free Gateway mission projection diagnostic is commit
+`41f2eb11d8b1572ac428e024d5060faaf616af56`, tree
+`26a4f89de85fd5fd21e29c313ef5dd4f57fe9166`, direct parent
+`7908d2e2af15a0007bcbee1189b49f56f65c4206`. It is bound by
+`docs/codex/local-v1-lv1-003-o4-gateway-mission-projection-diagnostic-exact-review.md`, digest
+`sha256:6818b2f752d48f031a1ffaac13a6414ca2abf89337fa792a0561bba607a0a62c`,
+with disposition `GO_CODE_ONLY` and Critical 0, High 0, Medium 0, Low 0. The reviewed producer and
+test digests are respectively
+`sha256:9dace12847b901ebdc301240c17a0d40e09e59c26e98b9f900457a22b4901ea3`
+and
+`sha256:c3c4c4e17d4d296c04006bea5df1f597efa4a338e8a7cb3579684a93688c5087`.
+The execution candidate must preserve runtime parity to that exact diagnostic.
+
+The sole purpose is collecting the newly reviewed bounded identity-free Gateway mission projection
+diagnostic after Attempt 015's `gateway_mission_projection_invalid`; success is not predicted. On
+the eventual exact tagged candidate only, the attempt budget is one, `attempt_consumed` is false,
+and exactly five fields may be true: producer code, Docker lifecycle, live Hermes execution,
+model-provider access, and O4 evidence execution. The remaining fourteen authority fields stay
+false, including credential custody, runner lifecycle authority, arbitrary host/process/shell or
+Docker-socket control, network/filesystem non-bypass claims, new governed power/tool, release,
+promotion, production, and UAT. The governed tool count remains exactly 24.
+
+This is a fresh, separately authorized diagnostic successor, not a retry, automatic retry,
+recovery, repair, or cleanup action. Concurrent, automatic, and post-attempt retries are false.
+Authority is not derived from history or recovery, and immediate consumed disposition is mandatory
+after the one central-manager-supervised invocation.
 
 ## Attempt 015 Consumed Result
 
-The exact execution candidate was `5bda7496ad69cb9002b41292106a8dd080117400`, tree
+`LV1-003-O4-ATTEMPT-015` remains consumed. The exact execution candidate was
+`5bda7496ad69cb9002b41292106a8dd080117400`, tree
 `e55b1d60a14bc8bf798b34df452377df8b0b9d7b`, fixed by annotated tag
 `ithildin/lv1-003-o4-attempt015-reviewed`. Its single central-manager-supervised invocation used
 `make local-v1-lv1-003-o4-producer-run` and

@@ -101,6 +101,9 @@ TERMINAL_HEALTH_PHASE_PROJECTION_REVIEW = Path(
 SOCKET_PARENT_MODE_REVIEW = Path(
     "docs/codex/local-v1-lv1-003-o4-socket-parent-mode-exact-review.md"
 )
+GATEWAY_MISSION_PROJECTION_REVIEW = Path(
+    "docs/codex/local-v1-lv1-003-o4-gateway-mission-projection-diagnostic-exact-review.md"
+)
 IMAGE_RECOVERY_AUTHORIZATION = Path(
     "docs/codex/local-v1-lv1-003-o4-image-recovery-authorization.json"
 )
@@ -148,7 +151,8 @@ PRODUCER_STATIC_TARGET = "local-v1-lv1-003-o4-producer-static-check"
 PRODUCER_RUN_TARGET = "local-v1-lv1-003-o4-producer-run"
 PRODUCER_MODULE_INVOCATION = "uv run python -m scripts.local_v1_lv1_003_o4_producer"
 PRODUCER_RUN_COMMENT = (
-    "# CLOSED consumed Attempt 015 entrypoint; budget zero and no live authority."
+    "# PREPARED, gate-protected one-shot Attempt 016 entrypoint; "
+    "exact annotated review tag required."
 )
 FAILED_FILE_PATH_INVOCATION = "uv run python scripts/local_v1_lv1_003_o4_producer.py"
 ENTRYPOINT_REPAIR_BASE_COMMIT = "148effd50c69b40a005f86f6217fc3db8b665a06"
@@ -644,6 +648,30 @@ ATTEMPT_015_DISPOSITION_JSON_DIGEST = (
 ATTEMPT_015_DISPOSITION_DOCUMENT_DIGEST = (
     "sha256:1a1cc8dc6b56083913d494b6a6fac9400462387d681000eb587dfeeaaa600a5f"
 )
+ATTEMPT_016_ID = "LV1-003-O4-ATTEMPT-016"
+ATTEMPT_016_REVIEW_TAG = "ithildin/lv1-003-o4-attempt016-reviewed"
+GATEWAY_MISSION_PROJECTION_REVIEW_DIGEST = (
+    "sha256:6818b2f752d48f031a1ffaac13a6414ca2abf89337fa792a0561bba607a0a62c"
+)
+GATEWAY_MISSION_PROJECTION_REVIEW_RECORD_COMMIT = (
+    "fb3d0ac5a495d39bf440755d86464de4db401ab3"
+)
+GATEWAY_MISSION_PROJECTION_REVIEW_RECORD_TREE = (
+    "e86f7fe03e0bdb5076ded9e5baeb651910198cf6"
+)
+GATEWAY_MISSION_PROJECTION_COMMIT = "41f2eb11d8b1572ac428e024d5060faaf616af56"
+GATEWAY_MISSION_PROJECTION_TREE = "26a4f89de85fd5fd21e29c313ef5dd4f57fe9166"
+GATEWAY_MISSION_PROJECTION_PARENT_COMMIT = (
+    "7908d2e2af15a0007bcbee1189b49f56f65c4206"
+)
+GATEWAY_MISSION_PROJECTION_PATH_DIGESTS: JsonObject = {
+    "scripts/local_v1_lv1_003_o4_producer.py": (
+        "sha256:9dace12847b901ebdc301240c17a0d40e09e59c26e98b9f900457a22b4901ea3"
+    ),
+    "tests/test_local_v1_lv1_003_o4_producer.py": (
+        "sha256:c3c4c4e17d4d296c04006bea5df1f597efa4a338e8a7cb3579684a93688c5087"
+    ),
+}
 SOCKET_PARENT_MODE_REVIEW_DIGEST = (
     "sha256:a2dec414e5dd5dbfb1eff972195d3450f8c36c73efcfbab5dc09dfeb665fe43b"
 )
@@ -682,9 +710,9 @@ TERMINAL_HEALTH_PHASE_PROJECTION_PATH_DIGESTS: JsonObject = {
         "sha256:2eaba1dfe1835f8ae507af93d74c2d78ae192cf93ae4330e7b296ba94727f50f"
     ),
 }
-CANDIDATE_PARENT_COMMIT = ATTEMPT_015_CANDIDATE_COMMIT
-CANDIDATE_PARENT_TREE = ATTEMPT_015_CANDIDATE_TREE
-CANDIDATE_PARENT_PARENT = SOCKET_PARENT_MODE_REVIEW_RECORD_COMMIT
+CANDIDATE_PARENT_COMMIT = GATEWAY_MISSION_PROJECTION_REVIEW_RECORD_COMMIT
+CANDIDATE_PARENT_TREE = GATEWAY_MISSION_PROJECTION_REVIEW_RECORD_TREE
+CANDIDATE_PARENT_PARENT = GATEWAY_MISSION_PROJECTION_COMMIT
 MCC_AUTHORIZATION_INDEX_RECONCILIATION_REVIEW_DIGEST = (
     "sha256:5e01639bc661da2bec28ebc6a2edb5b7cc30c3bc71d45290c2274d260ea42c9c"
 )
@@ -1243,6 +1271,15 @@ ATTEMPT_015_CLOSURE_CONTROL_PATH_ALLOWLIST = [
     "scripts/local_v1_lv1_003_o4_execution_authorization_check.py",
     "tests/test_local_v1_lv1_003_o4_execution_authorization_check.py",
 ]
+ATTEMPT_016_CONTROL_PATH_ALLOWLIST = [
+    "Makefile",
+    "README.md",
+    CONTRACT.as_posix(),
+    DOCUMENT.as_posix(),
+    "scripts/local_v1_lv1_003_o4_execution_authorization_check.py",
+    "tests/test_local_v1_lv1_003_o4_execution_authorization_check.py",
+]
+ATTEMPT_016_RUNTIME_PATHS = list(GATEWAY_MISSION_PROJECTION_PATH_DIGESTS)
 IMAGE_READABILITY_REPAIR_PATHS = list(IMAGE_READABILITY_REPAIR_PATH_DIGESTS)
 APPLICATION_STARTUP_STAGE_DIAGNOSTIC_PATHS = list(APPLICATION_STARTUP_STAGE_PATH_DIGESTS)
 DIAGNOSTIC_REPAIR_PATHS = [
@@ -1276,7 +1313,7 @@ SOURCE_DIGESTS = {
         Path("scripts/local_v1_lv1_003_o4_producer.py"),
         cast(
             str,
-            TERMINAL_HEALTH_PHASE_PROJECTION_PATH_DIGESTS[
+            GATEWAY_MISSION_PROJECTION_PATH_DIGESTS[
                 "scripts/local_v1_lv1_003_o4_producer.py"
             ],
         ),
@@ -1285,7 +1322,7 @@ SOURCE_DIGESTS = {
         Path("tests/test_local_v1_lv1_003_o4_producer.py"),
         cast(
             str,
-            TERMINAL_HEALTH_PHASE_PROJECTION_PATH_DIGESTS[
+            GATEWAY_MISSION_PROJECTION_PATH_DIGESTS[
                 "tests/test_local_v1_lv1_003_o4_producer.py"
             ],
         ),
@@ -1856,6 +1893,32 @@ TOP_LEVEL_FIELDS = {
     "attempt_015_runtime_root_absent",
     "attempt_015_public_report_root_absent",
     "attempt_015_public_report_base_absent_point_in_time",
+    "gateway_mission_projection_review_record",
+    "gateway_mission_projection_review_sha256",
+    "gateway_mission_projection_review_record_commit",
+    "gateway_mission_projection_review_record_tree",
+    "gateway_mission_projection_commit",
+    "gateway_mission_projection_tree",
+    "gateway_mission_projection_parent_commit",
+    "gateway_mission_projection_path_digests",
+    "gateway_mission_projection_review_disposition",
+    "gateway_mission_projection_review_findings",
+    "attempt_016_id",
+    "attempt_016_candidate_parent_commit",
+    "attempt_016_candidate_parent_tree",
+    "attempt_016_operator_command",
+    "attempt_016_module_command",
+    "attempt_016_kind",
+    "attempt_016_run_identity_source",
+    "attempt_016_execution_authorized",
+    "attempt_016_automatic_retry_authorized",
+    "attempt_016_concurrent_invocation_authorized",
+    "attempt_016_post_attempt_retry_authorized",
+    "attempt_016_review_tag",
+    "attempt_016_identity_free_gateway_mission_projection_only",
+    "attempt_016_success_not_predicted",
+    "attempt_016_immediate_consumed_disposition_required",
+    "attempt_016_authority_derived_from_history_or_recovery",
     "mcc_authorization_index_reconciliation_review_record",
     "mcc_authorization_index_reconciliation_review_sha256",
     "mcc_reviewed_candidate_commit",
@@ -2106,14 +2169,14 @@ HISTORICAL_TRUE_AUTHORITY_FIELDS = {
 HISTORICAL_AUTHORITY: JsonObject = {
     key: key in HISTORICAL_TRUE_AUTHORITY_FIELDS for key in AUTHORITY_FIELDS
 }
-TRUE_AUTHORITY_FIELDS: set[str] = set()
+TRUE_AUTHORITY_FIELDS = set(HISTORICAL_TRUE_AUTHORITY_FIELDS)
 CLOSED_AUTHORITY: JsonObject = {key: False for key in AUTHORITY_FIELDS}
 ATTEMPT_002_AUTHORITY: JsonObject = {
     key: key in HISTORICAL_TRUE_AUTHORITY_FIELDS for key in AUTHORITY_FIELDS
 }
 ATTEMPT_003_AUTHORITY: JsonObject = {key: False for key in AUTHORITY_FIELDS}
 ATTEMPT_004_AUTHORITY: JsonObject = {key: False for key in AUTHORITY_FIELDS}
-EXPECTED_AUTHORITY: JsonObject = {key: False for key in AUTHORITY_FIELDS}
+EXPECTED_AUTHORITY: JsonObject = HISTORICAL_AUTHORITY
 
 
 class O4ExecutionAuthorizationError(RuntimeError):
@@ -2331,6 +2394,10 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         repo_root / SOCKET_PARENT_MODE_REVIEW,
         failures,
     )
+    gateway_mission_projection_review = _read_text(
+        repo_root / GATEWAY_MISSION_PROJECTION_REVIEW,
+        failures,
+    )
     mcc_reconciliation_review = _read_text(
         repo_root / MCC_AUTHORIZATION_INDEX_RECONCILIATION_REVIEW,
         failures,
@@ -2479,6 +2546,11 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         socket_parent_mode_review,
         failures,
     )
+    _validate_gateway_mission_projection_review(
+        repo_root,
+        gateway_mission_projection_review,
+        failures,
+    )
     _validate_mcc_reconciliation_review(repo_root, mcc_reconciliation_review, failures)
     _validate_attempt008_recovery_closure_binding(repo_root, failures)
     _validate_attempt_010_receipts(repo_root, failures)
@@ -2508,9 +2580,9 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         failures,
         candidate_parent_commit=CANDIDATE_PARENT_COMMIT,
         candidate_parent_tree=CANDIDATE_PARENT_TREE,
-        reviewed_commit=ATTEMPT_015_CANDIDATE_COMMIT,
-        runtime_paths=ATTEMPT_015_RUNTIME_PATHS,
-        control_paths=ATTEMPT_015_CLOSURE_CONTROL_PATH_ALLOWLIST,
+        reviewed_commit=GATEWAY_MISSION_PROJECTION_COMMIT,
+        runtime_paths=ATTEMPT_016_RUNTIME_PATHS,
+        control_paths=ATTEMPT_016_CONTROL_PATH_ALLOWLIST,
         candidate_ref="HEAD",
         require_clean_worktree=True,
     )
@@ -2546,6 +2618,12 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         candidate_tree=ATTEMPT_015_CANDIDATE_TREE,
         failures=failures,
     )
+    _validate_attempt_016_review_binding(
+        repo_root,
+        candidate_commit=checkout_commit,
+        candidate_tree=checkout_tree,
+        failures=failures,
+    )
     valid = not failures
     authority_value = contract.get("authority")
     authority = authority_value if isinstance(authority_value, dict) else {}
@@ -2556,9 +2634,9 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "record_status": contract.get("record_status"),
         "reviewed_implementation_commit": contract.get("reviewed_implementation_commit"),
         "code_authorization_commit": contract.get("code_authorization_commit"),
-        "attempt_id": contract.get("attempt_015_id"),
-        "attempted_candidate_commit": ATTEMPT_013_CANDIDATE_COMMIT,
-        "attempted_candidate_tree": ATTEMPT_013_CANDIDATE_TREE,
+        "attempt_id": contract.get("attempt_016_id"),
+        "attempted_candidate_commit": ATTEMPT_015_CANDIDATE_COMMIT,
+        "attempted_candidate_tree": ATTEMPT_015_CANDIDATE_TREE,
         "execution_candidate_commit": checkout_commit,
         "execution_candidate_tree": checkout_tree,
         "attempt_002_attempted_candidate_commit": contract.get(
@@ -2611,7 +2689,8 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "attempt_012_consumed": True,
         "attempt_013_consumed": True,
         "attempt_014_consumed": True,
-        "attempt_015_consumed": contract.get("attempt_consumed"),
+        "attempt_015_consumed": True,
+        "attempt_016_consumed": contract.get("attempt_consumed"),
         "attempt_consumed": contract.get("attempt_consumed"),
         "retry_authorized": contract.get("retry_authorized"),
         "execution_checkout_commit": checkout_commit,
@@ -2620,8 +2699,9 @@ def build_report(repo_root: Path) -> dict[str, Any]:
             contract.get("execution_attempt_budget") if valid else 0
         ),
         "next_action": (
-            "prepare_separately_reviewed_bounded_source_diagnosis_or_repair_for_"
-            "gateway_mission_projection_invalid_not_root_cause_or_retry_authority"
+            "execute_attempt_016_once_and_record_immediate_consumed_disposition"
+            if valid
+            else "review_attempt_016_execution_authorization_exact_candidate"
         ),
         "producer_code_authorized": (
             authority.get("producer_code_authorized", False)
@@ -2682,8 +2762,7 @@ def _validate_contract(contract: JsonObject, failures: list[str]) -> None:
         "schema_version": "1",
         "record_type": "local_v1_lv1_003_o4_execution_authorization",
         "record_status": (
-            "ATTEMPT_015_CONSUMED_GATEWAY_MISSION_PROJECTION_INVALID_"
-            "CLEANUP_COMPLETE_NO_LIVE_AUTHORITY"
+            "ATTEMPT_016_PREPARED_PENDING_EXACT_CANDIDATE_REVIEW_NO_LIVE_AUTHORITY"
         ),
         "ticket_id": "LV1-003",
         "outcome_id": "O4",
@@ -2693,8 +2772,8 @@ def _validate_contract(contract: JsonObject, failures: list[str]) -> None:
         "candidate_parent_tree": CANDIDATE_PARENT_TREE,
         "historical_post_review_candidate_parent_commit": (HISTORICAL_CANDIDATE_PARENT_COMMIT),
         "historical_post_review_candidate_parent_tree": (HISTORICAL_CANDIDATE_PARENT_TREE),
-        "reviewed_implementation_commit": SOCKET_PARENT_MODE_COMMIT,
-        "reviewed_implementation_tree": SOCKET_PARENT_MODE_TREE,
+        "reviewed_implementation_commit": GATEWAY_MISSION_PROJECTION_COMMIT,
+        "reviewed_implementation_tree": GATEWAY_MISSION_PROJECTION_TREE,
         "producer_exact_review_record": PRODUCER_EXACT_REVIEW.as_posix(),
         "producer_exact_review_sha256": PRODUCER_EXACT_REVIEW_DIGEST,
         "code_authorization_origin_commit": CODE_AUTHORIZATION_ORIGIN_COMMIT,
@@ -3439,6 +3518,54 @@ def _validate_contract(contract: JsonObject, failures: list[str]) -> None:
         "attempt_015_runtime_root_absent": True,
         "attempt_015_public_report_root_absent": True,
         "attempt_015_public_report_base_absent_point_in_time": True,
+        "gateway_mission_projection_review_record": (
+            GATEWAY_MISSION_PROJECTION_REVIEW.as_posix()
+        ),
+        "gateway_mission_projection_review_sha256": (
+            GATEWAY_MISSION_PROJECTION_REVIEW_DIGEST
+        ),
+        "gateway_mission_projection_review_record_commit": (
+            GATEWAY_MISSION_PROJECTION_REVIEW_RECORD_COMMIT
+        ),
+        "gateway_mission_projection_review_record_tree": (
+            GATEWAY_MISSION_PROJECTION_REVIEW_RECORD_TREE
+        ),
+        "gateway_mission_projection_commit": GATEWAY_MISSION_PROJECTION_COMMIT,
+        "gateway_mission_projection_tree": GATEWAY_MISSION_PROJECTION_TREE,
+        "gateway_mission_projection_parent_commit": (
+            GATEWAY_MISSION_PROJECTION_PARENT_COMMIT
+        ),
+        "gateway_mission_projection_path_digests": (
+            GATEWAY_MISSION_PROJECTION_PATH_DIGESTS
+        ),
+        "gateway_mission_projection_review_disposition": "GO_CODE_ONLY",
+        "gateway_mission_projection_review_findings": {
+            "critical": 0,
+            "high": 0,
+            "medium": 0,
+            "low": 0,
+        },
+        "attempt_016_id": ATTEMPT_016_ID,
+        "attempt_016_candidate_parent_commit": CANDIDATE_PARENT_COMMIT,
+        "attempt_016_candidate_parent_tree": CANDIDATE_PARENT_TREE,
+        "attempt_016_operator_command": ATTEMPT_002_OPERATOR_COMMAND,
+        "attempt_016_module_command": PRODUCER_MODULE_INVOCATION,
+        "attempt_016_kind": (
+            "fresh_separately_authorized_identity_free_gateway_mission_projection_"
+            "diagnostic_not_retry_recovery_repair_or_cleanup"
+        ),
+        "attempt_016_run_identity_source": (
+            "producer_generated_fresh_run_project_suffix_runtime_receipt_and_evidence_paths"
+        ),
+        "attempt_016_execution_authorized": True,
+        "attempt_016_automatic_retry_authorized": False,
+        "attempt_016_concurrent_invocation_authorized": False,
+        "attempt_016_post_attempt_retry_authorized": False,
+        "attempt_016_review_tag": ATTEMPT_016_REVIEW_TAG,
+        "attempt_016_identity_free_gateway_mission_projection_only": True,
+        "attempt_016_success_not_predicted": True,
+        "attempt_016_immediate_consumed_disposition_required": True,
+        "attempt_016_authority_derived_from_history_or_recovery": False,
         "mcc_authorization_index_reconciliation_review_record": (
             MCC_AUTHORIZATION_INDEX_RECONCILIATION_REVIEW.as_posix()
         ),
@@ -3513,14 +3640,14 @@ def _validate_contract(contract: JsonObject, failures: list[str]) -> None:
         "attempt_002_execution_authorized": False,
         "attempt_002_automatic_retry_authorized": False,
         "execution_candidate_binding_mode": (
-            "exact_consumed_closure_child_of_immutable_reviewed_attempt_candidate"
+            "exact_clean_six_path_child_of_review_record_parent_with_annotated_tag"
         ),
-        "execution_attempt_budget": 0,
-        "attempt_consumed": True,
+        "execution_attempt_budget": 1,
+        "attempt_consumed": False,
         "retry_authorized": False,
         "attempt_custody": "central_manager_supervised_local_invocation",
         "persistent_cross_process_budget_consumption_claimed": False,
-        "immediate_post_attempt_disposition_recorded": True,
+        "immediate_post_attempt_disposition_recorded": False,
         "prior_attempt_detection_roots": PRIOR_ATTEMPT_ROOTS,
         "external_preflight_requirements": EXTERNAL_PREFLIGHT,
     }
@@ -3545,14 +3672,44 @@ def _validate_contract(contract: JsonObject, failures: list[str]) -> None:
     ):
         failures.append("O4 execution cleanup contract is invalid")
     if not _exact_json_equal(contract.get("authority"), EXPECTED_AUTHORITY):
-        failures.append("O4 execution authority is not the exact bounded Attempt 015 posture")
+        failures.append("O4 execution authority is not the exact bounded Attempt 016 posture")
 
 
 def _validate_document(document: str, failures: list[str]) -> None:
     normalized = " ".join(document.split())
     for phrase in (
-        "Status: `ATTEMPT_015_CONSUMED_GATEWAY_MISSION_PROJECTION_INVALID_"
-        "CLEANUP_COMPLETE_NO_LIVE_AUTHORITY`",
+        "Status: `ATTEMPT_016_PREPARED_PENDING_EXACT_CANDIDATE_REVIEW_"
+        "NO_LIVE_AUTHORITY`",
+        ATTEMPT_016_ID,
+        ATTEMPT_016_REVIEW_TAG,
+        GATEWAY_MISSION_PROJECTION_REVIEW.as_posix(),
+        GATEWAY_MISSION_PROJECTION_REVIEW_DIGEST,
+        GATEWAY_MISSION_PROJECTION_REVIEW_RECORD_COMMIT,
+        GATEWAY_MISSION_PROJECTION_REVIEW_RECORD_TREE,
+        GATEWAY_MISSION_PROJECTION_COMMIT,
+        GATEWAY_MISSION_PROJECTION_TREE,
+        GATEWAY_MISSION_PROJECTION_PARENT_COMMIT,
+        cast(
+            str,
+            GATEWAY_MISSION_PROJECTION_PATH_DIGESTS[
+                "scripts/local_v1_lv1_003_o4_producer.py"
+            ],
+        ),
+        cast(
+            str,
+            GATEWAY_MISSION_PROJECTION_PATH_DIGESTS[
+                "tests/test_local_v1_lv1_003_o4_producer.py"
+            ],
+        ),
+        "Critical 0, High 0, Medium 0, Low 0",
+        "clean exact six-path, single-parent immediate child",
+        "reports invalid, effective budget zero, and all live authority false",
+        "review_attempt_016_execution_authorization_exact_candidate",
+        "identity-free Gateway mission projection diagnostic",
+        "success is not predicted",
+        "exactly five fields may be true",
+        "remaining fourteen authority fields stay false",
+        "immediate consumed disposition is mandatory",
         ATTEMPT_015_ID,
         ATTEMPT_015_REVIEW_TAG,
         ATTEMPT_015_CANDIDATE_COMMIT,
@@ -5264,6 +5421,47 @@ def _validate_attempt_015_review_binding(
         failures.append("O4 Attempt 015 annotated review tag does not peel to the exact candidate")
 
 
+def _validate_attempt_016_review_binding(
+    repo_root: Path,
+    *,
+    candidate_commit: str | None,
+    candidate_tree: str | None,
+    failures: list[str],
+) -> None:
+    if candidate_commit is None or candidate_tree is None:
+        failures.append("O4 Attempt 016 review binding has no exact execution candidate")
+        return
+    reference = f"refs/tags/{ATTEMPT_016_REVIEW_TAG}"
+    object_type = subprocess.run(
+        ["git", "-C", str(repo_root), "cat-file", "-t", reference],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    if object_type.returncode != 0 or object_type.stdout.strip() != "tag":
+        failures.append("O4 Attempt 016 review tag is missing or not annotated")
+        return
+    tagged_commit = subprocess.run(
+        ["git", "-C", str(repo_root), "rev-parse", f"{reference}^{{commit}}"],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    tagged_tree = subprocess.run(
+        ["git", "-C", str(repo_root), "rev-parse", f"{reference}^{{tree}}"],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    if (
+        tagged_commit.returncode != 0
+        or tagged_tree.returncode != 0
+        or tagged_commit.stdout.strip() != candidate_commit
+        or tagged_tree.stdout.strip() != candidate_tree
+    ):
+        failures.append("O4 Attempt 016 annotated review tag does not peel to the exact candidate")
+
+
 def _validate_fixed_node_start_diagnostic_review(
     repo_root: Path,
     document: str,
@@ -5712,6 +5910,84 @@ def _validate_socket_parent_mode_review(
         observed = "sha256:" + hashlib.sha256(result.stdout).hexdigest()
         if result.returncode != 0 or observed != expected_digest:
             failures.append(f"O4 socket-parent mode digest is invalid: {path}")
+
+
+def _validate_gateway_mission_projection_review(
+    repo_root: Path,
+    document: str,
+    failures: list[str],
+) -> None:
+    normalized = " ".join(document.split())
+    for phrase in (
+        "Status: `GO_CODE_ONLY`",
+        GATEWAY_MISSION_PROJECTION_COMMIT,
+        GATEWAY_MISSION_PROJECTION_TREE,
+        GATEWAY_MISSION_PROJECTION_PARENT_COMMIT,
+        "Critical: 0",
+        "High: 0",
+        "Medium: 0",
+        "Low: 0",
+        "closed, identity-free observations",
+        "gateway_mission_projection_invalid",
+        "successful journey predicate remains semantically unchanged",
+        "governed tool count remains exactly 24",
+        "does not prove the Attempt015 root cause",
+        "predict Attempt016 success",
+        "No execution authority exists in this record",
+    ):
+        if phrase not in normalized:
+            failures.append(
+                f"O4 Gateway mission projection review is missing phrase: {phrase}"
+            )
+    if _digest(document) != GATEWAY_MISSION_PROJECTION_REVIEW_DIGEST:
+        failures.append("O4 Gateway mission projection review digest is invalid")
+    for commit, expected_tree, expected_parents, label in (
+        (
+            GATEWAY_MISSION_PROJECTION_REVIEW_RECORD_COMMIT,
+            GATEWAY_MISSION_PROJECTION_REVIEW_RECORD_TREE,
+            [GATEWAY_MISSION_PROJECTION_COMMIT],
+            "review record",
+        ),
+        (
+            GATEWAY_MISSION_PROJECTION_COMMIT,
+            GATEWAY_MISSION_PROJECTION_TREE,
+            [GATEWAY_MISSION_PROJECTION_PARENT_COMMIT],
+            "implementation",
+        ),
+    ):
+        tree = _git(repo_root, ["show", "-s", "--format=%T", commit], failures)
+        parents = _git(repo_root, ["show", "-s", "--format=%P", commit], failures).split()
+        if tree != expected_tree or parents != expected_parents:
+            failures.append(f"O4 Gateway mission projection {label} lineage is invalid")
+    changed = _git(
+        repo_root,
+        [
+            "diff-tree",
+            "--no-commit-id",
+            "--name-only",
+            "-r",
+            GATEWAY_MISSION_PROJECTION_COMMIT,
+        ],
+        failures,
+    ).splitlines()
+    if changed != ATTEMPT_016_RUNTIME_PATHS:
+        failures.append("O4 Gateway mission projection changed paths are not exact")
+    for path, expected_digest in GATEWAY_MISSION_PROJECTION_PATH_DIGESTS.items():
+        assert isinstance(expected_digest, str)
+        result = subprocess.run(
+            [
+                "git",
+                "-C",
+                str(repo_root),
+                "show",
+                f"{GATEWAY_MISSION_PROJECTION_COMMIT}:{path}",
+            ],
+            check=False,
+            capture_output=True,
+        )
+        observed = "sha256:" + hashlib.sha256(result.stdout).hexdigest()
+        if result.returncode != 0 or observed != expected_digest:
+            failures.append(f"O4 Gateway mission projection digest is invalid: {path}")
 
 
 def _validate_runtime_native_repair_review(
@@ -10228,6 +10504,11 @@ def _validate_bound_documents(repo_root: Path, failures: list[str]) -> None:
             "socket-parent mode exact review",
         ),
         (
+            GATEWAY_MISSION_PROJECTION_REVIEW,
+            GATEWAY_MISSION_PROJECTION_REVIEW_DIGEST,
+            "Gateway mission projection diagnostic exact review",
+        ),
+        (
             FIXED_NODE_START_DIAGNOSTIC_REVIEW,
             FIXED_NODE_START_DIAGNOSTIC_REVIEW_DIGEST,
             "fixed-Node-start diagnostic exact review",
@@ -10520,18 +10801,20 @@ def _validate_wiring(repo_root: Path, failures: list[str]) -> None:
     if PRODUCER_MODULE_INVOCATION not in readme:
         failures.append("README does not bind the O4 module invocation")
     for phrase in (
-        "closed consumed Attempt 015 gate",
-        "immutable Attempts 001-014",
-        "digest-only private evidence bindings",
-        "budget zero",
-        "all 19 authority fields false",
-        "retained closed consumed Attempt 015 entrypoint",
-        "refuses before activity",
-        "separately reviewed bounded source diagnosis or repair",
+        "prepared Attempt 016 exact six-path",
+        "immutable consumed Attempts 001-015",
+        "reviewed identity-free Gateway mission projection diagnostic",
+        "real pre-tag checkout remains fail-closed",
+        "exact annotated Attempt 016 tag",
+        "budget one",
+        "exactly five bounded live authority fields",
+        "prepared gate-protected one-shot Attempt 016 entrypoint",
+        "no concurrent, automatic, or post-attempt retry is authorized",
+        "immediate consumed disposition is mandatory",
         "outside release, milestone, and static checks",
     ):
         if phrase not in readme:
-            failures.append(f"README is missing current O4 Attempt 015 guidance: {phrase}")
+            failures.append(f"README is missing current O4 Attempt 016 guidance: {phrase}")
 
 
 def _target_body(makefile: str, target: str) -> str:
@@ -10633,7 +10916,7 @@ def _validate_git_bindings(repo_root: Path, failures: list[str]) -> None:
         failures,
     ).split()
     if candidate_parent_parents != [CANDIDATE_PARENT_PARENT]:
-        failures.append("O4 Attempt 015 candidate parent lineage is not exact")
+        failures.append("O4 Attempt 016 candidate parent lineage is not exact")
     authorization_parent_parents = _git(
         repo_root,
         ["show", "-s", "--format=%P", ATTEMPT_010_AUTHORIZATION_PARENT_COMMIT],

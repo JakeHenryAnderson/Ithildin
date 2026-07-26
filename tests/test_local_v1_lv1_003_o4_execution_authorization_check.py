@@ -361,6 +361,52 @@ def _attempt_015_closure_repository(tmp_path: Path) -> tuple[Path, str, str]:
     )
 
 
+def _attempt_016_candidate_repository(
+    tmp_path: Path,
+    *,
+    tag_candidate: bool,
+) -> tuple[Path, str, str]:
+    repo = tmp_path / "attempt-016-candidate"
+    subprocess.run(["git", "clone", "-q", str(Path.cwd()), str(repo)], check=True)
+    _run_git(repo, "checkout", "--detach", gate.CANDIDATE_PARENT_COMMIT)
+    for relative in gate.ATTEMPT_016_CONTROL_PATH_ALLOWLIST:
+        destination = repo / relative
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(relative, destination)
+    _run_git(repo, "add", "--", *gate.ATTEMPT_016_CONTROL_PATH_ALLOWLIST)
+    _run_git(
+        repo,
+        "-c",
+        "user.name=Ithildin Test",
+        "-c",
+        "user.email=ithildin-test@example.invalid",
+        "commit",
+        "-q",
+        "-m",
+        "test: exact O4 Attempt 016 authorization candidate",
+    )
+    commit = _run_git(repo, "rev-parse", "HEAD")
+    tree = _run_git(repo, "show", "-s", "--format=%T", "HEAD")
+    inherited_tag = _run_git(repo, "tag", "--list", gate.ATTEMPT_016_REVIEW_TAG)
+    if inherited_tag:
+        _run_git(repo, "tag", "-d", gate.ATTEMPT_016_REVIEW_TAG)
+    if tag_candidate:
+        _run_git(
+            repo,
+            "-c",
+            "user.name=Ithildin Test",
+            "-c",
+            "user.email=ithildin-test@example.invalid",
+            "tag",
+            "-a",
+            gate.ATTEMPT_016_REVIEW_TAG,
+            "-m",
+            "test: exact reviewed Attempt 016 candidate",
+            commit,
+        )
+    return repo, commit, tree
+
+
 def _skip_private_evidence(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(gate, "_validate_attempt_010_receipts", lambda *_: None)
     monkeypatch.setattr(gate, "_validate_attempt_011_receipts", lambda *_: None)
@@ -885,12 +931,11 @@ def test_enrollment_repair_review_binds_three_field_derived_principal_projection
         assert stale not in normalized
 
 
-def test_attempt_015_consumed_contract_preserves_attempt_014_and_closes_authority() -> None:
+def test_attempt_016_prepared_contract_preserves_attempt_015_consumed_history() -> None:
     contract = _contract()
 
     assert contract["record_status"] == (
-        "ATTEMPT_015_CONSUMED_GATEWAY_MISSION_PROJECTION_INVALID_"
-        "CLEANUP_COMPLETE_NO_LIVE_AUTHORITY"
+        "ATTEMPT_016_PREPARED_PENDING_EXACT_CANDIDATE_REVIEW_NO_LIVE_AUTHORITY"
     )
     assert contract["attempt_010_id"] == gate.ATTEMPT_010_ID
     assert contract["attempt_010_review_tag"] == gate.ATTEMPT_010_REVIEW_TAG
@@ -904,7 +949,7 @@ def test_attempt_015_consumed_contract_preserves_attempt_014_and_closes_authorit
     assert contract["candidate_parent_tree"] == gate.CANDIDATE_PARENT_TREE
     assert (
         contract["execution_candidate_binding_mode"]
-        == "exact_consumed_closure_child_of_immutable_reviewed_attempt_candidate"
+        == "exact_clean_six_path_child_of_review_record_parent_with_annotated_tag"
     )
     assert contract["attempt_011_id"] == gate.ATTEMPT_011_ID
     assert contract["attempt_011_review_tag"] == gate.ATTEMPT_011_REVIEW_TAG
@@ -1074,13 +1119,13 @@ def test_attempt_015_consumed_contract_preserves_attempt_014_and_closes_authorit
     assert contract["attempt_015_compose_project_identity_sha256"] == (
         gate.ATTEMPT_015_PROJECT_IDENTITY_DIGEST
     )
-    assert contract["execution_attempt_budget"] == 0
-    assert contract["attempt_consumed"] is True
+    assert contract["execution_attempt_budget"] == 1
+    assert contract["attempt_consumed"] is False
     assert contract["retry_authorized"] is False
     assert contract["attempt_011_automatic_retry_authorized"] is False
     assert contract["attempt_010_automatic_retry_authorized"] is False
     assert contract["persistent_cross_process_budget_consumption_claimed"] is False
-    assert contract["immediate_post_attempt_disposition_recorded"] is True
+    assert contract["immediate_post_attempt_disposition_recorded"] is False
     assert contract["mcc_review_disposition"] == "GO_CODE_ONLY"
     assert contract["mcc_review_findings"] == {
         "critical": 0,
@@ -1182,20 +1227,158 @@ def test_attempt_015_consumed_disposition_is_exact() -> None:
 
 def test_attempt_015_consumed_exact_eight_path_closure(
     tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     repo, commit, tree = _attempt_015_closure_repository(tmp_path)
+    failures: list[str] = []
+
+    checkout = gate._validate_execution_checkout(  # noqa: SLF001
+        repo,
+        failures,
+        candidate_parent_commit=gate.ATTEMPT_015_CANDIDATE_COMMIT,
+        candidate_parent_tree=gate.ATTEMPT_015_CANDIDATE_TREE,
+        reviewed_commit=gate.ATTEMPT_015_CANDIDATE_COMMIT,
+        runtime_paths=gate.ATTEMPT_015_RUNTIME_PATHS,
+        control_paths=gate.ATTEMPT_015_CLOSURE_CONTROL_PATH_ALLOWLIST,
+    )
+    gate._validate_attempt_015_review_binding(  # noqa: SLF001
+        repo,
+        candidate_commit=gate.ATTEMPT_015_CANDIDATE_COMMIT,
+        candidate_tree=gate.ATTEMPT_015_CANDIDATE_TREE,
+        failures=failures,
+    )
+
+    assert failures == []
+    assert checkout == (commit, tree)
+    assert len(gate.ATTEMPT_015_CLOSURE_CONTROL_PATH_ALLOWLIST) == 8
+
+
+def test_attempt_016_contract_preserves_attempt_015_and_bounds_authority() -> None:
+    contract = _contract()
+    failures: list[str] = []
+
+    gate._validate_contract(contract, failures)  # noqa: SLF001
+
+    assert failures == []
+    assert contract["record_status"] == (
+        "ATTEMPT_016_PREPARED_PENDING_EXACT_CANDIDATE_REVIEW_NO_LIVE_AUTHORITY"
+    )
+    assert contract["attempt_015_attempted_candidate_commit"] == (
+        gate.ATTEMPT_015_CANDIDATE_COMMIT
+    )
+    assert contract["attempt_015_failure_code"] == "gateway_mission_projection_invalid"
+    assert contract["attempt_016_id"] == gate.ATTEMPT_016_ID
+    assert contract["attempt_016_review_tag"] == gate.ATTEMPT_016_REVIEW_TAG
+    assert contract["attempt_016_execution_authorized"] is True
+    assert contract["attempt_016_automatic_retry_authorized"] is False
+    assert contract["attempt_016_concurrent_invocation_authorized"] is False
+    assert contract["attempt_016_post_attempt_retry_authorized"] is False
+    assert contract["attempt_016_identity_free_gateway_mission_projection_only"] is True
+    assert contract["attempt_016_success_not_predicted"] is True
+    assert contract["execution_attempt_budget"] == 1
+    assert contract["attempt_consumed"] is False
+    assert contract["authority"] == gate.EXPECTED_AUTHORITY
+    assert {
+        key for key, enabled in contract["authority"].items() if enabled  # type: ignore[union-attr]
+    } == gate.TRUE_AUTHORITY_FIELDS
+
+
+def test_attempt_016_exact_six_path_candidate_and_review_bindings(
+    tmp_path: Path,
+) -> None:
+    repo, commit, tree = _attempt_016_candidate_repository(
+        tmp_path,
+        tag_candidate=True,
+    )
+    failures: list[str] = []
+
+    checkout = gate._validate_execution_checkout(  # noqa: SLF001
+        repo,
+        failures,
+        candidate_parent_commit=gate.CANDIDATE_PARENT_COMMIT,
+        candidate_parent_tree=gate.CANDIDATE_PARENT_TREE,
+        reviewed_commit=gate.GATEWAY_MISSION_PROJECTION_COMMIT,
+        runtime_paths=gate.ATTEMPT_016_RUNTIME_PATHS,
+        control_paths=gate.ATTEMPT_016_CONTROL_PATH_ALLOWLIST,
+    )
+    gate._validate_attempt_016_review_binding(  # noqa: SLF001
+        repo,
+        candidate_commit=commit,
+        candidate_tree=tree,
+        failures=failures,
+    )
+    gate._validate_gateway_mission_projection_review(  # noqa: SLF001
+        repo,
+        (repo / gate.GATEWAY_MISSION_PROJECTION_REVIEW).read_text(encoding="utf-8"),
+        failures,
+    )
+
+    assert failures == []
+    assert checkout == (commit, tree)
+    assert len(gate.ATTEMPT_016_CONTROL_PATH_ALLOWLIST) == 6
+    assert len(gate.ATTEMPT_016_RUNTIME_PATHS) == 2
+
+
+def test_attempt_016_exact_tagged_candidate_has_only_five_live_fields(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    repo, commit, tree = _attempt_016_candidate_repository(
+        tmp_path,
+        tag_candidate=True,
+    )
     _skip_private_evidence(monkeypatch)
 
     report = gate.build_report(repo)
 
     assert report["valid"] is True, report["failures"]
+    assert report["attempt_id"] == gate.ATTEMPT_016_ID
+    assert report["attempted_candidate_commit"] == gate.ATTEMPT_015_CANDIDATE_COMMIT
+    assert report["attempted_candidate_tree"] == gate.ATTEMPT_015_CANDIDATE_TREE
     assert report["execution_checkout_commit"] == commit
     assert report["execution_checkout_tree"] == tree
+    assert report["execution_attempt_budget"] == 1
+    assert report["attempt_consumed"] is False
+    assert report["live_execution_authorized"] is True
+    contract = json.loads((repo / gate.CONTRACT).read_text(encoding="utf-8"))
+    authority = contract["authority"]
+    assert {key for key, enabled in authority.items() if enabled} == (
+        gate.TRUE_AUTHORITY_FIELDS
+    )
+    assert len(authority) == 19
+
+
+def test_attempt_016_pretag_candidate_fails_closed(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    repo, commit, tree = _attempt_016_candidate_repository(
+        tmp_path,
+        tag_candidate=False,
+    )
+    failures: list[str] = []
+
+    gate._validate_attempt_016_review_binding(  # noqa: SLF001
+        repo,
+        candidate_commit=commit,
+        candidate_tree=tree,
+        failures=failures,
+    )
+
+    assert failures == ["O4 Attempt 016 review tag is missing or not annotated"]
+
+    _skip_private_evidence(monkeypatch)
+    report = gate.build_report(repo)
+
+    assert report["valid"] is False
+    assert report["failures"] == [
+        "O4 Attempt 016 review tag is missing or not annotated"
+    ]
+    assert report["attempted_candidate_commit"] == gate.ATTEMPT_015_CANDIDATE_COMMIT
+    assert report["attempted_candidate_tree"] == gate.ATTEMPT_015_CANDIDATE_TREE
+    assert report["execution_candidate_commit"] == commit
+    assert report["execution_candidate_tree"] == tree
     assert report["execution_attempt_budget"] == 0
-    assert report["attempt_consumed"] is True
     assert report["live_execution_authorized"] is False
-    assert len(gate.ATTEMPT_015_CLOSURE_CONTROL_PATH_ALLOWLIST) == 8
 
 
 def test_attempt_015_exact_six_path_candidate_and_annotated_tag_binding(
@@ -1226,35 +1409,6 @@ def test_attempt_015_exact_six_path_candidate_and_annotated_tag_binding(
     assert failures == []
     assert checkout == (commit, tree)
     assert len(gate.ATTEMPT_015_CONTROL_PATH_ALLOWLIST) == 6
-
-
-def test_attempt_015_exact_tagged_candidate_has_only_five_live_fields(
-    tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    repo, commit, tree = _attempt_015_candidate_repository(
-        tmp_path,
-        tag_candidate=True,
-    )
-    _skip_private_evidence(monkeypatch)
-
-    report = gate.build_report(repo)
-
-    assert report["valid"] is True, report["failures"]
-    assert report["attempt_id"] == gate.ATTEMPT_015_ID
-    assert report["execution_checkout_commit"] == commit
-    assert report["execution_checkout_tree"] == tree
-    assert report["execution_attempt_budget"] == 1
-    assert report["attempt_consumed"] is False
-    assert report["retry_authorized"] is False
-    assert report["producer_code_authorized"] is True
-    assert report["live_execution_authorized"] is True
-    assert report["docker_lifecycle_authorized"] is True
-    assert report["provider_access_authorized"] is True
-    assert report["o4_evidence_execution_authorized"] is True
-    assert report["new_governed_tool"] is False
-    assert report["release_allowed"] is False
-    assert report["uat_complete"] is False
 
 
 def test_attempt_015_pretag_candidate_fails_closed(
