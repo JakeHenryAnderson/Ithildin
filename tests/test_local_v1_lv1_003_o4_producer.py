@@ -4644,15 +4644,22 @@ def _fixed_node_container_state(
     engine_error_present: bool,
     health_status: str,
 ) -> producer.FixedNodeContainerState:
+    canonical_unconflicted_termination = (
+        status == "exited"
+        and not running
+        and health_status == "absent"
+        and not oom_killed
+        and not dead
+        and not engine_error_present
+    )
     return producer.FixedNodeContainerState(
         status=status,
         running=running,
         exit_class="zero" if exit_code == 0 else "nonzero",
         fixed_bridge_last_entered_phase=(
-            producer.FIXED_BRIDGE_PHASE_BY_EXIT_CODE.get(
-                exit_code,
-                "not_reported",
-            )
+            producer.FIXED_BRIDGE_PHASE_BY_EXIT_CODE.get(exit_code, "not_reported")
+            if canonical_unconflicted_termination
+            else "not_reported"
         ),
         oom_killed=oom_killed,
         dead=dead,
@@ -4859,6 +4866,89 @@ def test_fixed_node_scalar_parser_normalizes_nonreserved_exit_as_not_reported(
     assert parsed.fixed_bridge_last_entered_phase == "not_reported"
     assert parsed.exit_class == ("zero" if exit_code == 0 else "nonzero")
     assert str(exit_code) not in repr(parsed)
+
+
+@pytest.mark.parametrize(
+    ("override", "expected_classification"),
+    [
+        ({"status": "created"}, "fixed_node_container_created"),
+        (
+            {"status": "running", "running": "true"},
+            "fixed_node_running_observation_noncanonical",
+        ),
+        ({"status": "paused"}, "fixed_node_paused_after_wait_failure"),
+        (
+            {"status": "restarting"},
+            "fixed_node_container_runtime_error",
+        ),
+        ({"status": "removing"}, "fixed_node_container_runtime_error"),
+        ({"status": "dead"}, "fixed_node_container_runtime_error"),
+        (
+            {"running": "true"},
+            "fixed_node_exited_observation_noncanonical",
+        ),
+        (
+            {"health": "starting"},
+            "fixed_node_exited_observation_noncanonical",
+        ),
+        (
+            {"health": "healthy"},
+            "fixed_node_exited_observation_noncanonical",
+        ),
+        (
+            {"health": "unhealthy"},
+            "fixed_node_exited_observation_noncanonical",
+        ),
+        (
+            {"oom_killed": "true"},
+            "fixed_node_container_runtime_error",
+        ),
+        (
+            {"dead": "true"},
+            "fixed_node_container_runtime_error",
+        ),
+        (
+            {"engine_error_present": "true"},
+            "fixed_node_container_runtime_error",
+        ),
+    ],
+)
+def test_reserved_phase_is_suppressed_for_each_contradictory_observation(
+    tmp_path: Path,
+    override: dict[str, str],
+    expected_classification: str,
+) -> None:
+    state = _fixed_node_diagnostic_state(tmp_path)
+    raw_exit_code = "88"
+
+    parsed = producer._parse_fixed_node_container_state(  # noqa: SLF001
+        state,
+        container_id="b" * 64,
+        stdout=_fixed_node_inspect_stdout(
+            state,
+            exit_code=raw_exit_code,
+            **override,
+        ),
+    )
+    projection = producer._fixed_node_container_projection(  # noqa: SLF001
+        parsed,
+        collected=True,
+    )
+    mission: JsonObject = {
+        "mission_lifecycle_state": "claimed",
+        "delivery_state": "claim_delivered",
+        "evidence_state": "complete",
+    }
+
+    assert parsed.fixed_bridge_last_entered_phase == "not_reported"
+    assert parsed.exit_class == "nonzero"
+    assert projection["fixed_bridge_last_entered_phase"] == "not_reported"
+    assert projection["container_exit_class"] == "nonzero"
+    assert producer._classify_fixed_node_start(parsed, mission) == (  # noqa: SLF001
+        expected_classification
+    )
+    assert raw_exit_code not in repr(parsed)
+    assert raw_exit_code not in canonical_json(projection)
 
 
 def test_anchored_container_binding_rolls_back_after_post_bind_anchor_failure(

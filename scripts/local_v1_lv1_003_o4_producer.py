@@ -3000,13 +3000,22 @@ def _parse_fixed_node_container_state(
         engine_error_present = _parse_bool(raw_error_present)
     except ProducerError as exc:
         raise ProducerError("fixed_node_start_diagnostic_output_rejected") from exc
+    canonical_unconflicted_termination = (
+        status == "exited"
+        and not running
+        and health == "absent"
+        and not oom_killed
+        and not dead
+        and not engine_error_present
+    )
     return FixedNodeContainerState(
         status=status,
         running=running,
         exit_class="zero" if exit_code == 0 else "nonzero",
-        fixed_bridge_last_entered_phase=FIXED_BRIDGE_PHASE_BY_EXIT_CODE.get(
-            exit_code,
-            "not_reported",
+        fixed_bridge_last_entered_phase=(
+            FIXED_BRIDGE_PHASE_BY_EXIT_CODE.get(exit_code, "not_reported")
+            if canonical_unconflicted_termination
+            else "not_reported"
         ),
         oom_killed=oom_killed,
         dead=dead,
