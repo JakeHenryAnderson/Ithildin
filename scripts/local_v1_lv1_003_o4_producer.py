@@ -3000,10 +3000,14 @@ def _parse_fixed_node_container_state(
         engine_error_present = _parse_bool(raw_error_present)
     except ProducerError as exc:
         raise ProducerError("fixed_node_start_diagnostic_output_rejected") from exc
-    canonical_unconflicted_termination = (
+    phase_bearing_unconflicted_termination = (
         status == "exited"
         and not running
-        and health == "absent"
+        # Docker can retain the final unhealthy health status after a
+        # container exits. That terminal health observation remains
+        # noncanonical for lifecycle classification, but it does not
+        # contradict the reserved exit-code phase emitted by the bridge.
+        and health in {"absent", "unhealthy"}
         and not oom_killed
         and not dead
         and not engine_error_present
@@ -3014,7 +3018,7 @@ def _parse_fixed_node_container_state(
         exit_class="zero" if exit_code == 0 else "nonzero",
         fixed_bridge_last_entered_phase=(
             FIXED_BRIDGE_PHASE_BY_EXIT_CODE.get(exit_code, "not_reported")
-            if canonical_unconflicted_termination
+            if phase_bearing_unconflicted_termination
             else "not_reported"
         ),
         oom_killed=oom_killed,

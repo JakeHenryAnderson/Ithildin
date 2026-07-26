@@ -4644,10 +4644,10 @@ def _fixed_node_container_state(
     engine_error_present: bool,
     health_status: str,
 ) -> producer.FixedNodeContainerState:
-    canonical_unconflicted_termination = (
+    phase_bearing_unconflicted_termination = (
         status == "exited"
         and not running
-        and health_status == "absent"
+        and health_status in {"absent", "unhealthy"}
         and not oom_killed
         and not dead
         and not engine_error_present
@@ -4658,7 +4658,7 @@ def _fixed_node_container_state(
         exit_class="zero" if exit_code == 0 else "nonzero",
         fixed_bridge_last_entered_phase=(
             producer.FIXED_BRIDGE_PHASE_BY_EXIT_CODE.get(exit_code, "not_reported")
-            if canonical_unconflicted_termination
+            if phase_bearing_unconflicted_termination
             else "not_reported"
         ),
         oom_killed=oom_killed,
@@ -4850,6 +4850,46 @@ def test_fixed_node_scalar_parser_maps_every_reserved_exit_to_closed_phase(
     assert str(exit_code) not in repr(parsed)
 
 
+@pytest.mark.parametrize(
+    ("exit_code", "expected_phase"),
+    sorted(producer.FIXED_BRIDGE_PHASE_BY_EXIT_CODE.items()),
+)
+def test_exited_unhealthy_state_retains_reserved_phase_without_becoming_canonical(
+    tmp_path: Path,
+    exit_code: int,
+    expected_phase: str,
+) -> None:
+    state = _fixed_node_diagnostic_state(tmp_path / str(exit_code))
+
+    parsed = producer._parse_fixed_node_container_state(  # noqa: SLF001
+        state,
+        container_id="b" * 64,
+        stdout=_fixed_node_inspect_stdout(
+            state,
+            exit_code=str(exit_code),
+            health="unhealthy",
+        ),
+    )
+    projection = producer._fixed_node_container_projection(  # noqa: SLF001
+        parsed,
+        collected=True,
+    )
+    mission: JsonObject = {
+        "mission_lifecycle_state": "claimed",
+        "delivery_state": "claim_delivered",
+        "evidence_state": "complete",
+    }
+
+    assert parsed.fixed_bridge_last_entered_phase == expected_phase
+    assert projection["fixed_bridge_last_entered_phase"] == expected_phase
+    assert projection["container_health_state"] == "unhealthy"
+    assert producer._classify_fixed_node_start(parsed, mission) == (  # noqa: SLF001
+        "fixed_node_exited_observation_noncanonical"
+    )
+    assert str(exit_code) not in repr(parsed)
+    assert str(exit_code) not in canonical_json(projection)
+
+
 @pytest.mark.parametrize("exit_code", [0, 1, 79, 89, 255])
 def test_fixed_node_scalar_parser_normalizes_nonreserved_exit_as_not_reported(
     tmp_path: Path,
@@ -4893,10 +4933,6 @@ def test_fixed_node_scalar_parser_normalizes_nonreserved_exit_as_not_reported(
         ),
         (
             {"health": "healthy"},
-            "fixed_node_exited_observation_noncanonical",
-        ),
-        (
-            {"health": "unhealthy"},
             "fixed_node_exited_observation_noncanonical",
         ),
         (
