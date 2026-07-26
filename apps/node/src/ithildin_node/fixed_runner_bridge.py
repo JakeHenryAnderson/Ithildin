@@ -975,12 +975,14 @@ def _open_owned_directory(
         raise FixedRunnerBridgeError(reason_code) from exc
     details = os.fstat(descriptor)
     mode = stat.S_IMODE(details.st_mode)
+    mode_is_allowed = (
+        mode in allowed_modes if allowed_modes is not None else mode & 0o022 == 0
+    )
     if (
         not stat.S_ISDIR(details.st_mode)
         or details.st_uid != expected_uid
         or details.st_gid != expected_gid
-        or mode & 0o022
-        or (allowed_modes is not None and mode not in allowed_modes)
+        or not mode_is_allowed
     ):
         os.close(descriptor)
         raise FixedRunnerBridgeError(reason_code)

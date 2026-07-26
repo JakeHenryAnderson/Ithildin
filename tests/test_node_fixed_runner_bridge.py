@@ -208,6 +208,65 @@ def test_fixed_bridge_listener_setup_phase_boundaries_precede_their_operations(
         os.close(parent_descriptor)
 
 
+def test_socket_parent_preflight_creates_reopenable_shared_directory(
+    tmp_path: Path,
+) -> None:
+    socket_path = tmp_path / "socket" / "mission.sock"
+
+    bridge_module._preflight_socket_path(socket_path, expected_gid=os.getegid())
+
+    assert stat.S_IMODE(socket_path.parent.stat().st_mode) == 0o770
+    parent_descriptor = bridge_module._open_owned_directory(
+        socket_path.parent,
+        expected_uid=os.geteuid(),
+        expected_gid=os.getegid(),
+        allowed_modes={0o770},
+        reason_code="socket_parent_unsafe",
+    )
+    os.close(parent_descriptor)
+
+
+def test_open_owned_directory_allows_only_explicit_shared_mode(tmp_path: Path) -> None:
+    shared = tmp_path / "shared"
+    shared.mkdir(mode=0o770)
+    shared.chmod(0o770)
+
+    descriptor = bridge_module._open_owned_directory(
+        shared,
+        expected_uid=os.geteuid(),
+        expected_gid=os.getegid(),
+        allowed_modes={0o770},
+        reason_code="socket_parent_unsafe",
+    )
+    os.close(descriptor)
+
+    for rejected_mode in (0o771, 0o772, 0o777, 0o750, 0o700):
+        shared.chmod(rejected_mode)
+        with pytest.raises(FixedRunnerBridgeError, match="socket_parent_unsafe"):
+            bridge_module._open_owned_directory(
+                shared,
+                expected_uid=os.geteuid(),
+                expected_gid=os.getegid(),
+                allowed_modes={0o770},
+                reason_code="socket_parent_unsafe",
+            )
+
+
+def test_open_owned_directory_without_allowlist_rejects_group_write(
+    tmp_path: Path,
+) -> None:
+    tmp_path.chmod(0o770)
+
+    with pytest.raises(FixedRunnerBridgeError, match="receipt_parent_unsafe"):
+        bridge_module._open_owned_directory(
+            tmp_path,
+            expected_uid=os.geteuid(),
+            expected_gid=os.getegid(),
+            allowed_modes=None,
+            reason_code="receipt_parent_unsafe",
+        )
+
+
 def test_listener_accept_phase_is_emitted_immediately_before_accept(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
