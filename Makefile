@@ -61,7 +61,7 @@ local-v1-lv1-003-o4-producer-static-check:
 		tests/test_local_v1_constrained_mission_journey.py \
 		-q
 
-# LIVE, gate-protected one-shot Attempt 012 entrypoint; exact annotated review tag required.
+# CLOSED consumed Attempt 012 entrypoint; the fail-closed gate refuses before activity.
 local-v1-lv1-003-o4-producer-run:
 	uv run python -m scripts.local_v1_lv1_003_o4_producer
 

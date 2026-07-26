@@ -1,60 +1,76 @@
 # Local v1 LV1-003 O4 Execution Authorization Gate
 
 Status:
-`ATTEMPT_012_EXACT_CHILD_ONE_SHOT_EXECUTION_AUTHORIZED`
+`ATTEMPT_012_CONSUMED_FIXED_NODE_EXITED_NONCANONICAL_CLEANUP_COMPLETE_NO_LIVE_AUTHORITY`
 
-This record prepares `LV1-003-O4-ATTEMPT-012`, preserves consumed Attempts 001-011 and all tracked
-recovery history, and grants no authority before exact-candidate review. Its machine contract is
-`docs/codex/local-v1-lv1-003-o4-execution-authorization.json`.
+This record closes consumed `LV1-003-O4-ATTEMPT-012`, preserves immutable Attempts 001-011 and all
+tracked recovery history, and grants no live authority. Its machine contract is
+`docs/codex/local-v1-lv1-003-o4-execution-authorization.json`; its exact disposition is
+`docs/codex/local-v1-lv1-003-o4-attempt-012-disposition.json`.
 
-## Attempt 012 Prepared Boundary
+## Attempt 012 Consumed Result
 
-The authorization parent is exactly `00caa1918678982a4f2680d5f12cc62c37c11ba5`, tree
+Exact execution candidate `7585e401003df796b5a2c7d7b3bc952aaa693fc3`, tree
+`86321cd58fcab1b8f3879700deaad366d2f3fc14`, remains fixed by annotated review tag
+`ithildin/lv1-003-o4-attempt012-reviewed`. The sole supervised invocation used
+`make local-v1-lv1-003-o4-producer-run` and
+`uv run python -m scripts.local_v1_lv1_003_o4_producer`. Make exited `2`; the producer exited `1`.
+The fresh private run and its privately derived Compose project are represented only by
+domain-separated digests
+`sha256:d04d1657d8b576efe73e9616053df7e601fc5d10469208bf6ae3017d586a23d4` and
+`sha256:ec95dfe474f7fb57f9ede8828bb7738766176941802428de231950ae51f98e4c`;
+no raw run or project identity is tracked or printed.
+
+The outward and primary failure were `fixed_node_start_failed`; highest completed stage was `11`.
+Base and bridge builds completed and exactly four image identities were bound without recording raw
+image, container, Node, mission, or claim identities. Cleanup failures were empty,
+`recovery_required` was false, and cleanup completed under the reviewed producer semantics. This
+does not establish generic Docker, image, container, process, project, runtime, or host absence.
+
+The exact thirteen-key normalized projection is collection `complete`, reason
+`fixed_node_start_state_collected`, classification
+`fixed_node_exited_observation_noncanonical`, container presence `present`, lifecycle `exited`,
+running state `not_running`, exit class `nonzero`, health `unhealthy`, and failure signal `none`.
+Observation semantics are `sequential_container_then_mission`; mission lifecycle is `claimed`,
+delivery is `claim_delivered`, and evidence is `complete`. This is a sequential observation, not an
+atomic snapshot or root-cause proof.
+
+The owner-only mode `0700` receipt root is selected privately by the first domain-separated digest.
+It contains exactly a mode `0500` candidate snapshot with 668 files; a mode `0600`, 97,421-byte
+manifest with
+`sha256:dd71dec88a7f7c4f1bb12892ce825ed06759c77e8770234c156e86ac5c13fa8f`; a mode `0600`,
+7,705-byte diagnostic with
+`sha256:00d654d6017a1960d18e879069eccdd8ba04e47b6d551fc699be67ab11e3eef3`; and a mode `0600`,
+125-byte disposition with
+`sha256:dcce687c6e2a0d6f36e36d3c14ac09e25ba4c195e1f16f35bf6ea44521612dd3`.
+The exact run runtime root and exact public report root were absent; the public report base was
+absent at the point of observation. Those are bounded exact-run and point-in-time observations, not
+generic absence claims.
+
+Attempt budget is zero, `attempt_consumed` is true, and retry, automatic retry, recovery, cleanup,
+and successor authority are false. All 19 authority fields are false. Release, promotion,
+production, and UAT remain false; the governed tool count remains exactly 24. The retained live
+target now refuses before activity.
+
+The next action is only a separately reviewed bounded diagnosis or repair decision for this
+specific closed `fixed_node_exited_observation_noncanonical` state. It is not a retry or an
+authorized successor attempt and grants no execution authority.
+
+## Attempt 012 Historical Authorization Boundary
+
+Attempt 012 was authorized only as the clean six-path, single-parent immediate child of
+`00caa1918678982a4f2680d5f12cc62c37c11ba5`, tree
 `c2f7cd890ac7fc6b24b2a91791c2e0fe1f2ed69b`, whose sole parent is reviewed runtime candidate
 `2683641c619e8ae5ac93bdec0d9503f83dd79a35`, tree
 `0bfa56ac2fb4c614c5fcc5695d05a664f804beac`. The reviewed record is
 `docs/codex/local-v1-lv1-003-o4-fixed-node-state-projection-exact-review.md`, digest
-`sha256:17dc6c53922a3cc5c10bba79ecae44ef8145605771a730f7574bc7b9bff97c94`.
-It binds producer digest
+`sha256:17dc6c53922a3cc5c10bba79ecae44ef8145605771a730f7574bc7b9bff97c94`;
+it binds producer digest
 `sha256:e2e7e91e2314fd7322a6dcee8f02e14fb61f02c4afa007e8c29cdd66a1302ae8`
 and producer-test digest
 `sha256:1d704b16729f28f2cc2cecb1957f4478850323c58f89a9279e215df713eb60ea`.
-Independent Sol xhigh review was `GO_CODE_ONLY` with Critical 0, High 0, Medium 0, and Low 0.
-
-The eligible execution candidate must be the clean, single-parent immediate child of that exact
-authorization parent with exactly six changed paths: `Makefile`, `README.md`, this Markdown record,
-its JSON contract, the authorization validator, and its test. Runtime bytes must remain identical
-to reviewed candidate `2683641c619e8ae5ac93bdec0d9503f83dd79a35`. The validator derives the
-candidate commit and tree after all other checks and contains no future self-reference.
-
-Before the future annotated, nonforce tag
-`ithildin/lv1-003-o4-attempt012-reviewed` peels to that exact candidate and tree, the gate is
-invalid, execution budget collapses to zero, all live authority fields collapse to false, and the
-live target refuses before activity. A missing tag, lightweight tag, wrong target, or moved tag is
-rejected. Tag existence by itself grants no authority.
-
-After exact review and the fixed tag, the fresh attempt budget is one and `attempt_consumed` is
-false. Exactly five bounded authority fields may be true: existing producer code, its closed
-Docker lifecycle, live Hermes execution, model-provider access, and O4 evidence execution. The
-other 14 authority fields remain false, including credential custody, runner lifecycle API,
-arbitrary host or process control, shell or general Docker-socket control, network or filesystem
-non-bypass claims, new power or tool, release, promotion, production, and UAT. The governed tool
-count remains exactly 24.
-
-Attempt 012 is a diagnostic successor, not a claimed repair or safe retry. It uses one fresh
-producer-generated run and project only; no Attempt 011 identity, receipt, runtime, report, or
-project may be reused. If `fixed_node_start_failed` recurs, the attempt may retain only the reviewed
-closed thirteen-key sequential state projection and its closed classification. It grants no raw
-container, Node, image, mission, or claim identity; raw exit value or engine error; stdout, stderr,
-logs, environment, mounts, configuration, provider output, whole mission object, or private
-receipt inspection. It adds no command, API request, polling, retry, cleanup action, arbitrary
-path, or general Docker/host power, and it makes no generic absence or root-cause claim.
-
-The exact operator entrypoint remains `make local-v1-lv1-003-o4-producer-run`, whose recipe is
-`uv run python -m scripts.local_v1_lv1_003_o4_producer`. The gate consumes Attempt 012 before any
-activity. Any invocation consumes Attempt 012 whether it succeeds or fails, permits no retry or
-automatic retry, and requires an immediate separate exact disposition and closure. Release,
-promotion, production, and UAT remain false.
+Independent Sol xhigh review was `GO_CODE_ONLY` with Critical 0, High 0, Medium 0, and Low 0. The
+immutable tag is exact, but historical review and tag existence no longer grant live authority.
 
 ## Attempt 011 Consumed Result
 
@@ -204,9 +220,9 @@ That authorization was exercised once by candidate
 `aa3eecea481dd5c92925ceec3421c051c63cb3cf`, and is no longer live.
 
 The machine contract's generic `candidate_parent_commit` and `candidate_parent_tree` fields now
-refer only to the Attempt 012 authorization parent
-`00caa1918678982a4f2680d5f12cc62c37c11ba5`, tree
-`c2f7cd890ac7fc6b24b2a91791c2e0fe1f2ed69b`. Attempt 011 remains explicit consumed historical
+refer only to the consumed Attempt 012 closure parent
+`7585e401003df796b5a2c7d7b3bc952aaa693fc3`, tree
+`86321cd58fcab1b8f3879700deaad366d2f3fc14`. Attempt 011 remains explicit consumed historical
 lineage at `e1ea411c46c794130e2196bb0e92267ca8400c35`, tree
 `4d1b90ec2d9efc7740ccdb29e5d6945118956252`. Attempt 010 remains explicit consumed historical
 lineage at `782bc06faed3440de5dc3fe4c192b01f91a8680a`, tree
