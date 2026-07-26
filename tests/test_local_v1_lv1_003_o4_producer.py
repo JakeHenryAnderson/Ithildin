@@ -291,6 +291,12 @@ class FakeExecutor:
         self.api_container_query_failure: str | None = None
         self.api_container_inspect_result: producer.CommandResult | None = None
         self.api_container_inspect_failure: str | None = None
+        self.fixed_node_start_returncode = 0
+        self.fixed_node_container_id = "b" * 64
+        self.fixed_node_container_query_result: producer.CommandResult | None = None
+        self.fixed_node_container_query_failure: str | None = None
+        self.fixed_node_container_inspect_result: producer.CommandResult | None = None
+        self.fixed_node_container_inspect_failure: str | None = None
         self.interrupt_on: str | None = None
         self.enrollment_failure: str | None = None
         self.enrollment_stdout: str | None = None
@@ -302,6 +308,10 @@ class FakeExecutor:
     def bind_container_identity(self, container_id: str) -> None:
         assert producer._CONTAINER_ID.fullmatch(container_id)  # noqa: SLF001
         self.bound_container_ids.add(container_id)
+
+    def discard_container_identity(self, container_id: str) -> None:
+        assert producer._CONTAINER_ID.fullmatch(container_id)  # noqa: SLF001
+        self.bound_container_ids.discard(container_id)
 
     def run(
         self,
@@ -372,7 +382,49 @@ class FakeExecutor:
                 0,
                 self.api_container_id + "\n",
             )
+        if command == plan.fixed_node_container_id_query():
+            if self.fixed_node_container_query_failure == "error":
+                raise producer.ProducerError("subprocess_unavailable")
+            if self.fixed_node_container_query_failure == "interruption":
+                raise producer.ProducerSignal("synthetic")
+            return (
+                self.fixed_node_container_query_result
+                or producer.CommandResult(
+                    0,
+                    self.fixed_node_container_id + "\n",
+                )
+            )
         for container_id in self.bound_container_ids:
+            if (
+                container_id == self.fixed_node_container_id
+                and command
+                == plan.fixed_node_container_state_inspect(container_id)
+            ):
+                if self.fixed_node_container_inspect_failure == "error":
+                    raise producer.ProducerError("subprocess_unavailable")
+                if self.fixed_node_container_inspect_failure == "interruption":
+                    raise producer.ProducerSignal("synthetic")
+                return (
+                    self.fixed_node_container_inspect_result
+                    or producer.CommandResult(
+                        0,
+                        "\t".join(
+                            (
+                                container_id,
+                                plan.project,
+                                "ithildin-node",
+                                "exited",
+                                "false",
+                                "1",
+                                "false",
+                                "false",
+                                "false",
+                                "absent",
+                            )
+                        )
+                        + "\n",
+                    )
+                )
             if command == plan.api_container_state_inspect(container_id):
                 if self.api_container_inspect_failure == "error":
                     raise producer.ProducerError("subprocess_unavailable")
@@ -409,6 +461,17 @@ class FakeExecutor:
             "ithildin-ui",
         ):
             return producer.CommandResult(self.base_start_returncode, "")
+        if command == plan.compose(
+            "--profile",
+            "node",
+            "up",
+            "--detach",
+            "--no-deps",
+            "--wait",
+            "ithildin-node",
+            fixed=True,
+        ):
+            return producer.CommandResult(self.fixed_node_start_returncode, "")
         for resource in ("container", "volume", "network"):
             if command == plan.resource_query(resource):
                 return producer.CommandResult(0, "")
@@ -628,6 +691,11 @@ class FakeApi:
         self.calls: list[tuple[str, str, JsonObject | None]] = []
         self.admission_count = 0
         self.node_overrides: JsonObject = {}
+        self.mission_lifecycle_state = "runner_reported_succeeded"
+        self.mission_delivery_state = "claim_delivered"
+        self.mission_evidence_state = "complete"
+        self.mission_detail_override: JsonObject = {}
+        self.mission_query_failure: BaseException | None = None
         self.revoke_failure: str | None = None
 
     def get(self, path: str, *, admin: bool = True) -> JsonObject:
@@ -665,12 +733,20 @@ class FakeApi:
             document.update(self.node_overrides)
             return document
         if path == f"/missions/{MISSION_ID}":
-            return {
+            if self.mission_query_failure is not None:
+                raise self.mission_query_failure
+            document: JsonObject = {
                 "mission_id": MISSION_ID,
                 "target_node_id": NODE_ID,
-                "lifecycle_state": "runner_reported_succeeded",
+                "lifecycle_state": self.mission_lifecycle_state,
                 "envelope_digest": ENVELOPE,
-                "delivery": {"claim": {"claim_id": CLAIM_ID}},
+                "delivery": {
+                    "state": self.mission_delivery_state,
+                    "claim": {"claim_id": CLAIM_ID},
+                },
+                "evidence": {
+                    "state": self.mission_evidence_state,
+                },
                 "governed_agent_runs": {
                     "authority": "gateway_agent_run_evidence",
                     "correlation_basis": "gateway_validated_claim_session",
@@ -684,6 +760,8 @@ class FakeApi:
                     ],
                 },
             }
+            document.update(self.mission_detail_override)
+            return document
         if path == f"/runs/{RUN_RECORD_ID}":
             return {
                 "run": {
@@ -4502,3 +4580,587 @@ def test_report_base_swap_after_rename_rolls_back_through_held_descriptor(
         assert list(moved_base.iterdir()) == []
     finally:
         receipts.close()
+
+
+def _fixed_node_diagnostic_state(tmp_path: Path) -> producer.ProducerState:
+    run_id = "20260724T180000Z-1234abcd"
+    runtime = FakePrivateDirectory(tmp_path / "runtime-base" / run_id)
+    receipts = FakePrivateDirectory(tmp_path / "receipt-base" / run_id)
+    state = producer.ProducerState(
+        COMMIT,
+        TREE,
+        run_id,
+        producer.ComposePlan(run_id, runtime.path),
+        cast(producer.PrivateDirectory, runtime),
+        cast(producer.PrivateDirectory, receipts),
+    )
+    state.mission_id = MISSION_ID
+    return state
+
+
+def _fixed_node_inspect_stdout(
+    state: producer.ProducerState,
+    *,
+    container_id: str = "b" * 64,
+    service: str = "ithildin-node",
+    status: str = "exited",
+    running: str = "false",
+    exit_code: str = "1",
+    oom_killed: str = "false",
+    dead: str = "false",
+    engine_error_present: str = "false",
+    health: str = "absent",
+) -> str:
+    return (
+        "\t".join(
+            (
+                container_id,
+                state.plan.project,
+                service,
+                status,
+                running,
+                exit_code,
+                oom_killed,
+                dead,
+                engine_error_present,
+                health,
+            )
+        )
+        + "\n"
+    )
+
+
+def test_fixed_node_diagnostic_commands_are_exact_and_allowlisted() -> None:
+    run_id = "20260724T180000Z-1234abcd"
+    runtime = producer.RUNTIME_BASE / run_id
+    plan = producer.ComposePlan(run_id, runtime)
+    container_id = "b" * 64
+
+    producer._validate_command(  # noqa: SLF001
+        plan.fixed_node_container_id_query(),
+        hermes=False,
+    )
+    with pytest.raises(
+        producer.ProducerError,
+        match="subprocess_command_not_allowed",
+    ):
+        producer._validate_command(  # noqa: SLF001
+            plan.compose("ps", "--all", "--quiet", "ithildin-node"),
+            hermes=False,
+        )
+    with pytest.raises(
+        producer.ProducerError,
+        match="subprocess_command_not_allowed",
+    ):
+        producer._validate_command(  # noqa: SLF001
+            plan.fixed_node_container_state_inspect(container_id),
+            hermes=False,
+        )
+    producer._validate_command(  # noqa: SLF001
+        plan.fixed_node_container_state_inspect(container_id),
+        hermes=False,
+        bound_container_ids=frozenset({container_id}),
+    )
+
+    assert plan.fixed_node_container_id_query() == plan.compose(
+        "ps",
+        "--all",
+        "--quiet",
+        "ithildin-node",
+        fixed=True,
+    )
+    assert producer.FIXED_NODE_CONTAINER_STATE_FORMAT == (
+        "{{.Id}}\t{{index .Config.Labels \"com.docker.compose.project\"}}\t"
+        "{{index .Config.Labels \"com.docker.compose.service\"}}\t"
+        "{{.State.Status}}\t{{.State.Running}}\t{{.State.ExitCode}}\t"
+        "{{.State.OOMKilled}}\t{{.State.Dead}}\t{{ne .State.Error \"\"}}\t"
+        "{{if .State.Health}}{{.State.Health.Status}}{{else}}absent{{end}}"
+    )
+
+
+@pytest.mark.parametrize(
+    ("stdout", "expected"),
+    [
+        ("", ("missing", None)),
+        ("b" * 64, ("bound", "b" * 64)),
+        ("b" * 64 + "\n", ("bound", "b" * 64)),
+        ("b" * 64 + "\n" + "c" * 64 + "\n", ("ambiguous", None)),
+    ],
+)
+def test_fixed_node_container_id_parser_is_closed(
+    stdout: str,
+    expected: tuple[str, str | None],
+) -> None:
+    assert producer._parse_exact_fixed_node_container_id(stdout) == expected  # noqa: SLF001
+
+
+@pytest.mark.parametrize(
+    "stdout",
+    [
+        "b" * 63,
+        "B" * 64,
+        "sha256:" + "b" * 64,
+        "b" * 64 + " ",
+        "b" * 64 + "\n\n",
+        "not-an-id",
+        "b" * 64 + "\nnot-an-id\n",
+    ],
+)
+def test_fixed_node_container_id_parser_rejects_hostile_or_ambiguous_text(
+    stdout: str,
+) -> None:
+    with pytest.raises(
+        producer.ProducerError,
+        match="fixed_node_start_diagnostic_output_rejected",
+    ):
+        producer._parse_exact_fixed_node_container_id(stdout)  # noqa: SLF001
+
+
+def test_fixed_node_scalar_parser_validates_and_discards_raw_identity(
+    tmp_path: Path,
+) -> None:
+    state = _fixed_node_diagnostic_state(tmp_path)
+    container_id = "b" * 64
+
+    parsed = producer._parse_fixed_node_container_state(  # noqa: SLF001
+        state,
+        container_id=container_id,
+        stdout=_fixed_node_inspect_stdout(state),
+    )
+
+    assert parsed == producer.FixedNodeContainerState(
+        status="exited",
+        running=False,
+        exit_code=1,
+        oom_killed=False,
+        dead=False,
+        engine_error_present=False,
+        health_status="absent",
+    )
+    assert container_id not in repr(parsed)
+
+
+@pytest.mark.parametrize(
+    ("override", "value"),
+    [
+        ("service", "ithildin-api"),
+        ("status", "unknown"),
+        ("running", "False"),
+        ("exit_code", "256"),
+        ("oom_killed", "yes"),
+        ("dead", "1"),
+        ("engine_error_present", "TRUE"),
+        ("health", "none"),
+    ],
+)
+def test_fixed_node_scalar_parser_rejects_field_or_enum_drift(
+    tmp_path: Path,
+    override: str,
+    value: str,
+) -> None:
+    state = _fixed_node_diagnostic_state(tmp_path)
+    arguments = {override: value}
+
+    with pytest.raises(
+        producer.ProducerError,
+        match="fixed_node_start_diagnostic_output_rejected",
+    ):
+        producer._parse_fixed_node_container_state(  # noqa: SLF001
+            state,
+            container_id="b" * 64,
+            stdout=_fixed_node_inspect_stdout(state, **arguments),  # type: ignore[arg-type]
+        )
+
+
+@pytest.mark.parametrize(
+    "result",
+    [
+        producer.CommandResult(0, "token"),
+        producer.CommandResult(0, "healthy\u2603"),
+        producer.CommandResult(0, "healthy\x00"),
+        producer.CommandResult(
+            0,
+            "x" * (producer.MAX_FIXED_NODE_START_DIAGNOSTIC_BYTES + 1),
+        ),
+        producer.CommandResult(1, "", "output_rejected"),
+    ],
+)
+def test_fixed_node_diagnostic_safety_rejects_forbidden_non_ascii_or_large_output(
+    result: producer.CommandResult,
+) -> None:
+    with pytest.raises(
+        producer.ProducerError,
+        match="fixed_node_start_diagnostic_output_rejected",
+    ):
+        producer._validate_fixed_node_diagnostic_safety(result)  # noqa: SLF001
+
+
+def test_fixed_node_mission_projection_retains_only_three_closed_states(
+    tmp_path: Path,
+) -> None:
+    state = _fixed_node_diagnostic_state(tmp_path)
+    detail: JsonObject = {
+        "mission_id": MISSION_ID,
+        "lifecycle_state": "queued",
+        "delivery": {
+            "state": "not_claimed",
+            "claim": {"requester": "must-not-project"},
+        },
+        "evidence": {
+            "state": "complete",
+            "transitions": [{"digest": DIGEST}],
+        },
+        "requester": "must-not-project",
+        "envelope_digest": ENVELOPE,
+    }
+
+    projection = producer._fixed_node_mission_projection(state, detail)  # noqa: SLF001
+
+    assert projection == {
+        "mission_lifecycle_state": "queued",
+        "delivery_state": "not_claimed",
+        "evidence_state": "complete",
+    }
+    assert not any(
+        forbidden in json.dumps(projection)
+        for forbidden in ("requester", "digest", MISSION_ID)
+    )
+
+
+@pytest.mark.parametrize(
+    "detail",
+    [
+        {"mission_id": "mission_" + "f" * 32},
+        {
+            "mission_id": MISSION_ID,
+            "lifecycle_state": "unknown",
+            "delivery": {"state": "not_claimed"},
+            "evidence": {"state": "complete"},
+        },
+        {
+            "mission_id": MISSION_ID,
+            "lifecycle_state": "queued",
+            "delivery": {"state": "unknown"},
+            "evidence": {"state": "complete"},
+        },
+        {
+            "mission_id": MISSION_ID,
+            "lifecycle_state": "queued",
+            "delivery": {"state": "not_claimed"},
+            "evidence": {"state": "unknown"},
+        },
+    ],
+)
+def test_fixed_node_mission_projection_rejects_identity_or_state_drift(
+    tmp_path: Path,
+    detail: JsonObject,
+) -> None:
+    state = _fixed_node_diagnostic_state(tmp_path)
+
+    with pytest.raises(
+        producer.ProducerError,
+        match="fixed_node_start_diagnostic_output_rejected",
+    ):
+        producer._fixed_node_mission_projection(state, detail)  # noqa: SLF001
+
+
+@pytest.mark.parametrize(
+    ("container", "mission", "expected"),
+    [
+        (
+            None,
+            ("queued", "not_claimed"),
+            "fixed_node_container_missing",
+        ),
+        (
+            producer.FixedNodeContainerState(
+                "created", False, 0, False, False, False, "absent"
+            ),
+            ("queued", "not_claimed"),
+            "fixed_node_container_created",
+        ),
+        (
+            producer.FixedNodeContainerState(
+                "exited", False, 1, False, False, True, "absent"
+            ),
+            ("queued", "not_claimed"),
+            "fixed_node_container_runtime_error",
+        ),
+        (
+            producer.FixedNodeContainerState(
+                "exited", False, 1, False, False, False, "absent"
+            ),
+            ("queued", "not_claimed"),
+            "fixed_node_exited_nonzero_before_claim",
+        ),
+        (
+            producer.FixedNodeContainerState(
+                "exited", False, 1, False, False, False, "absent"
+            ),
+            ("claimed", "claim_delivered"),
+            "fixed_node_exited_nonzero_after_claim",
+        ),
+        (
+            producer.FixedNodeContainerState(
+                "running", True, 0, False, False, False, "unhealthy"
+            ),
+            ("claimed", "claim_delivered"),
+            "fixed_node_running_unhealthy_socket_health_contract",
+        ),
+        (
+            producer.FixedNodeContainerState(
+                "exited", False, 0, False, False, False, "absent"
+            ),
+            ("queued", "not_claimed"),
+            (
+                "fixed_node_exited_zero_no_queued_mission_or_"
+                "claim_observation_inconsistent"
+            ),
+        ),
+        (
+            producer.FixedNodeContainerState(
+                "exited", False, 1, False, False, False, "absent"
+            ),
+            ("runner_reported_failed", "not_claimed"),
+            "fixed_node_claim_state_inconsistent",
+        ),
+        (
+            producer.FixedNodeContainerState(
+                "exited", False, 1, False, False, False, "absent"
+            ),
+            ("queued", "claim_delivered"),
+            "fixed_node_claim_state_inconsistent",
+        ),
+    ],
+)
+def test_fixed_node_start_classification_matrix_is_closed(
+    container: producer.FixedNodeContainerState | None,
+    mission: tuple[str, str],
+    expected: str,
+) -> None:
+    projection: JsonObject = {
+        "mission_lifecycle_state": mission[0],
+        "delivery_state": mission[1],
+        "evidence_state": "complete",
+    }
+
+    assert producer._classify_fixed_node_start(container, projection) == expected  # noqa: SLF001
+
+
+def test_fixed_node_start_failure_collects_once_before_cleanup_without_hermes_or_retry(
+    fake_stack: tuple[
+        FakeRuntimeFactory,
+        FakeExecutorFactory,
+        FakeApiFactory,
+        FakeProvider,
+        FakeAssembler,
+    ],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    runtime, executors, apis, provider, assembler = fake_stack
+    executor = executors.executor
+    executor.fixed_node_start_returncode = 1
+    observed: list[producer.ProducerState] = []
+    original_cleanup = producer._cleanup_once  # noqa: SLF001
+
+    def capture_cleanup(
+        state: producer.ProducerState,
+        delegated_executor: producer.Executor | None,
+        api: producer.Api | None,
+    ) -> JsonObject | None:
+        observed.append(state)
+        return original_cleanup(state, delegated_executor, api)
+
+    monkeypatch.setattr(producer, "_cleanup_once", capture_cleanup)
+
+    with pytest.raises(producer.ProducerError, match="fixed_node_start_failed"):
+        producer.run_producer(
+            gate=AllowGate(),
+            runtime_factory=runtime,
+            executor_factory=executors,
+            api_factory=apis,
+            provider=provider,
+            assembler=assembler,
+            candidate=(COMMIT, TREE),
+            environment={},
+            now=datetime(2026, 7, 24, 18, 0, tzinfo=UTC),
+        )
+
+    assert len(observed) == 1
+    state = observed[0]
+    assert state.fixed_node_start_diagnostic_calls == 1
+    assert state.cleanup_calls == 1
+    assert executor.hermes_commands == []
+    assert state.hermes_attempts == 0
+    assert executor.fixed_node_container_id not in executor.bound_container_ids
+    plan = state.plan
+    start = plan.compose(
+        "--profile",
+        "node",
+        "up",
+        "--detach",
+        "--no-deps",
+        "--wait",
+        "ithildin-node",
+        fixed=True,
+    )
+    query = plan.fixed_node_container_id_query()
+    inspect = plan.fixed_node_container_state_inspect(
+        executor.fixed_node_container_id
+    )
+    cleanup = plan.compose(
+        "--profile",
+        "node",
+        "--profile",
+        "hermes-node-bridge",
+        "down",
+        "--remove-orphans",
+        "--volumes",
+        fixed=True,
+    )
+    assert executor.commands.count(start) == 1
+    assert executor.commands.count(query) == 1
+    assert executor.commands.count(inspect) == 1
+    assert executor.commands.count(cleanup) == 1
+    assert executor.commands.index(start) < executor.commands.index(query)
+    assert executor.commands.index(query) < executor.commands.index(inspect)
+    assert executor.commands.index(inspect) < executor.commands.index(cleanup)
+    mission_gets = [
+        call
+        for call in apis.api.calls
+        if call == ("GET", f"/missions/{MISSION_ID}", None)
+    ]
+    assert mission_gets == [("GET", f"/missions/{MISSION_ID}", None)]
+    diagnostic = json.loads(runtime.receipts.files["diagnostic.json"])
+    nested = diagnostic["fixed_node_start_diagnostic"]
+    assert nested == {
+        "collection_status": "complete",
+        "collection_reason_code": "fixed_node_start_state_collected",
+        "classification": "fixed_node_exited_nonzero_after_claim",
+        "mission_lifecycle_state": "runner_reported_succeeded",
+        "delivery_state": "claim_delivered",
+        "evidence_state": "complete",
+    }
+    assert executor.fixed_node_container_id not in json.dumps(nested)
+    assert diagnostic["primary_failure_code"] == "fixed_node_start_failed"
+    assert diagnostic["outward_failure_code"] == "fixed_node_start_failed"
+    assert assembler.calls == 0
+
+
+@pytest.mark.parametrize(
+    "failure",
+    [
+        "query_error",
+        "query_interruption",
+        "inspect_output_rejected",
+        "mission_error",
+        "internal_failure",
+    ],
+)
+def test_fixed_node_diagnostic_failure_never_masks_primary_or_retries(
+    fake_stack: tuple[
+        FakeRuntimeFactory,
+        FakeExecutorFactory,
+        FakeApiFactory,
+        FakeProvider,
+        FakeAssembler,
+    ],
+    failure: str,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    runtime, executors, apis, provider, assembler = fake_stack
+    executor = executors.executor
+    executor.fixed_node_start_returncode = 1
+    if failure == "query_error":
+        executor.fixed_node_container_query_failure = "error"
+    elif failure == "query_interruption":
+        executor.fixed_node_container_query_failure = "interruption"
+    elif failure == "inspect_output_rejected":
+        executor.fixed_node_container_inspect_result = producer.CommandResult(
+            0,
+            "token",
+        )
+    elif failure == "mission_error":
+        apis.api.mission_query_failure = RuntimeError("synthetic")
+    else:
+        def fail_collection(
+            state: producer.ProducerState,
+            delegated_executor: producer.Executor,
+            api: producer.Api,
+        ) -> JsonObject:
+            del state, delegated_executor, api
+            raise producer.ProducerSignal("synthetic")
+
+        monkeypatch.setattr(
+            producer,
+            "_collect_fixed_node_start_diagnostic",
+            fail_collection,
+        )
+
+    with pytest.raises(producer.ProducerError, match="fixed_node_start_failed"):
+        producer.run_producer(
+            gate=AllowGate(),
+            runtime_factory=runtime,
+            executor_factory=executors,
+            api_factory=apis,
+            provider=provider,
+            assembler=assembler,
+            candidate=(COMMIT, TREE),
+            environment={},
+            now=datetime(2026, 7, 24, 18, 0, tzinfo=UTC),
+        )
+
+    diagnostic = json.loads(runtime.receipts.files["diagnostic.json"])
+    nested = diagnostic["fixed_node_start_diagnostic"]
+    assert nested["collection_status"] in {"inconclusive", "output_rejected"}
+    assert nested["classification"] == "fixed_node_start_inconclusive"
+    assert diagnostic["primary_failure_code"] == "fixed_node_start_failed"
+    assert diagnostic["outward_failure_code"] == "fixed_node_start_failed"
+    assert executor.hermes_commands == []
+    mission_gets = [
+        call
+        for call in apis.api.calls
+        if call == ("GET", f"/missions/{MISSION_ID}", None)
+    ]
+    assert len(mission_gets) == (
+        0 if failure in {"internal_failure", "query_interruption"} else 1
+    )
+    assert sum(
+        command
+        == producer.ComposePlan(
+            "20260724T180000Z-1234abcd",
+            runtime.runtime.path,
+        ).fixed_node_container_id_query()
+        for command in executor.commands
+    ) == (0 if failure == "internal_failure" else 1)
+    assert sum("down" in command for command in executor.commands) == 1
+
+
+def test_fixed_node_diagnostic_repeated_collection_is_fail_closed(
+    tmp_path: Path,
+) -> None:
+    state = _fixed_node_diagnostic_state(tmp_path)
+    runtime = cast(FakePrivateDirectory, state.runtime)
+    executor = FakeExecutor(runtime)
+    api = FakeApi()
+    state.fixed_node_start_diagnostic_calls = 1
+
+    second = producer._collect_fixed_node_start_diagnostic(  # noqa: SLF001
+        state,
+        executor,
+        api,
+    )
+
+    assert second == {
+        "collection_status": "output_rejected",
+        "collection_reason_code": "fixed_node_start_diagnostic_repeated",
+        "classification": "fixed_node_start_inconclusive",
+        "mission_lifecycle_state": "unknown",
+        "delivery_state": "unknown",
+        "evidence_state": "unknown",
+    }
+    assert state.fixed_node_start_diagnostic_calls == 2
+    assert sum(
+        command == state.plan.fixed_node_container_id_query()
+        for command in executor.commands
+    ) == 0

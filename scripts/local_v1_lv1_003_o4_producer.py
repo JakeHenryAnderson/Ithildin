@@ -56,6 +56,7 @@ NODE_TMPFS = ("/tmp:size=16m,mode=0700,uid=10002,gid=10002",)
 MAX_RECOVERY_RECEIPT_BYTES = 4096
 MAX_BASE_SERVICE_START_DIAGNOSTIC_BYTES = 1024
 MAX_API_CONTAINER_DIAGNOSTIC_BYTES = 512
+MAX_FIXED_NODE_START_DIAGNOSTIC_BYTES = 512
 MAX_APPLICATION_STARTUP_STAGE_BYTES = 256
 MAX_API_CONTAINER_REAP_ATTEMPTS = 3
 API_CONTAINER_REAP_TIMEOUT_SECONDS = 0.25
@@ -69,6 +70,7 @@ API_CONTAINER_STATE_FORMAT = (
     "{{.State.OOMKilled}}\t{{.State.Dead}}\t{{ne .State.Error \"\"}}\t"
     "{{if .State.Health}}{{.State.Health.Status}}{{else}}absent{{end}}"
 )
+FIXED_NODE_CONTAINER_STATE_FORMAT = API_CONTAINER_STATE_FORMAT
 APPLICATION_STARTUP_STATUS_DIRECTORY = "startup-status"
 APPLICATION_STARTUP_STATUS_FILE = "api-startup-stage.json"
 APPLICATION_STARTUP_STAGES = frozenset(
@@ -194,6 +196,8 @@ class Executor(Protocol):
     def bind_image_identity(self, image_id: str) -> None: ...
 
     def bind_container_identity(self, container_id: str) -> None: ...
+
+    def discard_container_identity(self, container_id: str) -> None: ...
 
     def run(
         self,
@@ -924,6 +928,30 @@ class ComposePlan:
             container_id,
         )
 
+    def fixed_node_container_id_query(self) -> tuple[str, ...]:
+        return self.compose(
+            "ps",
+            "--all",
+            "--quiet",
+            "ithildin-node",
+            fixed=True,
+        )
+
+    def fixed_node_container_state_inspect(
+        self,
+        container_id: str,
+    ) -> tuple[str, ...]:
+        return (
+            "docker",
+            "--config",
+            str(self.runtime / "docker-config"),
+            "container",
+            "inspect",
+            "--format",
+            FIXED_NODE_CONTAINER_STATE_FORMAT,
+            container_id,
+        )
+
 
 @dataclass(frozen=True)
 class BoundImageIdentity:
@@ -934,6 +962,17 @@ class BoundImageIdentity:
     compose_version: str
     platform: str
     layers: tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class FixedNodeContainerState:
+    status: str
+    running: bool
+    exit_code: int
+    oom_killed: bool
+    dead: bool
+    engine_error_present: bool
+    health_status: str
 
 
 @dataclass
@@ -971,6 +1010,8 @@ class ProducerState:
     base_build_completed: bool = False
     bridge_build_completed: bool = False
     base_service_start_diagnostic: JsonObject | None = None
+    fixed_node_start_diagnostic: JsonObject | None = None
+    fixed_node_start_diagnostic_calls: int = 0
     bound_images: dict[str, BoundImageIdentity] = field(default_factory=dict)
     inspected_images: dict[str, str] = field(default_factory=dict)
     image_platform: str | None = None
@@ -1025,6 +1066,13 @@ class AnchoredExecutor:
         self._validate()
         try:
             self._delegate.bind_container_identity(container_id)
+        finally:
+            self._validate()
+
+    def discard_container_identity(self, container_id: str) -> None:
+        self._validate()
+        try:
+            self._delegate.discard_container_identity(container_id)
         finally:
             self._validate()
 
@@ -1168,6 +1216,11 @@ class SubprocessExecutor:
             raise ProducerError("container_identity_binding_invalid")
         self._bound_container_ids.add(container_id)
 
+    def discard_container_identity(self, container_id: str) -> None:
+        if not _CONTAINER_ID.fullmatch(container_id):
+            raise ProducerError("container_identity_binding_invalid")
+        self._bound_container_ids.discard(container_id)
+
     def run(
         self,
         command: tuple[str, ...],
@@ -1200,7 +1253,15 @@ class SubprocessExecutor:
                 for container_id in self._bound_container_ids
             }
         )
-        if is_api_container_diagnostic:
+        is_fixed_node_container_diagnostic = (
+            command == command_plan.fixed_node_container_id_query()
+            or command
+            in {
+                command_plan.fixed_node_container_state_inspect(container_id)
+                for container_id in self._bound_container_ids
+            }
+        )
+        if is_api_container_diagnostic or is_fixed_node_container_diagnostic:
             return self._run_bounded_api_container_diagnostic(
                 command,
                 timeout=timeout,
@@ -1958,21 +2019,37 @@ def run_producer(
                 "ordinary_node_stop_failed",
             )
             state.stage(11)
-            _require_success(
-                executor.run(
-                    plan.compose(
-                        "--profile",
-                        "node",
-                        "up",
-                        "--detach",
-                        "--no-deps",
-                        "--wait",
-                        "ithildin-node",
-                        fixed=True,
-                    )
-                ),
-                "fixed_node_start_failed",
+            fixed_node_start = executor.run(
+                plan.compose(
+                    "--profile",
+                    "node",
+                    "up",
+                    "--detach",
+                    "--no-deps",
+                    "--wait",
+                    "ithildin-node",
+                    fixed=True,
+                )
             )
+            if fixed_node_start.returncode != 0:
+                try:
+                    state.fixed_node_start_diagnostic = (
+                        _collect_fixed_node_start_diagnostic(
+                            state,
+                            executor,
+                            api,
+                        )
+                    )
+                except BaseException:
+                    state.fixed_node_start_diagnostic = (
+                        _fixed_node_start_fallback(
+                            collection_status="inconclusive",
+                            collection_reason_code=(
+                                "fixed_node_start_diagnostic_internal_failure"
+                            ),
+                        )
+                    )
+                raise ProducerError("fixed_node_start_failed")
             state.stage(12)
             state.hermes_attempts += 1
             if state.hermes_attempts != 1:
@@ -2778,6 +2855,365 @@ def _collect_api_container_state_diagnostic(
             collection_status="output_rejected",
             collection_reason_code="api_container_state_output_rejected",
         )
+
+
+def _fixed_node_start_fallback(
+    *,
+    collection_status: str,
+    collection_reason_code: str,
+) -> JsonObject:
+    return {
+        "collection_status": collection_status,
+        "collection_reason_code": collection_reason_code,
+        "classification": "fixed_node_start_inconclusive",
+        "mission_lifecycle_state": "unknown",
+        "delivery_state": "unknown",
+        "evidence_state": "unknown",
+    }
+
+
+def _validate_fixed_node_diagnostic_safety(
+    result: CommandResult,
+) -> None:
+    if result.classification == "output_rejected":
+        raise ProducerError("fixed_node_start_diagnostic_output_rejected")
+    try:
+        combined = (result.stdout + result.stderr).encode(
+            "utf-8",
+            errors="strict",
+        )
+    except UnicodeError as exc:
+        raise ProducerError("fixed_node_start_diagnostic_output_rejected") from exc
+    if len(combined) > MAX_FIXED_NODE_START_DIAGNOSTIC_BYTES:
+        raise ProducerError("fixed_node_start_diagnostic_output_rejected")
+    for text in (result.stdout, result.stderr):
+        if any(
+            (ord(character) < 32 and character not in {"\t", "\n"})
+            or ord(character) == 127
+            or ord(character) > 126
+            for character in text
+        ) or re.search(
+            r"(?i)(?:authorization|bearer[ \t]|credential|enrollment[_ -]?code|"
+            r"password|private[_ -]?key|prompt|raw[_ -]?output|secret|token)",
+            text,
+        ):
+            raise ProducerError("fixed_node_start_diagnostic_output_rejected")
+
+
+def _parse_exact_fixed_node_container_id(
+    stdout: str,
+) -> tuple[str, str | None]:
+    if stdout == "":
+        return "missing", None
+    candidate = stdout[:-1] if stdout.endswith("\n") else stdout
+    if "\n" not in candidate and _CONTAINER_ID.fullmatch(candidate):
+        return "bound", candidate
+    lines = stdout.splitlines()
+    if (
+        len(lines) > 1
+        and all(_CONTAINER_ID.fullmatch(line) is not None for line in lines)
+    ):
+        return "ambiguous", None
+    raise ProducerError("fixed_node_start_diagnostic_output_rejected")
+
+
+def _parse_fixed_node_container_state(
+    state: ProducerState,
+    *,
+    container_id: str,
+    stdout: str,
+) -> FixedNodeContainerState:
+    candidate = stdout[:-1] if stdout.endswith("\n") else stdout
+    if "\n" in candidate:
+        raise ProducerError("fixed_node_start_diagnostic_output_rejected")
+    fields = candidate.split("\t")
+    if len(fields) != 10:
+        raise ProducerError("fixed_node_start_diagnostic_output_rejected")
+    (
+        observed_id,
+        project,
+        service,
+        status,
+        raw_running,
+        raw_exit_code,
+        raw_oom_killed,
+        raw_dead,
+        raw_error_present,
+        health,
+    ) = fields
+    if (
+        observed_id != container_id
+        or project != state.plan.project
+        or service != "ithildin-node"
+        or status
+        not in {
+            "created",
+            "running",
+            "paused",
+            "restarting",
+            "removing",
+            "exited",
+            "dead",
+        }
+        or health not in {"absent", "starting", "healthy", "unhealthy"}
+        or not re.fullmatch(r"(?:0|[1-9][0-9]{0,2})", raw_exit_code)
+    ):
+        raise ProducerError("fixed_node_start_diagnostic_output_rejected")
+    exit_code = int(raw_exit_code)
+    if exit_code > 255:
+        raise ProducerError("fixed_node_start_diagnostic_output_rejected")
+    try:
+        running = _parse_bool(raw_running)
+        oom_killed = _parse_bool(raw_oom_killed)
+        dead = _parse_bool(raw_dead)
+        engine_error_present = _parse_bool(raw_error_present)
+    except ProducerError as exc:
+        raise ProducerError("fixed_node_start_diagnostic_output_rejected") from exc
+    return FixedNodeContainerState(
+        status=status,
+        running=running,
+        exit_code=exit_code,
+        oom_killed=oom_killed,
+        dead=dead,
+        engine_error_present=engine_error_present,
+        health_status=health,
+    )
+
+
+def _fixed_node_mission_projection(
+    state: ProducerState,
+    detail: JsonObject,
+) -> JsonObject:
+    if state.mission_id is None or detail.get("mission_id") != state.mission_id:
+        raise ProducerError("fixed_node_start_diagnostic_output_rejected")
+    delivery = detail.get("delivery")
+    evidence = detail.get("evidence")
+    if not isinstance(delivery, dict) or not isinstance(evidence, dict):
+        raise ProducerError("fixed_node_start_diagnostic_output_rejected")
+    lifecycle_state = detail.get("lifecycle_state")
+    delivery_state = delivery.get("state")
+    evidence_state = evidence.get("state")
+    if (
+        lifecycle_state
+        not in {
+            "unadmitted",
+            "queued",
+            "claimed",
+            "runner_reported_running",
+            "runner_reported_succeeded",
+            "runner_reported_failed",
+            "cancel_requested",
+            "runner_reported_canceled",
+            "claim_expired_review_required",
+            "canceled",
+        }
+        or delivery_state
+        not in {
+            "not_claimed",
+            "claim_pending_evidence",
+            "claim_delivered",
+            "claim_evidence_incomplete",
+            "claim_expired_review_required",
+        }
+        or evidence_state not in {"complete", "evidence_incomplete"}
+    ):
+        raise ProducerError("fixed_node_start_diagnostic_output_rejected")
+    return {
+        "mission_lifecycle_state": lifecycle_state,
+        "delivery_state": delivery_state,
+        "evidence_state": evidence_state,
+    }
+
+
+def _classify_fixed_node_start(
+    container: FixedNodeContainerState | None,
+    mission: JsonObject,
+) -> str:
+    if container is None:
+        return "fixed_node_container_missing"
+    if container.status == "created":
+        return "fixed_node_container_created"
+    if (
+        container.oom_killed
+        or container.dead
+        or container.engine_error_present
+        or container.status in {"dead", "restarting", "removing"}
+    ):
+        return "fixed_node_container_runtime_error"
+    lifecycle = mission["mission_lifecycle_state"]
+    delivery = mission["delivery_state"]
+    before_claim = lifecycle == "queued" and delivery == "not_claimed"
+    after_claim = (
+        lifecycle
+        in {
+            "claimed",
+            "runner_reported_running",
+            "runner_reported_succeeded",
+            "runner_reported_failed",
+            "cancel_requested",
+            "runner_reported_canceled",
+            "claim_expired_review_required",
+            "canceled",
+        }
+        and delivery != "not_claimed"
+    )
+    if lifecycle != "queued" and delivery == "not_claimed":
+        return "fixed_node_claim_state_inconsistent"
+    if not before_claim and not after_claim:
+        return "fixed_node_claim_state_inconsistent"
+    if container.status == "exited":
+        if container.running or container.dead or container.health_status != "absent":
+            return "fixed_node_runtime_state_inconsistent"
+        if container.exit_code == 0:
+            return (
+                "fixed_node_exited_zero_no_queued_mission_or_"
+                "claim_observation_inconsistent"
+                if before_claim
+                else "fixed_node_runtime_state_inconsistent"
+            )
+        return (
+            "fixed_node_exited_nonzero_before_claim"
+            if before_claim
+            else "fixed_node_exited_nonzero_after_claim"
+        )
+    if (
+        container.status == "running"
+        and container.running
+        and container.exit_code == 0
+        and container.health_status == "unhealthy"
+    ):
+        return "fixed_node_running_unhealthy_socket_health_contract"
+    return "fixed_node_runtime_state_inconsistent"
+
+
+def _collect_fixed_node_start_diagnostic(
+    state: ProducerState,
+    executor: Executor,
+    api: Api,
+) -> JsonObject:
+    state.fixed_node_start_diagnostic_calls += 1
+    if state.fixed_node_start_diagnostic_calls != 1:
+        return _fixed_node_start_fallback(
+            collection_status="output_rejected",
+            collection_reason_code="fixed_node_start_diagnostic_repeated",
+        )
+    container: FixedNodeContainerState | None = None
+    container_collection_status = "complete"
+    container_collection_reason = "fixed_node_start_state_collected"
+    identity_status = "unavailable"
+    container_id: str | None = None
+    try:
+        query = executor.run(
+            state.plan.fixed_node_container_id_query(),
+            timeout=10.0,
+        )
+    except (KeyboardInterrupt, ProducerSignal):
+        return _fixed_node_start_fallback(
+            collection_status="inconclusive",
+            collection_reason_code="fixed_node_start_diagnostic_interrupted",
+        )
+    except Exception:
+        container_collection_status = "inconclusive"
+        container_collection_reason = "fixed_node_start_diagnostic_command_failed"
+    else:
+        try:
+            _validate_fixed_node_diagnostic_safety(query)
+            if (
+                query.returncode != 0
+                or query.stderr
+                or query.classification != "completed"
+            ):
+                container_collection_status = "inconclusive"
+                container_collection_reason = (
+                    "fixed_node_start_diagnostic_command_failed"
+                )
+            else:
+                identity_status, container_id = (
+                    _parse_exact_fixed_node_container_id(query.stdout)
+                )
+        except ProducerError:
+            container_collection_status = "output_rejected"
+            container_collection_reason = (
+                "fixed_node_start_diagnostic_output_rejected"
+            )
+    if identity_status == "ambiguous":
+        container_collection_status = "output_rejected"
+        container_collection_reason = "fixed_node_container_id_ambiguous"
+    if identity_status == "bound" and container_id is not None:
+        try:
+            executor.bind_container_identity(container_id)
+            try:
+                inspected = executor.run(
+                    state.plan.fixed_node_container_state_inspect(container_id),
+                    timeout=10.0,
+                )
+            finally:
+                executor.discard_container_identity(container_id)
+        except (KeyboardInterrupt, ProducerSignal):
+            return _fixed_node_start_fallback(
+                collection_status="inconclusive",
+                collection_reason_code="fixed_node_start_diagnostic_interrupted",
+            )
+        except Exception:
+            container_collection_status = "inconclusive"
+            container_collection_reason = (
+                "fixed_node_start_diagnostic_command_failed"
+            )
+        else:
+            try:
+                _validate_fixed_node_diagnostic_safety(inspected)
+                if (
+                    inspected.returncode != 0
+                    or inspected.stderr
+                    or inspected.classification != "completed"
+                ):
+                    container_collection_status = "inconclusive"
+                    container_collection_reason = (
+                        "fixed_node_start_diagnostic_command_failed"
+                    )
+                else:
+                    container = _parse_fixed_node_container_state(
+                        state,
+                        container_id=container_id,
+                        stdout=inspected.stdout,
+                    )
+            except ProducerError:
+                container_collection_status = "output_rejected"
+                container_collection_reason = (
+                    "fixed_node_start_diagnostic_output_rejected"
+                )
+        container_id = None
+    try:
+        if state.mission_id is None:
+            raise ProducerError("fixed_node_start_diagnostic_output_rejected")
+        mission = _fixed_node_mission_projection(
+            state,
+            api.get(f"/missions/{state.mission_id}"),
+        )
+        classification = _classify_fixed_node_start(container, mission)
+    except ProducerError:
+        return _fixed_node_start_fallback(
+            collection_status="output_rejected",
+            collection_reason_code="fixed_node_start_diagnostic_output_rejected",
+        )
+    except (Exception, KeyboardInterrupt, ProducerSignal):
+        return _fixed_node_start_fallback(
+            collection_status="inconclusive",
+            collection_reason_code="fixed_node_start_mission_query_failed",
+        )
+    if container_collection_status != "complete":
+        return {
+            "collection_status": container_collection_status,
+            "collection_reason_code": container_collection_reason,
+            "classification": "fixed_node_start_inconclusive",
+            **mission,
+        }
+    return {
+        "collection_status": "complete",
+        "collection_reason_code": "fixed_node_start_state_collected",
+        "classification": classification,
+        **mission,
+    }
 
 
 def _application_startup_stage_fallback(
@@ -3912,6 +4348,7 @@ def _exact_command_vocabulary(
         plan.compose("up", "--detach", "--wait", "ithildin-api", "ithildin-ui"),
         plan.base_service_start_diagnostic(),
         plan.api_container_id_query(),
+        plan.fixed_node_container_id_query(),
         plan.compose(
             "--profile",
             "node",
@@ -3991,6 +4428,7 @@ def _exact_command_vocabulary(
     for container_id in bound_container_ids:
         if _CONTAINER_ID.fullmatch(container_id):
             allowed.add(plan.api_container_state_inspect(container_id))
+            allowed.add(plan.fixed_node_container_state_inspect(container_id))
     hermes_command = plan.compose(
         "--profile",
         "hermes-node-bridge",
@@ -4287,6 +4725,10 @@ def _write_failure_diagnostic(
     if state is not None and state.base_service_start_diagnostic is not None:
         diagnostic["base_service_start_diagnostic"] = (
             state.base_service_start_diagnostic
+        )
+    if state is not None and state.fixed_node_start_diagnostic is not None:
+        diagnostic["fixed_node_start_diagnostic"] = (
+            state.fixed_node_start_diagnostic
         )
     try:
         receipts.write(
