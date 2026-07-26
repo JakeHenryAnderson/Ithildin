@@ -33,6 +33,15 @@ def _run_git(repo: Path, *arguments: str) -> str:
     return result.stdout.strip()
 
 
+def _git_blob_digest(repo: Path, commit: str, path: str) -> str:
+    result = subprocess.run(
+        ["git", "-C", str(repo), "show", f"{commit}:{path}"],
+        check=True,
+        capture_output=True,
+    )
+    return "sha256:" + hashlib.sha256(result.stdout).hexdigest()
+
+
 def _attempt_010_control_child_repository(tmp_path: Path) -> tuple[Path, str, str]:
     repo = tmp_path / "candidate"
     subprocess.run(
@@ -936,13 +945,15 @@ def test_fixed_node_state_projection_review_and_runtime_bindings_are_exact() -> 
         gate.FIXED_NODE_STATE_PROJECTION_REVIEW,
         [],
     ) == gate.FIXED_NODE_STATE_PROJECTION_REVIEW_DIGEST
-    assert gate._file_digest(  # noqa: SLF001
-        Path("scripts/local_v1_lv1_003_o4_producer.py"),
-        [],
+    assert _git_blob_digest(
+        ROOT,
+        gate.FIXED_NODE_STATE_PROJECTION_COMMIT,
+        "scripts/local_v1_lv1_003_o4_producer.py",
     ) == gate.FIXED_NODE_STATE_PROJECTION_PRODUCER_DIGEST
-    assert gate._file_digest(  # noqa: SLF001
-        Path("tests/test_local_v1_lv1_003_o4_producer.py"),
-        [],
+    assert _git_blob_digest(
+        ROOT,
+        gate.FIXED_NODE_STATE_PROJECTION_COMMIT,
+        "tests/test_local_v1_lv1_003_o4_producer.py",
     ) == gate.FIXED_NODE_STATE_PROJECTION_TEST_DIGEST
 
 
