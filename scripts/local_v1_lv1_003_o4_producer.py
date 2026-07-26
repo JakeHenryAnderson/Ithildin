@@ -1032,6 +1032,7 @@ class ProducerState:
     image_inventory_digest: str | None = None
     license_inventory_digest: str | None = None
     gateway_journey: JsonObject | None = None
+    gateway_mission_projection_diagnostic: JsonObject | None = None
 
     def stage(self, number: int) -> None:
         if number != len(self.stages) + 1:
@@ -3646,20 +3647,82 @@ def _admit_mission(state: ProducerState, api: Api) -> None:
     state.mission_admitted = True
 
 
+def _gateway_mission_projection_diagnostic(
+    state: ProducerState,
+    detail: JsonObject,
+) -> JsonObject:
+    lifecycle = detail.get("lifecycle_state")
+    lifecycle_state = (
+        lifecycle
+        if isinstance(lifecycle, str)
+        and lifecycle
+        in {
+            "unadmitted",
+            "queued",
+            "claimed",
+            "runner_reported_running",
+            "runner_reported_succeeded",
+            "runner_reported_failed",
+            "cancel_requested",
+            "runner_reported_canceled",
+            "claim_expired_review_required",
+            "canceled",
+        }
+        else "not_reported"
+        if lifecycle is None
+        else "unrecognized"
+    )
+    mission_identity = detail.get("mission_id")
+    target_node_identity = detail.get("target_node_id")
+    return {
+        "collection_status": "complete",
+        "collection_reason_code": "gateway_mission_projection_state_collected",
+        "mission_identity_binding": (
+            "matched"
+            if mission_identity == state.mission_id
+            else "not_reported"
+            if mission_identity is None
+            else "mismatched"
+        ),
+        "mission_lifecycle_state": lifecycle_state,
+        "target_node_identity_binding": (
+            "matched"
+            if target_node_identity == state.node_id
+            else "not_reported"
+            if target_node_identity is None
+            else "mismatched"
+        ),
+        "delivery_projection_state": (
+            "present_object"
+            if isinstance(detail.get("delivery"), dict)
+            else "invalid_or_missing"
+        ),
+        "governed_agent_runs_projection_state": (
+            "present_object"
+            if isinstance(detail.get("governed_agent_runs"), dict)
+            else "invalid_or_missing"
+        ),
+    }
+
+
 def _gateway_journey(state: ProducerState, api: Api) -> JsonObject:
     if state.mission_id is None:
         raise ProducerError("mission_identity_missing")
     detail = api.get(f"/missions/{state.mission_id}")
+    projection_diagnostic = _gateway_mission_projection_diagnostic(state, detail)
     if (
-        detail.get("mission_id") != state.mission_id
-        or detail.get("lifecycle_state") != "runner_reported_succeeded"
-        or detail.get("target_node_id") != state.node_id
+        projection_diagnostic["mission_identity_binding"] != "matched"
+        or projection_diagnostic["mission_lifecycle_state"]
+        != "runner_reported_succeeded"
+        or projection_diagnostic["target_node_identity_binding"] != "matched"
+        or projection_diagnostic["delivery_projection_state"] != "present_object"
+        or projection_diagnostic["governed_agent_runs_projection_state"]
+        != "present_object"
     ):
+        state.gateway_mission_projection_diagnostic = projection_diagnostic
         raise ProducerError("gateway_mission_projection_invalid")
-    delivery = detail.get("delivery")
-    governed = detail.get("governed_agent_runs")
-    if not isinstance(delivery, dict) or not isinstance(governed, dict):
-        raise ProducerError("gateway_mission_projection_invalid")
+    delivery = cast(JsonObject, detail["delivery"])
+    governed = cast(JsonObject, detail["governed_agent_runs"])
     claim = delivery.get("claim")
     runs = governed.get("runs")
     if (
@@ -4848,6 +4911,13 @@ def _write_failure_diagnostic(
     if state is not None and state.fixed_node_start_diagnostic is not None:
         diagnostic["fixed_node_start_diagnostic"] = (
             state.fixed_node_start_diagnostic
+        )
+    if (
+        state is not None
+        and state.gateway_mission_projection_diagnostic is not None
+    ):
+        diagnostic["gateway_mission_projection_diagnostic"] = (
+            state.gateway_mission_projection_diagnostic
         )
     try:
         receipts.write(

@@ -5157,6 +5157,128 @@ def test_fixed_node_mission_projection_rejects_identity_or_state_drift(
 
 
 @pytest.mark.parametrize(
+    ("override", "expected_field", "expected_value"),
+    [
+        (
+            {"mission_id": "mission_" + "f" * 32},
+            "mission_identity_binding",
+            "mismatched",
+        ),
+        (
+            {"mission_id": None},
+            "mission_identity_binding",
+            "not_reported",
+        ),
+        (
+            {"lifecycle_state": "runner_reported_running"},
+            "mission_lifecycle_state",
+            "runner_reported_running",
+        ),
+        (
+            {"lifecycle_state": None},
+            "mission_lifecycle_state",
+            "not_reported",
+        ),
+        (
+            {"lifecycle_state": "unexpected"},
+            "mission_lifecycle_state",
+            "unrecognized",
+        ),
+        (
+            {"lifecycle_state": []},
+            "mission_lifecycle_state",
+            "unrecognized",
+        ),
+        (
+            {"lifecycle_state": {}},
+            "mission_lifecycle_state",
+            "unrecognized",
+        ),
+        (
+            {"target_node_id": "node_" + "f" * 32},
+            "target_node_identity_binding",
+            "mismatched",
+        ),
+        (
+            {"target_node_id": None},
+            "target_node_identity_binding",
+            "not_reported",
+        ),
+        (
+            {"delivery": None},
+            "delivery_projection_state",
+            "invalid_or_missing",
+        ),
+        (
+            {"governed_agent_runs": None},
+            "governed_agent_runs_projection_state",
+            "invalid_or_missing",
+        ),
+    ],
+)
+def test_gateway_mission_projection_failure_retains_only_bounded_mismatch(
+    tmp_path: Path,
+    override: JsonObject,
+    expected_field: str,
+    expected_value: str,
+) -> None:
+    state = _fixed_node_diagnostic_state(tmp_path)
+    state.node_id = NODE_ID
+    api = FakeApi()
+    api.mission_detail_override = override
+
+    with pytest.raises(producer.ProducerError, match="gateway_mission_projection_invalid"):
+        producer._gateway_journey(state, api)  # noqa: SLF001
+
+    diagnostic = state.gateway_mission_projection_diagnostic
+    assert diagnostic is not None
+    assert set(diagnostic) == {
+        "collection_status",
+        "collection_reason_code",
+        "mission_identity_binding",
+        "mission_lifecycle_state",
+        "target_node_identity_binding",
+        "delivery_projection_state",
+        "governed_agent_runs_projection_state",
+    }
+    assert diagnostic[expected_field] == expected_value
+    rendered = canonical_json(diagnostic)
+    assert MISSION_ID not in rendered
+    assert NODE_ID not in rendered
+
+
+@pytest.mark.parametrize(
+    "override",
+    [{"lifecycle_state": []}, {"lifecycle_state": {}}],
+)
+def test_gateway_mission_projection_hostile_type_is_written_to_failure_receipt(
+    tmp_path: Path,
+    override: JsonObject,
+) -> None:
+    state = _fixed_node_diagnostic_state(tmp_path)
+    state.node_id = NODE_ID
+    api = FakeApi()
+    api.mission_detail_override = override
+
+    with pytest.raises(producer.ProducerError, match="gateway_mission_projection_invalid"):
+        producer._gateway_journey(state, api)  # noqa: SLF001
+
+    receipts = cast(FakePrivateDirectory, state.receipts)
+    producer._write_failure_diagnostic(  # noqa: SLF001
+        cast(producer.PrivateDirectory, receipts),
+        state=state,
+        outward_failure_code="gateway_mission_projection_invalid",
+        primary_failure_code="gateway_mission_projection_invalid",
+    )
+    written = json.loads(receipts.files["diagnostic.json"])
+    projection = written["gateway_mission_projection_diagnostic"]
+    assert projection == state.gateway_mission_projection_diagnostic
+    assert projection["mission_lifecycle_state"] == "unrecognized"
+    assert MISSION_ID not in canonical_json(projection)
+    assert NODE_ID not in canonical_json(projection)
+
+
+@pytest.mark.parametrize(
     ("container", "collected", "expected"),
     [
         (
