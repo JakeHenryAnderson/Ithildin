@@ -1,47 +1,64 @@
 # Local v1 LV1-003 O4 Execution Authorization Gate
 
 Status:
-`ATTEMPT_015_PREPARED_PENDING_EXACT_CANDIDATE_REVIEW_NO_LIVE_AUTHORITY`
+`ATTEMPT_015_CONSUMED_GATEWAY_MISSION_PROJECTION_INVALID_CLEANUP_COMPLETE_NO_LIVE_AUTHORITY`
 
-This record prepares `LV1-003-O4-ATTEMPT-015` as one distinct diagnostic successor, preserves
-immutable Attempts 001-014 and all tracked recovery history, and grants no authority on the real
-pre-tag checkout. Its machine contract is
+This record closes `LV1-003-O4-ATTEMPT-015`, preserves immutable Attempts 001-014 and all tracked
+recovery history, and grants no live or successor authority. Its machine contract is
 `docs/codex/local-v1-lv1-003-o4-execution-authorization.json`.
 
-## Attempt 015 Prepared Boundary
+## Attempt 015 Consumed Result
 
-Attempt 015 may become executable only as the clean exact six-path, single-parent immediate child
-of review-record commit `c30aa3c43a0e51403c04696c473333fd3bc0551a`, tree
-`dbd58923a662977a61d1498cb14b0d1cec04895d`, with fixed annotated tag
-`ithildin/lv1-003-o4-attempt015-reviewed` peeling to that exact child. Before that exact candidate
-and tag exist, the validator reports invalid, effective budget zero, and all live authority false;
-the next action is `review_attempt_015_execution_authorization_exact_candidate`.
+The exact execution candidate was `5bda7496ad69cb9002b41292106a8dd080117400`, tree
+`e55b1d60a14bc8bf798b34df452377df8b0b9d7b`, fixed by annotated tag
+`ithildin/lv1-003-o4-attempt015-reviewed`. Its single central-manager-supervised invocation used
+`make local-v1-lv1-003-o4-producer-run` and
+`uv run python -m scripts.local_v1_lv1_003_o4_producer`. Make exited `2`; the producer exited `1`.
+The private run and Compose project are represented only by domain-separated digests
+`sha256:52cda6a5a9b1f54c40b93ec58ee71dd6f5d38e94cd978707c0e6d93aae62ada5` and
+`sha256:9ee88459706bbb7385af6474953e7d34c50c3ef876b9eb1759c97c474bafb889`.
+The raw invocation output is never reproduced; only its 171-byte length and digest
+`sha256:a667ff635a76069c4725e36bf1ef0abe057e837bbda91dbdc2823eabc890d90d`
+are retained.
 
-The reviewed socket-parent mode repair is commit
+The outward and primary failure were `gateway_mission_projection_invalid`; highest completed stage
+was `13`. Base and bridge builds completed, exactly four image identities were bound, cleanup
+failures were empty, `recovery_required` was false, and cleanup completed under reviewed producer
+semantics. This is a bounded observation, not a root-cause, repair, safe-retry, success, generic
+absence, or authority claim.
+
+The owner-only mode `0700` receipt root contains exactly a mode `0500` candidate snapshot with 668
+files; a mode `0600`, 97,421-byte manifest with
+`sha256:4910bf2b04672e80b6e6caa1167a8c4ace62b243b8f3001245385bdd8e81f8fd`; a mode `0600`,
+7,171-byte diagnostic with
+`sha256:b23558b7bc6391bc8b028fe8b463d189a054df004e06aeb986a2a8ecf6b8e642`; and a mode `0600`,
+136-byte disposition with
+`sha256:76111fb55e47a53554a22326499aa8a1b98fc9280ffb80b471e953cc4b645762`.
+The exact run runtime root and exact public report root were absent; the public report base was
+absent at the point of observation.
+
+Attempt budget is zero, `attempt_consumed` is true, and retry, automatic retry, recovery, cleanup,
+and successor authority are false. All 19 authority fields are false. Release, promotion,
+production, and UAT remain false; the governed tool count remains exactly 24. The retained producer
+entrypoint now refuses before activity. The exact closure is
+`docs/codex/local-v1-lv1-003-o4-attempt-015-disposition.json`.
+
+The next action is a separately reviewed bounded source diagnosis or repair for
+`gateway_mission_projection_invalid`. It is not a root-cause claim, retry authority, or successor
+authorization.
+
+## Attempt 015 Historical Authorization Boundary
+
+Attempt 015 was authorized only as the clean exact six-path immediate child of review-record commit
+`c30aa3c43a0e51403c04696c473333fd3bc0551a`, tree
+`dbd58923a662977a61d1498cb14b0d1cec04895d`. Its reviewed runtime repair was commit
 `8f2191a4b3a6b5559f5a9083973c8b2797fe7f45`, tree
 `c5634835d7c2f2280ee2555866cf6c32c346f540`, direct parent
-`f889449420c865299f8d2a08fe62cc323a994fab`. It is bound by
+`f889449420c865299f8d2a08fe62cc323a994fab`, bound by
 `docs/codex/local-v1-lv1-003-o4-socket-parent-mode-exact-review.md`, digest
-`sha256:a2dec414e5dd5dbfb1eff972195d3450f8c36c73efcfbab5dc09dfeb665fe43b`,
-with disposition `GO_CODE_ONLY` and Critical 0, High 0, Medium 0, Low 0. The reviewed bridge and
-test digests are respectively
-`sha256:8d9ba5cffcee099e8901fd0124a96b856681073b2adf68e2f25b4f0aeccf6f7b`
-and
-`sha256:cfd1aa52d0bce3385b53341a63cad6af7fbfb3210e55ef033a69ab1b9221bb26`.
-The execution candidate must preserve runtime parity to that exact repair.
-
-The deterministic source contradiction at socket-parent mode validation is repaired, but success
-is not predicted. On the eventual exact tagged candidate only, the attempt budget is one,
-`attempt_consumed` is false, and exactly five fields may be true: producer code, Docker lifecycle,
-live Hermes execution, model-provider access, and O4 evidence execution. The remaining fourteen
-authority fields stay false, including credential custody, runner lifecycle authority, arbitrary
-host/process/shell or Docker-socket control, network/filesystem non-bypass claims, new governed
-power/tool, release, promotion, production, and UAT. The governed tool count remains exactly 24.
-
-This is a fresh, separately authorized diagnostic successor, not a retry, automatic retry,
-recovery, repair, or cleanup action. Concurrent, automatic, and post-attempt retries are false.
-Authority is not derived from history or recovery, and immediate consumed disposition is mandatory
-after the one central-manager-supervised invocation.
+`sha256:a2dec414e5dd5dbfb1eff972195d3450f8c36c73efcfbab5dc09dfeb665fe43b`.
+The review disposition was `GO_CODE_ONLY` with Critical 0, High 0, Medium 0, Low 0. Historical
+review and tag existence no longer grant live authority.
 
 ## Attempt 014 Consumed Result
 

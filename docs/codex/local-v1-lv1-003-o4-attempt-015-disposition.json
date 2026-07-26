@@ -1,0 +1,122 @@
+{
+  "schema_version": "1",
+  "record_type": "local_v1_lv1_003_o4_attempt_015_disposition",
+  "record_status": "ATTEMPT_015_CONSUMED_GATEWAY_MISSION_PROJECTION_INVALID_CLEANUP_COMPLETE_NO_LIVE_AUTHORITY",
+  "attempt_id": "LV1-003-O4-ATTEMPT-015",
+  "execution_candidate_commit": "5bda7496ad69cb9002b41292106a8dd080117400",
+  "execution_candidate_tree": "e55b1d60a14bc8bf798b34df452377df8b0b9d7b",
+  "review_tag": "ithildin/lv1-003-o4-attempt015-reviewed",
+  "operator_command": "make local-v1-lv1-003-o4-producer-run",
+  "module_command": "uv run python -m scripts.local_v1_lv1_003_o4_producer",
+  "invocation": {
+    "make_exit_code": 2,
+    "producer_exit_code": 1,
+    "run_identity_sha256": "sha256:52cda6a5a9b1f54c40b93ec58ee71dd6f5d38e94cd978707c0e6d93aae62ada5",
+    "compose_project_identity_sha256": "sha256:9ee88459706bbb7385af6474953e7d34c50c3ef876b9eb1759c97c474bafb889",
+    "raw_invocation_output_sha256": "sha256:a667ff635a76069c4725e36bf1ef0abe057e837bbda91dbdc2823eabc890d90d",
+    "raw_invocation_output_size": 171,
+    "raw_run_project_or_output_recorded": false
+  },
+  "bounded_result": {
+    "outward_failure_code": "gateway_mission_projection_invalid",
+    "primary_failure_code": "gateway_mission_projection_invalid",
+    "highest_completed_stage": 13,
+    "base_build_completed": true,
+    "bridge_build_completed": true,
+    "bound_image_identity_count": 4,
+    "raw_image_ids_recorded": false,
+    "raw_container_id_recorded": false,
+    "raw_node_id_recorded": false,
+    "raw_mission_or_claim_identity_recorded": false,
+    "cleanup_failure_codes": [],
+    "recovery_required": false,
+    "cleanup_completed_under_reviewed_producer_semantics": true,
+    "generic_docker_absence_claimed": false,
+    "generic_process_absence_claimed": false,
+    "full_project_absence_claimed": false,
+    "generic_host_absence_claimed": false
+  },
+  "diagnostic_claims": {
+    "gateway_mission_projection_invalid_observed": true,
+    "root_cause_proven": false,
+    "repair_or_safe_retry_proven": false,
+    "success_proven": false,
+    "raw_output_or_private_content_recorded": false
+  },
+  "retained_receipt_binding": {
+    "root_identity_sha256": "sha256:52cda6a5a9b1f54c40b93ec58ee71dd6f5d38e94cd978707c0e6d93aae62ada5",
+    "root_mode": "0700",
+    "entries": [
+      {
+        "path": "candidate",
+        "mode": "0500",
+        "kind": "directory",
+        "file_count": 668
+      },
+      {
+        "path": "candidate-manifest.json",
+        "mode": "0600",
+        "size": 97421,
+        "sha256": "sha256:4910bf2b04672e80b6e6caa1167a8c4ace62b243b8f3001245385bdd8e81f8fd"
+      },
+      {
+        "path": "diagnostic.json",
+        "mode": "0600",
+        "size": 7171,
+        "sha256": "sha256:b23558b7bc6391bc8b028fe8b463d189a054df004e06aeb986a2a8ecf6b8e642"
+      },
+      {
+        "path": "disposition.json",
+        "mode": "0600",
+        "size": 136,
+        "sha256": "sha256:76111fb55e47a53554a22326499aa8a1b98fc9280ffb80b471e953cc4b645762"
+      }
+    ],
+    "disposition_fields": {
+      "status": "quarantined_not_published",
+      "failure_code": "gateway_mission_projection_invalid",
+      "release_allowed": false,
+      "uat_complete": false
+    },
+    "private_contents_reproduced": false
+  },
+  "bounded_absence_observations": {
+    "exact_run_runtime_root_absent": true,
+    "exact_public_report_root_absent": true,
+    "public_report_base_absent_point_in_time": true,
+    "generic_runtime_absence_claimed": false,
+    "generic_report_absence_claimed": false
+  },
+  "attempt_contract": {
+    "execution_attempt_budget": 0,
+    "attempt_consumed": true,
+    "retry_authorized": false,
+    "automatic_retry_authorized": false,
+    "recovery_authorized": false,
+    "cleanup_authorized": false,
+    "successor_attempt_authorized": false
+  },
+  "authority": {
+    "producer_code_authorized": false,
+    "docker_lifecycle_authorized": false,
+    "live_hermes_execution_authorized": false,
+    "model_provider_access_authorized": false,
+    "o4_evidence_execution_authorized": false,
+    "credential_custody_authorized": false,
+    "runner_lifecycle_authority": false,
+    "arbitrary_host_control_authorized": false,
+    "generic_process_control_authorized": false,
+    "shell_execution_authorized": false,
+    "docker_socket_authorized": false,
+    "network_non_bypass_claimed": false,
+    "filesystem_non_bypass_claimed": false,
+    "new_governed_power_authorized": false,
+    "new_governed_tool": false,
+    "release_allowed": false,
+    "promotion_allowed": false,
+    "production_authorized": false,
+    "uat_complete": false
+  },
+  "next_action": "prepare_separately_reviewed_bounded_source_diagnosis_or_repair_for_gateway_mission_projection_invalid_not_root_cause_or_retry_authority",
+  "tool_count": 24
+}
