@@ -418,7 +418,7 @@ def test_fixed_session_runs_only_two_envelope_operations_then_reports_completion
         for path, payload, _headers in client.requests
         if path.endswith("/heartbeat")
     ]
-    assert len(heartbeats) == 4
+    assert len(heartbeats) == 5
     assert all(
         heartbeat
         == {
@@ -608,6 +608,50 @@ def test_fixed_session_refreshes_heartbeat_before_completion_and_records_rejecti
     )
 
 
+def test_fixed_session_refreshes_again_between_completion_poll_and_report(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    session, client = _prepared(tmp_path)
+    session.handle_request(_request(session, "mission.step.1"))
+    session.handle_request(_request(session, "mission.step.2"))
+    original_heartbeat = client.heartbeat
+    completion_heartbeats = 0
+
+    def heartbeat(*args: object, **kwargs: object) -> JsonObject:
+        nonlocal completion_heartbeats
+        completion_heartbeats += 1
+        if completion_heartbeats == 2:
+            return {
+                "status": "active",
+                "observed_state": "observed_stale",
+                "last_configuration_digest": session.configuration.configuration_digest,
+                "last_mission_id": session.receipt.mission_id,
+            }
+        return original_heartbeat(*args, **kwargs)  # type: ignore[arg-type]
+
+    monkeypatch.setattr(client, "heartbeat", heartbeat)
+    reports_before = sum(
+        path.endswith("/mission-reports")
+        for path, _payload, _headers in client.requests
+    )
+
+    with pytest.raises(FixedRunnerBridgeError, match="gateway_heartbeat_invalid"):
+        session.handle_request(_request(session, "mission.complete"))
+
+    assert completion_heartbeats == 2
+    assert session.receipt.next_operation_index == 3
+    assert session.receipt.last_closed_status == "failed_closed"
+    assert session.receipt.last_closed_reason_code == "gateway_heartbeat_invalid"
+    assert (
+        sum(
+            path.endswith("/mission-reports")
+            for path, _payload, _headers in client.requests
+        )
+        == reports_before
+    )
+
+
 @pytest.mark.parametrize(
     ("affordance", "gateway_state", "expected_index"),
     [
@@ -701,6 +745,60 @@ def test_fixed_session_cancel_observation_does_not_claim_runner_exit(
     ]
     assert reports[-1]["report_kind"] == "cancel_observed"
     assert all(payload["report_kind"] != "runner_canceled" for payload in reports)
+
+
+def test_fixed_session_refreshes_again_between_cancel_poll_and_report(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    session, client = _prepared(tmp_path)
+    original_post = client._post
+    original_heartbeat = client.heartbeat
+    cancel_heartbeats = 0
+
+    def canceling_post(
+        path: str,
+        payload: JsonObject,
+        *,
+        headers: dict[str, str] | None = None,
+    ) -> JsonObject:
+        if path.endswith("/mission-control"):
+            return {"control_decision": "cancel_requested", "decision_revision": 4}
+        return original_post(path, payload, headers=headers)
+
+    def heartbeat(*args: object, **kwargs: object) -> JsonObject:
+        nonlocal cancel_heartbeats
+        cancel_heartbeats += 1
+        if cancel_heartbeats == 2:
+            return {
+                "status": "active",
+                "observed_state": "observed_stale",
+                "last_configuration_digest": session.configuration.configuration_digest,
+                "last_mission_id": session.receipt.mission_id,
+            }
+        return original_heartbeat(*args, **kwargs)  # type: ignore[arg-type]
+
+    monkeypatch.setattr(client, "_post", canceling_post)
+    monkeypatch.setattr(client, "heartbeat", heartbeat)
+    reports_before = sum(
+        path.endswith("/mission-reports")
+        for path, _payload, _headers in client.requests
+    )
+
+    with pytest.raises(FixedRunnerBridgeError, match="gateway_heartbeat_invalid"):
+        session.handle_request(_request(session, "mission.step.1"))
+
+    assert cancel_heartbeats == 2
+    assert session.receipt.next_operation_index == 1
+    assert session.receipt.last_closed_status == "failed_closed"
+    assert session.receipt.last_closed_reason_code == "gateway_heartbeat_invalid"
+    assert (
+        sum(
+            path.endswith("/mission-reports")
+            for path, _payload, _headers in client.requests
+        )
+        == reports_before
+    )
 
 
 def test_canonical_frame_rejects_duplicate_reordered_and_oversized_input() -> None:

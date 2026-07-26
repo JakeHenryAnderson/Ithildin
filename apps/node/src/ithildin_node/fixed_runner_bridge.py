@@ -386,6 +386,7 @@ class FixedMissionSession:
         if decision == "continue":
             return control
         if decision == "cancel_requested":
+            self._refresh_heartbeat()
             self.client.report_mission(
                 self.state,
                 mission_id=self.receipt.mission_id,
@@ -436,6 +437,7 @@ class FixedMissionSession:
 
     def _complete(self) -> JsonObject:
         self._poll_control()
+        self._refresh_heartbeat()
         response = self.client.report_mission(
             self.state,
             mission_id=self.receipt.mission_id,
