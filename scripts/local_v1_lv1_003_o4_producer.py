@@ -1206,25 +1206,41 @@ class SubprocessExecutor:
                 timeout=timeout,
             )
         try:
+            input_bytes = (
+                None
+                if input_text is None
+                else input_text.encode("utf-8", errors="strict")
+            )
+        except UnicodeError as exc:
+            raise ProducerError("subprocess_input_rejected") from exc
+        try:
             completed = subprocess.run(
                 command,
                 cwd=ROOT,
-                input=input_text,
+                input=input_bytes,
                 stdout=subprocess.PIPE,
                 stderr=(
                     subprocess.PIPE
                     if is_id_probe or is_base_start_diagnostic
                     else subprocess.DEVNULL
                 ),
-                text=True,
                 check=False,
                 timeout=timeout,
                 env=self._environment,
             )
         except (OSError, subprocess.TimeoutExpired) as exc:
             raise ProducerError("subprocess_unavailable") from exc
-        if len(completed.stdout.encode("utf-8")) > MAX_LICENSE_BYTES:
+        if len(completed.stdout) > MAX_LICENSE_BYTES:
             raise ProducerError("subprocess_output_too_large")
+        try:
+            stdout = completed.stdout.decode("utf-8", errors="strict")
+            stderr = (
+                completed.stderr.decode("utf-8", errors="strict")
+                if completed.stderr
+                else ""
+            )
+        except UnicodeError as exc:
+            raise ProducerError("subprocess_output_rejected") from exc
         classification = "completed"
         if is_id_probe and completed.returncode != 0:
             messages = {
@@ -1232,19 +1248,18 @@ class SubprocessExecutor:
                 f"Error: No such image: {command[7]}",
             }
             expected = messages | {message + "\n" for message in messages}
-            stderr = completed.stderr if completed.stderr else ""
             classification = (
                 "image_not_found"
                 if completed.returncode == 1
-                and completed.stdout in _ABSENT_IMAGE_ID_STDOUTS
+                and stdout in _ABSENT_IMAGE_ID_STDOUTS
                 and stderr in expected
                 else "error"
             )
         return CommandResult(
             completed.returncode,
-            completed.stdout,
+            stdout,
             classification,
-            completed.stderr if is_base_start_diagnostic else "",
+            stderr if is_base_start_diagnostic else "",
         )
 
     def _run_bounded_api_container_diagnostic(
@@ -2939,20 +2954,7 @@ def _start_and_enroll(state: ProducerState, executor: Executor, api: Api) -> str
         input_text=code + "\n",
     )
     _require_success(result, "enrollment_outcome_ambiguous")
-    try:
-        summary = json.loads(result.stdout)
-    except (UnicodeError, json.JSONDecodeError) as exc:
-        raise ProducerError("enrollment_projection_invalid") from exc
-    if not isinstance(summary, dict):
-        raise ProducerError("enrollment_projection_invalid")
-    node_id = summary.get("node_id")
-    if (
-        not isinstance(node_id, str)
-        or not _NODE_ID.fullmatch(node_id)
-        or summary.get("principal_id") != f"agent:node.{node_id}"
-        or summary.get("workspace_id") != WORKSPACE_ID
-    ):
-        raise ProducerError("enrollment_projection_invalid")
+    node_id = _parse_enrollment_projection(result.stdout)
     state.node_id = node_id
     state.node_enrolled = True
     state.enrollment_outcome_ambiguous = False
@@ -2991,6 +2993,38 @@ def _start_and_enroll(state: ProducerState, executor: Executor, api: Api) -> str
     )
     state.recovery_required = False
     return code
+
+
+def _parse_enrollment_projection(stdout: str) -> str:
+    try:
+        raw = json.loads(stdout, object_pairs_hook=_closed_json_object)
+    except (UnicodeError, ValueError) as exc:
+        raise ProducerError("enrollment_projection_invalid") from exc
+    if (
+        not isinstance(raw, dict)
+        or set(raw) != {"node_id", "principal_id", "workspace_id"}
+        or not all(isinstance(value, str) for value in raw.values())
+    ):
+        raise ProducerError("enrollment_projection_invalid")
+    node_id = cast(str, raw["node_id"])
+    normalized: JsonObject = {
+        "node_id": node_id,
+        "principal_id": cast(str, raw["principal_id"]),
+        "workspace_id": cast(str, raw["workspace_id"]),
+    }
+    try:
+        content = stdout.encode("utf-8", errors="strict")
+        canonical = (canonical_json(normalized) + "\n").encode("utf-8")
+    except UnicodeError as exc:
+        raise ProducerError("enrollment_projection_invalid") from exc
+    if (
+        not _NODE_ID.fullmatch(node_id)
+        or normalized["principal_id"] != f"agent:node.{node_id}"
+        or normalized["workspace_id"] != WORKSPACE_ID
+        or content != canonical
+    ):
+        raise ProducerError("enrollment_projection_invalid")
+    return node_id
 
 
 def _prove_node_eligibility(state: ProducerState, api: Api) -> None:

@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import cast
 
 import pytest
-from ithildin_schemas import JsonObject
+from ithildin_schemas import JsonObject, canonical_json
 
 from scripts import local_v1_constrained_mission_journey as journey
 from scripts import local_v1_lv1_003_o4_producer as producer
@@ -24,6 +24,14 @@ RUN_RECORD_ID = "run_" + "4" * 32
 ENVELOPE = "sha256:" + "5" * 64
 SESSION_ID = f"mission:{MISSION_ID}:{CLAIM_ID}:{'5' * 16}"
 DIGEST = "sha256:" + "6" * 64
+VALID_ENROLLMENT_PROJECTION: JsonObject = {
+    "node_id": NODE_ID,
+    "principal_id": f"agent:node.{NODE_ID}",
+    "workspace_id": producer.WORKSPACE_ID,
+}
+VALID_ENROLLMENT_STDOUT = (
+    canonical_json(VALID_ENROLLMENT_PROJECTION) + "\n"
+)
 
 
 class FakePrivateDirectory:
@@ -285,6 +293,7 @@ class FakeExecutor:
         self.api_container_inspect_failure: str | None = None
         self.interrupt_on: str | None = None
         self.enrollment_failure: str | None = None
+        self.enrollment_stdout: str | None = None
 
     def bind_image_identity(self, image_id: str) -> None:
         assert producer._DIGEST.fullmatch(image_id)  # noqa: SLF001
@@ -564,15 +573,18 @@ class FakeExecutor:
                 raise producer.ProducerError("subprocess_unavailable")
             if self.enrollment_failure == "malformed":
                 return producer.CommandResult(0, "{")
+            if self.enrollment_stdout is not None:
+                return producer.CommandResult(0, self.enrollment_stdout)
             return producer.CommandResult(
                 0,
-                json.dumps(
+                canonical_json(
                     {
                         "node_id": NODE_ID,
                         "principal_id": f"agent:node.{NODE_ID}",
                         "workspace_id": producer.WORKSPACE_ID,
                     }
-                ),
+                )
+                + "\n",
             )
         if "cp" in tail:
             self.runtime.files["copied-receipt/node-mission-receipt.json"] = (
@@ -1004,6 +1016,179 @@ def test_ambiguous_enrollment_retains_recovery_material_without_false_revocation
     assert runtime.receipts.closed is True
     assert "compose.env" in runtime.runtime.files
     assert "var/keys/node-configuration-ed25519-private.pem" in runtime.runtime.files
+    assert assembler.calls == 0
+
+
+@pytest.mark.parametrize(
+    ("case", "stdout"),
+    [
+        (
+            "extra",
+            canonical_json(
+                {**VALID_ENROLLMENT_PROJECTION, "unexpected": "value"}
+            )
+            + "\n",
+        ),
+        (
+            "missing",
+            canonical_json(
+                {
+                    "node_id": NODE_ID,
+                    "principal_id": f"agent:node.{NODE_ID}",
+                }
+            )
+            + "\n",
+        ),
+        (
+            "duplicate",
+            (
+                f'{{"node_id":"{NODE_ID}","node_id":"{NODE_ID}",'
+                f'"principal_id":"agent:node.{NODE_ID}",'
+                f'"workspace_id":"{producer.WORKSPACE_ID}"}}\n'
+            ),
+        ),
+        ("malformed", "{"),
+        ("trailing", VALID_ENROLLMENT_STDOUT + "{}\n"),
+        (
+            "noncanonical",
+            json.dumps(VALID_ENROLLMENT_PROJECTION, sort_keys=True) + "\n",
+        ),
+        ("missing_newline", VALID_ENROLLMENT_STDOUT.removesuffix("\n")),
+        ("extra_newline", VALID_ENROLLMENT_STDOUT + "\n"),
+        (
+            "carriage_return_newline",
+            VALID_ENROLLMENT_STDOUT.removesuffix("\n") + "\r\n",
+        ),
+        (
+            "node_type",
+            canonical_json(
+                {**VALID_ENROLLMENT_PROJECTION, "node_id": True}
+            )
+            + "\n",
+        ),
+        (
+            "principal_type",
+            canonical_json(
+                {**VALID_ENROLLMENT_PROJECTION, "principal_id": None}
+            )
+            + "\n",
+        ),
+        (
+            "workspace_type",
+            canonical_json(
+                {**VALID_ENROLLMENT_PROJECTION, "workspace_id": 1}
+            )
+            + "\n",
+        ),
+        (
+            "invalid_node_id",
+            canonical_json(
+                {
+                    **VALID_ENROLLMENT_PROJECTION,
+                    "node_id": "node_invalid",
+                    "principal_id": "agent:node.node_invalid",
+                }
+            )
+            + "\n",
+        ),
+        (
+            "principal_mismatch",
+            canonical_json(
+                {
+                    **VALID_ENROLLMENT_PROJECTION,
+                    "principal_id": "agent:node.node_" + ("2" * 32),
+                }
+            )
+            + "\n",
+        ),
+        (
+            "workspace_mismatch",
+            canonical_json(
+                {**VALID_ENROLLMENT_PROJECTION, "workspace_id": "other"}
+            )
+            + "\n",
+        ),
+        (
+            "forbidden_key",
+            canonical_json(
+                {**VALID_ENROLLMENT_PROJECTION, "token": "redacted"}
+            )
+            + "\n",
+        ),
+        (
+            "forbidden_value",
+            canonical_json(
+                {
+                    **VALID_ENROLLMENT_PROJECTION,
+                    "workspace_id": "secret-workspace",
+                }
+            )
+            + "\n",
+        ),
+    ],
+)
+def test_unsafe_enrollment_projection_preserves_ambiguous_recovery_boundary(
+    fake_stack: tuple[
+        FakeRuntimeFactory,
+        FakeExecutorFactory,
+        FakeApiFactory,
+        FakeProvider,
+        FakeAssembler,
+    ],
+    monkeypatch: pytest.MonkeyPatch,
+    case: str,
+    stdout: str,
+) -> None:
+    del case
+    runtime, executors, apis, provider, assembler = fake_stack
+    executors.executor.enrollment_stdout = stdout
+    observed: list[producer.ProducerState] = []
+    original_cleanup = producer._cleanup_once  # noqa: SLF001
+
+    def capture_cleanup(
+        state: producer.ProducerState,
+        executor: producer.Executor | None,
+        api: producer.Api | None,
+    ) -> JsonObject | None:
+        observed.append(state)
+        return original_cleanup(state, executor, api)
+
+    monkeypatch.setattr(producer, "_cleanup_once", capture_cleanup)
+
+    with pytest.raises(producer.ProducerError, match="recovery_required"):
+        producer.run_producer(
+            gate=AllowGate(),
+            runtime_factory=runtime,
+            executor_factory=executors,
+            api_factory=apis,
+            provider=provider,
+            assembler=assembler,
+            candidate=(COMMIT, TREE),
+            environment={},
+            now=datetime(2026, 7, 24, 18, 0, tzinfo=UTC),
+        )
+
+    assert len(observed) == 1
+    state = observed[0]
+    assert state.enrollment_attempted is True
+    assert state.enrollment_outcome_ambiguous is True
+    assert state.node_enrolled is False
+    assert state.node_id is None
+    assert state.enrollment_revocation_confirmed is False
+    assert state.cleanup_failures == ["enrollment_outcome_ambiguous"]
+    enrollment_index = next(
+        index
+        for index, command in enumerate(executors.executor.commands)
+        if "enroll" in command
+    )
+    assert executors.executor.commands[enrollment_index + 1 :] == []
+    assert not any(
+        method == "POST" and path.endswith("/revoke")
+        for method, path, _ in apis.api.calls
+    )
+    assert runtime.runtime.removed is False
+    assert runtime.runtime.closed is True
+    assert runtime.receipts.closed is True
     assert assembler.calls == 0
 
 
@@ -2752,6 +2937,112 @@ def test_unexpected_failure_diagnostic_is_stable_and_never_reflects_raw_text(
     assert "provider-model-output" not in encoded
 
 
+def _o4_enrollment_command(plan: producer.ComposePlan) -> tuple[str, ...]:
+    return plan.compose(
+        "--profile",
+        "node",
+        "run",
+        "--rm",
+        "-T",
+        "--no-deps",
+        "ithildin-node",
+        "enroll",
+        "--api-url",
+        "http://ithildin-api:8000",
+        "--state",
+        "/var/lib/ithildin-node/state.json",
+        "--node-version",
+        producer.NODE_VERSION,
+        "--runner-adapter",
+        "hermes",
+        "--deployment-topology",
+        "docker_sidecar",
+        "--enrollment-code-stdin",
+    )
+
+
+@pytest.mark.parametrize(
+    ("line_ending", "accepted"),
+    [(b"\n", True), (b"\r\n", False)],
+)
+def test_subprocess_adapter_preserves_enrollment_line_endings_for_closed_parser(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    line_ending: bytes,
+    accepted: bool,
+) -> None:
+    run_id = "20260724T180000Z-1234abcd"
+    runtime = tmp_path / run_id
+    monkeypatch.setattr(producer, "RUNTIME_BASE", tmp_path)
+    plan = producer.ComposePlan(run_id, runtime)
+    command = _o4_enrollment_command(plan)
+    raw_stdout = canonical_json(VALID_ENROLLMENT_PROJECTION).encode() + line_ending
+    observed: dict[str, object] = {}
+
+    def fake_run(
+        invoked: tuple[str, ...],
+        **options: object,
+    ) -> subprocess.CompletedProcess[bytes]:
+        observed.update(options)
+        return subprocess.CompletedProcess(invoked, 0, raw_stdout, b"")
+
+    monkeypatch.setattr(producer.subprocess, "run", fake_run)
+    result = producer.SubprocessExecutor({}).run(
+        command,
+        input_text="one-time-enrollment\n",
+    )
+
+    assert observed["input"] == b"one-time-enrollment\n"
+    assert "text" not in observed
+    assert result.stdout.encode() == raw_stdout
+    if accepted:
+        assert producer._parse_enrollment_projection(result.stdout) == NODE_ID  # noqa: SLF001
+    else:
+        with pytest.raises(
+            producer.ProducerError,
+            match="enrollment_projection_invalid",
+        ):
+            producer._parse_enrollment_projection(result.stdout)  # noqa: SLF001
+
+
+@pytest.mark.parametrize("stream", ["stdout", "stderr"])
+def test_subprocess_adapter_rejects_invalid_utf8_without_reflection(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    stream: str,
+) -> None:
+    run_id = "20260724T180000Z-1234abcd"
+    runtime = tmp_path / run_id
+    monkeypatch.setattr(producer, "RUNTIME_BASE", tmp_path)
+    plan = producer.ComposePlan(run_id, runtime)
+    executor = producer.SubprocessExecutor({})
+    raw_secret = b"\xffsecret-value"
+    if stream == "stdout":
+        command = _o4_enrollment_command(plan)
+        stdout, stderr = raw_secret, b""
+    else:
+        image_id = "sha256:" + ("a" * 64)
+        executor.bind_image_identity(image_id)
+        command = plan.image_id_inspect(image_id)
+        stdout, stderr = b"", raw_secret
+
+    def fake_run(
+        invoked: tuple[str, ...],
+        **_: object,
+    ) -> subprocess.CompletedProcess[bytes]:
+        return subprocess.CompletedProcess(invoked, 1, stdout, stderr)
+
+    monkeypatch.setattr(producer.subprocess, "run", fake_run)
+    with pytest.raises(
+        producer.ProducerError,
+        match="subprocess_output_rejected",
+    ) as caught:
+        executor.run(command)
+
+    assert "secret-value" not in str(caught.value)
+    assert "secret-value" not in repr(caught.value)
+
+
 def test_raw_successful_inspect_does_not_authorize_unbound_id_commands(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -2766,13 +3057,13 @@ def test_raw_successful_inspect_does_not_authorize_unbound_id_commands(
     def fake_run(
         command: tuple[str, ...],
         **_: object,
-    ) -> subprocess.CompletedProcess[str]:
+    ) -> subprocess.CompletedProcess[bytes]:
         calls.append(command)
         return subprocess.CompletedProcess(
             command,
             0,
-            json.dumps({"Id": image_id}),
-            "",
+            json.dumps({"Id": image_id}).encode(),
+            b"",
         )
 
     monkeypatch.setattr(producer.subprocess, "run", fake_run)
@@ -2866,12 +3157,12 @@ def test_bound_id_probe_classifies_only_exact_not_found_as_absent(
     def fake_run(
         command: tuple[str, ...],
         **_: object,
-    ) -> subprocess.CompletedProcess[str]:
+    ) -> subprocess.CompletedProcess[bytes]:
         return subprocess.CompletedProcess(
             command,
             returncode,
-            stdout,
-            stderr.format(image_id=image_id),
+            stdout.encode(),
+            stderr.format(image_id=image_id).encode(),
         )
 
     monkeypatch.setattr(producer.subprocess, "run", fake_run)

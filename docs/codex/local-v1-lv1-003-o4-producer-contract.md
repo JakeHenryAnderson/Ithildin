@@ -72,8 +72,10 @@ One invocation has these exact ordered stages:
 8. Start only base API/UI, prove their closed health projections, enroll one Node once through stdin,
    assign and acknowledge one signed configuration, and start the ordinary Node. Immediately before
    the enrollment subprocess, record `enrollment_attempted=true` and
-   `enrollment_outcome_ambiguous=true`; clear ambiguity only after the returned Node identity,
-   principal, and workspace are closed and validated.
+   `enrollment_outcome_ambiguous=true`. Successful enrollment stdout is exactly one canonical JSON
+   line with only string `node_id`, `principal_id`, and `workspace_id` members. Reject duplicate,
+   missing, extra, malformed, noncanonical, mismatched, or secret-bearing output; clear ambiguity
+   only after the Node identity, derived principal, and exact workspace are closed and validated.
 9. Prove Gateway-derived identity, workspace, signed configuration, and ordinary Node eligibility
    while runner and provider health remain unknown.
 10. Admit exactly one server-owned `synthetic_read_review_v1` mission with one run-bound idempotency

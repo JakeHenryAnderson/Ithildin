@@ -9,6 +9,8 @@ import sys
 from pathlib import Path
 from threading import Event
 
+from ithildin_schemas import canonical_json
+
 from ithildin_node.client import (
     NodeClient,
     NodeClientError,
@@ -210,7 +212,15 @@ def _enroll(args: argparse.Namespace, parser: argparse.ArgumentParser) -> int:
             deployment_topology=args.deployment_topology,
         )
         reservation.finalize(state)
-        print(json.dumps(state.safe_summary(), indent=2, sort_keys=True))
+        print(
+            canonical_json(
+                {
+                    "node_id": state.node_id,
+                    "principal_id": state.principal_id,
+                    "workspace_id": state.workspace_id,
+                }
+            )
+        )
         return 0
     except BaseException:
         if remote_attempted:

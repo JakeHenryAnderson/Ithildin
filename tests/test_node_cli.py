@@ -4,6 +4,7 @@ import getpass
 import io
 import json
 import os
+import re
 import stat
 import sys
 from pathlib import Path
@@ -14,7 +15,7 @@ from ithildin_api.node_configuration import generate_node_configuration_signing_
 from ithildin_node import __main__ as cli_module
 from ithildin_node import client as node_client_module
 from ithildin_node.client import NodeClientError, NodeState, NodeStateReservation
-from ithildin_schemas import JsonObject
+from ithildin_schemas import JsonObject, canonical_json
 from test_node_client import RecordingNodeClient
 
 from scripts import node_configuration_signing as signing_cli
@@ -50,10 +51,36 @@ def test_enroll_cli_accepts_one_stdin_line_and_never_emits_or_persists_code(
     state_text = state_path.read_text(encoding="utf-8")
     assert client.requests[0][1]["enrollment_code"] == stdin_code
     assert stat.S_IMODE(state_path.stat().st_mode) == 0o600
+    assert captured.out == canonical_json(
+        {
+            "node_id": "node_" + ("1" * 32),
+            "principal_id": "agent:node.node_" + ("1" * 32),
+            "workspace_id": "default",
+        }
+    ) + "\n"
+    assert (
+        re.search(
+            r"(?:authorization|bearer|credential|private[_ -]?key|prompt|"
+            r"raw[_ -]?output|secret|token)",
+            captured.out,
+            re.IGNORECASE,
+        )
+        is None
+    )
     for secret in (stdin_code, environment_secret):
         assert secret not in captured.out
         assert secret not in captured.err
         assert secret not in state_text
+
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["ithildin-node", "status", "--state", str(state_path)],
+    )
+    assert cli_module.main() == 0
+    status_output = capsys.readouterr()
+    assert json.loads(status_output.out) == NodeState.load(state_path).safe_summary()
+    assert '"private_key_present": true' in status_output.out
 
 
 @pytest.mark.parametrize(
