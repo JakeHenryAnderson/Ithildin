@@ -1,19 +1,68 @@
 # Local v1 LV1-003 O4 Execution Authorization Gate
 
 Status:
-`ATTEMPT_010_CONSUMED_FIXED_NODE_START_FAILED_CLEANUP_COMPLETE_NO_LIVE_AUTHORITY`
+`ATTEMPT_011_EXACT_CHILD_ONE_SHOT_EXECUTION_AUTHORIZED`
 
-This closure records consumed `LV1-003-O4-ATTEMPT-010`. It preserves the exact reviewed
-authorization candidate and all Attempts 001-009 and Attempt 008 recovery history, but grants no
-live authority. Its machine contract is
+This record prepares fresh `LV1-003-O4-ATTEMPT-011` from the consumed Attempt 010 closure. Its
+machine contract is
 `docs/codex/local-v1-lv1-003-o4-execution-authorization.json`.
 
-The consumed attempt ran only through the existing
-`make local-v1-lv1-003-o4-producer-run` target and exact
-`uv run python -m scripts.local_v1_lv1_003_o4_producer` module command after independent review.
-The current closure always refuses execution.
+## Attempt 011 Exact One-Shot Authorization
+
+The authorization candidate must be a clean, single-parent immediate child of
+`0aee84f160fb3ce4d80a0772389d529594847013`, tree
+`4041d61f4fd9685e7de3fe17c5a0c01e817693df`, whose sole parent is
+`791894e007225090720ba2040c12628c09488adf`. It changes exactly these seven control paths:
+
+1. `Makefile`
+2. `README.md`
+3. `docs/codex/local-v1-lv1-003-o4-execution-authorization.json`
+4. `docs/codex/local-v1-lv1-003-o4-execution-authorization.md`
+5. `docs/codex/local-v1-lv1-003-o4-fixed-node-start-diagnostic-exact-review.md`
+6. `scripts/local_v1_lv1_003_o4_execution_authorization_check.py`
+7. `tests/test_local_v1_lv1_003_o4_execution_authorization_check.py`
+
+The producer and its tests must remain byte-identical to the exact reviewed parent, with digests
+`sha256:2edf9f36f15b1126d60e64863d2c1430509f099cada7a821e952288d90349d76` and
+`sha256:9d276d4e5c71ba84885415f4ec5646a36afb25baaa695400a68952e8051e6690`.
+The durable review is
+`docs/codex/local-v1-lv1-003-o4-fixed-node-start-diagnostic-exact-review.md`. It records final
+`GO`, Critical 0, High 0, Medium 0, and Low 0 after the intermediate M1 and L1 findings were fixed.
+Relative to MCC-authorized runtime tip `8cd307e3ce2ca20e6fdc1b53fc1937bfa5568685`, only
+`scripts/local_v1_lv1_003_o4_producer.py` and
+`tests/test_local_v1_lv1_003_o4_producer.py` may differ among allowed runtime paths.
+
+Before the future annotated, nonforce tag
+`ithildin/lv1-003-o4-attempt011-reviewed` peels to the exact authorization candidate commit and
+tree, the gate is invalid, the execution budget collapses to zero, and all live authority fields
+collapse to false. After every check passes and that exact tag exists, the fresh attempt budget is
+one, `attempt_consumed` is false, retry and automatic retry are false, and exactly the five
+existing bounded authority fields are true: existing producer code, its closed Docker lifecycle,
+live Hermes execution, model-provider access, and O4 evidence execution. The other 14 authority
+fields remain false. The existing sole operator entrypoint and exact module command remain
+`make local-v1-lv1-003-o4-producer-run` and
+`uv run python -m scripts.local_v1_lv1_003_o4_producer`.
+
+Any invocation consumes Attempt 011 and requires an immediate tracked disposition; it is never an
+automatic retry. This authorization adds no governed tool or power, authorizes no arbitrary host,
+shell, generic process, general Docker-socket, credential, promotion, production, release, or UAT
+action, and does not itself execute Attempt 011. The governed tool count remains exactly 24.
+
+## Rejected Attempt 011 Authorization Candidate
+
+Authorization candidate `af88dbf4cb5df36d14403185c7ac8e0f24739303`, tree
+`7a7e3077f983dabb50d6dae57138044a9cef2883`, was rejected `NO_GO` with Critical 0, High 0,
+Medium 1, and Low 1. The Medium finding was that three parameterized fail-closed cases did not
+mutate current Attempt 011 truth: `attempt_consumed` remained false and the active producer/Docker
+authority fields remained true. The Low finding was that the diagnostic review transposed the
+durable `M1` and `L1` descriptions. This rejected candidate grants no authority and is not the
+candidate eligible for the Attempt 011 review tag.
 
 ## Attempt 010 Consumed Result
+
+Consumed `LV1-003-O4-ATTEMPT-010` now permits only the separately reviewed fixed-node-start
+diagnostic preparation represented by the Attempt 011 parent; it does not authorize another
+Attempt 010 invocation.
 
 Exact reviewed candidate `782bc06faed3440de5dc3fe4c192b01f91a8680a`, tree
 `d4afd1b7fe68a65507f1ad230fffd91f6580b676`, is fixed by review tag
@@ -94,8 +143,10 @@ That authorization was exercised once by candidate
 `aa3eecea481dd5c92925ceec3421c051c63cb3cf`, and is no longer live.
 
 The machine contract's generic `candidate_parent_commit` and `candidate_parent_tree` fields now
-refer only to the consumed Attempt 010 execution candidate
-`782bc06faed3440de5dc3fe4c192b01f91a8680a`, tree
+refer only to the Attempt 011 authorization parent
+`0aee84f160fb3ce4d80a0772389d529594847013`, tree
+`4041d61f4fd9685e7de3fe17c5a0c01e817693df`. Attempt 010 remains explicit consumed historical
+lineage at `782bc06faed3440de5dc3fe4c192b01f91a8680a`, tree
 `d4afd1b7fe68a65507f1ad230fffd91f6580b676`. The reviewed runtime-native repair
 `49db93d80a71855d9ae223826a9849749377c376`, tree
 `23950855584316daba76acd65be0bfdfd20fbcb9`, remains the explicit historical Attempt 004
@@ -742,15 +793,16 @@ Attempts 001 through 009 are consumed. Attempt 003 image recovery is consumed an
 full-project-removal, or general-absence claim. Attempt 009 has budget zero; its
 `attempt_consumed` was true, and retry and automatic retry remain false.
 
-Attempt 010 is consumed with execution budget zero. `attempt_consumed` is true, retry and automatic
-retry are false, and its immediate post-attempt disposition is recorded. The review tag
+Attempt 010 is consumed with execution budget zero. Its `attempt_consumed` is true, retry and
+automatic retry are false, and its immediate post-attempt disposition is recorded. The review tag
 `ithildin/lv1-003-o4-attempt010-reviewed` remains immutable at the exact attempted candidate commit
-and tree, but grants no live authority. No retry, recovery, cleanup, successor, release, promotion,
-production, or UAT action follows from this closure. The next bounded action is fixed-node-start
-diagnostic preparation; the evidence does not prove a repair, and this is not another invocation.
+and tree, but grants no live authority.
 
-Credential custody, runner lifecycle, arbitrary host control, generic process control, shell
-execution, general Docker socket authority, network/filesystem non-bypass claims, new powers, new
-tools, evidence deletion, release, promotion, production, and UAT remain unauthorized. All 19
-authority fields are false. The 24-tool/no-new-powers boundary is unchanged and the governed tool
-count remains exactly 24.
+Attempt 011 is a fresh successor, not retry, recovery, or cleanup authority. Before its exact
+annotated review tag, its budget is zero and all 19 authority fields are false. After exact review
+and tag binding, only the existing five bounded live fields are true and the other 14 remain false.
+Any invocation consumes the one-shot budget and requires immediate disposition. Credential custody,
+runner lifecycle, arbitrary host control, generic process control, shell execution, general Docker
+socket authority, network/filesystem non-bypass claims, new powers, new tools, evidence deletion,
+release, promotion, production, and UAT remain unauthorized. The 24-tool/no-new-powers boundary is
+unchanged and the governed tool count remains exactly 24.

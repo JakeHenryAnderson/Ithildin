@@ -39,7 +39,7 @@ def _attempt_010_control_child_repository(tmp_path: Path) -> tuple[Path, str, st
         ["git", "clone", "-q", str(Path.cwd()), str(repo)],
         check=True,
     )
-    _run_git(repo, "checkout", "--detach", gate.CANDIDATE_PARENT_COMMIT)
+    _run_git(repo, "checkout", "--detach", gate.ATTEMPT_010_CANDIDATE_COMMIT)
     for relative in gate.ATTEMPT_010_CLOSURE_CONTROL_PATH_ALLOWLIST:
         destination = repo / relative
         destination.parent.mkdir(parents=True, exist_ok=True)
@@ -61,6 +61,41 @@ def _attempt_010_control_child_repository(tmp_path: Path) -> tuple[Path, str, st
         _run_git(repo, "rev-parse", "HEAD"),
         _run_git(repo, "show", "-s", "--format=%T", "HEAD"),
     )
+
+
+def _attempt_011_control_child_repository(tmp_path: Path) -> tuple[Path, str, str]:
+    repo = tmp_path / "attempt-011-candidate"
+    subprocess.run(
+        ["git", "clone", "-q", str(Path.cwd()), str(repo)],
+        check=True,
+    )
+    _run_git(repo, "checkout", "--detach", gate.ATTEMPT_011_PARENT_COMMIT)
+    for relative in gate.ATTEMPT_011_CONTROL_PATH_ALLOWLIST:
+        destination = repo / relative
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(relative, destination)
+    _run_git(repo, "add", "--", *gate.ATTEMPT_011_CONTROL_PATH_ALLOWLIST)
+    _run_git(
+        repo,
+        "-c",
+        "user.name=Ithildin Test",
+        "-c",
+        "user.email=ithildin-test@example.invalid",
+        "commit",
+        "-q",
+        "-m",
+        "test: exact O4 Attempt 011 authorization child",
+    )
+    return (
+        repo,
+        _run_git(repo, "rev-parse", "HEAD"),
+        _run_git(repo, "show", "-s", "--format=%T", "HEAD"),
+    )
+
+
+def _skip_private_evidence(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(gate, "_validate_attempt_010_receipts", lambda *_: None)
+    monkeypatch.setattr(gate, "_validate_retained_attempt_evidence", lambda *_: None)
 
 
 def _attempt_010_child_repository(tmp_path: Path) -> tuple[Path, str, str]:
@@ -133,10 +168,125 @@ def test_attempt_010_exact_closure_child_is_clean_parent_bound_and_runtime_equal
     repo, commit, tree = _attempt_010_control_child_repository(tmp_path)
     failures: list[str] = []
 
-    result = gate._validate_execution_checkout(repo, failures)  # noqa: SLF001
+    result = gate._validate_execution_checkout(  # noqa: SLF001
+        repo,
+        failures,
+        candidate_parent_commit=gate.ATTEMPT_010_CANDIDATE_COMMIT,
+        candidate_parent_tree=gate.ATTEMPT_010_CANDIDATE_TREE,
+        reviewed_commit=gate.ATTEMPT_010_CANDIDATE_COMMIT,
+        control_paths=gate.ATTEMPT_010_CLOSURE_CONTROL_PATH_ALLOWLIST,
+    )
 
     assert failures == []
     assert result == (commit, tree)
+
+
+def test_attempt_011_pre_tag_report_fails_closed_without_private_evidence(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    repo, commit, tree = _attempt_011_control_child_repository(tmp_path)
+    _skip_private_evidence(monkeypatch)
+
+    report = gate.build_report(repo)
+
+    assert report["valid"] is False
+    assert report["attempted_candidate_commit"] == commit
+    assert report["attempted_candidate_tree"] == tree
+    assert report["execution_attempt_budget"] == 0
+    assert report["producer_code_authorized"] is False
+    assert report["live_execution_authorized"] is False
+    assert report["docker_lifecycle_authorized"] is False
+    assert report["provider_access_authorized"] is False
+    assert report["o4_evidence_execution_authorized"] is False
+    assert any("missing or not annotated" in failure for failure in report["failures"])
+
+
+def test_attempt_011_exact_annotated_tag_activates_only_one_shot_authority(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    repo, commit, tree = _attempt_011_control_child_repository(tmp_path)
+    _skip_private_evidence(monkeypatch)
+    _run_git(
+        repo,
+        "-c",
+        "user.name=Ithildin Test",
+        "-c",
+        "user.email=ithildin-test@example.invalid",
+        "tag",
+        "-a",
+        gate.ATTEMPT_011_REVIEW_TAG,
+        "-m",
+        "review: exact Attempt 011 GO",
+        commit,
+    )
+
+    report = gate.build_report(repo)
+
+    assert report["valid"] is True, report["failures"]
+    assert report["execution_attempt_budget"] == 1
+    assert report["attempt_consumed"] is False
+    assert report["retry_authorized"] is False
+    assert report["producer_code_authorized"] is True
+    assert report["live_execution_authorized"] is True
+    assert report["docker_lifecycle_authorized"] is True
+    assert report["provider_access_authorized"] is True
+    assert report["o4_evidence_execution_authorized"] is True
+    contract = json.loads((repo / gate.CONTRACT).read_text(encoding="utf-8"))
+    authority = contract["authority"]
+    assert {key for key, enabled in authority.items() if enabled} == gate.TRUE_AUTHORITY_FIELDS
+    assert len(authority) == 19
+    assert len(gate.TRUE_AUTHORITY_FIELDS) == 5
+    gate.assert_live_execution_authorized(
+        repo,
+        candidate_commit=commit,
+        candidate_tree=tree,
+    )
+
+
+def test_attempt_011_lightweight_tag_is_rejected(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    repo, commit, _ = _attempt_011_control_child_repository(tmp_path)
+    _skip_private_evidence(monkeypatch)
+    _run_git(repo, "tag", gate.ATTEMPT_011_REVIEW_TAG, commit)
+
+    report = gate.build_report(repo)
+
+    assert report["valid"] is False
+    assert report["execution_attempt_budget"] == 0
+    assert report["producer_code_authorized"] is False
+    assert any("missing or not annotated" in failure for failure in report["failures"])
+
+
+def test_attempt_011_annotated_tag_must_peel_to_exact_commit_and_tree(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    repo, _, _ = _attempt_011_control_child_repository(tmp_path)
+    _skip_private_evidence(monkeypatch)
+    _run_git(
+        repo,
+        "-c",
+        "user.name=Ithildin Test",
+        "-c",
+        "user.email=ithildin-test@example.invalid",
+        "tag",
+        "-a",
+        gate.ATTEMPT_011_REVIEW_TAG,
+        "-m",
+        "review: wrong Attempt 011 target",
+        gate.ATTEMPT_011_PARENT_COMMIT,
+    )
+
+    report = gate.build_report(repo)
+
+    assert report["valid"] is False
+    assert report["execution_attempt_budget"] == 0
+    assert report["producer_code_authorized"] is False
+    assert any("does not peel to the exact candidate" in failure for failure in report["failures"])
 
 
 def test_attempt_010_descendant_resolves_immutable_first_closure_child(
@@ -180,12 +330,12 @@ def test_enrollment_repair_review_binds_three_field_derived_principal_projection
         assert stale not in normalized
 
 
-def test_attempt_010_contract_binds_consumed_closure_and_no_authority() -> None:
+def test_attempt_011_contract_preserves_attempt_010_and_binds_one_shot_authority() -> None:
     contract = _contract()
 
     assert (
         contract["record_status"]
-        == "ATTEMPT_010_CONSUMED_FIXED_NODE_START_FAILED_CLEANUP_COMPLETE_NO_LIVE_AUTHORITY"
+        == "ATTEMPT_011_EXACT_CHILD_ONE_SHOT_EXECUTION_AUTHORIZED"
     )
     assert contract["attempt_010_id"] == gate.ATTEMPT_010_ID
     assert contract["attempt_010_review_tag"] == gate.ATTEMPT_010_REVIEW_TAG
@@ -199,14 +349,17 @@ def test_attempt_010_contract_binds_consumed_closure_and_no_authority() -> None:
     assert contract["candidate_parent_tree"] == gate.CANDIDATE_PARENT_TREE
     assert (
         contract["execution_candidate_binding_mode"]
-        == "dynamic_exact_immediate_child_then_immutable_first_descendant"
+        == "dynamic_current_head_after_all_checks_and_exact_annotated_review_tag"
     )
-    assert contract["execution_attempt_budget"] == 0
-    assert contract["attempt_consumed"] is True
+    assert contract["attempt_011_id"] == gate.ATTEMPT_011_ID
+    assert contract["attempt_011_review_tag"] == gate.ATTEMPT_011_REVIEW_TAG
+    assert contract["execution_attempt_budget"] == 1
+    assert contract["attempt_consumed"] is False
     assert contract["retry_authorized"] is False
+    assert contract["attempt_011_automatic_retry_authorized"] is False
     assert contract["attempt_010_automatic_retry_authorized"] is False
     assert contract["persistent_cross_process_budget_consumption_claimed"] is False
-    assert contract["immediate_post_attempt_disposition_recorded"] is True
+    assert contract["immediate_post_attempt_disposition_recorded"] is False
     assert contract["mcc_review_disposition"] == "GO_CODE_ONLY"
     assert contract["mcc_review_findings"] == {
         "critical": 0,
@@ -216,14 +369,46 @@ def test_attempt_010_contract_binds_consumed_closure_and_no_authority() -> None:
     }
     authority = contract["authority"]
     assert isinstance(authority, dict)
-    assert authority == gate.CLOSED_AUTHORITY
-    assert gate.TRUE_AUTHORITY_FIELDS == set()
+    assert authority == gate.EXPECTED_AUTHORITY
+    assert {key for key, enabled in authority.items() if enabled} == gate.TRUE_AUTHORITY_FIELDS
+    assert len(gate.TRUE_AUTHORITY_FIELDS) == 5
     recovery = contract["attempt008_recovery_closure_binding"]
     assert isinstance(recovery, dict)
     assert recovery["recovery_closed"] is True
     assert recovery["successor_authority_derived_from_recovery"] is False
     assert recovery["cleanup_or_full_project_removal_claimed"] is False
     assert recovery["general_absence_claimed"] is False
+
+
+@pytest.mark.parametrize(
+    "mapped_description",
+    [
+        (
+            "`M1`: a successful fixed-Node start return bypassed the existing forbidden-output "
+            "validation before Hermes could run"
+        ),
+        (
+            "`L1`: a post-bind or pre-discard anchor-validation failure could leave the "
+            "diagnostic container identity transiently bound"
+        ),
+    ],
+)
+def test_fixed_node_diagnostic_review_rejects_mapped_finding_description_drift(
+    mapped_description: str,
+) -> None:
+    document = gate.FIXED_NODE_START_DIAGNOSTIC_REVIEW.read_text(encoding="utf-8")
+    normalized = " ".join(document.split())
+    assert mapped_description in normalized
+    drifted = normalized.replace(mapped_description, "mapped finding transposed", 1)
+    failures: list[str] = []
+
+    gate._validate_fixed_node_start_diagnostic_review(  # noqa: SLF001
+        ROOT,
+        drifted,
+        failures,
+    )
+
+    assert any(mapped_description in failure for failure in failures)
 
 
 def test_attempt_010_tracked_disposition_is_closed_and_exact() -> None:
@@ -801,7 +986,7 @@ def test_live_gate_refuses_consumed_attempt_002() -> None:
             "attempt_001_root_absence",
         ),
         (
-            lambda value: value.__setitem__("attempt_consumed", False),
+            lambda value: value.__setitem__("attempt_consumed", True),
             "attempt_consumed",
         ),
         (
@@ -1044,27 +1229,27 @@ def test_live_gate_refuses_consumed_attempt_002() -> None:
         ),
         (
             lambda value: value["authority"].__setitem__(  # type: ignore[union-attr]
-                "docker_lifecycle_authorized", True
+                "docker_lifecycle_authorized", False
             ),
-            "not closed for consumed Attempt 010",
+            "does not match exact Attempt 011 authorization",
         ),
         (
             lambda value: value["authority"].__setitem__(  # type: ignore[union-attr]
-                "producer_code_authorized", True
+                "producer_code_authorized", False
             ),
-            "not closed for consumed Attempt 010",
+            "does not match exact Attempt 011 authorization",
         ),
         (
             lambda value: value["authority"].__setitem__(  # type: ignore[union-attr]
                 "shell_execution_authorized", True
             ),
-            "not closed for consumed Attempt 010",
+            "does not match exact Attempt 011 authorization",
         ),
         (
             lambda value: value["authority"].__setitem__(  # type: ignore[union-attr]
                 "release_allowed", 0
             ),
-            "not closed for consumed Attempt 010",
+            "does not match exact Attempt 011 authorization",
         ),
         (
             lambda value: value.__setitem__("unexpected", False),
@@ -2382,14 +2567,10 @@ def test_wiring_rejects_stale_readme_attempt_guidance(tmp_path: Path) -> None:
         Path("Makefile").read_text(encoding="utf-8"),
         encoding="utf-8",
     )
-    readme = (
-            Path("README.md")
-            .read_text(encoding="utf-8")
-            .replace(
-                "current closure always refuses execution",
-                "currently refuses because Attempt 001 is consumed",
-                1,
-            )
+    readme = Path("README.md").read_text(encoding="utf-8").replace(
+        "refuses until the clean exact child",
+        "currently refuses because Attempt 001 is consumed",
+        1,
     )
     (tmp_path / "README.md").write_text(readme, encoding="utf-8")
     failures: list[str] = []
@@ -2397,7 +2578,7 @@ def test_wiring_rejects_stale_readme_attempt_guidance(tmp_path: Path) -> None:
     gate._validate_wiring(tmp_path, failures)  # noqa: SLF001
 
     assert any(
-        "README is missing current O4 Attempt 010 guidance" in failure for failure in failures
+        "README is missing current O4 Attempt 011 guidance" in failure for failure in failures
     )
 
 
