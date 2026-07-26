@@ -4634,6 +4634,41 @@ def _fixed_node_inspect_stdout(
     )
 
 
+FIXED_NODE_DIAGNOSTIC_KEYS = {
+    "collection_status",
+    "collection_reason_code",
+    "classification",
+    "container_presence",
+    "container_lifecycle_state",
+    "container_running_state",
+    "container_exit_class",
+    "container_health_state",
+    "container_failure_signal",
+    "observation_semantics",
+    "mission_lifecycle_state",
+    "delivery_state",
+    "evidence_state",
+}
+
+FIXED_NODE_COMPLETE_CLASSIFICATIONS = {
+    "fixed_node_container_missing",
+    "fixed_node_container_created",
+    "fixed_node_container_runtime_error",
+    "fixed_node_claim_state_inconsistent",
+    "fixed_node_exited_observation_noncanonical",
+    "fixed_node_exited_zero_no_queued_mission_or_claim_observation_inconsistent",
+    "fixed_node_exited_zero_with_claim_observed",
+    "fixed_node_exited_nonzero_before_claim",
+    "fixed_node_exited_nonzero_after_claim",
+    "fixed_node_running_without_health_observation_after_wait_failure",
+    "fixed_node_running_health_starting_after_wait_failure",
+    "fixed_node_running_healthy_after_wait_failure",
+    "fixed_node_running_unhealthy_socket_health_contract",
+    "fixed_node_running_observation_noncanonical",
+    "fixed_node_paused_after_wait_failure",
+}
+
+
 def test_fixed_node_diagnostic_commands_are_exact_and_allowlisted() -> None:
     run_id = "20260724T180000Z-1234abcd"
     runtime = producer.RUNTIME_BASE / run_id
@@ -4914,6 +4949,82 @@ def test_fixed_node_mission_projection_rejects_identity_or_state_drift(
 
 
 @pytest.mark.parametrize(
+    ("container", "collected", "expected"),
+    [
+        (
+            None,
+            False,
+            {
+                "container_presence": "unknown",
+                "container_lifecycle_state": "unknown",
+                "container_running_state": "unknown",
+                "container_exit_class": "unknown",
+                "container_health_state": "unknown",
+                "container_failure_signal": "unknown",
+            },
+        ),
+        (
+            None,
+            True,
+            {
+                "container_presence": "missing",
+                "container_lifecycle_state": "not_applicable",
+                "container_running_state": "not_applicable",
+                "container_exit_class": "not_applicable",
+                "container_health_state": "not_applicable",
+                "container_failure_signal": "not_applicable",
+            },
+        ),
+        (
+            producer.FixedNodeContainerState(
+                "running", True, 0, True, True, False, "starting"
+            ),
+            True,
+            {
+                "container_presence": "present",
+                "container_lifecycle_state": "running",
+                "container_running_state": "running",
+                "container_exit_class": "zero",
+                "container_health_state": "starting",
+                "container_failure_signal": "multiple",
+            },
+        ),
+        (
+            producer.FixedNodeContainerState(
+                "exited", False, 255, False, False, True, "absent"
+            ),
+            True,
+            {
+                "container_presence": "present",
+                "container_lifecycle_state": "exited",
+                "container_running_state": "not_running",
+                "container_exit_class": "nonzero",
+                "container_health_state": "absent",
+                "container_failure_signal": "engine_error_present",
+            },
+        ),
+    ],
+)
+def test_fixed_node_container_projection_is_closed_and_discards_raw_values(
+    container: producer.FixedNodeContainerState | None,
+    collected: bool,
+    expected: JsonObject,
+) -> None:
+    projection = producer._fixed_node_container_projection(  # noqa: SLF001
+        container,
+        collected=collected,
+    )
+
+    assert projection == expected
+    assert set(projection) == {
+        key
+        for key in FIXED_NODE_DIAGNOSTIC_KEYS
+        if key.startswith("container_")
+    }
+    assert "255" not in json.dumps(projection)
+
+
+@pytest.mark.parametrize(
     ("container", "mission", "expected"),
     [
         (
@@ -4968,6 +5079,58 @@ def test_fixed_node_mission_projection_rejects_identity_or_state_drift(
         ),
         (
             producer.FixedNodeContainerState(
+                "exited", True, 1, False, False, False, "absent"
+            ),
+            ("claimed", "claim_delivered"),
+            "fixed_node_exited_observation_noncanonical",
+        ),
+        (
+            producer.FixedNodeContainerState(
+                "exited", False, 0, False, False, False, "absent"
+            ),
+            ("claimed", "claim_delivered"),
+            "fixed_node_exited_zero_with_claim_observed",
+        ),
+        (
+            producer.FixedNodeContainerState(
+                "running", True, 0, False, False, False, "absent"
+            ),
+            ("claimed", "claim_delivered"),
+            (
+                "fixed_node_running_without_health_observation_"
+                "after_wait_failure"
+            ),
+        ),
+        (
+            producer.FixedNodeContainerState(
+                "running", True, 0, False, False, False, "starting"
+            ),
+            ("claimed", "claim_delivered"),
+            "fixed_node_running_health_starting_after_wait_failure",
+        ),
+        (
+            producer.FixedNodeContainerState(
+                "running", True, 0, False, False, False, "healthy"
+            ),
+            ("claimed", "claim_delivered"),
+            "fixed_node_running_healthy_after_wait_failure",
+        ),
+        (
+            producer.FixedNodeContainerState(
+                "running", False, 0, False, False, False, "healthy"
+            ),
+            ("claimed", "claim_delivered"),
+            "fixed_node_running_observation_noncanonical",
+        ),
+        (
+            producer.FixedNodeContainerState(
+                "paused", False, 0, False, False, False, "healthy"
+            ),
+            ("claimed", "claim_delivered"),
+            "fixed_node_paused_after_wait_failure",
+        ),
+        (
+            producer.FixedNodeContainerState(
                 "exited", False, 1, False, False, False, "absent"
             ),
             ("runner_reported_failed", "not_claimed"),
@@ -4994,6 +5157,263 @@ def test_fixed_node_start_classification_matrix_is_closed(
     }
 
     assert producer._classify_fixed_node_start(container, projection) == expected  # noqa: SLF001
+
+
+def test_fixed_node_start_classification_cross_product_has_no_generic_result() -> None:
+    accepted_lifecycles = (
+        "created",
+        "running",
+        "paused",
+        "restarting",
+        "removing",
+        "exited",
+        "dead",
+    )
+    valid_claim_phases = (
+        ("queued", "not_claimed"),
+        ("claimed", "claim_delivered"),
+    )
+    observed = 0
+
+    for lifecycle in accepted_lifecycles:
+        for running in (False, True):
+            for exit_code in (0, 1):
+                for oom_killed in (False, True):
+                    for dead in (False, True):
+                        for engine_error_present in (False, True):
+                            for health in (
+                                "absent",
+                                "starting",
+                                "healthy",
+                                "unhealthy",
+                            ):
+                                for mission_state, delivery_state in (
+                                    valid_claim_phases
+                                ):
+                                    container = producer.FixedNodeContainerState(
+                                        lifecycle,
+                                        running,
+                                        exit_code,
+                                        oom_killed,
+                                        dead,
+                                        engine_error_present,
+                                        health,
+                                    )
+                                    mission: JsonObject = {
+                                        "mission_lifecycle_state": mission_state,
+                                        "delivery_state": delivery_state,
+                                        "evidence_state": "complete",
+                                    }
+
+                                    classification = (
+                                        producer._classify_fixed_node_start(  # noqa: SLF001
+                                            container,
+                                            mission,
+                                        )
+                                    )
+
+                                    assert (
+                                        classification
+                                        in FIXED_NODE_COMPLETE_CLASSIFICATIONS
+                                    )
+                                    assert "generic" not in classification
+                                    assert "unclassified" not in classification
+                                    observed += 1
+
+    assert observed == 1792
+
+
+def test_fixed_node_sequential_observation_does_not_claim_causality(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    state = _fixed_node_diagnostic_state(tmp_path)
+    runtime = cast(FakePrivateDirectory, state.runtime)
+    monkeypatch.setattr(producer, "RUNTIME_BASE", runtime.path.parent)
+    executor = FakeExecutor(runtime)
+    api = FakeApi()
+    executor.fixed_node_container_inspect_result = producer.CommandResult(
+        0,
+        _fixed_node_inspect_stdout(
+            state,
+            status="exited",
+            running="false",
+            exit_code="0",
+            health="absent",
+        ),
+    )
+    api.mission_lifecycle_state = "claimed"
+    api.mission_delivery_state = "claim_delivered"
+
+    diagnostic = producer._collect_fixed_node_start_diagnostic(  # noqa: SLF001
+        state,
+        executor,
+        api,
+    )
+
+    assert diagnostic["observation_semantics"] == (
+        "sequential_container_then_mission"
+    )
+    assert diagnostic["classification"] == (
+        "fixed_node_exited_zero_with_claim_observed"
+    )
+    assert all(
+        causal_word not in str(diagnostic["classification"])
+        for causal_word in ("because", "caused", "root_cause")
+    )
+
+
+@pytest.mark.parametrize(
+    ("mode", "expected"),
+    [
+        (
+            "missing",
+            {
+                "collection_status": "complete",
+                "collection_reason_code": "fixed_node_start_state_collected",
+                "classification": "fixed_node_container_missing",
+                "container_presence": "missing",
+                "container_lifecycle_state": "not_applicable",
+                "container_running_state": "not_applicable",
+                "container_exit_class": "not_applicable",
+                "container_health_state": "not_applicable",
+                "container_failure_signal": "not_applicable",
+                "observation_semantics": "sequential_container_then_mission",
+                "mission_lifecycle_state": "runner_reported_succeeded",
+                "delivery_state": "claim_delivered",
+                "evidence_state": "complete",
+            },
+        ),
+        (
+            "inconclusive",
+            {
+                "collection_status": "inconclusive",
+                "collection_reason_code": (
+                    "fixed_node_start_diagnostic_command_failed"
+                ),
+                "classification": "fixed_node_start_inconclusive",
+                "container_presence": "unknown",
+                "container_lifecycle_state": "unknown",
+                "container_running_state": "unknown",
+                "container_exit_class": "unknown",
+                "container_health_state": "unknown",
+                "container_failure_signal": "unknown",
+                "observation_semantics": "sequential_container_then_mission",
+                "mission_lifecycle_state": "runner_reported_succeeded",
+                "delivery_state": "claim_delivered",
+                "evidence_state": "complete",
+            },
+        ),
+        (
+            "output_rejected",
+            {
+                "collection_status": "output_rejected",
+                "collection_reason_code": (
+                    "fixed_node_start_diagnostic_output_rejected"
+                ),
+                "classification": "fixed_node_start_inconclusive",
+                "container_presence": "unknown",
+                "container_lifecycle_state": "unknown",
+                "container_running_state": "unknown",
+                "container_exit_class": "unknown",
+                "container_health_state": "unknown",
+                "container_failure_signal": "unknown",
+                "observation_semantics": "sequential_container_then_mission",
+                "mission_lifecycle_state": "runner_reported_succeeded",
+                "delivery_state": "claim_delivered",
+                "evidence_state": "complete",
+            },
+        ),
+    ],
+)
+def test_fixed_node_collection_result_has_exact_closed_keys_and_enums(
+    tmp_path: Path,
+    mode: str,
+    expected: JsonObject,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    state = _fixed_node_diagnostic_state(tmp_path / mode)
+    runtime = cast(FakePrivateDirectory, state.runtime)
+    monkeypatch.setattr(producer, "RUNTIME_BASE", runtime.path.parent)
+    executor = FakeExecutor(runtime)
+    api = FakeApi()
+    if mode == "missing":
+        executor.fixed_node_container_query_result = producer.CommandResult(0, "")
+    elif mode == "inconclusive":
+        executor.fixed_node_container_query_failure = "error"
+    else:
+        executor.fixed_node_container_query_result = producer.CommandResult(
+            0,
+            "token",
+        )
+
+    diagnostic = producer._collect_fixed_node_start_diagnostic(  # noqa: SLF001
+        state,
+        executor,
+        api,
+    )
+
+    assert diagnostic == expected
+    assert set(diagnostic) == FIXED_NODE_DIAGNOSTIC_KEYS
+
+
+def test_fixed_node_serialized_diagnostic_discards_sensitive_and_raw_state(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    state = _fixed_node_diagnostic_state(tmp_path)
+    runtime = cast(FakePrivateDirectory, state.runtime)
+    monkeypatch.setattr(producer, "RUNTIME_BASE", runtime.path.parent)
+    executor = FakeExecutor(runtime)
+    api = FakeApi()
+    raw_container_id = executor.fixed_node_container_id
+    raw_exit_code = "255"
+    raw_engine_text = "engine failure details must not survive"
+    raw_requester = "requester-must-not-survive"
+    raw_digest = "sha256:" + "d" * 64
+    executor.fixed_node_container_inspect_result = producer.CommandResult(
+        0,
+        _fixed_node_inspect_stdout(
+            state,
+            container_id=raw_container_id,
+            status="exited",
+            running="false",
+            exit_code=raw_exit_code,
+            engine_error_present="true",
+            health="absent",
+        ),
+    )
+    api.mission_detail_override = {
+        "requester": raw_requester,
+        "envelope_digest": raw_digest,
+        "engine_error": raw_engine_text,
+        "whole_mission_object_sentinel": "must-not-survive",
+    }
+
+    diagnostic = producer._collect_fixed_node_start_diagnostic(  # noqa: SLF001
+        state,
+        executor,
+        api,
+    )
+    serialized = canonical_json(diagnostic)
+
+    assert set(diagnostic) == FIXED_NODE_DIAGNOSTIC_KEYS
+    assert diagnostic["container_exit_class"] == "nonzero"
+    assert diagnostic["container_failure_signal"] == "engine_error_present"
+    assert all(
+        forbidden not in serialized
+        for forbidden in (
+            raw_container_id,
+            MISSION_ID,
+            raw_exit_code,
+            raw_engine_text,
+            raw_requester,
+            raw_digest,
+            "whole_mission_object_sentinel",
+            "must-not-survive",
+            "target_node_id",
+        )
+    )
 
 
 def test_fixed_node_start_failure_collects_once_before_cleanup_without_hermes_or_retry(
@@ -5086,10 +5506,18 @@ def test_fixed_node_start_failure_collects_once_before_cleanup_without_hermes_or
         "collection_status": "complete",
         "collection_reason_code": "fixed_node_start_state_collected",
         "classification": "fixed_node_exited_nonzero_after_claim",
+        "container_presence": "present",
+        "container_lifecycle_state": "exited",
+        "container_running_state": "not_running",
+        "container_exit_class": "nonzero",
+        "container_health_state": "absent",
+        "container_failure_signal": "none",
+        "observation_semantics": "sequential_container_then_mission",
         "mission_lifecycle_state": "runner_reported_succeeded",
         "delivery_state": "claim_delivered",
         "evidence_state": "complete",
     }
+    assert set(nested) == FIXED_NODE_DIAGNOSTIC_KEYS
     assert executor.fixed_node_container_id not in json.dumps(nested)
     assert diagnostic["primary_failure_code"] == "fixed_node_start_failed"
     assert diagnostic["outward_failure_code"] == "fixed_node_start_failed"
@@ -5199,8 +5627,16 @@ def test_fixed_node_diagnostic_failure_never_masks_primary_or_retries(
 
     diagnostic = json.loads(runtime.receipts.files["diagnostic.json"])
     nested = diagnostic["fixed_node_start_diagnostic"]
+    assert set(nested) == FIXED_NODE_DIAGNOSTIC_KEYS
     assert nested["collection_status"] in {"inconclusive", "output_rejected"}
     assert nested["classification"] == "fixed_node_start_inconclusive"
+    if failure in {"query_error", "inspect_output_rejected"}:
+        assert nested["container_presence"] == "unknown"
+        assert nested["observation_semantics"] == (
+            "sequential_container_then_mission"
+        )
+    else:
+        assert nested["observation_semantics"] == "not_collected"
     assert diagnostic["primary_failure_code"] == "fixed_node_start_failed"
     assert diagnostic["outward_failure_code"] == "fixed_node_start_failed"
     assert executor.hermes_commands == []
@@ -5242,10 +5678,18 @@ def test_fixed_node_diagnostic_repeated_collection_is_fail_closed(
         "collection_status": "output_rejected",
         "collection_reason_code": "fixed_node_start_diagnostic_repeated",
         "classification": "fixed_node_start_inconclusive",
+        "container_presence": "unknown",
+        "container_lifecycle_state": "unknown",
+        "container_running_state": "unknown",
+        "container_exit_class": "unknown",
+        "container_health_state": "unknown",
+        "container_failure_signal": "unknown",
+        "observation_semantics": "not_collected",
         "mission_lifecycle_state": "unknown",
         "delivery_state": "unknown",
         "evidence_state": "unknown",
     }
+    assert set(second) == FIXED_NODE_DIAGNOSTIC_KEYS
     assert state.fixed_node_start_diagnostic_calls == 2
     assert sum(
         command == state.plan.fixed_node_container_id_query()

@@ -2877,6 +2877,13 @@ def _fixed_node_start_fallback(
         "collection_status": collection_status,
         "collection_reason_code": collection_reason_code,
         "classification": "fixed_node_start_inconclusive",
+        "container_presence": "unknown",
+        "container_lifecycle_state": "unknown",
+        "container_running_state": "unknown",
+        "container_exit_class": "unknown",
+        "container_health_state": "unknown",
+        "container_failure_signal": "unknown",
+        "observation_semantics": "not_collected",
         "mission_lifecycle_state": "unknown",
         "delivery_state": "unknown",
         "evidence_state": "unknown",
@@ -3036,6 +3043,56 @@ def _fixed_node_mission_projection(
     }
 
 
+def _fixed_node_container_projection(
+    container: FixedNodeContainerState | None,
+    *,
+    collected: bool,
+) -> JsonObject:
+    if not collected:
+        return {
+            "container_presence": "unknown",
+            "container_lifecycle_state": "unknown",
+            "container_running_state": "unknown",
+            "container_exit_class": "unknown",
+            "container_health_state": "unknown",
+            "container_failure_signal": "unknown",
+        }
+    if container is None:
+        return {
+            "container_presence": "missing",
+            "container_lifecycle_state": "not_applicable",
+            "container_running_state": "not_applicable",
+            "container_exit_class": "not_applicable",
+            "container_health_state": "not_applicable",
+            "container_failure_signal": "not_applicable",
+        }
+    failure_signals = (
+        ("oom_killed", container.oom_killed),
+        ("dead_flag", container.dead),
+        ("engine_error_present", container.engine_error_present),
+    )
+    present_signals = [name for name, present in failure_signals if present]
+    failure_signal = (
+        "none"
+        if not present_signals
+        else present_signals[0]
+        if len(present_signals) == 1
+        else "multiple"
+    )
+    return {
+        "container_presence": "present",
+        "container_lifecycle_state": container.status,
+        "container_running_state": (
+            "running" if container.running else "not_running"
+        ),
+        "container_exit_class": (
+            "zero" if container.exit_code == 0 else "nonzero"
+        ),
+        "container_health_state": container.health_status,
+        "container_failure_signal": failure_signal,
+    }
+
+
 def _classify_fixed_node_start(
     container: FixedNodeContainerState | None,
     mission: JsonObject,
@@ -3074,27 +3131,37 @@ def _classify_fixed_node_start(
         return "fixed_node_claim_state_inconsistent"
     if container.status == "exited":
         if container.running or container.dead or container.health_status != "absent":
-            return "fixed_node_runtime_state_inconsistent"
+            return "fixed_node_exited_observation_noncanonical"
         if container.exit_code == 0:
             return (
                 "fixed_node_exited_zero_no_queued_mission_or_"
                 "claim_observation_inconsistent"
                 if before_claim
-                else "fixed_node_runtime_state_inconsistent"
+                else "fixed_node_exited_zero_with_claim_observed"
             )
         return (
             "fixed_node_exited_nonzero_before_claim"
             if before_claim
             else "fixed_node_exited_nonzero_after_claim"
         )
-    if (
-        container.status == "running"
-        and container.running
-        and container.exit_code == 0
-        and container.health_status == "unhealthy"
-    ):
-        return "fixed_node_running_unhealthy_socket_health_contract"
-    return "fixed_node_runtime_state_inconsistent"
+    if container.status == "running":
+        if not container.running or container.exit_code != 0:
+            return "fixed_node_running_observation_noncanonical"
+        if container.health_status == "absent":
+            return (
+                "fixed_node_running_without_health_observation_"
+                "after_wait_failure"
+            )
+        if container.health_status == "starting":
+            return "fixed_node_running_health_starting_after_wait_failure"
+        if container.health_status == "healthy":
+            return "fixed_node_running_healthy_after_wait_failure"
+        if container.health_status == "unhealthy":
+            return "fixed_node_running_unhealthy_socket_health_contract"
+        raise ProducerError("fixed_node_start_diagnostic_output_rejected")
+    if container.status == "paused":
+        return "fixed_node_paused_after_wait_failure"
+    raise ProducerError("fixed_node_start_diagnostic_output_rejected")
 
 
 def _collect_fixed_node_start_diagnostic(
@@ -3212,17 +3279,25 @@ def _collect_fixed_node_start_diagnostic(
             collection_status="inconclusive",
             collection_reason_code="fixed_node_start_mission_query_failed",
         )
+    container_projection = _fixed_node_container_projection(
+        container,
+        collected=container_collection_status == "complete",
+    )
     if container_collection_status != "complete":
         return {
             "collection_status": container_collection_status,
             "collection_reason_code": container_collection_reason,
             "classification": "fixed_node_start_inconclusive",
+            **container_projection,
+            "observation_semantics": "sequential_container_then_mission",
             **mission,
         }
     return {
         "collection_status": "complete",
         "collection_reason_code": "fixed_node_start_state_collected",
         "classification": classification,
+        **container_projection,
+        "observation_semantics": "sequential_container_then_mission",
         **mission,
     }
 
