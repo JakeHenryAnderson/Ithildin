@@ -1,4 +1,4 @@
-"""Validate the fail-closed LV1-003 O4 Attempt 009 one-shot authorization."""
+"""Validate the fail-closed LV1-003 O4 Attempt 009 consumed closure."""
 
 from __future__ import annotations
 
@@ -48,6 +48,8 @@ ATTEMPT_007_DISPOSITION_JSON = Path("docs/codex/local-v1-lv1-003-o4-attempt-007-
 ATTEMPT_007_DISPOSITION_DOCUMENT = Path("docs/codex/local-v1-lv1-003-o4-attempt-007-disposition.md")
 ATTEMPT_008_DISPOSITION_JSON = Path("docs/codex/local-v1-lv1-003-o4-attempt-008-disposition.json")
 ATTEMPT_008_DISPOSITION_DOCUMENT = Path("docs/codex/local-v1-lv1-003-o4-attempt-008-disposition.md")
+ATTEMPT_009_DISPOSITION_JSON = Path("docs/codex/local-v1-lv1-003-o4-attempt-009-disposition.json")
+ATTEMPT_009_DISPOSITION_DOCUMENT = Path("docs/codex/local-v1-lv1-003-o4-attempt-009-disposition.md")
 IMAGE_RECOVERY_AUTHORIZATION = Path(
     "docs/codex/local-v1-lv1-003-o4-image-recovery-authorization.json"
 )
@@ -77,7 +79,7 @@ PRODUCER_STATIC_TARGET = "local-v1-lv1-003-o4-producer-static-check"
 PRODUCER_RUN_TARGET = "local-v1-lv1-003-o4-producer-run"
 PRODUCER_MODULE_INVOCATION = "uv run python -m scripts.local_v1_lv1_003_o4_producer"
 PRODUCER_RUN_COMMENT = (
-    "# LIVE, gate-protected entrypoint. Attempt 009 allows one exact supervised invocation."
+    "# LIVE, gate-protected entrypoint. Attempt 009 is consumed; current closure always refuses."
 )
 FAILED_FILE_PATH_INVOCATION = "uv run python scripts/local_v1_lv1_003_o4_producer.py"
 ENTRYPOINT_REPAIR_BASE_COMMIT = "148effd50c69b40a005f86f6217fc3db8b665a06"
@@ -351,8 +353,18 @@ ENROLLMENT_OUTPUT_PROJECTION_REPAIR_PATH_DIGESTS: JsonObject = {
 }
 ENROLLMENT_OUTPUT_PROJECTION_REPAIR_PATHS = list(ENROLLMENT_OUTPUT_PROJECTION_REPAIR_PATH_DIGESTS)
 ATTEMPT_009_ID = "LV1-003-O4-ATTEMPT-009"
-CANDIDATE_PARENT_COMMIT = ENROLLMENT_OUTPUT_PROJECTION_REPAIR_COMMIT
-CANDIDATE_PARENT_TREE = ENROLLMENT_OUTPUT_PROJECTION_REPAIR_TREE
+ATTEMPT_009_CANDIDATE_COMMIT = "26a003f7949e4bef5f3c0f66c9e1490b37103d9b"
+ATTEMPT_009_CANDIDATE_TREE = "a5403df311e3d6c7769a975d75433bca2442c435"
+ATTEMPT_009_RUN_ID = "20260726T014141Z-f6681bd3"
+ATTEMPT_009_PROJECT = "ithildin-local-v1-o4-f6681bd3"
+ATTEMPT_009_DISPOSITION_JSON_DIGEST = (
+    "sha256:04c3e2c25dfcd4bbca02539ee43ed22b2333b29c14868a4686971443c82c28c4"
+)
+ATTEMPT_009_DISPOSITION_DOCUMENT_DIGEST = (
+    "sha256:baaa8891dfe5e2a35a635a90abc4dc57009e74acb70d7bbe1dde7e111f9b7d39"
+)
+CANDIDATE_PARENT_COMMIT = ATTEMPT_009_CANDIDATE_COMMIT
+CANDIDATE_PARENT_TREE = ATTEMPT_009_CANDIDATE_TREE
 ATTEMPT_002_RECEIPT_BASE = Path("var/local-v1-lv1-003-o4-receipts")
 ATTEMPT_002_RECEIPT_ROOT = ATTEMPT_002_RECEIPT_BASE / ATTEMPT_002_RUN_ID
 ATTEMPT_002_DISPOSITION_RECEIPT = ATTEMPT_002_RECEIPT_ROOT / "disposition.json"
@@ -389,6 +401,8 @@ ATTEMPT_007_RECEIPT_ROOT = ATTEMPT_002_RECEIPT_BASE / ATTEMPT_007_RUN_ID
 ATTEMPT_007_RUNTIME_ROOT = ATTEMPT_002_RUNTIME_BASE / ATTEMPT_007_RUN_ID
 ATTEMPT_008_RECEIPT_ROOT = ATTEMPT_002_RECEIPT_BASE / ATTEMPT_008_RUN_ID
 ATTEMPT_008_RUNTIME_ROOT = ATTEMPT_002_RUNTIME_BASE / ATTEMPT_008_RUN_ID
+ATTEMPT_009_RECEIPT_ROOT = ATTEMPT_002_RECEIPT_BASE / ATTEMPT_009_RUN_ID
+ATTEMPT_009_RUNTIME_ROOT = ATTEMPT_002_RUNTIME_BASE / ATTEMPT_009_RUN_ID
 IMAGE_RECOVERY_CONSUMPTION_RECEIPT_NAME = "attempt-003-image-recovery-001-consumed.json"
 IMAGE_RECOVERY_CONSUMPTION_RECEIPT = (
     ATTEMPT_002_RUNTIME_BASE / IMAGE_RECOVERY_CONSUMPTION_RECEIPT_NAME
@@ -482,6 +496,23 @@ ATTEMPT_008_MANIFEST_RECEIPT_DIGEST = (
 )
 ATTEMPT_008_MANIFEST_SIZE = 96772
 ATTEMPT_008_SNAPSHOT_FILE_COUNT = 664
+ATTEMPT_009_DISPOSITION_RECEIPT_DIGEST = (
+    "sha256:1f4c2b93b9d9f17f8bdc155fe4150feac35068b9dfdf0269a6c428c75836806c"
+)
+ATTEMPT_009_DISPOSITION_BYTES = (
+    b'{"failure_code":"required_loopback_port_unavailable","release_allowed":false,'
+    b'"status":"quarantined_not_published","uat_complete":false}\n'
+)
+ATTEMPT_009_DISPOSITION_SIZE = 136
+ATTEMPT_009_DIAGNOSTIC_RECEIPT_DIGEST = (
+    "sha256:051ac6033a647ed2dc6059032c11143edcc3d61486420cb48b72eef0ccc62729"
+)
+ATTEMPT_009_DIAGNOSTIC_SIZE = 386
+ATTEMPT_009_MANIFEST_RECEIPT_DIGEST = (
+    "sha256:f6a8f8fc3a88cd636293b4d60b26c86bc09e780b3e4cc795c176091dc17a74c3"
+)
+ATTEMPT_009_MANIFEST_SIZE = 96772
+ATTEMPT_009_SNAPSHOT_FILE_COUNT = 664
 MAX_RETAINED_SNAPSHOT_FILE_BYTES = 16 * 1_048_576
 MAX_RETAINED_SNAPSHOT_BYTES = 64 * 1_048_576
 EVIDENCE_IGNORE_PATTERNS = [
@@ -631,6 +662,16 @@ ATTEMPT_009_CONTROL_PATH_ALLOWLIST = [
     "Makefile",
     "README.md",
     ENROLLMENT_OUTPUT_PROJECTION_REPAIR_REVIEW.as_posix(),
+    CONTRACT.as_posix(),
+    DOCUMENT.as_posix(),
+    "scripts/local_v1_lv1_003_o4_execution_authorization_check.py",
+    "tests/test_local_v1_lv1_003_o4_execution_authorization_check.py",
+]
+ATTEMPT_009_CLOSURE_CONTROL_PATH_ALLOWLIST = [
+    "Makefile",
+    "README.md",
+    ATTEMPT_009_DISPOSITION_JSON.as_posix(),
+    ATTEMPT_009_DISPOSITION_DOCUMENT.as_posix(),
     CONTRACT.as_posix(),
     DOCUMENT.as_posix(),
     "scripts/local_v1_lv1_003_o4_execution_authorization_check.py",
@@ -958,6 +999,17 @@ TOP_LEVEL_FIELDS = {
     "attempt_009_kind",
     "attempt_009_run_identity_source",
     "attempt_009_preflight_fail_closed_before_live_work",
+    "attempt_009_attempted_candidate_commit",
+    "attempt_009_attempted_candidate_tree",
+    "attempt_009_failure_code",
+    "attempt_009_primary_failure_code",
+    "attempt_009_cleanup_failure_codes",
+    "attempt_009_run_id",
+    "attempt_009_compose_project",
+    "attempt_009_disposition_json",
+    "attempt_009_disposition_json_sha256",
+    "attempt_009_disposition_document",
+    "attempt_009_disposition_document_sha256",
     "attempt_009_execution_authorized",
     "attempt_009_automatic_retry_authorized",
     "attempt_002_id",
@@ -1198,20 +1250,14 @@ HISTORICAL_TRUE_AUTHORITY_FIELDS = {
 HISTORICAL_AUTHORITY: JsonObject = {
     key: key in HISTORICAL_TRUE_AUTHORITY_FIELDS for key in AUTHORITY_FIELDS
 }
-TRUE_AUTHORITY_FIELDS = {
-    "producer_code_authorized",
-    "docker_lifecycle_authorized",
-    "live_hermes_execution_authorized",
-    "model_provider_access_authorized",
-    "o4_evidence_execution_authorized",
-}
+TRUE_AUTHORITY_FIELDS: set[str] = set()
 CLOSED_AUTHORITY: JsonObject = {key: False for key in AUTHORITY_FIELDS}
 ATTEMPT_002_AUTHORITY: JsonObject = {
     key: key in HISTORICAL_TRUE_AUTHORITY_FIELDS for key in AUTHORITY_FIELDS
 }
 ATTEMPT_003_AUTHORITY: JsonObject = {key: False for key in AUTHORITY_FIELDS}
 ATTEMPT_004_AUTHORITY: JsonObject = {key: False for key in AUTHORITY_FIELDS}
-EXPECTED_AUTHORITY: JsonObject = {key: key in TRUE_AUTHORITY_FIELDS for key in AUTHORITY_FIELDS}
+EXPECTED_AUTHORITY: JsonObject = CLOSED_AUTHORITY
 
 
 class O4ExecutionAuthorizationError(RuntimeError):
@@ -1353,6 +1399,14 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         repo_root / ENROLLMENT_OUTPUT_PROJECTION_REPAIR_REVIEW,
         failures,
     )
+    attempt_009_disposition = _read_contract(
+        repo_root / ATTEMPT_009_DISPOSITION_JSON,
+        failures,
+    )
+    attempt_009_disposition_document = _read_text(
+        repo_root / ATTEMPT_009_DISPOSITION_DOCUMENT,
+        failures,
+    )
     _validate_contract(contract, failures)
     _validate_document(document, failures)
     _validate_producer_contract(producer_contract, contract, failures)
@@ -1437,6 +1491,11 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         enrollment_output_projection_repair_review,
         failures,
     )
+    _validate_attempt_009_disposition(
+        attempt_009_disposition,
+        attempt_009_disposition_document,
+        failures,
+    )
     _validate_retained_attempt_evidence(repo_root, failures)
     _validate_evidence_ignore_patterns(repo_root, failures)
     _validate_bound_documents(repo_root, failures)
@@ -1450,10 +1509,10 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     execution_checkout = _validate_execution_checkout(
         repo_root,
         failures,
-        candidate_parent_commit=ENROLLMENT_OUTPUT_PROJECTION_REPAIR_COMMIT,
-        candidate_parent_tree=ENROLLMENT_OUTPUT_PROJECTION_REPAIR_TREE,
+        candidate_parent_commit=ATTEMPT_009_CANDIDATE_COMMIT,
+        candidate_parent_tree=ATTEMPT_009_CANDIDATE_TREE,
         reviewed_commit=ENROLLMENT_OUTPUT_PROJECTION_REPAIR_COMMIT,
-        control_paths=ATTEMPT_009_CONTROL_PATH_ALLOWLIST,
+        control_paths=ATTEMPT_009_CLOSURE_CONTROL_PATH_ALLOWLIST,
         repair_paths=ENROLLMENT_OUTPUT_PROJECTION_REPAIR_PATHS,
     )
     checkout_commit = execution_checkout[0] if execution_checkout is not None else None
@@ -1467,8 +1526,8 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "reviewed_implementation_commit": contract.get("reviewed_implementation_commit"),
         "code_authorization_commit": contract.get("code_authorization_commit"),
         "attempt_id": contract.get("attempt_009_id"),
-        "attempted_candidate_commit": checkout_commit,
-        "attempted_candidate_tree": checkout_tree,
+        "attempted_candidate_commit": contract.get("attempt_009_attempted_candidate_commit"),
+        "attempted_candidate_tree": contract.get("attempt_009_attempted_candidate_tree"),
         "attempt_002_attempted_candidate_commit": contract.get(
             "attempt_002_attempted_candidate_commit"
         ),
@@ -1518,11 +1577,11 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "retry_authorized": contract.get("retry_authorized"),
         "execution_checkout_commit": checkout_commit,
         "execution_checkout_tree": checkout_tree,
-        "execution_attempt_budget": 1 if valid else 0,
-        "live_execution_authorized": valid,
-        "docker_lifecycle_authorized": valid,
-        "provider_access_authorized": valid,
-        "o4_evidence_execution_authorized": valid,
+        "execution_attempt_budget": 0,
+        "live_execution_authorized": False,
+        "docker_lifecycle_authorized": False,
+        "provider_access_authorized": False,
+        "o4_evidence_execution_authorized": False,
         "new_governed_tool": False,
         "release_allowed": False,
         "uat_complete": False,
@@ -1552,7 +1611,10 @@ def _validate_contract(contract: JsonObject, failures: list[str]) -> None:
     expected = {
         "schema_version": "1",
         "record_type": "local_v1_lv1_003_o4_execution_authorization",
-        "record_status": "ATTEMPT_009_EXACT_CHILD_ONE_SHOT_EXECUTION_AUTHORIZED",
+        "record_status": (
+            "ATTEMPT_009_CONSUMED_REQUIRED_LOOPBACK_PORT_UNAVAILABLE_"
+            "NO_RECOVERY_NO_LIVE_AUTHORITY"
+        ),
         "ticket_id": "LV1-003",
         "outcome_id": "O4",
         "producer_contract_path": PRODUCER_CONTRACT.as_posix(),
@@ -1828,7 +1890,18 @@ def _validate_contract(contract: JsonObject, failures: list[str]) -> None:
             "producer_generated_fresh_run_project_suffix_runtime_receipt_and_evidence_paths"
         ),
         "attempt_009_preflight_fail_closed_before_live_work": True,
-        "attempt_009_execution_authorized": True,
+        "attempt_009_attempted_candidate_commit": ATTEMPT_009_CANDIDATE_COMMIT,
+        "attempt_009_attempted_candidate_tree": ATTEMPT_009_CANDIDATE_TREE,
+        "attempt_009_failure_code": "required_loopback_port_unavailable",
+        "attempt_009_primary_failure_code": "required_loopback_port_unavailable",
+        "attempt_009_cleanup_failure_codes": [],
+        "attempt_009_run_id": ATTEMPT_009_RUN_ID,
+        "attempt_009_compose_project": ATTEMPT_009_PROJECT,
+        "attempt_009_disposition_json": ATTEMPT_009_DISPOSITION_JSON.as_posix(),
+        "attempt_009_disposition_json_sha256": ATTEMPT_009_DISPOSITION_JSON_DIGEST,
+        "attempt_009_disposition_document": ATTEMPT_009_DISPOSITION_DOCUMENT.as_posix(),
+        "attempt_009_disposition_document_sha256": ATTEMPT_009_DISPOSITION_DOCUMENT_DIGEST,
+        "attempt_009_execution_authorized": False,
         "attempt_009_automatic_retry_authorized": False,
         "attempt_002_id": ATTEMPT_002_ID,
         "attempt_002_candidate_parent_commit": ENTRYPOINT_REPAIR_COMMIT,
@@ -1842,13 +1915,13 @@ def _validate_contract(contract: JsonObject, failures: list[str]) -> None:
         "attempt_002_compose_project": ATTEMPT_002_PROJECT,
         "attempt_002_execution_authorized": False,
         "attempt_002_automatic_retry_authorized": False,
-        "execution_candidate_binding_mode": "dynamic_current_head_after_all_checks",
-        "execution_attempt_budget": 1,
-        "attempt_consumed": False,
+        "execution_candidate_binding_mode": "none_attempt_closed",
+        "execution_attempt_budget": 0,
+        "attempt_consumed": True,
         "retry_authorized": False,
         "attempt_custody": "central_manager_supervised_local_invocation",
         "persistent_cross_process_budget_consumption_claimed": False,
-        "immediate_post_attempt_disposition_recorded": False,
+        "immediate_post_attempt_disposition_recorded": True,
         "prior_attempt_detection_roots": PRIOR_ATTEMPT_ROOTS,
         "external_preflight_requirements": EXTERNAL_PREFLIGHT,
     }
@@ -1879,14 +1952,16 @@ def _validate_contract(contract: JsonObject, failures: list[str]) -> None:
 def _validate_document(document: str, failures: list[str]) -> None:
     normalized = " ".join(document.split())
     for phrase in (
-        "Status: `ATTEMPT_009_EXACT_CHILD_ONE_SHOT_EXECUTION_AUTHORIZED`",
+        "Status: `ATTEMPT_009_CONSUMED_REQUIRED_LOOPBACK_PORT_UNAVAILABLE_"
+        "NO_RECOVERY_NO_LIVE_AUTHORITY`",
         REVIEWED_IMPLEMENTATION_COMMIT,
         CANDIDATE_PARENT_COMMIT,
         HISTORICAL_CANDIDATE_PARENT_COMMIT,
         CODE_AUTHORIZATION_COMMIT,
         "all inherited Attempt 001 lineage with explicit `attempt_001_*` keys",
         "Those fields are historical only",
-        "public current-attempt fields bind the dynamic Attempt 009 child",
+        "generic `candidate_parent_commit` and `candidate_parent_tree` fields now refer only "
+        "to the consumed Attempt 009 candidate",
         ATTEMPT_001_CANDIDATE_COMMIT,
         ATTEMPT_001_CANDIDATE_TREE,
         ATTEMPT_001_COMMAND,
@@ -2126,7 +2201,7 @@ def _validate_document(document: str, failures: list[str]) -> None:
         ATTEMPT_008_DISPOSITION_JSON.as_posix(),
         "exact eight-path closure allowlist",
         "separately reviewed enrollment-output projection repair, not a retry",
-        "Attempts 001 through 008 are consumed",
+        "Attempts 001 through 009 are consumed",
         "all 19 authority fields are false",
         ENROLLMENT_OUTPUT_PROJECTION_REPAIR_REJECTED_COMMIT,
         ENROLLMENT_OUTPUT_PROJECTION_REPAIR_REJECTED_TREE,
@@ -2141,17 +2216,22 @@ def _validate_document(document: str, failures: list[str]) -> None:
         "`node_id`, `principal_id`, and `workspace_id`",
         "`principal_id == agent:node.{node_id}`",
         ATTEMPT_009_ID,
-        "new separately authorized isolated attempt",
-        "not a retry, cleanup, revocation, or reconciliation of Attempt 008",
-        "generate a fresh run ID, Compose project, suffix, runtime root, receipt root, and "
-        "evidence path",
-        "preflight fails closed before live work",
-        "exact seven-path control allowlist",
-        "execution budget is one",
-        "`attempt_consumed` is false",
-        "Any invocation outcome consumes Attempt 009",
-        "Exactly five bounded live authority fields are true",
-        "remaining 14 authority fields are false",
+        ATTEMPT_009_CANDIDATE_COMMIT,
+        ATTEMPT_009_CANDIDATE_TREE,
+        ATTEMPT_009_RUN_ID,
+        ATTEMPT_009_PROJECT,
+        "`required_loopback_port_unavailable`",
+        "before snapshot validation and before Docker, Compose, provider, or executor actions",
+        "no Docker mutation occurred",
+        "does not identify which port, a port owner or process, general loopback-port state, "
+        "general runtime absence, or general Docker state",
+        "Attempt 009 is consumed",
+        "execution budget is zero",
+        "`attempt_consumed` is true",
+        "All 19 authority fields are false",
+        "separately reviewed exact-project Attempt 008 reconciliation/recovery lane",
+        "no generic process control, broad Docker cleanup, or ambient credential inspection",
+        "not another O4 attempt",
         "24-tool/no-new-powers boundary is unchanged",
         "governed tool count remains exactly 24",
     ):
@@ -3410,6 +3490,149 @@ def _validate_attempt_008_disposition(
         failures.append("O4 Attempt 008 disposition document digest is invalid")
 
 
+def _validate_attempt_009_disposition(
+    disposition: JsonObject,
+    document: str,
+    failures: list[str],
+) -> None:
+    expected_scalars = {
+        "schema_version": "1",
+        "record_type": "local_v1_lv1_003_o4_attempt_disposition",
+        "record_status": (
+            "ATTEMPT_009_CONSUMED_REQUIRED_LOOPBACK_PORT_UNAVAILABLE_"
+            "NO_RECOVERY_NO_LIVE_AUTHORITY"
+        ),
+        "ticket_id": "LV1-003",
+        "outcome_id": "O4",
+        "attempt_id": ATTEMPT_009_ID,
+        "attempted_candidate_commit": ATTEMPT_009_CANDIDATE_COMMIT,
+        "attempted_candidate_tree": ATTEMPT_009_CANDIDATE_TREE,
+        "operator_command": ATTEMPT_002_OPERATOR_COMMAND,
+        "module_command": PRODUCER_MODULE_INVOCATION,
+        "run_id": ATTEMPT_009_RUN_ID,
+        "compose_project": ATTEMPT_009_PROJECT,
+        "outward_failure_code": "required_loopback_port_unavailable",
+        "next_action": (
+            "prepare_separately_reviewed_exact_project_attempt_008_reconciliation_"
+            "recovery_lane_for_known_run_and_project_only_not_another_o4_attempt"
+        ),
+    }
+    for key, value in expected_scalars.items():
+        if disposition.get(key) != value:
+            failures.append(f"O4 Attempt 009 disposition {key} is not exact")
+    if disposition.get("diagnostic_facts") != {
+        "base_build_completed": False,
+        "bridge_build_completed": False,
+        "bound_image_identities": [],
+        "highest_completed_stage": 4,
+        "primary_failure_code": "required_loopback_port_unavailable",
+        "cleanup_failure_codes": [],
+        "outward_failure_code": "required_loopback_port_unavailable",
+        "diagnostic_recovery_required": False,
+    }:
+        failures.append("O4 Attempt 009 diagnostic facts are not exact")
+    if disposition.get("preflight_code_analysis") != {
+        "classification": "exact_bounded_preflight_failure",
+        "evidence_basis": "retained_exact_diagnostic_plus_exact_candidate_source_order",
+        "producer_order": (
+            "required_loopback_port_check_precedes_snapshot_validation_docker_compose_"
+            "provider_and_executor_actions"
+        ),
+        "docker_mutation_performed": False,
+        "exact_port_identified_claimed": False,
+        "port_owner_or_process_identified_claimed": False,
+        "general_loopback_port_state_claimed": False,
+        "attempt_009_runtime_root_absent": True,
+        "general_runtime_absence_claimed": False,
+        "recovery_required": False,
+    }:
+        failures.append("O4 Attempt 009 bounded preflight analysis is not exact")
+    if disposition.get("attempt_008_posture") != {
+        "run_id": ATTEMPT_008_RUN_ID,
+        "compose_project": ATTEMPT_008_PROJECT,
+        "recovery_required": True,
+        "enrollment_outcome_ambiguous": True,
+        "cleanup_succeeded_claimed": False,
+        "revocation_succeeded_claimed": False,
+        "docker_absence_claimed": False,
+        "runtime_absence_claimed": False,
+    }:
+        failures.append("O4 Attempt 009 preserved Attempt 008 posture is not exact")
+    receipt = disposition.get("retained_receipt")
+    if not isinstance(receipt, dict) or receipt != {
+        "receipt_root": f"{ATTEMPT_002_RECEIPT_BASE.as_posix()}/{ATTEMPT_009_RUN_ID}",
+        "receipt_root_mode": "0700",
+        "receipt_entries": [
+            "candidate",
+            "candidate-manifest.json",
+            "diagnostic.json",
+            "disposition.json",
+        ],
+        "disposition_size_bytes": ATTEMPT_009_DISPOSITION_SIZE,
+        "disposition_sha256": ATTEMPT_009_DISPOSITION_RECEIPT_DIGEST,
+        "diagnostic_size_bytes": ATTEMPT_009_DIAGNOSTIC_SIZE,
+        "diagnostic_sha256": ATTEMPT_009_DIAGNOSTIC_RECEIPT_DIGEST,
+        "candidate_manifest_size_bytes": ATTEMPT_009_MANIFEST_SIZE,
+        "candidate_manifest_sha256": ATTEMPT_009_MANIFEST_RECEIPT_DIGEST,
+        "candidate_snapshot_file_count": ATTEMPT_009_SNAPSHOT_FILE_COUNT,
+        "published_report_success_claimed": False,
+    }:
+        failures.append("O4 Attempt 009 retained receipt is not exact")
+    if disposition.get("tracked_closure_scope") != ATTEMPT_009_CLOSURE_CONTROL_PATH_ALLOWLIST:
+        failures.append("O4 Attempt 009 closure scope is not exact")
+    if disposition.get("attempt_contract") != {
+        "attempt_consumed": True,
+        "execution_attempt_budget": 0,
+        "retry_authorized": False,
+        "automatic_retry_authorized": False,
+        "post_failure_execution_authorized": False,
+        "recovery_required": False,
+        "recovery_authorized": False,
+        "evidence_deletion_authorized": False,
+    }:
+        failures.append("O4 Attempt 009 contract is not closed")
+    if not _exact_json_equal(disposition.get("authority"), CLOSED_AUTHORITY):
+        failures.append("O4 Attempt 009 disposition authority is not closed")
+    if set(disposition) != {
+        *expected_scalars,
+        "diagnostic_facts",
+        "preflight_code_analysis",
+        "attempt_008_posture",
+        "retained_receipt",
+        "tracked_closure_scope",
+        "attempt_contract",
+        "authority",
+    }:
+        failures.append("O4 Attempt 009 disposition fields are not closed")
+    normalized = " ".join(document.split())
+    for phrase in (
+        ATTEMPT_009_CANDIDATE_COMMIT,
+        ATTEMPT_009_CANDIDATE_TREE,
+        ATTEMPT_009_RUN_ID,
+        ATTEMPT_009_PROJECT,
+        "`required_loopback_port_unavailable`",
+        "no image identities were bound",
+        "cleanup failure codes are exactly `[]`",
+        "before snapshot validation and before Docker, Compose, provider, or executor actions",
+        "no Docker mutation",
+        "does not identify which port was unavailable, a port owner or process, general "
+        "loopback-port state, general runtime absence, or general Docker state",
+        ATTEMPT_009_DISPOSITION_RECEIPT_DIGEST,
+        ATTEMPT_009_DIAGNOSTIC_RECEIPT_DIGEST,
+        ATTEMPT_009_MANIFEST_RECEIPT_DIGEST,
+        ATTEMPT_008_RUN_ID,
+        ATTEMPT_008_PROJECT,
+        "all 19 authority fields are false",
+        "separately reviewed, exact-project Attempt 008 reconciliation/recovery lane",
+        "no generic process control, broad Docker cleanup, or ambient credential inspection",
+        "not another O4 attempt",
+    ):
+        if phrase not in normalized:
+            failures.append(f"O4 Attempt 009 disposition doc is missing phrase: {phrase}")
+    if _digest(document) != ATTEMPT_009_DISPOSITION_DOCUMENT_DIGEST:
+        failures.append("O4 Attempt 009 disposition document digest is invalid")
+
+
 def _validate_attempt_004_disposition(
     disposition: JsonObject,
     document: str,
@@ -4644,6 +4867,11 @@ def _validate_attempt_002_runtime_posture_from_descriptor(
             {ATTEMPT_002_RUNTIME_BASE.as_posix(): 0o700},
             "O4 Attempt 007 runtime run directory or plaintext",
         ),
+        (
+            ATTEMPT_009_RUNTIME_ROOT,
+            {ATTEMPT_002_RUNTIME_BASE.as_posix(): 0o700},
+            "O4 exact Attempt 009 runtime root",
+        ),
         (ATTEMPT_002_REPORT_BASE, {}, "O4 published report base"),
     ):
         _validate_repo_relative_absence(
@@ -4735,8 +4963,21 @@ def _validate_attempt_diagnostic_bytes(
         "primary_failure_code": "subprocess_output_rejected",
         "recovery_required": True,
     }
+    attempt_009_scalars: JsonObject = {
+        "schema_version": "1",
+        "record_type": "local_v1_lv1_003_o4_producer_failure_diagnostic",
+        "base_build_completed": False,
+        "bridge_build_completed": False,
+        "cleanup_failure_codes": [],
+        "highest_completed_stage": 4,
+        "outward_failure_code": "required_loopback_port_unavailable",
+        "primary_failure_code": "required_loopback_port_unavailable",
+        "recovery_required": False,
+    }
     expected_scalars = (
-        attempt_008_scalars
+        attempt_009_scalars
+        if attempt == 9
+        else attempt_008_scalars
         if attempt == 8
         else current_scalars
         if attempt in {5, 6, 7}
@@ -4745,6 +4986,10 @@ def _validate_attempt_diagnostic_bytes(
     for key, expected_value in expected_scalars.items():
         if not _exact_json_equal(diagnostic.get(key), expected_value):
             failures.append(f"O4 Attempt {attempt:03d} failure diagnostic {key} is not exact")
+    if attempt == 9:
+        if diagnostic.get("bound_inspected_image_identities") != []:
+            failures.append("O4 Attempt 009 bound diagnostic identities are not empty")
+        return
     if attempt == 5 and not _exact_json_equal(
         diagnostic.get("base_service_start_diagnostic"),
         {
@@ -5180,6 +5425,7 @@ def _validate_retained_attempt_evidence(
                     ATTEMPT_006_RUN_ID,
                     ATTEMPT_007_RUN_ID,
                     ATTEMPT_008_RUN_ID,
+                    ATTEMPT_009_RUN_ID,
                 ]
             )
             if sorted(os.listdir(receipt_base)) != expected_runs:
@@ -5298,6 +5544,23 @@ def _validate_retained_attempt_evidence(
             diagnostic_size=ATTEMPT_008_DIAGNOSTIC_SIZE,
             diagnostic_digest=ATTEMPT_008_DIAGNOSTIC_RECEIPT_DIGEST,
             diagnostic_attempt=8,
+        )
+        _validate_retained_attempt_receipt(
+            repo_root,
+            receipt_base,
+            failures,
+            label="O4 Attempt 009",
+            run_id=ATTEMPT_009_RUN_ID,
+            disposition_bytes=ATTEMPT_009_DISPOSITION_BYTES,
+            disposition_digest=ATTEMPT_009_DISPOSITION_RECEIPT_DIGEST,
+            manifest_size=ATTEMPT_009_MANIFEST_SIZE,
+            manifest_digest=ATTEMPT_009_MANIFEST_RECEIPT_DIGEST,
+            candidate_commit=ATTEMPT_009_CANDIDATE_COMMIT,
+            candidate_tree=ATTEMPT_009_CANDIDATE_TREE,
+            snapshot_file_count=ATTEMPT_009_SNAPSHOT_FILE_COUNT,
+            diagnostic_size=ATTEMPT_009_DIAGNOSTIC_SIZE,
+            diagnostic_digest=ATTEMPT_009_DIAGNOSTIC_RECEIPT_DIGEST,
+            diagnostic_attempt=9,
         )
     finally:
         os.close(receipt_base)
@@ -5493,6 +5756,16 @@ def _validate_bound_documents(repo_root: Path, failures: list[str]) -> None:
             ENROLLMENT_OUTPUT_PROJECTION_REPAIR_REVIEW_DIGEST,
             "enrollment-output projection repair exact review",
         ),
+        (
+            ATTEMPT_009_DISPOSITION_JSON,
+            ATTEMPT_009_DISPOSITION_JSON_DIGEST,
+            "Attempt 009 disposition JSON",
+        ),
+        (
+            ATTEMPT_009_DISPOSITION_DOCUMENT,
+            ATTEMPT_009_DISPOSITION_DOCUMENT_DIGEST,
+            "Attempt 009 disposition document",
+        ),
     ):
         if _file_digest(repo_root / path, failures) != expected:
             failures.append(f"O4 {label} digest is invalid")
@@ -5502,8 +5775,8 @@ def _validate_execution_checkout(
     repo_root: Path,
     failures: list[str],
     *,
-    candidate_parent_commit: str = ENROLLMENT_OUTPUT_PROJECTION_REPAIR_COMMIT,
-    candidate_parent_tree: str = ENROLLMENT_OUTPUT_PROJECTION_REPAIR_TREE,
+    candidate_parent_commit: str = ATTEMPT_009_CANDIDATE_COMMIT,
+    candidate_parent_tree: str = ATTEMPT_009_CANDIDATE_TREE,
     reviewed_commit: str = ENROLLMENT_OUTPUT_PROJECTION_REPAIR_COMMIT,
     runtime_paths: list[str] | None = None,
     control_paths: list[str] | None = None,
@@ -5512,7 +5785,9 @@ def _validate_execution_checkout(
     runtime_paths = (
         list(code_authorization.ALLOWED_RUNTIME_PATHS) if runtime_paths is None else runtime_paths
     )
-    control_paths = ATTEMPT_009_CONTROL_PATH_ALLOWLIST if control_paths is None else control_paths
+    control_paths = (
+        ATTEMPT_009_CLOSURE_CONTROL_PATH_ALLOWLIST if control_paths is None else control_paths
+    )
     repair_paths = [] if repair_paths is None else repair_paths
     head = _git(repo_root, ["rev-parse", "HEAD"], failures)
     tree = _git(repo_root, ["show", "-s", "--format=%T", "HEAD"], failures)
@@ -5693,17 +5968,15 @@ def _validate_wiring(repo_root: Path, failures: list[str]) -> None:
     if PRODUCER_MODULE_INVOCATION not in readme:
         failures.append("README does not bind the O4 module invocation")
     for phrase in (
-        "Attempt 009 exact-child one-shot authorization",
-        "one attempt budget",
-        "retained Attempt 001-008 and recovery evidence",
-        "recovery required with no cleanup or Docker-absence claim",
-        "without retained raw-stdout proof",
-        "Attempt 008 remains consumed",
-        "separately reviewed enrollment-output projection repair",
-        "new isolated attempt, not a retry, cleanup, revocation, or reconciliation",
-        "producer-generated fresh run and project identity",
-        "preflight fails closed before live work",
-        "exactly five bounded live authority fields true and the other 14 false",
+        "Attempt 009 consumed closure",
+        "retained Attempt 001-009 and recovery evidence",
+        "exact Attempt 009 runtime-root absence",
+        "no port/process or general Docker/runtime claim",
+        "zero attempt budget",
+        "all 19 authority fields false",
+        "separately reviewed lane to the known Attempt 008 run/project only",
+        "not another O4 attempt",
+        "current closure always refuses execution",
         "It is not part of release, milestone, or static checks",
         "producer contract itself grants no execution authority",
         "release and UAT remain false",
@@ -5765,6 +6038,7 @@ def _validate_git_bindings(repo_root: Path, failures: list[str]) -> None:
             ENROLLMENT_OUTPUT_PROJECTION_REPAIR_COMMIT,
             ENROLLMENT_OUTPUT_PROJECTION_REPAIR_TREE,
         ),
+        (ATTEMPT_009_CANDIDATE_COMMIT, ATTEMPT_009_CANDIDATE_TREE),
     ):
         tree = _git(repo_root, ["show", "-s", "--format=%T", commit], failures)
         if tree != expected_tree:
@@ -5896,6 +6170,13 @@ def _validate_git_bindings(repo_root: Path, failures: list[str]) -> None:
     ).split()
     if enrollment_repair_parents != [ENROLLMENT_OUTPUT_PROJECTION_REPAIR_BASE_COMMIT]:
         failures.append("O4 enrollment-output projection repair parent is not exact")
+    attempt_009_parents = _git(
+        repo_root,
+        ["show", "-s", "--format=%P", ATTEMPT_009_CANDIDATE_COMMIT],
+        failures,
+    ).split()
+    if attempt_009_parents != [ENROLLMENT_OUTPUT_PROJECTION_REPAIR_COMMIT]:
+        failures.append("O4 Attempt 009 candidate parent is not exact")
     runtime_native_changed = _git(
         repo_root,
         [
@@ -6047,6 +6328,19 @@ def _validate_git_bindings(repo_root: Path, failures: list[str]) -> None:
         )
         if not contents or _digest(contents) != expected_digest:
             failures.append(f"O4 enrollment-output projection repair digest is invalid: {path}")
+    attempt_009_changed = _git(
+        repo_root,
+        [
+            "diff-tree",
+            "--no-commit-id",
+            "--name-only",
+            "-r",
+            ATTEMPT_009_CANDIDATE_COMMIT,
+        ],
+        failures,
+    ).splitlines()
+    if attempt_009_changed != ATTEMPT_009_CONTROL_PATH_ALLOWLIST:
+        failures.append("O4 Attempt 009 authorization changed paths are not exact")
     historical = _git(
         repo_root,
         [

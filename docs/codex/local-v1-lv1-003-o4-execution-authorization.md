@@ -1,13 +1,14 @@
 # Local v1 LV1-003 O4 Execution Authorization Gate
 
 Status:
-`ATTEMPT_009_EXACT_CHILD_ONE_SHOT_EXECUTION_AUTHORIZED`
+`ATTEMPT_009_CONSUMED_REQUIRED_LOOPBACK_PORT_UNAVAILABLE_NO_RECOVERY_NO_LIVE_AUTHORITY`
 
-This gate preserves all eight consumed attempt histories, the consumed and closed Attempt 003
-image recovery, and the retained Attempt 008 recovery-required evidence. It authorizes one new
-separately reviewed, isolated Attempt 009 invocation. It authorizes no retry, automatic retry,
-Attempt 008 recovery action, cleanup, reconciliation, evidence deletion, release, promotion,
-production action, credential custody, or UAT action. Its machine contract is
+This gate preserves all nine consumed attempt histories, the consumed and closed Attempt 003
+image recovery, the retained Attempt 008 recovery-required evidence, and the exact Attempt 009
+preflight-failure receipts. Attempt 009 is consumed with zero execution budget and all 19 authority
+fields false. It authorizes no retry, automatic retry, Attempt 008 recovery action, cleanup,
+reconciliation, evidence deletion, release, promotion, production action, credential custody, or
+UAT action. Its machine contract is
 `docs/codex/local-v1-lv1-003-o4-execution-authorization.json`.
 
 The gate preserves the reviewed fixed bridge and bounded producer implementation at
@@ -25,9 +26,9 @@ That authorization was exercised once by candidate
 `aa3eecea481dd5c92925ceec3421c051c63cb3cf`, and is no longer live.
 
 The machine contract's generic `candidate_parent_commit` and `candidate_parent_tree` fields now
-refer only to the reviewed enrollment-output projection repair
-`8cd307e3ce2ca20e6fdc1b53fc1937bfa5568685`, tree
-`4dacc4015a51d61b29dc3e089900b2e12ab1d7b6`. The reviewed runtime-native repair
+refer only to the consumed Attempt 009 candidate
+`26a003f7949e4bef5f3c0f66c9e1490b37103d9b`, tree
+`a5403df311e3d6c7769a975d75433bca2442c435`. The reviewed runtime-native repair
 `49db93d80a71855d9ae223826a9849749377c376`, tree
 `23950855584316daba76acd65be0bfdfd20fbcb9`, remains the explicit historical Attempt 004
 authorization parent. The older
@@ -579,23 +580,23 @@ UTF-8 decoding, and validates the exact canonical projection without reintroduci
 `private_key_present` or reflecting rejected bytes. Any repair-path drift, including Node CLI drift
 outside the legacy runtime-path allowlist, fails the gate.
 
-Attempt 009 is `LV1-003-O4-ATTEMPT-009`. It permits one clean immediate child of the reviewed repair
-with the exact seven-path control allowlist. The execution budget is one, `attempt_consumed` is
-false, and retry and automatic retry remain false. Any invocation outcome consumes Attempt 009 and
-requires an immediate separate post-attempt disposition.
+Attempt 009 is `LV1-003-O4-ATTEMPT-009`. The attempted candidate is
+`26a003f7949e4bef5f3c0f66c9e1490b37103d9b`, tree
+`a5403df311e3d6c7769a975d75433bca2442c435`; run
+`20260726T014141Z-f6681bd3` used exact project
+`ithildin-local-v1-o4-f6681bd3`. It ended at stage `4` with primary and outward failure code
+`required_loopback_port_unavailable`. Base and bridge builds did not complete, bound image
+identities and cleanup failure codes are exactly empty, and recovery is not required.
 
-Attempt 009 is a new separately authorized isolated attempt. It is not a retry, cleanup,
-revocation, or reconciliation of Attempt 008. The producer must generate a fresh run ID, Compose
-project, suffix, runtime root, receipt root, and evidence path; no Attempt 008 identity or path may
-be reused. The preflight fails closed before live work if ports `8000` or `5173`, Docker/runtime
-prerequisites, the reviewed local provider/model, or any other closed prerequisite is unavailable.
+Exact producer order checks the required loopback port before snapshot validation and before
+Docker, Compose, provider, or executor actions. This supports the bounded conclusion that no Docker
+mutation occurred. The exact Attempt 009 runtime root is absent after cleanup. This closure does
+not identify which port, a port owner or process, general loopback-port state, general runtime
+absence, or general Docker state, and it does not inspect ambient credentials.
 
-Exactly five bounded live authority fields are true: producer code, Docker lifecycle, live Hermes,
-model-provider access, and O4 evidence execution. The remaining 14 authority fields are false.
-Credential custody, runner lifecycle authority, arbitrary host control, generic process control,
-shell execution, general Docker-socket product authority, network/filesystem non-bypass claims, new
-governed power, new governed tool, evidence deletion, release, promotion, production, and UAT
-remain unauthorized.
+Attempt 009 is consumed. The execution budget is zero, `attempt_consumed` is true, retry and
+automatic retry are false, and the immediate disposition is recorded. All 19 authority fields are
+false.
 
 Attempt 008 remains consumed with `recovery_required` and ambiguous enrollment. This authorization
 makes no cleanup, revocation, image/container/volume/network/runtime absence, raw-stdout, or
@@ -668,11 +669,16 @@ inventory entry `gemma4:e4b`. This closure makes no provider-route success or ab
 
 ## Current Disposition
 
-Attempts 001 through 008 are consumed. Attempt 003 image recovery is consumed and closed. Attempt
-008 remains recovery-required and unauthorized for cleanup, revocation, reconciliation, or retry.
-Attempt 009 has budget one; `attempt_consumed` is false, and retry and automatic retry are false.
-Exactly five bounded live authority fields are true and the remaining 14 authority fields are
-false.
+Attempts 001 through 009 are consumed. Attempt 003 image recovery is consumed and closed. Attempt
+008 remains recovery-required and enrollment-outcome-ambiguous, with no cleanup, revocation,
+Docker-absence, or runtime-absence claim. Attempt 009 has budget zero; `attempt_consumed` is true,
+and retry and automatic retry are false. All 19 authority fields are false.
+
+The next action is a separately reviewed exact-project Attempt 008 reconciliation/recovery lane for
+known run `20260726T001909Z-d801f37b` and known project
+`ithildin-local-v1-o4-d801f37b` only. It grants no generic process control, broad Docker cleanup, or
+ambient credential inspection and is not another O4 attempt. No recovery authority is granted by
+this closure.
 
 Credential custody, runner lifecycle, arbitrary host control, generic process control, shell
 execution, general Docker socket authority, network/filesystem non-bypass claims, new powers, new
