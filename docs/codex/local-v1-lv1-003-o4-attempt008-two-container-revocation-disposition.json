@@ -1,0 +1,153 @@
+{
+  "schema_version": "1",
+  "record_type": "local_v1_lv1_003_o4_attempt008_two_container_revocation_disposition",
+  "record_status": "COMPLETED",
+  "recovery_id": "LV1-003-O4-ATTEMPT-008-TWO-CONTAINER-REVOCATION-001",
+  "reviewed_candidate_commit": "7b24e50fc9bc663a906f8d17e3f8b57be1bb7744",
+  "reviewed_candidate_tree": "8397d87962e870c546e1fff68658b3d9ae994175",
+  "review_tag": "ithildin/lv1-003-o4-attempt008-two-container-revocation-reviewed",
+  "independent_review": {
+    "decision": "GO",
+    "critical_findings": 0,
+    "high_findings": 0,
+    "medium_findings": 0,
+    "low_findings": 0
+  },
+  "execution": {
+    "operator_command": "make local-v1-lv1-003-o4-attempt008-two-container-revocation-run",
+    "sanitized_environment": true,
+    "offline_frozen_dependencies": true,
+    "returncode": 0,
+    "public_status": "completed",
+    "raw_node_id_printed": false
+  },
+  "bounded_result": {
+    "compose_project": "ithildin-local-v1-o4-d801f37b",
+    "exact_project_services": [
+      "ithildin-api",
+      "ithildin-ui"
+    ],
+    "ithildin_api": {
+      "running": false,
+      "status": "exited",
+      "ports": {}
+    },
+    "ithildin_ui": {
+      "running": false,
+      "status": "exited",
+      "ports": {}
+    },
+    "ithildin_node_project_observation": "not_observed_in_exact_project_query_at_preinspection",
+    "hermes_project_observation": "not_observed_in_exact_project_query_at_preinspection",
+    "node_status": "revoked",
+    "node_evidence_status": "complete",
+    "storage_aliases_retained": true,
+    "docker_mutation_performed": false,
+    "container_stop_performed": false,
+    "generic_container_absence_claimed": false,
+    "generic_process_absence_claimed": false,
+    "host_wide_storage_exclusivity_claimed": false
+  },
+  "receipt_root": "var/local-v1-lv1-003-o4-reconciliation-receipts/attempt-008-two-container-revocation-001",
+  "receipt_root_mode": "0700",
+  "receipt_bindings": [
+    {
+      "path": "consumed.json",
+      "mode": "0600",
+      "size": 535,
+      "sha256": "6f1ddb7738bdf579e45c356ceaa840a2735acd2ef79f03109cfa1a855ff94748"
+    },
+    {
+      "path": "journal/0001-predecessor-failed-operation-bound.json",
+      "mode": "0600",
+      "size": 602,
+      "sha256": "aa703257f0b2956c43a084fe2a5b2eef174c7fa0de8bd65869e5fca9615db649"
+    },
+    {
+      "path": "journal/0002-identity-receipts-validated.json",
+      "mode": "0600",
+      "size": 614,
+      "sha256": "c8ed73ceb13014fa1c26e30eacf75e9f2a1c73d0a2a7b64c1ecb8973493cb9e1"
+    },
+    {
+      "path": "journal/0003-exact-two-container-preinspection.json",
+      "mode": "0600",
+      "size": 952,
+      "sha256": "05860c455ea2136fae772ac1325581d75071f13aa74ff4bbc258bc0ac9002dad"
+    },
+    {
+      "path": "journal/0004-storage-aliases-bound.json",
+      "mode": "0600",
+      "size": 340,
+      "sha256": "6ae2ff0bd888e17526243449ea822af0ddbbd0414cd3d6d661667b36602d0256"
+    },
+    {
+      "path": "journal/0005-storage-preflight-complete.json",
+      "mode": "0600",
+      "size": 698,
+      "sha256": "94fd435e6efc13fe047094da563bdb2dea9f1c24931b7889616b62ddfe553a2f"
+    },
+    {
+      "path": "journal/0006-revocation-plan.json",
+      "mode": "0600",
+      "size": 480,
+      "sha256": "456452d7bb5da9360524007fa52144458b3db85786b11948594da88b48454afb"
+    },
+    {
+      "path": "journal/0007-node-revocation-observed-pending.json",
+      "mode": "0600",
+      "size": 413,
+      "sha256": "1dbddd2a9fc39e40ff0babaa65015b7df3e6cec977c6cbfd8d20aa22ba479785"
+    },
+    {
+      "path": "journal/0008-audit-event-observed-complete.json",
+      "mode": "0600",
+      "size": 552,
+      "sha256": "48bb1966f95ee41bdbedae10bb8b8b5c38e68702f099ca89a7c506ef85f2367c"
+    },
+    {
+      "path": "journal/0009-node-evidence-observed-complete.json",
+      "mode": "0600",
+      "size": 406,
+      "sha256": "d0de5ec5056b0db9d5eb1cfce788896ea6aa3aeb725ae621876c4957acd7d4df"
+    },
+    {
+      "path": "journal/0010-exact-two-container-postinspection.json",
+      "mode": "0600",
+      "size": 954,
+      "sha256": "4a98ccbbab9e7f9d88e8111f9193897872ce34c52e7764114f1a1bf5a5a6c589"
+    },
+    {
+      "path": "journal/0011-disposition-intent.json",
+      "mode": "0600",
+      "size": 2414,
+      "sha256": "bbb3e1e827f889d40c0200cfb4b2b93765dbf874e7ea84e9b914febd4dc355e7"
+    },
+    {
+      "path": "disposition.json",
+      "mode": "0600",
+      "size": 2210,
+      "sha256": "49c17a5eeb1d5e71e0767e8dd55d211ac3a9dc166586f6bd7113f54295d39c0d"
+    },
+    {
+      "path": "attempt008-revocation.sqlite3",
+      "mode": "0644",
+      "size": 339968,
+      "sha256": "61424f12af97c5ecc82e4f4eda6ecf5ab14de1ab2bb776ab3d3c2c9552e81ed5"
+    },
+    {
+      "path": "attempt008-audit.jsonl",
+      "mode": "0644",
+      "size": 2505,
+      "sha256": "fd13e2073cbc18a0e17ab4c74afb4b847a363fcc398d8648336f8270cbfca41e"
+    }
+  ],
+  "attempt_budget": 0,
+  "retry_authorized": false,
+  "same_operation_resume_authorized": false,
+  "cleanup_authorized": false,
+  "successor_o4_authorized": false,
+  "tool_count": 24,
+  "release_allowed": false,
+  "uat_complete": false
+}
