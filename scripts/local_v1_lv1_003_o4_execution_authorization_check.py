@@ -2476,8 +2476,9 @@ def _validate_document(document: str, failures: list[str]) -> None:
         "exact seven-path control allowlist",
         "execution budget is one",
         "Any invocation outcome consumes Attempt 008",
-        "Exactly five bounded live authority fields are true",
-        "remaining 14 authority fields are false",
+        "At that Attempt 010 authorization point, exactly five bounded live authority fields "
+        "were true",
+        "remaining 14 authority fields were false",
         "`fixed_node_start_failed`",
         ATTEMPT_010_RUN_ID,
         ATTEMPT_010_PROJECT,
@@ -2554,8 +2555,9 @@ def _validate_document(document: str, failures: list[str]) -> None:
         "predecessor recovery is closed",
         "does not grant successor authority",
         "does not claim cleanup, full project removal, or general absence",
-        "Exactly five bounded live authority fields are true",
-        "remaining 14 authority fields are false",
+        "At that Attempt 008 authorization point, exactly five bounded live authority fields "
+        "were true",
+        "remaining 14 authority fields were false",
     ):
         if phrase not in normalized:
             failures.append(f"O4 execution authorization doc is missing phrase: {phrase}")

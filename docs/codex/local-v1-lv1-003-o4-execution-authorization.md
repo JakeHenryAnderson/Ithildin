@@ -72,11 +72,12 @@ Historically, the next bounded action was a separately reviewed exact-project At
 reconciliation/recovery lane with no generic process control, broad Docker cleanup, or ambient
 credential inspection. It was not another O4 attempt.
 
-Exactly five bounded live authority fields are true: existing producer code, its closed Docker
-lifecycle, live Hermes execution, model-provider access, and O4 evidence execution. The remaining
-14 authority fields are false, including credential custody, runner lifecycle API, arbitrary host
-or process control, shell or general Docker-socket control, non-bypass claims, new powers or tools,
-release, promotion, production, and UAT. The governed tool count remains exactly 24.
+At that Attempt 010 authorization point, exactly five bounded live authority fields were true:
+existing producer code, its closed Docker lifecycle, live Hermes execution, model-provider access,
+and O4 evidence execution. The remaining 14 authority fields were false, including credential
+custody, runner lifecycle API, arbitrary host or process control, shell or general Docker-socket
+control, non-bypass claims, new powers or tools, release, promotion, production, and UAT. The
+governed tool count remains exactly 24.
 
 The gate preserves the reviewed fixed bridge and bounded producer implementation at
 `5dab3654391c14fe214a9dfe302c099d0fe5fbf8`. The current code-only authorization record retains
@@ -570,13 +571,13 @@ The sole operator command is `make local-v1-lv1-003-o4-producer-run`; its exact 
 `uv run python -m scripts.local_v1_lv1_003_o4_producer`. Any invocation outcome consumes Attempt
 008 and requires an immediate separate post-attempt disposition.
 
-Exactly five bounded live authority fields are true: producer code, Docker lifecycle, live Hermes,
-model-provider access, and O4 evidence execution. The remaining 14 authority fields are false.
-Credential custody, runner lifecycle, arbitrary host control, generic process control, shell
-execution, general Docker-socket product authority, network/filesystem non-bypass claims, new
-powers, new tools, release, promotion, production, and UAT remain unauthorized. This is invocation
-authority for the existing reviewed Make/module command only, not a new product power or a claim
-that Attempt 008 will succeed.
+At that Attempt 008 authorization point, exactly five bounded live authority fields were true:
+producer code, Docker lifecycle, live Hermes, model-provider access, and O4 evidence execution. The
+remaining 14 authority fields were false. Credential custody, runner lifecycle, arbitrary host
+control, generic process control, shell execution, general Docker-socket product authority,
+network/filesystem non-bypass claims, new powers, new tools, release, promotion, production, and UAT
+remained unauthorized. This was invocation authority for the existing reviewed Make/module command
+only, not a new product power or a claim that Attempt 008 would succeed.
 
 ## Attempt 008 Result And Closure
 

@@ -4,6 +4,7 @@ import copy
 import hashlib
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -239,6 +240,27 @@ def test_attempt_010_tracked_disposition_is_closed_and_exact() -> None:
     assert disposition["attempt_contract"]["execution_attempt_budget"] == 0
     assert disposition["attempt_contract"]["attempt_consumed"] is True
     assert disposition["authority"] == gate.CLOSED_AUTHORITY
+
+
+@pytest.mark.parametrize("attempt", ["008", "010"])
+def test_execution_authorization_document_rejects_present_tense_consumed_authority(
+    attempt: str,
+) -> None:
+    document = gate.DOCUMENT.read_text(encoding="utf-8")
+    historical = (
+        f"At that Attempt {attempt} authorization point, exactly five bounded live authority "
+        "fields were true"
+    )
+    stale = "Exactly five bounded live authority fields are true"
+    assert historical in " ".join(document.split())
+    pattern = r"\s+".join(re.escape(word) for word in historical.split())
+    document, replacements = re.subn(pattern, stale, document, count=1)
+    assert replacements == 1
+    failures: list[str] = []
+
+    gate._validate_document(document, failures)  # noqa: SLF001
+
+    assert any(historical in failure for failure in failures)
 
 
 def test_attempt_010_synthetic_receipts_are_exact(
