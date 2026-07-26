@@ -1,11 +1,44 @@
 # Local v1 LV1-003 O4 Execution Authorization Gate
 
 Status:
-`ATTEMPT_016_CONSUMED_GATEWAY_MISSION_PROJECTION_INVALID_CLEANUP_COMPLETE_NO_LIVE_AUTHORITY`
+`ATTEMPT_017_PREPARED_PENDING_EXACT_CANDIDATE_REVIEW_NO_LIVE_AUTHORITY`
 
-This record closes `LV1-003-O4-ATTEMPT-016`, preserves immutable consumed Attempts 001-015 and all
-tracked recovery history, and grants no live or successor authority. Its machine contract is
+This record prepares `LV1-003-O4-ATTEMPT-017`, preserves immutable consumed Attempts 001-016 and all
+tracked recovery history, and grants no authority on the real pre-tag checkout. Its machine contract is
 `docs/codex/local-v1-lv1-003-o4-execution-authorization.json`.
+
+## Attempt 017 Prepared Boundary
+
+Attempt 017 may become executable only as the clean exact six-path, single-parent immediate child
+of review-record commit `0ecdb532d364ee9cf53f343fbc1a9d3e3bf64f32`, tree
+`fc2156f9cabad4df04998fe533a4bc6a61a75a5a`, with fixed annotated tag
+`ithildin/lv1-003-o4-attempt017-reviewed` peeling to that exact child. Before that exact candidate
+and tag exist, the validator reports invalid, effective budget zero, and all live authority false;
+the next action is `review_attempt_017_execution_authorization_exact_candidate`.
+
+The reviewed Gateway mission-convergence implementation is commit
+`f222091c86b71162a3eef5e7518ef0f032cc65ec`, tree
+`7683d2de4dbca2367189e2b807818e641f1e3e8b`, direct parent
+`589c9bc721330e92e0298b86b873d007234b8c49`. It is bound by
+`docs/codex/local-v1-lv1-003-o4-mission-convergence-exact-review.md`, digest
+`sha256:00f1511d352ca4cbf29dfd9032b3b3db1ca6a9c0be45ebae43b6159cb7498d9e`,
+with disposition `GO_CODE_ONLY` and Critical 0, High 0, Medium 0, Low 0. The reviewed candidate
+changes exactly seven paths with the digests recorded in that durable review. The execution
+candidate must preserve runtime parity to the exact reviewed implementation.
+
+The sole purpose is one central-manager-supervised invocation using the reviewed convergence
+semantics after Attempt 016's `gateway_mission_projection_invalid`; success is not predicted. On
+the eventual exact tagged candidate only, the attempt budget is one, `attempt_consumed` is false,
+and exactly five fields may be true: producer code, Docker lifecycle, live Hermes execution,
+model-provider access, and O4 evidence execution. The remaining fourteen authority fields stay
+false, including credential custody, runner lifecycle authority, arbitrary host/process/shell or
+Docker-socket control, network/filesystem non-bypass claims, new governed power/tool, release,
+promotion, production, and UAT. The governed tool count remains exactly 24.
+
+This is a fresh, separately authorized successor attempt, not a retry, automatic retry, recovery,
+repair, or cleanup action. Concurrent, automatic, and post-attempt retries are false. Authority is
+not derived from history or recovery, and immediate consumed disposition is mandatory after the
+single supervised invocation.
 
 ## Attempt 016 Consumed Result
 
