@@ -1,11 +1,12 @@
 # Local v1 LV1-003 O4 Execution Authorization Gate
 
-Status: `ATTEMPT_007_CONSUMED_PRELAUNCH_IMAGE_READABILITY_INVESTIGATION_REQUIRED_NO_LIVE_AUTHORITY`
+Status: `ATTEMPT_008_EXACT_CHILD_ONE_SHOT_EXECUTION_AUTHORIZED`
 
-This gate preserves all six consumed attempt histories, the consumed and closed Attempt 003 image
-recovery, and the consumed Attempt 007 failure evidence. It authorizes no execution, retry,
-automatic retry, recovery action, evidence deletion, release, promotion, production action, or UAT
-action. Its machine contract is
+This gate preserves all seven consumed attempt histories, the consumed and closed Attempt 003
+image recovery, and the retained Attempt 007 failure evidence. It authorizes one exact,
+central-manager-supervised Attempt 008 invocation only. It authorizes no retry, automatic retry,
+recovery action, evidence deletion, release, promotion, production action, credential custody, or
+UAT action. Its machine contract is
 `docs/codex/local-v1-lv1-003-o4-execution-authorization.json`.
 
 The gate preserves the reviewed fixed bridge and bounded producer implementation at
@@ -23,9 +24,9 @@ That authorization was exercised once by candidate
 `aa3eecea481dd5c92925ceec3421c051c63cb3cf`, and is no longer live.
 
 The machine contract's generic `candidate_parent_commit` and `candidate_parent_tree` fields now
-refer only to the consumed Attempt 007 candidate
-`a2f0338a045dd15352c77cb1841f2098013b1f86`, tree
-`04a5dbe34b604c95eb5a63bbfc9610b1033bf521`. The reviewed runtime-native repair
+refer only to reviewed image-readability repair
+`7cc1da575074895a7210c5f15a34ae136f4f932a`, tree
+`b448eb922619e59af74275cf1070deb33b6813ef`. The reviewed runtime-native repair
 `49db93d80a71855d9ae223826a9849749377c376`, tree
 `23950855584316daba76acd65be0bfdfd20fbcb9`, remains the explicit historical Attempt 004
 authorization parent. The older
@@ -34,8 +35,8 @@ authorization parent. The older
 code-authorization identity only; it is not the current execution candidate parent.
 
 The machine contract names all inherited Attempt 001 lineage with explicit `attempt_001_*` keys.
-Those fields are historical only. The validator's public current-attempt fields bind the consumed
-Attempt 007 candidate while Attempts 001 through 006 remain explicit history, so generic report
+Those fields are historical only. The validator's public current-attempt fields bind the dynamic
+Attempt 008 exact child while Attempts 001 through 007 remain explicit history, so generic report
 labels cannot silently substitute an earlier attempt for the current attempt.
 
 ## Attempt 001 Result
@@ -454,6 +455,59 @@ with the exact eight-path closure allowlist recorded in
 The next action is a separately reviewed pre-launch Docker image-readability repair investigation.
 It must not scrape logs or claim a proven root cause. This closure grants no execution authority.
 
+## Image-Readability Repair Review And Attempt 008 Authority
+
+Exact repair commit `7cc1da575074895a7210c5f15a34ae136f4f932a`, tree
+`b448eb922619e59af74275cf1070deb33b6813ef`, received exact read-only review with Critical: 0,
+High: 0, Medium: 0, Low: 0 and exact-commit disposition `GO`. The durable review is
+`docs/codex/local-v1-lv1-003-o4-image-readability-repair-exact-review.md`.
+
+The review binds exactly five repair and test paths:
+
+1. `deploy/Dockerfile.api` —
+   `sha256:b0fba85ea070c8d2100d79b69db202f2a2ef35adae4e2497c3f0fe320341744a`
+2. `deploy/Dockerfile.node` —
+   `sha256:28f989781bcfce6373a6eff8d13e68334f742c528c35c42a7463fcf01edadd21`
+3. `deploy/Dockerfile.ui` —
+   `sha256:e562a3721c9750b747820f79b77c6d554be1d096d1f6a4dd0d371d83ce1aaa0a`
+4. `deploy/hermes-node-bridge/Dockerfile` —
+   `sha256:82d992e42fa471cea5bbbd92c28d593e17368561f4442ed518cf53b148c6ca5d`
+5. `tests/test_container_image_runtime_readability.py` —
+   `sha256:43295b57b2d7e368c5f6e735e812bc61349687aa84ee05b788a559fad9aab056`
+
+The repair normalizes runtime readability and traversal only: `a+rX` cannot add write permission.
+The one writable location is the exact owner-only Hermes scratch directory. The final runtime
+identities remain non-root, and all readability assertions use valid unary tests with exactly one
+operand. No Compose file or runtime snapshot behavior changed. The candidate passed 190 focused
+tests, Ruff, strict mypy, exact-24-tool, no-new-powers, and agent-workflow checks. Those results are
+review evidence only.
+
+Attempt 008 permits one exact supervised child of the reviewed repair. Its ID is
+`LV1-003-O4-ATTEMPT-008`. No
+future child commit or tree is stated. The gate derives the candidate only after every check
+passes and requires this exact seven-path control allowlist:
+
+1. `Makefile`
+2. `README.md`
+3. `docs/codex/local-v1-lv1-003-o4-execution-authorization.json`
+4. `docs/codex/local-v1-lv1-003-o4-execution-authorization.md`
+5. `docs/codex/local-v1-lv1-003-o4-image-readability-repair-exact-review.md`
+6. `scripts/local_v1_lv1_003_o4_execution_authorization_check.py`
+7. `tests/test_local_v1_lv1_003_o4_execution_authorization_check.py`
+
+The execution budget is one, `attempt_consumed` is false, and retry and automatic retry are false.
+The sole operator command is `make local-v1-lv1-003-o4-producer-run`; its exact module command is
+`uv run python -m scripts.local_v1_lv1_003_o4_producer`. Any invocation outcome consumes Attempt
+008 and requires an immediate separate post-attempt disposition.
+
+Exactly five bounded live authority fields are true: producer code, Docker lifecycle, live Hermes,
+model-provider access, and O4 evidence execution. The remaining 14 authority fields are false.
+Credential custody, runner lifecycle, arbitrary host control, generic process control, shell
+execution, general Docker-socket product authority, network/filesystem non-bypass claims, new
+powers, new tools, release, promotion, production, and UAT remain unauthorized. This is invocation
+authority for the existing reviewed Make/module command only, not a new product power or a claim
+that Attempt 008 will succeed.
+
 ## Historical Attempt Ceiling
 
 The consumed Attempt 003 authorization limited the producer to one uniquely named isolated Compose project and
@@ -521,8 +575,9 @@ inventory entry `gemma4:e4b`. This closure makes no provider-route success or ab
 ## Current Disposition
 
 Attempts 001 through 007 are consumed. Attempt 003 image recovery is consumed and closed. Attempt
-007 has budget zero; `attempt_consumed` is true, retry and automatic retry are false, and all 19
-authority fields are false.
+008 has budget one; `attempt_consumed` is false, and retry and automatic retry are false. Exactly
+five bounded live authority fields are true for the single supervised invocation and the remaining
+14 authority fields are false.
 
 Credential custody, runner lifecycle, arbitrary host control, generic process control, shell
 execution, general Docker socket authority, network/filesystem non-bypass claims, new powers, new
