@@ -1,15 +1,56 @@
 # Local v1 LV1-003 O4 Execution Authorization Gate
 
 Status:
-`ATTEMPT_009_CONSUMED_REQUIRED_LOOPBACK_PORT_UNAVAILABLE_NO_RECOVERY_NO_LIVE_AUTHORITY`
+`ATTEMPT_010_EXACT_CHILD_ONE_SHOT_EXECUTION_AUTHORIZED`
 
-This gate preserves all nine consumed attempt histories, the consumed and closed Attempt 003
-image recovery, the retained Attempt 008 recovery-required evidence, and the exact Attempt 009
-preflight-failure receipts. Attempt 009 is consumed with zero execution budget and all 19 authority
-fields false. It authorizes no retry, automatic retry, Attempt 008 recovery action, cleanup,
-reconciliation, evidence deletion, release, promotion, production action, credential custody, or
-UAT action. Its machine contract is
+This candidate prepares `LV1-003-O4-ATTEMPT-010` as a fresh isolated attempt, not a retry,
+recovery, or cleanup operation. It permits exactly one central-manager supervised invocation through the existing
+`make local-v1-lv1-003-o4-producer-run` target and exact module command, with a producer-generated
+fresh run and Compose-project identity. Its machine contract is
 `docs/codex/local-v1-lv1-003-o4-execution-authorization.json`.
+
+Implementation preparation alone grants no live execution. Live use begins only after independent
+exact review of the frozen Attempt 010 candidate. The exact seven-path immediate-child gate
+derives the candidate commit and tree dynamically only after all checks pass; it contains no future
+self-reference. The live checker requires review tag
+`ithildin/lv1-003-o4-attempt010-reviewed` to resolve to that exact candidate commit and tree. The
+tag is absent during preparation and may be created only after the independent review returns GO.
+
+The candidate preserves all nine consumed attempt histories, the consumed and closed Attempt 003
+image recovery, the immutable Attempt 009 preflight failure and closure, and the completed tracked
+Attempt 008 recovery lineage. Attempt 009 remains consumed at exact candidate
+`26a003f7949e4bef5f3c0f66c9e1490b37103d9b`, tree
+`a5403df311e3d6c7769a975d75433bca2442c435`, with immutable closure
+`8211ba3ee0064dcf63d5eb80060d6ae4129fa4e1`, tree
+`c5bf9fd82d76e9d48fdf93c0ea624f6e696bcd39`, after
+`required_loopback_port_unavailable`. This is a fresh successor authorization, not a retry or
+recovery authority derived from those histories.
+
+## Attempt 010 Exact Candidate Boundary
+
+The exact parent is `660309ba00b9f7cea6fe2cbc5b34000474c2cd8e`, tree
+`dbcada823a66447714fe00233be5cc6f77e63442`, itself the single child of
+`7b92a1dbcadcf8a076e0de71c3e53e11dba3ca59`. The durable review record
+`docs/codex/mission-command-runner-bridge-authorization-index-reconciliation-exact-review.md`
+records `GO_CODE_ONLY`, zero Critical, High, Medium, and Low findings, all seven accepted runtime
+checkpoints, and zero allowed-runtime drift from authorized runtime tip
+`8cd307e3ce2ca20e6fdc1b53fc1937bfa5568685`. Rejected candidates `7735634` and
+`01a38ce` remain `NO_GO`. That review grants no live authority by itself.
+
+The tracked Attempt 008 port-release closure, failed quarantine disposition, reviewed recovery
+tags, and successful two-container revocation disposition show that predecessor recovery is
+closed. The terminal reviewed tag is
+`ithildin/lv1-003-o4-attempt008-two-container-revocation-reviewed`. This binding does not grant
+successor authority and does not claim cleanup, full project removal, or general absence.
+Historically, the next bounded action was a separately reviewed exact-project Attempt 008
+reconciliation/recovery lane with no generic process control, broad Docker cleanup, or ambient
+credential inspection. It was not another O4 attempt.
+
+Exactly five bounded live authority fields are true: existing producer code, its closed Docker
+lifecycle, live Hermes execution, model-provider access, and O4 evidence execution. The remaining
+14 authority fields are false, including credential custody, runner lifecycle API, arbitrary host
+or process control, shell or general Docker-socket control, non-bypass claims, new powers or tools,
+release, promotion, production, and UAT. The governed tool count remains exactly 24.
 
 The gate preserves the reviewed fixed bridge and bounded producer implementation at
 `5dab3654391c14fe214a9dfe302c099d0fe5fbf8`. The current code-only authorization record retains
@@ -26,9 +67,9 @@ That authorization was exercised once by candidate
 `aa3eecea481dd5c92925ceec3421c051c63cb3cf`, and is no longer live.
 
 The machine contract's generic `candidate_parent_commit` and `candidate_parent_tree` fields now
-refer only to the consumed Attempt 009 candidate
-`26a003f7949e4bef5f3c0f66c9e1490b37103d9b`, tree
-`a5403df311e3d6c7769a975d75433bca2442c435`. The reviewed runtime-native repair
+refer only to the fresh Attempt 010 parent
+`660309ba00b9f7cea6fe2cbc5b34000474c2cd8e`, tree
+`dbcada823a66447714fe00233be5cc6f77e63442`. The reviewed runtime-native repair
 `49db93d80a71855d9ae223826a9849749377c376`, tree
 `23950855584316daba76acd65be0bfdfd20fbcb9`, remains the explicit historical Attempt 004
 authorization parent. The older
@@ -38,8 +79,8 @@ code-authorization identity only; it is not the current execution candidate pare
 
 The machine contract names all inherited Attempt 001 lineage with explicit `attempt_001_*` keys.
 Those fields are historical only. The validator's public current-attempt fields bind the consumed
-Attempt 008 candidate as history while the public current-attempt fields bind the dynamic Attempt
-009 child. Attempts 001 through 008 remain explicit history, so generic report labels cannot
+Attempts 001 through 009 as history while the public current-attempt fields bind the dynamic
+Attempt 010 child. Attempts 001 through 009 remain explicit history, so generic report labels cannot
 silently substitute an earlier attempt for the current attempt.
 
 ## Attempt 001 Result
@@ -670,17 +711,19 @@ inventory entry `gemma4:e4b`. This closure makes no provider-route success or ab
 ## Current Disposition
 
 Attempts 001 through 009 are consumed. Attempt 003 image recovery is consumed and closed. Attempt
-008 remains recovery-required and enrollment-outcome-ambiguous, with no cleanup, revocation,
-Docker-absence, or runtime-absence claim. Attempt 009 has budget zero; `attempt_consumed` is true,
-and retry and automatic retry are false. All 19 authority fields are false.
+008's separately reviewed recovery sequence is closed in tracked dispositions without a cleanup,
+full-project-removal, or general-absence claim. Attempt 009 has budget zero; its
+`attempt_consumed` was true, and retry and automatic retry remain false.
 
-The next action is a separately reviewed exact-project Attempt 008 reconciliation/recovery lane for
-known run `20260726T001909Z-d801f37b` and known project
-`ithildin-local-v1-o4-d801f37b` only. It grants no generic process control, broad Docker cleanup, or
-ambient credential inspection and is not another O4 attempt. No recovery authority is granted by
-this closure.
+Attempt 010 has execution budget one, `attempt_consumed` is false, retry and automatic retry are
+false, persistent cross-process budget consumption is not claimed, and no immediate post-attempt
+disposition is recorded. Any invocation outcome consumes the one attempt and requires a separate
+durable disposition. No retry, recovery, cleanup, or automatic rerun follows from this record. The
+live gate remains closed unless review tag `ithildin/lv1-003-o4-attempt010-reviewed` resolves to the
+exact clean candidate commit and tree.
 
 Credential custody, runner lifecycle, arbitrary host control, generic process control, shell
 execution, general Docker socket authority, network/filesystem non-bypass claims, new powers, new
-tools, evidence deletion, release, promotion, production, and UAT remain unauthorized. The
+tools, evidence deletion, release, promotion, production, and UAT remain unauthorized. Exactly five
+bounded live authority fields are true and the remaining 14 authority fields are false. The
 24-tool/no-new-powers boundary is unchanged and the governed tool count remains exactly 24.
