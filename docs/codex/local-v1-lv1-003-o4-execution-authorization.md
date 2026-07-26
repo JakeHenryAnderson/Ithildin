@@ -27,7 +27,10 @@ placing any raw image ID or Node ID in tracked closure records. Cleanup reported
 producer semantics. This does not establish generic Docker, image, container, project, process,
 runtime, or host absence.
 
-The exact owner-only receipt root is mode `0700`. Its `0600` `diagnostic.json` is 7,149 bytes with
+The exact owner-only receipt root is mode `0700`. Its owner-only mode `0500` candidate snapshot
+contains exactly 668 files. Its `0600` `candidate-manifest.json` is 97,421 bytes with digest
+`sha256:5f478983f10839431902684a0f40333408a9ef1c16b5a15cbfc303a657e6c7b0`.
+Its `0600` `diagnostic.json` is 7,149 bytes with
 digest `sha256:8b647d26255b90c607eac85528f3f20881c8deda366befabefc500373dd88cc6`.
 Its exact closed `0600` `disposition.json` is 125 bytes with digest
 `sha256:dcce687c6e2a0d6f36e36d3c14ac09e25ba4c195e1f16f35bf6ea44521612dd3`.

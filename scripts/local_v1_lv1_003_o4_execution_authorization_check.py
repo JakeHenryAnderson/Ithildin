@@ -402,10 +402,10 @@ CANDIDATE_PARENT_PARENT = ATTEMPT_010_AUTHORIZATION_PARENT_COMMIT
 ATTEMPT_010_RUN_ID = "20260726T082552Z-8aa38742"
 ATTEMPT_010_PROJECT = "ithildin-local-v1-o4-8aa38742"
 ATTEMPT_010_DISPOSITION_JSON_DIGEST = (
-    "sha256:36051aee328d685d3992b6b0c221355d99974d6297ee91f043a24012be602ff7"
+    "sha256:68eae4b757a4308e931b11c88d703c9c1c470a9084c037b5ae12d343d3ec8b53"
 )
 ATTEMPT_010_DISPOSITION_DOCUMENT_DIGEST = (
-    "sha256:9d370f43ed873d9a04007e9fffc67518afe04262af630de36e8495066554c713"
+    "sha256:f416a7baa93a172626f203c4ffa07cc94dfa71eaa8500722f79ec7472296055a"
 )
 MCC_AUTHORIZATION_INDEX_RECONCILIATION_REVIEW_DIGEST = (
     "sha256:5e01639bc661da2bec28ebc6a2edb5b7cc30c3bc71d45290c2274d260ea42c9c"
@@ -615,6 +615,11 @@ ATTEMPT_010_DIAGNOSTIC_RECEIPT_DIGEST = (
     "sha256:8b647d26255b90c607eac85528f3f20881c8deda366befabefc500373dd88cc6"
 )
 ATTEMPT_010_DIAGNOSTIC_SIZE = 7149
+ATTEMPT_010_MANIFEST_RECEIPT_DIGEST = (
+    "sha256:5f478983f10839431902684a0f40333408a9ef1c16b5a15cbfc303a657e6c7b0"
+)
+ATTEMPT_010_MANIFEST_SIZE = 97421
+ATTEMPT_010_SNAPSHOT_FILE_COUNT = 668
 MAX_RETAINED_SNAPSHOT_FILE_BYTES = 16 * 1_048_576
 MAX_RETAINED_SNAPSHOT_BYTES = 64 * 1_048_576
 EVIDENCE_IGNORE_PATTERNS = [
@@ -4153,6 +4158,18 @@ def _validate_attempt_010_disposition(
             "root_mode": "0700",
             "entries": [
                 {
+                    "path": "candidate",
+                    "mode": "0500",
+                    "kind": "directory",
+                    "file_count": ATTEMPT_010_SNAPSHOT_FILE_COUNT,
+                },
+                {
+                    "path": "candidate-manifest.json",
+                    "mode": "0600",
+                    "size": ATTEMPT_010_MANIFEST_SIZE,
+                    "sha256": ATTEMPT_010_MANIFEST_RECEIPT_DIGEST,
+                },
+                {
                     "path": "diagnostic.json",
                     "mode": "0600",
                     "size": ATTEMPT_010_DIAGNOSTIC_SIZE,
@@ -4217,6 +4234,8 @@ def _validate_attempt_010_disposition(
         "not a generic Docker, container, image, process, project, runtime, or host absence claim",
         ATTEMPT_010_DIAGNOSTIC_RECEIPT_DIGEST,
         ATTEMPT_010_DISPOSITION_RECEIPT_DIGEST,
+        ATTEMPT_010_MANIFEST_RECEIPT_DIGEST,
+        "candidate snapshot containing exactly 668 files",
         "exact run runtime root and exact public report root were absent",
         "Attempt budget is zero",
         "`attempt_consumed` is true",
@@ -5907,15 +5926,12 @@ def _validate_retained_attempt_receipt(
             failures.append(f"{label} diagnostic expectation is incomplete")
         elif diagnostic_bytes is None:
             failures.append(f"{label} failure diagnostic is unavailable")
-        else:
-            if diagnostic_attempt is None:
-                failures.append(f"{label} diagnostic attempt identity is unavailable")
-            else:
-                _validate_attempt_diagnostic_bytes(
-                    diagnostic_bytes,
-                    failures,
-                    attempt=diagnostic_attempt,
-                )
+        elif diagnostic_attempt is not None:
+            _validate_attempt_diagnostic_bytes(
+                diagnostic_bytes,
+                failures,
+                attempt=diagnostic_attempt,
+            )
     if manifest_bytes is None or snapshot is None:
         if snapshot is not None:
             os.close(snapshot)
@@ -6031,7 +6047,12 @@ def _validate_attempt_010_receipts(
         return
     try:
         try:
-            if sorted(os.listdir(receipt_root)) != ["diagnostic.json", "disposition.json"]:
+            if sorted(os.listdir(receipt_root)) != [
+                "candidate",
+                "candidate-manifest.json",
+                "diagnostic.json",
+                "disposition.json",
+            ]:
                 failures.append("O4 Attempt 010 receipt entries are not exact")
         except OSError:
             failures.append("O4 Attempt 010 receipt root cannot be enumerated")
@@ -6112,6 +6133,7 @@ def _validate_retained_attempt_evidence(
                     ATTEMPT_007_RUN_ID,
                     ATTEMPT_008_RUN_ID,
                     ATTEMPT_009_RUN_ID,
+                    ATTEMPT_010_RUN_ID,
                 ]
             )
             if sorted(os.listdir(receipt_base)) != expected_runs:
@@ -6247,6 +6269,22 @@ def _validate_retained_attempt_evidence(
             diagnostic_size=ATTEMPT_009_DIAGNOSTIC_SIZE,
             diagnostic_digest=ATTEMPT_009_DIAGNOSTIC_RECEIPT_DIGEST,
             diagnostic_attempt=9,
+        )
+        _validate_retained_attempt_receipt(
+            repo_root,
+            receipt_base,
+            failures,
+            label="O4 Attempt 010",
+            run_id=ATTEMPT_010_RUN_ID,
+            disposition_bytes=ATTEMPT_010_DISPOSITION_BYTES,
+            disposition_digest=ATTEMPT_010_DISPOSITION_RECEIPT_DIGEST,
+            manifest_size=ATTEMPT_010_MANIFEST_SIZE,
+            manifest_digest=ATTEMPT_010_MANIFEST_RECEIPT_DIGEST,
+            candidate_commit=ATTEMPT_010_CANDIDATE_COMMIT,
+            candidate_tree=ATTEMPT_010_CANDIDATE_TREE,
+            snapshot_file_count=ATTEMPT_010_SNAPSHOT_FILE_COUNT,
+            diagnostic_size=ATTEMPT_010_DIAGNOSTIC_SIZE,
+            diagnostic_digest=ATTEMPT_010_DIAGNOSTIC_RECEIPT_DIGEST,
         )
     finally:
         os.close(receipt_base)

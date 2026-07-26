@@ -35,6 +35,18 @@
     "root_mode": "0700",
     "entries": [
       {
+        "path": "candidate",
+        "mode": "0500",
+        "kind": "directory",
+        "file_count": 668
+      },
+      {
+        "path": "candidate-manifest.json",
+        "mode": "0600",
+        "size": 97421,
+        "sha256": "sha256:5f478983f10839431902684a0f40333408a9ef1c16b5a15cbfc303a657e6c7b0"
+      },
+      {
         "path": "diagnostic.json",
         "mode": "0600",
         "size": 7149,

@@ -20,12 +20,14 @@ ID or Node ID is reproduced here. The cleanup failure list was empty and `recove
 false. Cleanup completed without a reported failure under the reviewed producer semantics. This is
 not a generic Docker, container, image, process, project, runtime, or host absence claim.
 
-The retained exact-run receipt root is owner-only mode `0700`. It contains exact owner-only `0600`
-bindings for:
+The retained exact-run receipt root is owner-only mode `0700`. It contains:
 
-- `diagnostic.json`: 7,149 bytes,
+- an owner-only mode `0500` candidate snapshot containing exactly 668 files;
+- `candidate-manifest.json`: owner-only mode `0600`, 97,421 bytes,
+  `sha256:5f478983f10839431902684a0f40333408a9ef1c16b5a15cbfc303a657e6c7b0`;
+- `diagnostic.json`: owner-only mode `0600`, 7,149 bytes,
   `sha256:8b647d26255b90c607eac85528f3f20881c8deda366befabefc500373dd88cc6`;
-- `disposition.json`: 125 bytes,
+- `disposition.json`: owner-only mode `0600`, 125 bytes,
   `sha256:dcce687c6e2a0d6f36e36d3c14ac09e25ba4c195e1f16f35bf6ea44521612dd3`.
 
 The closed disposition is exactly `status=quarantined_not_published`,

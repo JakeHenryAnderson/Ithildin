@@ -102,6 +102,11 @@ def _synthetic_attempt_010_receipts(
     (tmp_path / receipt_base).chmod(0o700)
     absolute_receipt_root.chmod(0o700)
     (tmp_path / runtime_base).mkdir(mode=0o700)
+    candidate = absolute_receipt_root / "candidate"
+    candidate.mkdir(mode=0o500)
+    manifest = absolute_receipt_root / "candidate-manifest.json"
+    manifest.write_text("{}\n", encoding="utf-8")
+    manifest.chmod(0o600)
     diagnostic = absolute_receipt_root / "diagnostic.json"
     disposition = absolute_receipt_root / "disposition.json"
     diagnostic.write_bytes(diagnostic_bytes)
