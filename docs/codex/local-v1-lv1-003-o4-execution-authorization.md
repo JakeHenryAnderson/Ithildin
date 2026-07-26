@@ -1,44 +1,54 @@
 # Local v1 LV1-003 O4 Execution Authorization Gate
 
 Status:
-`ATTEMPT_017_PREPARED_PENDING_EXACT_CANDIDATE_REVIEW_NO_LIVE_AUTHORITY`
+`ATTEMPT_017_CONSUMED_GATEWAY_MISSION_PROJECTION_INVALID_CLEANUP_COMPLETE_NO_LIVE_AUTHORITY`
 
-This record prepares `LV1-003-O4-ATTEMPT-017`, preserves immutable consumed Attempts 001-016 and all
-tracked recovery history, and grants no authority on the real pre-tag checkout. Its machine contract is
+This record closes `LV1-003-O4-ATTEMPT-017`, preserves immutable consumed Attempts 001-016 and all
+tracked recovery history, and grants no live or successor authority. Its machine contract is
 `docs/codex/local-v1-lv1-003-o4-execution-authorization.json`.
 
-## Attempt 017 Prepared Boundary
+## Attempt 017 Consumed Result
 
-Attempt 017 may become executable only as the clean exact six-path, single-parent immediate child
-of review-record commit `0ecdb532d364ee9cf53f343fbc1a9d3e3bf64f32`, tree
-`fc2156f9cabad4df04998fe533a4bc6a61a75a5a`, with fixed annotated tag
-`ithildin/lv1-003-o4-attempt017-reviewed` peeling to that exact child. Before that exact candidate
-and tag exist, the validator reports invalid, effective budget zero, and all live authority false;
-the next action is `review_attempt_017_execution_authorization_exact_candidate`.
+Attempt `LV1-003-O4-ATTEMPT-017` consumed its single budget on exact candidate
+`6ef2507f4cf8b296c3cf5a1044f75753ef2c697d`, tree
+`4231e0e0dc89ac723189dd95c619c40e75650913`, fixed by annotated tag
+`ithildin/lv1-003-o4-attempt017-reviewed`. Make exited `2`, the producer exited `1`, and the outward
+and primary failure were `gateway_mission_projection_invalid` at stage `13`. Base and bridge builds
+completed, four image identities were bound, cleanup failures were empty, and recovery was false.
 
-The reviewed Gateway mission-convergence implementation is commit
+The identity-free Gateway projection is collection `complete`, reason
+`gateway_mission_projection_state_collected`, mission identity `matched`, mission lifecycle
+`runner_reported_running`, target Node identity `matched`, delivery `present_object`, and
+governed-agent-runs `present_object`. The identity-free Node receipt projection is collection
+`complete`, reason `node_receipt_projection_state_collected`, receipt shape `exact`, mission
+identity `matched`, claim `valid_format`, envelope `valid_digest`, handoff nonce `valid_digest`,
+next operation `completion_pending`, and last closed status `failed_closed`.
+
+Private run/project identities and output remain digest-only. The exact receipt bindings are
+recorded in `docs/codex/local-v1-lv1-003-o4-attempt-017-disposition.json`; no raw private identity
+or content is reproduced. The run, project, manifest, diagnostic, and disposition digests are
+`sha256:4efa41c29ab33205b1b8106f8fc21295bddb20b45bb025ef6dbfa1fee19ecb49`,
+`sha256:f3e18416ffcd04203f0ac0a31725b98baeea52f293b6139e6b28666aa8416003`,
+`sha256:8ce768e66538d932d8ad16cd5112aa6826943450cf46f9d8a7ac9871c9176c5f`,
+`sha256:9f86efd4b15aad9492b2ef7aa0e5f26b90b0b40e2feab9ece33ae219cb472158`,
+and `sha256:76111fb55e47a53554a22326499aa8a1b98fc9280ffb80b471e953cc4b645762`.
+Exact runtime/report roots were absent and the report base was absent point-in-time, without
+generic absence claims.
+
+Attempt budget is zero, `attempt_consumed` is true, retry, automatic retry, concurrent invocation,
+and post-attempt retry are false, and all 19 authority fields are false. Tool count remains 24;
+release, promotion, production, and UAT remain false. The producer entrypoint refuses before
+activity. The next action is only a separately reviewed bounded diagnosis of why completion failed
+closed or the Gateway report did not advance, not Attempt 018 or repair authority.
+
+## Attempt 017 Historical Authorization Boundary
+
+Attempt 017 was authorized only as the exact six-path child of
+`0ecdb532d364ee9cf53f343fbc1a9d3e3bf64f32`, tree
+`fc2156f9cabad4df04998fe533a4bc6a61a75a5a`, preserving runtime parity to reviewed candidate
 `f222091c86b71162a3eef5e7518ef0f032cc65ec`, tree
-`7683d2de4dbca2367189e2b807818e641f1e3e8b`, direct parent
-`589c9bc721330e92e0298b86b873d007234b8c49`. It is bound by
-`docs/codex/local-v1-lv1-003-o4-mission-convergence-exact-review.md`, digest
-`sha256:00f1511d352ca4cbf29dfd9032b3b3db1ca6a9c0be45ebae43b6159cb7498d9e`,
-with disposition `GO_CODE_ONLY` and Critical 0, High 0, Medium 0, Low 0. The reviewed candidate
-changes exactly seven paths with the digests recorded in that durable review. The execution
-candidate must preserve runtime parity to the exact reviewed implementation.
-
-The sole purpose is one central-manager-supervised invocation using the reviewed convergence
-semantics after Attempt 016's `gateway_mission_projection_invalid`; success is not predicted. On
-the eventual exact tagged candidate only, the attempt budget is one, `attempt_consumed` is false,
-and exactly five fields may be true: producer code, Docker lifecycle, live Hermes execution,
-model-provider access, and O4 evidence execution. The remaining fourteen authority fields stay
-false, including credential custody, runner lifecycle authority, arbitrary host/process/shell or
-Docker-socket control, network/filesystem non-bypass claims, new governed power/tool, release,
-promotion, production, and UAT. The governed tool count remains exactly 24.
-
-This is a fresh, separately authorized successor attempt, not a retry, automatic retry, recovery,
-repair, or cleanup action. Concurrent, automatic, and post-attempt retries are false. Authority is
-not derived from history or recovery, and immediate consumed disposition is mandatory after the
-single supervised invocation.
+`7683d2de4dbca2367189e2b807818e641f1e3e8b`. Historical review and tag existence no longer grant
+live authority.
 
 ## Attempt 016 Consumed Result
 

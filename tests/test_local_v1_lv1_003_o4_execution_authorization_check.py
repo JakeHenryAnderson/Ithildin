@@ -439,6 +439,33 @@ def _attempt_017_candidate_repository(
     return repo, commit, tree
 
 
+def _attempt_017_closure_repository(tmp_path: Path) -> tuple[Path, str, str]:
+    repo = tmp_path / "attempt-017-closure"
+    subprocess.run(["git", "clone", "-q", str(Path.cwd()), str(repo)], check=True)
+    _run_git(repo, "checkout", "--detach", gate.ATTEMPT_017_CANDIDATE_COMMIT)
+    for relative in gate.ATTEMPT_017_CLOSURE_CONTROL_PATH_ALLOWLIST:
+        destination = repo / relative
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(relative, destination)
+    _run_git(repo, "add", "--", *gate.ATTEMPT_017_CLOSURE_CONTROL_PATH_ALLOWLIST)
+    _run_git(
+        repo,
+        "-c",
+        "user.name=Ithildin Test",
+        "-c",
+        "user.email=ithildin-test@example.invalid",
+        "commit",
+        "-q",
+        "-m",
+        "test: exact O4 Attempt 017 consumed closure",
+    )
+    return (
+        repo,
+        _run_git(repo, "rev-parse", "HEAD"),
+        _run_git(repo, "show", "-s", "--format=%T", "HEAD"),
+    )
+
+
 def _skip_private_evidence(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(gate, "_validate_attempt_010_receipts", lambda *_: None)
     monkeypatch.setattr(gate, "_validate_attempt_011_receipts", lambda *_: None)
@@ -447,6 +474,7 @@ def _skip_private_evidence(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(gate, "_validate_attempt_014_receipts", lambda *_: None)
     monkeypatch.setattr(gate, "_validate_attempt_015_receipts", lambda *_: None)
     monkeypatch.setattr(gate, "_validate_attempt_016_receipts", lambda *_: None)
+    monkeypatch.setattr(gate, "_validate_attempt_017_receipts", lambda *_: None)
     monkeypatch.setattr(gate, "_validate_retained_attempt_evidence", lambda *_: None)
 
 
@@ -742,6 +770,135 @@ def _synthetic_attempt_013_receipts(
         "sha256:" + hashlib.sha256(diagnostic_bytes).hexdigest(),
     )
     return tmp_path, diagnostic, disposition, receipt_root, run_name, project_name
+
+
+def _synthetic_attempt_017_receipts(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> tuple[Path, Path, str, str]:
+    receipt_base = Path("receipts")
+    runtime_base = Path("runtime")
+    report_base = Path("reports")
+    run_name = "20260726T170000Z-017abcde"
+    project_name = "ithildin-local-v1-o4-017abcde"
+    receipt_root = tmp_path / receipt_base / run_name
+    receipt_root.mkdir(parents=True)
+    (tmp_path / receipt_base).chmod(0o700)
+    receipt_root.chmod(0o700)
+    (tmp_path / runtime_base).mkdir(mode=0o700)
+    candidate = receipt_root / "candidate"
+    candidate.mkdir(mode=0o700)
+    fixture_bytes = b"fixture-only-candidate\n"
+    fixture = candidate / "fixture.txt"
+    fixture.write_bytes(fixture_bytes)
+    fixture.chmod(0o400)
+    candidate.chmod(0o500)
+    fixture_digest = "sha256:" + hashlib.sha256(fixture_bytes).hexdigest()
+    manifest_document = {
+        "candidate_commit": gate.ATTEMPT_017_CANDIDATE_COMMIT,
+        "candidate_tree": gate.ATTEMPT_017_CANDIDATE_TREE,
+        "files": {
+            "fixture.txt": {
+                "mode": 0o400,
+                "sha256": fixture_digest,
+            }
+        },
+    }
+    manifest_bytes = (
+        json.dumps(manifest_document, sort_keys=True, separators=(",", ":")) + "\n"
+    ).encode()
+    manifest = receipt_root / "candidate-manifest.json"
+    manifest.write_bytes(manifest_bytes)
+    manifest.chmod(0o600)
+    diagnostic_document = {
+        "schema_version": "1",
+        "record_type": "local_v1_lv1_003_o4_producer_failure_diagnostic",
+        "outward_failure_code": "gateway_mission_projection_invalid",
+        "primary_failure_code": "gateway_mission_projection_invalid",
+        "cleanup_failure_codes": [],
+        "recovery_required": False,
+        "highest_completed_stage": 13,
+        "base_build_completed": True,
+        "bridge_build_completed": True,
+        "bound_inspected_image_identities": [
+            {
+                "reference": f"private-reference-{index}",
+                "image_id": f"private-image-{index}",
+                "project": project_name,
+                "service": f"private-service-{index}",
+                "compose_version": "private-version",
+                "platform": "private-platform",
+                "ordered_layer_digests": [f"private-layer-{index}"],
+            }
+            for index in range(4)
+        ],
+        "gateway_mission_projection_diagnostic": {
+            "collection_status": "complete",
+            "collection_reason_code": "gateway_mission_projection_state_collected",
+            "mission_identity_binding": "matched",
+            "mission_lifecycle_state": "runner_reported_running",
+            "target_node_identity_binding": "matched",
+            "delivery_projection_state": "present_object",
+            "governed_agent_runs_projection_state": "present_object",
+        },
+        "node_receipt_projection_diagnostic": {
+            "collection_status": "complete",
+            "collection_reason_code": "node_receipt_projection_state_collected",
+            "receipt_shape": "exact",
+            "mission_identity_binding": "matched",
+            "claim_binding": "valid_format",
+            "envelope_binding": "valid_digest",
+            "handoff_nonce_binding": "valid_digest",
+            "next_operation": "completion_pending",
+            "last_closed_status": "failed_closed",
+        },
+    }
+    diagnostic_bytes = (
+        json.dumps(diagnostic_document, sort_keys=True, separators=(",", ":")) + "\n"
+    ).encode()
+    diagnostic = receipt_root / "diagnostic.json"
+    diagnostic.write_bytes(diagnostic_bytes)
+    diagnostic.chmod(0o600)
+    disposition = receipt_root / "disposition.json"
+    disposition.write_bytes(gate.ATTEMPT_017_DISPOSITION_BYTES)
+    disposition.chmod(0o600)
+    monkeypatch.setattr(gate, "ATTEMPT_002_RECEIPT_BASE", receipt_base)
+    monkeypatch.setattr(gate, "ATTEMPT_002_RUNTIME_BASE", runtime_base)
+    monkeypatch.setattr(gate, "ATTEMPT_002_REPORT_BASE", report_base)
+    monkeypatch.setattr(
+        gate,
+        "ATTEMPT_017_RUN_IDENTITY_DIGEST",
+        gate._domain_identity_digest(gate.ATTEMPT_017_RUN_DIGEST_PREFIX, run_name),  # noqa: SLF001
+    )
+    monkeypatch.setattr(
+        gate,
+        "ATTEMPT_017_PROJECT_IDENTITY_DIGEST",
+        gate._domain_identity_digest(  # noqa: SLF001
+            gate.ATTEMPT_017_PROJECT_DIGEST_PREFIX,
+            project_name,
+        ),
+    )
+    monkeypatch.setattr(gate, "ATTEMPT_017_MANIFEST_SIZE", len(manifest_bytes))
+    monkeypatch.setattr(
+        gate,
+        "ATTEMPT_017_MANIFEST_RECEIPT_DIGEST",
+        "sha256:" + hashlib.sha256(manifest_bytes).hexdigest(),
+    )
+    monkeypatch.setattr(gate, "ATTEMPT_017_DIAGNOSTIC_SIZE", len(diagnostic_bytes))
+    monkeypatch.setattr(
+        gate,
+        "ATTEMPT_017_DIAGNOSTIC_RECEIPT_DIGEST",
+        "sha256:" + hashlib.sha256(diagnostic_bytes).hexdigest(),
+    )
+    monkeypatch.setattr(gate, "ATTEMPT_017_SNAPSHOT_FILE_COUNT", 1)
+    monkeypatch.setattr(
+        gate,
+        "_candidate_snapshot_from_git",
+        lambda *_args, **_kwargs: {
+            "fixture.txt": (0o400, fixture_digest, fixture_bytes)
+        },
+    )
+    return tmp_path, diagnostic, run_name, project_name
 
 
 def test_attempt_010_exact_closure_child_is_clean_parent_bound_and_runtime_equal(
@@ -1320,7 +1477,7 @@ def test_attempt_016_consumed_exact_eight_path_closure_cannot_authorize_attempt_
     assert len(gate.ATTEMPT_016_CLOSURE_CONTROL_PATH_ALLOWLIST) == 8
 
 
-def test_attempt_016_consumed_contract_is_preserved_under_attempt_017_gate() -> None:
+def test_attempt_016_consumed_contract_is_preserved_under_attempt_017_closure() -> None:
     contract = _contract()
     failures: list[str] = []
 
@@ -1328,28 +1485,23 @@ def test_attempt_016_consumed_contract_is_preserved_under_attempt_017_gate() -> 
 
     assert failures == []
     assert contract["attempt_016_execution_authorized"] is False
-    assert contract["attempt_017_execution_authorized"] is True
-    assert contract["execution_attempt_budget"] == 1
-    assert contract["attempt_consumed"] is False
+    assert contract["attempt_017_execution_authorized"] is False
+    assert contract["execution_attempt_budget"] == 0
+    assert contract["attempt_consumed"] is True
     assert contract["attempt_016_identity_free_gateway_mission_projection"][
         "mission_lifecycle_state"
     ] == "runner_reported_running"  # type: ignore[index]
     authority = contract["authority"]
     assert isinstance(authority, dict)
     assert len(authority) == 19
-    assert {key for key, value in authority.items() if value is True} == (
-        gate.TRUE_AUTHORITY_FIELDS
-    )
+    assert all(value is False for value in authority.values())
 
 
-def test_attempt_017_tagged_exact_candidate_has_one_shot_authority(
+def test_attempt_017_consumed_exact_eight_path_closure(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    repo, commit, tree = _attempt_017_candidate_repository(
-        tmp_path,
-        tag_candidate=True,
-    )
+    repo, commit, tree = _attempt_017_closure_repository(tmp_path)
     _skip_private_evidence(monkeypatch)
 
     report = gate.build_report(repo)
@@ -1357,30 +1509,87 @@ def test_attempt_017_tagged_exact_candidate_has_one_shot_authority(
     assert report["valid"] is True, report["failures"]
     assert report["execution_checkout_commit"] == commit
     assert report["execution_checkout_tree"] == tree
-    assert report["execution_attempt_budget"] == 1
-    assert report["attempt_consumed"] is False
-    assert report["live_execution_authorized"] is True
-    assert len(gate.ATTEMPT_017_CONTROL_PATH_ALLOWLIST) == 6
+    assert report["execution_attempt_budget"] == 0
+    assert report["attempt_consumed"] is True
+    assert report["live_execution_authorized"] is False
+    assert len(gate.ATTEMPT_017_CLOSURE_CONTROL_PATH_ALLOWLIST) == 8
 
 
-def test_attempt_017_pretag_exact_candidate_fails_closed(
+def test_attempt_017_consumed_disposition_has_both_exact_projections(
+) -> None:
+    disposition = json.loads(
+        gate.ATTEMPT_017_DISPOSITION_JSON.read_text(encoding="utf-8")
+    )
+    failures: list[str] = []
+
+    gate._validate_attempt_017_disposition(  # type: ignore[arg-type] # noqa: SLF001
+        disposition,
+        gate.ATTEMPT_017_DISPOSITION_DOCUMENT.read_text(encoding="utf-8"),
+        failures,
+    )
+
+    assert failures == []
+    assert disposition["identity_free_gateway_mission_projection"][
+        "mission_lifecycle_state"
+    ] == "runner_reported_running"
+    assert disposition["identity_free_node_receipt_projection"]["next_operation"] == (
+        "completion_pending"
+    )
+    assert disposition["identity_free_node_receipt_projection"][
+        "last_closed_status"
+    ] == "failed_closed"
+    serialized = json.dumps(disposition, sort_keys=True)
+    assert "ithildin-local-v1-o4-" not in serialized
+    assert not re.search(r"20[0-9]{6}T[0-9]{6}Z-[0-9a-f]{8}", serialized)
+
+
+def test_attempt_017_private_receipt_fixture_is_exact_and_identity_silent(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    repo, _, _ = _attempt_017_candidate_repository(
+    repo, _, run_name, project_name = _synthetic_attempt_017_receipts(
         tmp_path,
-        tag_candidate=False,
+        monkeypatch,
     )
-    _skip_private_evidence(monkeypatch)
+    failures: list[str] = []
 
-    report = gate.build_report(repo)
+    gate._validate_attempt_017_receipts(repo, failures)  # noqa: SLF001
 
-    assert report["valid"] is False
-    assert report["execution_attempt_budget"] == 0
-    assert report["live_execution_authorized"] is False
-    assert report["failures"] == [
-        "O4 Attempt 017 review tag is missing or not annotated"
-    ]
+    assert failures == []
+    failure_text = "\n".join(failures)
+    assert run_name not in failure_text
+    assert project_name not in failure_text
+
+
+def test_attempt_017_private_receipt_fixture_rejects_node_projection_drift(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    repo, diagnostic, run_name, project_name = _synthetic_attempt_017_receipts(
+        tmp_path,
+        monkeypatch,
+    )
+    document = json.loads(diagnostic.read_text(encoding="utf-8"))
+    document["node_receipt_projection_diagnostic"]["next_operation"] = "completion_recorded"
+    diagnostic_bytes = (
+        json.dumps(document, sort_keys=True, separators=(",", ":")) + "\n"
+    ).encode()
+    diagnostic.write_bytes(diagnostic_bytes)
+    diagnostic.chmod(0o600)
+    monkeypatch.setattr(gate, "ATTEMPT_017_DIAGNOSTIC_SIZE", len(diagnostic_bytes))
+    monkeypatch.setattr(
+        gate,
+        "ATTEMPT_017_DIAGNOSTIC_RECEIPT_DIGEST",
+        "sha256:" + hashlib.sha256(diagnostic_bytes).hexdigest(),
+    )
+    failures: list[str] = []
+
+    gate._validate_attempt_017_receipts(repo, failures)  # noqa: SLF001
+
+    assert "O4 Attempt 017 Node receipt projection is not exact" in failures
+    failure_text = "\n".join(failures)
+    assert run_name not in failure_text
+    assert project_name not in failure_text
 
 
 def test_attempt_017_lightweight_tag_fails_closed(
@@ -1403,7 +1612,7 @@ def test_attempt_017_lightweight_tag_fails_closed(
     assert failures == ["O4 Attempt 017 review tag is missing or not annotated"]
 
 
-def test_attempt_017_contract_and_mission_convergence_review_are_exact() -> None:
+def test_attempt_017_consumed_contract_and_mission_convergence_review_are_exact() -> None:
     contract = _contract()
     failures: list[str] = []
 
@@ -1415,15 +1624,13 @@ def test_attempt_017_contract_and_mission_convergence_review_are_exact() -> None
     )
 
     assert failures == []
-    assert contract["execution_attempt_budget"] == 1
-    assert contract["attempt_consumed"] is False
-    assert contract["attempt_017_execution_authorized"] is True
+    assert contract["execution_attempt_budget"] == 0
+    assert contract["attempt_consumed"] is True
+    assert contract["attempt_017_execution_authorized"] is False
     authority = contract["authority"]
     assert isinstance(authority, dict)
     assert len(authority) == 19
-    assert {key for key, value in authority.items() if value is True} == (
-        gate.TRUE_AUTHORITY_FIELDS
-    )
+    assert all(value is False for value in authority.values())
 
 
 def test_attempt_015_exact_six_path_candidate_and_annotated_tag_binding(
