@@ -1,12 +1,12 @@
 # Local v1 LV1-003 O4 Execution Authorization Gate
 
-Status: `ATTEMPT_008_EXACT_CHILD_ONE_SHOT_EXECUTION_AUTHORIZED`
+Status:
+`ATTEMPT_008_CONSUMED_ENROLLMENT_OUTPUT_PROJECTION_REPAIR_REQUIRED_RECOVERY_REQUIRED_NO_LIVE_AUTHORITY`
 
-This gate preserves all seven consumed attempt histories, the consumed and closed Attempt 003
-image recovery, and the retained Attempt 007 failure evidence. It authorizes one exact,
-central-manager-supervised Attempt 008 invocation only. It authorizes no retry, automatic retry,
-recovery action, evidence deletion, release, promotion, production action, credential custody, or
-UAT action. Its machine contract is
+This gate preserves all eight consumed attempt histories, the consumed and closed Attempt 003
+image recovery, and the retained Attempt 008 recovery-required evidence. It authorizes no
+execution, retry, automatic retry, recovery action, evidence deletion, release, promotion,
+production action, credential custody, or UAT action. Its machine contract is
 `docs/codex/local-v1-lv1-003-o4-execution-authorization.json`.
 
 The gate preserves the reviewed fixed bridge and bounded producer implementation at
@@ -24,9 +24,9 @@ That authorization was exercised once by candidate
 `aa3eecea481dd5c92925ceec3421c051c63cb3cf`, and is no longer live.
 
 The machine contract's generic `candidate_parent_commit` and `candidate_parent_tree` fields now
-refer only to reviewed image-readability repair
-`7cc1da575074895a7210c5f15a34ae136f4f932a`, tree
-`b448eb922619e59af74275cf1070deb33b6813ef`. The reviewed runtime-native repair
+refer only to consumed Attempt 008 candidate
+`ae6824bd6d81f58efc5a3383d63341d20ae3467a`, tree
+`8e5a0d45369ca559e271aa3fd58c19e6bb57e33c`. The reviewed runtime-native repair
 `49db93d80a71855d9ae223826a9849749377c376`, tree
 `23950855584316daba76acd65be0bfdfd20fbcb9`, remains the explicit historical Attempt 004
 authorization parent. The older
@@ -35,8 +35,8 @@ authorization parent. The older
 code-authorization identity only; it is not the current execution candidate parent.
 
 The machine contract names all inherited Attempt 001 lineage with explicit `attempt_001_*` keys.
-Those fields are historical only. The validator's public current-attempt fields bind the dynamic
-Attempt 008 exact child while Attempts 001 through 007 remain explicit history, so generic report
+Those fields are historical only. The validator's public current-attempt fields bind the consumed
+Attempt 008 candidate while Attempts 001 through 007 remain explicit history, so generic report
 labels cannot silently substitute an earlier attempt for the current attempt.
 
 ## Attempt 001 Result
@@ -508,6 +508,43 @@ powers, new tools, release, promotion, production, and UAT remain unauthorized. 
 authority for the existing reviewed Make/module command only, not a new product power or a claim
 that Attempt 008 will succeed.
 
+## Attempt 008 Result And Closure
+
+The exact candidate `ae6824bd6d81f58efc5a3383d63341d20ae3467a`, tree
+`8e5a0d45369ca559e271aa3fd58c19e6bb57e33c`, was invoked once. Run
+`20260726T001909Z-d801f37b` used project `ithildin-local-v1-o4-d801f37b`.
+
+Both base and bridge builds completed, all four image identities were bound, and stage `7` was
+reached. The primary failure was `subprocess_output_rejected`; the cleanup failure list is exactly
+`[enrollment_outcome_ambiguous]`; the outward failure is `recovery_required`; and recovery remains
+required.
+
+Exact candidate code analysis identifies a deterministic code-path incompatibility. The Node CLI
+enrollment result uses `NodeState.safe_summary()`, which always emits the key
+`private_key_present`. The producer `_FORBIDDEN_OUTPUT` pattern contains `private[_ -]?key`, and
+`_require_success()` applies that lexical scan before the enrollment JSON projection is parsed and
+validated. This conclusion is supported by exact candidate source plus stage and return-path
+evidence. It is not retained raw stdout proof: raw stdout was not inspected for this disposition,
+no raw stdout is retained or quoted, and its exact bytes are not claimed.
+
+Cleanup success is not claimed. No image ID, run image reference, container, volume, network,
+runtime plaintext, or general Docker absence is claimed. The exact `0700` receipt root
+`var/local-v1-lv1-003-o4-receipts/20260726T001909Z-d801f37b` retains:
+
+- 119-byte disposition
+  `sha256:03bceb292828f68440c2183438f856edd4b291130d6f276b9418a3d2ad967992`
+- 7,174-byte diagnostic
+  `sha256:cf303eb045cf522e62c5fa5b2f35fc54d5ecd5981e1c0c1428d4584d6a165b28`
+- 96,772-byte manifest
+  `sha256:04d64359cbc275181d90b50cef3534c550a0d7e446ae12caee3f5fe7bcb19c54`
+- 664-file exact candidate snapshot
+
+The durable disposition is
+`docs/codex/local-v1-lv1-003-o4-attempt-008-disposition.json`. The closure accepts only a clean
+direct child of the attempted candidate with the exact eight-path closure allowlist. Its next
+action is a separately reviewed enrollment-output projection repair, not a retry. Recovery and
+evidence deletion remain unauthorized.
+
 ## Historical Attempt Ceiling
 
 The consumed Attempt 003 authorization limited the producer to one uniquely named isolated Compose project and
@@ -574,10 +611,9 @@ inventory entry `gemma4:e4b`. This closure makes no provider-route success or ab
 
 ## Current Disposition
 
-Attempts 001 through 007 are consumed. Attempt 003 image recovery is consumed and closed. Attempt
-008 has budget one; `attempt_consumed` is false, and retry and automatic retry are false. Exactly
-five bounded live authority fields are true for the single supervised invocation and the remaining
-14 authority fields are false.
+Attempts 001 through 008 are consumed. Attempt 003 image recovery is consumed and closed. Attempt
+008 has budget zero; `attempt_consumed` is true, retry and automatic retry are false, recovery
+remains required but unauthorized, and all 19 authority fields are false.
 
 Credential custody, runner lifecycle, arbitrary host control, generic process control, shell
 execution, general Docker socket authority, network/filesystem non-bypass claims, new powers, new
