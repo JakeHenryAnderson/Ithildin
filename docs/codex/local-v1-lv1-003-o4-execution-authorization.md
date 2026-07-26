@@ -1,45 +1,75 @@
 # Local v1 LV1-003 O4 Execution Authorization Gate
 
 Status:
-`ATTEMPT_014_PREPARED_PENDING_EXACT_CANDIDATE_REVIEW_NO_LIVE_AUTHORITY`
+`ATTEMPT_014_CONSUMED_SOCKET_PARENT_VALIDATION_PHASE_OBSERVED_CLEANUP_COMPLETE_NO_LIVE_AUTHORITY`
 
-This record prepares `LV1-003-O4-ATTEMPT-014` as one distinct diagnostic successor, preserves
-immutable Attempts 001-013 and all tracked recovery history, and grants no authority on the real
-pre-tag checkout. Its machine contract is
-`docs/codex/local-v1-lv1-003-o4-execution-authorization.json`.
+This record closes consumed `LV1-003-O4-ATTEMPT-014`, preserves immutable Attempts 001-013 and all
+tracked recovery history, and grants no live authority. Its machine contract is
+`docs/codex/local-v1-lv1-003-o4-execution-authorization.json`; its exact disposition is
+`docs/codex/local-v1-lv1-003-o4-attempt-014-disposition.json`.
 
-## Attempt 014 Prepared Boundary
+## Attempt 014 Consumed Result
 
-Attempt 014 may become executable only as the clean exact six-path, single-parent immediate child
-of review-record commit `fe4ac6b0da0e38b6feb18b9fb5c7b7c0ad096051`, tree
-`0c212ab813222dece38b49f067cf978adcee583e`, with fixed annotated tag
-`ithildin/lv1-003-o4-attempt014-reviewed` peeling to that exact child. Before that exact candidate
-and tag exist, the validator reports invalid, effective budget zero, and all live authority false;
-the next action is `review_attempt_014_execution_authorization_exact_candidate`.
+Exact execution candidate `bfb10f037c916a7c7bd5a15a5d748f3d4d3c3a44`, tree
+`191ca97beae3d4ba31ef3e22fb1533a8620e8347`, remains fixed by annotated review tag
+`ithildin/lv1-003-o4-attempt014-reviewed`. The sole supervised invocation used
+`make local-v1-lv1-003-o4-producer-run` and
+`uv run python -m scripts.local_v1_lv1_003_o4_producer`. Make exited `2`; the producer exited `1`.
+The private run and Compose project are represented only by domain-separated digests
+`sha256:bde3608954025334040e16549f8d7e661b36c7e39a897ce22c14e4c8a72e73ea` and
+`sha256:bd1a847bbb200e3cbf66d2597ff408383a811b7691c091184a3ec284a741ecef`.
+The raw invocation output is not reproduced; only its 160-byte length and digest
+`sha256:fd9673eeb55fe747baba9605650183eea1691ec0ef555327431d83a8718b9445`
+are retained.
 
-The reviewed runtime repair is commit `338dc059fa251299502ff31f9274f2a1ffc9c9ea`, tree
+The outward and primary failure were `fixed_node_start_failed`; highest completed stage was `11`.
+Base and bridge builds completed, exactly four image identities were bound, cleanup failures were
+empty, `recovery_required` was false, and cleanup completed under reviewed producer semantics.
+
+The exact fourteen-key normalized projection is collection `complete`, reason
+`fixed_node_start_state_collected`, classification
+`fixed_node_exited_observation_noncanonical`, container presence `present`, lifecycle `exited`,
+running state `not_running`, exit class `nonzero`, health `unhealthy`, failure signal `none`,
+observation semantics `sequential_container_then_mission`, mission lifecycle `claimed`, delivery
+`claim_delivered`, evidence `complete`, and phase `socket_parent_validation_entered`. It is a
+sequential, nonatomic, noncausal marker and proves no root cause, repair, safe retry, success, or
+authority.
+
+The owner-only mode `0700` receipt root contains exactly a mode `0500` candidate snapshot with 668
+files; a mode `0600`, 97,421-byte manifest with
+`sha256:769472b7a2cb6d60a7ee852ed5d4688446b3aa657c860d4d3bff1d8afadedce6`; a mode `0600`,
+7,774-byte diagnostic with
+`sha256:91fb82f3128149388854f0ae788a5518631346c02d669e19163cdde6ddf99e3e`; and a mode `0600`,
+125-byte disposition with
+`sha256:dcce687c6e2a0d6f36e36d3c14ac09e25ba4c195e1f16f35bf6ea44521612dd3`.
+The exact run runtime root and exact public report root were absent; the public report base was
+absent at the point of observation.
+
+Attempt budget is zero, `attempt_consumed` is true, and retry, automatic retry, recovery, cleanup,
+and successor authority are false. All 19 authority fields are false. Release, promotion,
+production, and UAT remain false; the governed tool count remains exactly 24. The retained live
+target now refuses before activity.
+
+The next action is a separately reviewed bounded source diagnosis or repair for the
+`socket_parent_validation_entered` phase. It is not a fixed-Node root-cause claim, retry authority,
+or successor authorization.
+
+## Attempt 014 Historical Authorization Boundary
+
+Attempt 014 was authorized only as the clean six-path immediate child of review-record commit
+`fe4ac6b0da0e38b6feb18b9fb5c7b7c0ad096051`, tree
+`0c212ab813222dece38b49f067cf978adcee583e`. Its reviewed runtime repair was commit
+`338dc059fa251299502ff31f9274f2a1ffc9c9ea`, tree
 `3428f0148520e629fd5fe50788469fcd55ad2dba`, direct parent
-`0e2ed89b744bcf9a98fd09a5b39a0705656aa001`. It is bound by
+`0e2ed89b744bcf9a98fd09a5b39a0705656aa001`, bound by
 `docs/codex/local-v1-lv1-003-o4-terminal-health-phase-projection-exact-review.md`, digest
-`sha256:573dd1063364cbbd89ca9f865765dc4c7c28001044a17cd5fa7e3e7f40f6a039`,
-with disposition `GO_CODE_ONLY` and Critical 0, High 0, Medium 0, Low 0. The reviewed producer and
-test digests are respectively
+`sha256:573dd1063364cbbd89ca9f865765dc4c7c28001044a17cd5fa7e3e7f40f6a039`.
+The reviewed producer and test digests were
 `sha256:036ff3fe0baf2c2d4f8f89f72b6edbcbcf01fff55371ef8752118ded74492292`
 and
 `sha256:2eaba1dfe1835f8ae507af93d74c2d78ae192cf93ae4330e7b296ba94727f50f`.
-The execution candidate must preserve runtime parity to that exact repair.
-
-On the eventual exact tagged candidate only, the attempt budget is one, `attempt_consumed` is false,
-and exactly five fields may be true: producer code, Docker lifecycle, live Hermes execution,
-model-provider access, and O4 evidence execution. The remaining fourteen authority fields stay
-false, including credential custody, runner lifecycle authority, arbitrary host/process/shell or
-Docker-socket control, network/filesystem non-bypass claims, new governed power/tool, release,
-promotion, production, and UAT. The governed tool count remains exactly 24.
-
-This is a fresh, separately authorized diagnostic successor, not a retry, automatic retry,
-recovery, repair, or cleanup action. Concurrent, automatic, and post-attempt retries are false.
-Success is not predicted, authority is not derived from history or recovery, and immediate consumed
-disposition is mandatory after the one central-manager-supervised invocation.
+The review disposition was `GO_CODE_ONLY` with Critical 0, High 0, Medium 0, Low 0. Historical
+review and tag existence no longer grant live authority.
 
 ## Attempt 013 Consumed Result
 

@@ -1,0 +1,138 @@
+{
+  "schema_version": "1",
+  "record_type": "local_v1_lv1_003_o4_attempt_014_disposition",
+  "record_status": "ATTEMPT_014_CONSUMED_SOCKET_PARENT_VALIDATION_PHASE_OBSERVED_CLEANUP_COMPLETE_NO_LIVE_AUTHORITY",
+  "attempt_id": "LV1-003-O4-ATTEMPT-014",
+  "execution_candidate_commit": "bfb10f037c916a7c7bd5a15a5d748f3d4d3c3a44",
+  "execution_candidate_tree": "191ca97beae3d4ba31ef3e22fb1533a8620e8347",
+  "review_tag": "ithildin/lv1-003-o4-attempt014-reviewed",
+  "operator_command": "make local-v1-lv1-003-o4-producer-run",
+  "module_command": "uv run python -m scripts.local_v1_lv1_003_o4_producer",
+  "invocation": {
+    "make_exit_code": 2,
+    "producer_exit_code": 1,
+    "run_identity_sha256": "sha256:bde3608954025334040e16549f8d7e661b36c7e39a897ce22c14e4c8a72e73ea",
+    "compose_project_identity_sha256": "sha256:bd1a847bbb200e3cbf66d2597ff408383a811b7691c091184a3ec284a741ecef",
+    "raw_invocation_output_sha256": "sha256:fd9673eeb55fe747baba9605650183eea1691ec0ef555327431d83a8718b9445",
+    "raw_invocation_output_size": 160,
+    "raw_run_project_or_output_recorded": false
+  },
+  "bounded_result": {
+    "outward_failure_code": "fixed_node_start_failed",
+    "primary_failure_code": "fixed_node_start_failed",
+    "highest_completed_stage": 11,
+    "base_build_completed": true,
+    "bridge_build_completed": true,
+    "bound_image_identity_count": 4,
+    "raw_image_ids_recorded": false,
+    "raw_container_id_recorded": false,
+    "raw_node_id_recorded": false,
+    "raw_mission_or_claim_identity_recorded": false,
+    "cleanup_failure_codes": [],
+    "recovery_required": false,
+    "cleanup_completed_under_reviewed_producer_semantics": true,
+    "generic_docker_absence_claimed": false,
+    "generic_process_absence_claimed": false,
+    "full_project_absence_claimed": false,
+    "generic_host_absence_claimed": false
+  },
+  "normalized_fixed_node_start_diagnostic": {
+    "collection_status": "complete",
+    "collection_reason_code": "fixed_node_start_state_collected",
+    "classification": "fixed_node_exited_observation_noncanonical",
+    "container_presence": "present",
+    "container_lifecycle_state": "exited",
+    "container_running_state": "not_running",
+    "container_exit_class": "nonzero",
+    "container_health_state": "unhealthy",
+    "container_failure_signal": "none",
+    "observation_semantics": "sequential_container_then_mission",
+    "mission_lifecycle_state": "claimed",
+    "delivery_state": "claim_delivered",
+    "evidence_state": "complete",
+    "fixed_bridge_last_entered_phase": "socket_parent_validation_entered"
+  },
+  "diagnostic_claims": {
+    "atomic_snapshot_claimed": false,
+    "causality_claimed": false,
+    "root_cause_proven": false,
+    "repair_or_safe_retry_proven": false,
+    "raw_exit_identity_or_output_recorded": false
+  },
+  "retained_receipt_binding": {
+    "root_identity_sha256": "sha256:bde3608954025334040e16549f8d7e661b36c7e39a897ce22c14e4c8a72e73ea",
+    "root_mode": "0700",
+    "entries": [
+      {
+        "path": "candidate",
+        "mode": "0500",
+        "kind": "directory",
+        "file_count": 668
+      },
+      {
+        "path": "candidate-manifest.json",
+        "mode": "0600",
+        "size": 97421,
+        "sha256": "sha256:769472b7a2cb6d60a7ee852ed5d4688446b3aa657c860d4d3bff1d8afadedce6"
+      },
+      {
+        "path": "diagnostic.json",
+        "mode": "0600",
+        "size": 7774,
+        "sha256": "sha256:91fb82f3128149388854f0ae788a5518631346c02d669e19163cdde6ddf99e3e"
+      },
+      {
+        "path": "disposition.json",
+        "mode": "0600",
+        "size": 125,
+        "sha256": "sha256:dcce687c6e2a0d6f36e36d3c14ac09e25ba4c195e1f16f35bf6ea44521612dd3"
+      }
+    ],
+    "disposition_fields": {
+      "status": "quarantined_not_published",
+      "failure_code": "fixed_node_start_failed",
+      "release_allowed": false,
+      "uat_complete": false
+    },
+    "private_contents_reproduced": false
+  },
+  "bounded_absence_observations": {
+    "exact_run_runtime_root_absent": true,
+    "exact_public_report_root_absent": true,
+    "public_report_base_absent_point_in_time": true,
+    "generic_runtime_absence_claimed": false,
+    "generic_report_absence_claimed": false
+  },
+  "attempt_contract": {
+    "execution_attempt_budget": 0,
+    "attempt_consumed": true,
+    "retry_authorized": false,
+    "automatic_retry_authorized": false,
+    "recovery_authorized": false,
+    "cleanup_authorized": false,
+    "successor_attempt_authorized": false
+  },
+  "authority": {
+    "producer_code_authorized": false,
+    "docker_lifecycle_authorized": false,
+    "live_hermes_execution_authorized": false,
+    "model_provider_access_authorized": false,
+    "o4_evidence_execution_authorized": false,
+    "credential_custody_authorized": false,
+    "runner_lifecycle_authority": false,
+    "arbitrary_host_control_authorized": false,
+    "generic_process_control_authorized": false,
+    "shell_execution_authorized": false,
+    "docker_socket_authorized": false,
+    "network_non_bypass_claimed": false,
+    "filesystem_non_bypass_claimed": false,
+    "new_governed_power_authorized": false,
+    "new_governed_tool": false,
+    "release_allowed": false,
+    "promotion_allowed": false,
+    "production_authorized": false,
+    "uat_complete": false
+  },
+  "next_action": "prepare_separately_reviewed_bounded_source_diagnosis_or_repair_for_socket_parent_validation_phase_not_fixed_node_root_cause_or_retry_authority",
+  "tool_count": 24
+}
