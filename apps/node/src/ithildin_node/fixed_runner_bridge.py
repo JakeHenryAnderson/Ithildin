@@ -10,8 +10,11 @@ import socket
 import stat
 import struct
 import time
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass, replace
+from enum import StrEnum
 from pathlib import Path
+from types import MappingProxyType
 from typing import cast
 
 from ithildin_schemas import JsonObject, canonical_json, sha256_digest
@@ -37,6 +40,36 @@ FIXED_OPERATIONS = (
     ("mission.step.1", "project.structure.summary"),
     ("mission.step.2", "project.test.summary"),
 )
+
+
+class FixedBridgePhase(StrEnum):
+    """Closed, non-authoritative markers for the last entered bridge phase."""
+
+    FIXED_BRIDGE_ENTERED = "fixed_bridge_entered"
+    PRECLAIM_VALIDATION_ENTERED = "preclaim_validation_entered"
+    MISSION_CLAIM_ENTERED = "mission_claim_entered"
+    SESSION_VALIDATION_ENTERED = "session_validation_entered"
+    RECEIPT_PERSISTENCE_ENTERED = "receipt_persistence_entered"
+    SOCKET_PARENT_VALIDATION_ENTERED = "socket_parent_validation_entered"
+    SOCKET_BIND_ENTERED = "socket_bind_entered"
+    SOCKET_PERMISSIONS_ENTERED = "socket_permissions_entered"
+    LISTENER_ACCEPT_ENTERED = "listener_accept_entered"
+
+
+FIXED_BRIDGE_PHASE_EXIT_CODES: Mapping[FixedBridgePhase, int] = MappingProxyType(
+    {
+        FixedBridgePhase.FIXED_BRIDGE_ENTERED: 80,
+        FixedBridgePhase.PRECLAIM_VALIDATION_ENTERED: 81,
+        FixedBridgePhase.MISSION_CLAIM_ENTERED: 82,
+        FixedBridgePhase.SESSION_VALIDATION_ENTERED: 83,
+        FixedBridgePhase.RECEIPT_PERSISTENCE_ENTERED: 84,
+        FixedBridgePhase.SOCKET_PARENT_VALIDATION_ENTERED: 85,
+        FixedBridgePhase.SOCKET_BIND_ENTERED: 86,
+        FixedBridgePhase.SOCKET_PERMISSIONS_ENTERED: 87,
+        FixedBridgePhase.LISTENER_ACCEPT_ENTERED: 88,
+    }
+)
+FixedBridgePhaseHook = Callable[[FixedBridgePhase], None]
 
 _MISSION_ID = re.compile(r"^mission_[0-9a-f]{32}$")
 _CLAIM_ID = re.compile(r"^mclaim_[0-9a-f]{32}$")
@@ -189,6 +222,7 @@ class FixedMissionSession:
         receipt_path: Path,
         envelope: JsonObject,
         handoff_nonce: str | None = None,
+        phase_hook: FixedBridgePhaseHook | None = None,
     ) -> FixedMissionSession:
         _validate_profile_digest(profile_digest)
         mission_id = _required_matching(envelope, "mission_id", _MISSION_ID)
@@ -199,6 +233,7 @@ class FixedMissionSession:
         nonce = handoff_nonce or secrets.token_hex(32)
         if not re.fullmatch(r"[0-9a-f]{64}", nonce):
             raise FixedRunnerBridgeError("handoff_nonce_invalid")
+        _emit_phase(phase_hook, FixedBridgePhase.RECEIPT_PERSISTENCE_ENTERED)
         _preflight_receipt_path(receipt_path)
         receipt = BridgeReceipt.create(
             receipt_path,
@@ -384,9 +419,12 @@ def run_fixed_mission_cycle(
     expected_peer_uid: int = EXPECTED_PEER_UID,
     expected_socket_gid: int | None = None,
     wall_time_seconds: int = MISSION_WALL_TIME_SECONDS,
+    phase_hook: FixedBridgePhaseHook | None = None,
 ) -> JsonObject:
     """Claim and serve one fixed mission; never start, stop, or inspect a runner."""
 
+    _emit_phase(phase_hook, FixedBridgePhase.FIXED_BRIDGE_ENTERED)
+    _emit_phase(phase_hook, FixedBridgePhase.PRECLAIM_VALIDATION_ENTERED)
     _preflight_receipt_path(receipt_path)
     _preflight_socket_path(
         socket_path,
@@ -398,6 +436,7 @@ def run_fixed_mission_cycle(
             else expected_socket_gid
         ),
     )
+    _emit_phase(phase_hook, FixedBridgePhase.MISSION_CLAIM_ENTERED)
     envelope = client.claim_mission(state)
     if envelope is None:
         return {
@@ -406,6 +445,7 @@ def run_fixed_mission_cycle(
             "runner_state_authority": "runner_reported_only",
             "model_provider_state_known": False,
         }
+    _emit_phase(phase_hook, FixedBridgePhase.SESSION_VALIDATION_ENTERED)
     session = FixedMissionSession.prepare(
         client=client,
         state=state,
@@ -414,6 +454,7 @@ def run_fixed_mission_cycle(
         profile_digest=profile_digest,
         receipt_path=receipt_path,
         envelope=envelope,
+        phase_hook=phase_hook,
     )
     _serve_session(
         session,
@@ -427,6 +468,7 @@ def run_fixed_mission_cycle(
             else expected_socket_gid
         ),
         wall_time_seconds=wall_time_seconds,
+        phase_hook=phase_hook,
     )
     return _closed_status(session, session.receipt.last_closed_status)
 
@@ -438,15 +480,18 @@ def _serve_session(
     expected_peer_uid: int,
     expected_socket_gid: int,
     wall_time_seconds: int,
+    phase_hook: FixedBridgePhaseHook | None = None,
 ) -> None:
     listener, parent_descriptor = _open_listener(
         socket_path,
         wall_time_seconds,
         expected_gid=expected_socket_gid,
+        phase_hook=phase_hook,
     )
     connection: socket.socket | None = None
     deadline = time.monotonic() + wall_time_seconds
     try:
+        _emit_phase(phase_hook, FixedBridgePhase.LISTENER_ACCEPT_ENTERED)
         connection, _address = listener.accept()
         if _peer_uid(connection) != expected_peer_uid:
             raise FixedRunnerBridgeError("peer_identity_denied")
@@ -502,7 +547,9 @@ def _open_listener(
     timeout_seconds: int,
     *,
     expected_gid: int,
+    phase_hook: FixedBridgePhaseHook | None = None,
 ) -> tuple[socket.socket, int]:
+    _emit_phase(phase_hook, FixedBridgePhase.SOCKET_PARENT_VALIDATION_ENTERED)
     parent_descriptor = _open_owned_directory(
         path.parent,
         expected_uid=os.geteuid(),
@@ -514,6 +561,7 @@ def _open_listener(
     listener = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
     descriptor_path = f"/proc/self/fd/{parent_descriptor}/{path.name}"
     old_umask = os.umask(0o117)
+    _emit_phase(phase_hook, FixedBridgePhase.SOCKET_BIND_ENTERED)
     try:
         listener.bind(descriptor_path)
     except OSError as exc:
@@ -522,6 +570,7 @@ def _open_listener(
         raise FixedRunnerBridgeError("socket_bind_failed") from exc
     finally:
         os.umask(old_umask)
+    _emit_phase(phase_hook, FixedBridgePhase.SOCKET_PERMISSIONS_ENTERED)
     try:
         os.chown(
             path.name,
@@ -548,6 +597,19 @@ def _open_listener(
     listener.listen(1)
     listener.settimeout(timeout_seconds)
     return listener, parent_descriptor
+
+
+def _emit_phase(
+    phase_hook: FixedBridgePhaseHook | None,
+    phase: FixedBridgePhase,
+) -> None:
+    if phase_hook is None:
+        return
+    try:
+        phase_hook(phase)
+    except BaseException:
+        # Diagnostic observers are non-authoritative and cannot alter bridge behavior.
+        pass
 
 
 def _peer_uid(connection: socket.socket) -> int:

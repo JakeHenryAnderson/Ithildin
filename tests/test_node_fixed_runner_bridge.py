@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import socket
 import stat
 import threading
@@ -13,8 +14,10 @@ import yaml
 from ithildin_node import fixed_runner_bridge as bridge_module
 from ithildin_node.client import NodeClientError, NodeState, StoredNodeConfiguration
 from ithildin_node.fixed_runner_bridge import (
+    FIXED_BRIDGE_PHASE_EXIT_CODES,
     FIXED_PROFILE_DIGEST,
     BridgeReceipt,
+    FixedBridgePhase,
     FixedMissionSession,
     FixedRunnerBridgeError,
     run_fixed_mission_cycle,
@@ -48,7 +51,11 @@ class MissionRecordingNodeClient(RecordingNodeClient):
         )
 
 
-def _prepared(tmp_path: Path) -> tuple[FixedMissionSession, MissionRecordingNodeClient]:
+def _cycle_inputs() -> tuple[
+    MissionRecordingNodeClient,
+    NodeState,
+    StoredNodeConfiguration,
+]:
     client = MissionRecordingNodeClient()
     state = client.enroll(
         enrollment_code="one-time-code",
@@ -58,6 +65,12 @@ def _prepared(tmp_path: Path) -> tuple[FixedMissionSession, MissionRecordingNode
     )
     now = datetime(2026, 7, 16, 12, 0, tzinfo=UTC)
     configuration = client.pull_configuration(state, known_generation=0, now=now)
+    return client, state, configuration
+
+
+def _prepared(tmp_path: Path) -> tuple[FixedMissionSession, MissionRecordingNodeClient]:
+    client, state, configuration = _cycle_inputs()
+    now = datetime(2026, 7, 16, 12, 0, tzinfo=UTC)
     envelope = client.claim_mission(state, now=now, nonce="91" * 16)
     assert envelope is not None
     session = FixedMissionSession.prepare(
@@ -72,6 +85,196 @@ def _prepared(tmp_path: Path) -> tuple[FixedMissionSession, MissionRecordingNode
     )
     session.report_running()
     return session, client
+
+
+def test_fixed_bridge_phase_exit_mapping_is_closed_unique_and_subsignal() -> None:
+    assert FIXED_BRIDGE_PHASE_EXIT_CODES == {
+        FixedBridgePhase.FIXED_BRIDGE_ENTERED: 80,
+        FixedBridgePhase.PRECLAIM_VALIDATION_ENTERED: 81,
+        FixedBridgePhase.MISSION_CLAIM_ENTERED: 82,
+        FixedBridgePhase.SESSION_VALIDATION_ENTERED: 83,
+        FixedBridgePhase.RECEIPT_PERSISTENCE_ENTERED: 84,
+        FixedBridgePhase.SOCKET_PARENT_VALIDATION_ENTERED: 85,
+        FixedBridgePhase.SOCKET_BIND_ENTERED: 86,
+        FixedBridgePhase.SOCKET_PERMISSIONS_ENTERED: 87,
+        FixedBridgePhase.LISTENER_ACCEPT_ENTERED: 88,
+    }
+    assert set(FIXED_BRIDGE_PHASE_EXIT_CODES) == set(FixedBridgePhase)
+    assert len(set(FIXED_BRIDGE_PHASE_EXIT_CODES.values())) == 9
+    assert all(0 < code < 128 for code in FIXED_BRIDGE_PHASE_EXIT_CODES.values())
+
+
+def test_fixed_bridge_top_level_phase_boundaries_are_ordered_and_last_entered(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    client, state, configuration = _cycle_inputs()
+    observed: list[FixedBridgePhase] = []
+
+    def stop_before_listener(*_args: object, **_kwargs: object) -> None:
+        raise FixedRunnerBridgeError("synthetic_listener_stop")
+
+    monkeypatch.setattr(bridge_module, "_serve_session", stop_before_listener)
+
+    with pytest.raises(FixedRunnerBridgeError, match="synthetic_listener_stop"):
+        run_fixed_mission_cycle(
+            client=client,
+            state=state,
+            configuration=configuration,
+            node_version="0.1.0",
+            socket_path=tmp_path / "socket" / "mission.sock",
+            receipt_path=tmp_path / "mission-receipt.json",
+            expected_socket_gid=tmp_path.stat().st_gid,
+            phase_hook=observed.append,
+        )
+
+    assert observed == list(FixedBridgePhase)[:5]
+
+
+def test_fixed_bridge_listener_setup_phase_boundaries_precede_their_operations(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    events: list[str] = []
+    parent_descriptor = os.open(tmp_path, os.O_RDONLY)
+
+    class FakeSocket:
+        def bind(self, _path: str) -> None:
+            events.append("bind")
+
+        def listen(self, backlog: int) -> None:
+            assert backlog == 1
+            events.append("listen")
+
+        def settimeout(self, timeout: int) -> None:
+            assert timeout == 9
+            events.append("settimeout")
+
+        def close(self) -> None:
+            events.append("close")
+
+    details = type(
+        "SocketDetails",
+        (),
+        {
+            "st_mode": stat.S_IFSOCK | 0o660,
+            "st_uid": os.geteuid(),
+            "st_gid": os.getegid(),
+        },
+    )()
+    monkeypatch.setattr(
+        bridge_module,
+        "_open_owned_directory",
+        lambda *_args, **_kwargs: os.dup(parent_descriptor),
+    )
+    monkeypatch.setattr(
+        bridge_module,
+        "_require_leaf_absent",
+        lambda *_args, **_kwargs: None,
+    )
+    monkeypatch.setattr(bridge_module.socket, "socket", lambda *_args: FakeSocket())
+    monkeypatch.setattr(
+        bridge_module.os,
+        "chown",
+        lambda *_args, **_kwargs: events.append("chown"),
+    )
+    monkeypatch.setattr(
+        bridge_module.os,
+        "chmod",
+        lambda *_args, **_kwargs: events.append("chmod"),
+    )
+    monkeypatch.setattr(bridge_module.os, "stat", lambda *_args, **_kwargs: details)
+
+    listener, returned_parent = bridge_module._open_listener(
+        tmp_path / "mission.sock",
+        9,
+        expected_gid=os.getegid(),
+        phase_hook=lambda phase: events.append(phase.value),
+    )
+    try:
+        assert events == [
+            "socket_parent_validation_entered",
+            "socket_bind_entered",
+            "bind",
+            "socket_permissions_entered",
+            "chown",
+            "chmod",
+            "listen",
+            "settimeout",
+        ]
+    finally:
+        listener.close()
+        os.close(returned_parent)
+        os.close(parent_descriptor)
+
+
+def test_listener_accept_phase_is_emitted_immediately_before_accept(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    session, _client = _prepared(tmp_path)
+    parent_descriptor = os.open(tmp_path, os.O_RDONLY)
+    events: list[str] = []
+
+    class TimeoutListener:
+        def accept(self) -> tuple[socket.socket, object]:
+            events.append("accept")
+            raise TimeoutError
+
+        def close(self) -> None:
+            events.append("close")
+
+    monkeypatch.setattr(
+        bridge_module,
+        "_open_listener",
+        lambda *_args, **_kwargs: (TimeoutListener(), os.dup(parent_descriptor)),
+    )
+
+    with pytest.raises(FixedRunnerBridgeError, match="bridge_timeout"):
+        bridge_module._serve_session(
+            session,
+            socket_path=tmp_path / "mission.sock",
+            expected_peer_uid=os.geteuid(),
+            expected_socket_gid=os.getegid(),
+            wall_time_seconds=9,
+            phase_hook=lambda phase: events.append(phase.value),
+        )
+
+    os.close(parent_descriptor)
+    assert events[:2] == ["listener_accept_entered", "accept"]
+
+
+def test_phase_hook_is_default_noop_and_failures_cannot_change_bridge_result(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    client, state, configuration = _cycle_inputs()
+    monkeypatch.setattr(client, "claim_mission", lambda _state: None)
+
+    def arguments(base: Path) -> dict[str, object]:
+        base.mkdir()
+        return {
+            "client": client,
+            "state": state,
+            "configuration": configuration,
+            "node_version": "0.1.0",
+            "socket_path": base / "socket" / "mission.sock",
+            "receipt_path": base / "mission-receipt.json",
+            "expected_socket_gid": base.stat().st_gid,
+        }
+
+    without_hook = run_fixed_mission_cycle(**arguments(tmp_path / "without"))
+
+    def failing_hook(_phase: FixedBridgePhase) -> None:
+        raise RuntimeError("non-authoritative observer failed")
+
+    with_failing_hook = run_fixed_mission_cycle(
+        **arguments(tmp_path / "with"),
+        phase_hook=failing_hook,
+    )
+
+    assert with_failing_hook == without_hook
+    assert with_failing_hook["status"] == "no_queued_mission"
 
 
 def _request(session: FixedMissionSession, affordance: str) -> JsonObject:

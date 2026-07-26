@@ -89,6 +89,17 @@ APPLICATION_STARTUP_STAGES = frozenset(
         "shutdown_complete",
     }
 )
+FIXED_BRIDGE_PHASE_BY_EXIT_CODE = {
+    80: "fixed_bridge_entered",
+    81: "preclaim_validation_entered",
+    82: "mission_claim_entered",
+    83: "session_validation_entered",
+    84: "receipt_persistence_entered",
+    85: "socket_parent_validation_entered",
+    86: "socket_bind_entered",
+    87: "socket_permissions_entered",
+    88: "listener_accept_entered",
+}
 HERMES_TIMEOUT_SECONDS = 920.0
 NODE_SYNCHRONIZATION_SECONDS = 90.0
 REVOCATION_RECOVERY_RECEIPT = "node-revocation-recovery.json"
@@ -968,7 +979,8 @@ class BoundImageIdentity:
 class FixedNodeContainerState:
     status: str
     running: bool
-    exit_code: int
+    exit_class: str
+    fixed_bridge_last_entered_phase: str
     oom_killed: bool
     dead: bool
     engine_error_present: bool
@@ -2881,6 +2893,7 @@ def _fixed_node_start_fallback(
         "container_lifecycle_state": "unknown",
         "container_running_state": "unknown",
         "container_exit_class": "unknown",
+        "fixed_bridge_last_entered_phase": "unknown",
         "container_health_state": "unknown",
         "container_failure_signal": "unknown",
         "observation_semantics": "not_collected",
@@ -2990,7 +3003,11 @@ def _parse_fixed_node_container_state(
     return FixedNodeContainerState(
         status=status,
         running=running,
-        exit_code=exit_code,
+        exit_class="zero" if exit_code == 0 else "nonzero",
+        fixed_bridge_last_entered_phase=FIXED_BRIDGE_PHASE_BY_EXIT_CODE.get(
+            exit_code,
+            "not_reported",
+        ),
         oom_killed=oom_killed,
         dead=dead,
         engine_error_present=engine_error_present,
@@ -3054,6 +3071,7 @@ def _fixed_node_container_projection(
             "container_lifecycle_state": "unknown",
             "container_running_state": "unknown",
             "container_exit_class": "unknown",
+            "fixed_bridge_last_entered_phase": "unknown",
             "container_health_state": "unknown",
             "container_failure_signal": "unknown",
         }
@@ -3063,6 +3081,7 @@ def _fixed_node_container_projection(
             "container_lifecycle_state": "not_applicable",
             "container_running_state": "not_applicable",
             "container_exit_class": "not_applicable",
+            "fixed_bridge_last_entered_phase": "not_applicable",
             "container_health_state": "not_applicable",
             "container_failure_signal": "not_applicable",
         }
@@ -3085,8 +3104,9 @@ def _fixed_node_container_projection(
         "container_running_state": (
             "running" if container.running else "not_running"
         ),
-        "container_exit_class": (
-            "zero" if container.exit_code == 0 else "nonzero"
+        "container_exit_class": container.exit_class,
+        "fixed_bridge_last_entered_phase": (
+            container.fixed_bridge_last_entered_phase
         ),
         "container_health_state": container.health_status,
         "container_failure_signal": failure_signal,
@@ -3132,7 +3152,7 @@ def _classify_fixed_node_start(
     if container.status == "exited":
         if container.running or container.dead or container.health_status != "absent":
             return "fixed_node_exited_observation_noncanonical"
-        if container.exit_code == 0:
+        if container.exit_class == "zero":
             return (
                 "fixed_node_exited_zero_no_queued_mission_or_"
                 "claim_observation_inconsistent"
@@ -3145,7 +3165,7 @@ def _classify_fixed_node_start(
             else "fixed_node_exited_nonzero_after_claim"
         )
     if container.status == "running":
-        if not container.running or container.exit_code != 0:
+        if not container.running or container.exit_class != "zero":
             return "fixed_node_running_observation_noncanonical"
         if container.health_status == "absent":
             return (

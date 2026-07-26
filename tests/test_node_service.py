@@ -8,6 +8,10 @@ from pathlib import Path
 import pytest
 from ithildin_node import service as service_module
 from ithildin_node.client import NodeClientError, StoredNodeConfiguration
+from ithildin_node.fixed_runner_bridge import (
+    FIXED_BRIDGE_PHASE_EXIT_CODES,
+    FixedBridgePhase,
+)
 from ithildin_node.service import retry_delay_seconds, run_service, synchronize_once
 from ithildin_schemas import JsonObject
 from test_node_client import RecordingNodeClient
@@ -86,6 +90,7 @@ def test_service_fixed_adapter_runs_mission_branch_only_after_configuration_and_
     configuration_path = tmp_path / "node" / "configuration.json"
     state.write_new(state_path)
     called: list[tuple[int, str]] = []
+    observed_phases: list[FixedBridgePhase] = []
     original_pull = client.pull_configuration_with_state
     fixed_now = datetime(2026, 7, 16, 12, 5, tzinfo=UTC)
     monkeypatch.setattr(service_module, "NodeClient", lambda _url: client)
@@ -105,6 +110,9 @@ def test_service_fixed_adapter_runs_mission_branch_only_after_configuration_and_
         assert isinstance(configuration, StoredNodeConfiguration)
         called.append((configuration.generation, str(values["node_version"])))
         assert client.requests[-1][0].endswith("/heartbeat")
+        phase_hook = values["phase_hook"]
+        assert callable(phase_hook)
+        phase_hook(FixedBridgePhase.FIXED_BRIDGE_ENTERED)
         return {
             "status": "no_queued_mission",
             "runner_state_authority": "runner_reported_only",
@@ -118,9 +126,11 @@ def test_service_fixed_adapter_runs_mission_branch_only_after_configuration_and_
         node_version="0.1.0",
         runner_adapter="hermes_fixed_node_bridge",
         deployment_topology="docker_sidecar",
+        phase_hook=observed_phases.append,
     )
 
     assert called == [(1, "0.1.0")]
+    assert observed_phases == [FixedBridgePhase.FIXED_BRIDGE_ENTERED]
     assert result.mission_status == "no_queued_mission"
     assert result.safe_summary()["runner_execution_authority"] is False
 
@@ -158,6 +168,115 @@ def test_service_one_cycle_emits_safe_posture(
     assert len(emitted) == 1
     assert '"status": "synchronized"' in emitted[0]
     assert '"runner_execution_authority": false' in emitted[0]
+
+
+@pytest.mark.parametrize(
+    ("phase", "exit_code"),
+    list(FIXED_BRIDGE_PHASE_EXIT_CODES.items()),
+)
+def test_fixed_runner_one_cycle_failure_returns_last_entered_reserved_phase(
+    phase: FixedBridgePhase,
+    exit_code: int,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    emitted: list[str] = []
+
+    def fail_after_phase(**values: object) -> service_module.NodeServiceCycle:
+        phase_hook = values["phase_hook"]
+        assert callable(phase_hook)
+        phase_hook(phase)
+        raise NodeClientError("synthetic fixed bridge failure")
+
+    monkeypatch.setattr(service_module, "synchronize_once", fail_after_phase)
+
+    result = run_service(
+        state_path=tmp_path / "state.json",
+        configuration_path=tmp_path / "configuration.json",
+        node_version="0.1.0",
+        runner_adapter="hermes_fixed_node_bridge",
+        deployment_topology="docker_sidecar",
+        max_cycles=1,
+        emit=emitted.append,
+    )
+
+    assert result == exit_code
+    assert len(emitted) == 1
+    assert '"status": "degraded_retrying"' in emitted[0]
+
+
+@pytest.mark.parametrize(
+    ("runner_adapter", "emit_phase"),
+    [
+        ("hermes_fixed_node_bridge", False),
+        ("hermes", True),
+    ],
+)
+def test_prebridge_or_ordinary_adapter_failure_retains_exit_one(
+    runner_adapter: str,
+    emit_phase: bool,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    def fail_without_fixed_phase(**values: object) -> service_module.NodeServiceCycle:
+        phase_hook = values["phase_hook"]
+        if emit_phase:
+            assert phase_hook is None
+        else:
+            assert callable(phase_hook)
+        raise NodeClientError("synthetic prebridge failure")
+
+    monkeypatch.setattr(
+        service_module,
+        "synchronize_once",
+        fail_without_fixed_phase,
+    )
+
+    result = run_service(
+        state_path=tmp_path / f"{runner_adapter}-state.json",
+        configuration_path=tmp_path / f"{runner_adapter}-configuration.json",
+        node_version="0.1.0",
+        runner_adapter=runner_adapter,
+        deployment_topology="docker_sidecar",
+        max_cycles=1,
+        emit=lambda _line: None,
+    )
+
+    assert result == 1
+
+
+def test_fixed_runner_success_remains_zero_after_phase_observation(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    def succeed_after_phase(**values: object) -> service_module.NodeServiceCycle:
+        phase_hook = values["phase_hook"]
+        assert callable(phase_hook)
+        phase_hook(FixedBridgePhase.LISTENER_ACCEPT_ENTERED)
+        return service_module.NodeServiceCycle(
+            node_id="node_" + ("1" * 32),
+            generation=2,
+            configuration_digest="sha256:" + ("a" * 64),
+            configuration_state="stored_current_not_enforced",
+            observed_state="observed_connected",
+            heartbeat_interval_seconds=30,
+            trust_promoted=False,
+            verification_trust="active",
+        )
+
+    monkeypatch.setattr(service_module, "synchronize_once", succeed_after_phase)
+
+    result = run_service(
+        state_path=tmp_path / "state.json",
+        configuration_path=tmp_path / "configuration.json",
+        node_version="0.1.0",
+        runner_adapter="hermes_fixed_node_bridge",
+        deployment_topology="docker_sidecar",
+        max_cycles=1,
+        emit=lambda _line: None,
+    )
+
+    assert result == 0
 
 
 def test_fixed_runner_service_refuses_missing_or_second_cycle_before_sync(

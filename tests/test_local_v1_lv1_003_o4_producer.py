@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import cast
 
 import pytest
+from ithildin_node.fixed_runner_bridge import FIXED_BRIDGE_PHASE_EXIT_CODES
 from ithildin_schemas import JsonObject, canonical_json
 
 from scripts import local_v1_constrained_mission_journey as journey
@@ -4634,6 +4635,32 @@ def _fixed_node_inspect_stdout(
     )
 
 
+def _fixed_node_container_state(
+    status: str,
+    running: bool,
+    exit_code: int,
+    oom_killed: bool,
+    dead: bool,
+    engine_error_present: bool,
+    health_status: str,
+) -> producer.FixedNodeContainerState:
+    return producer.FixedNodeContainerState(
+        status=status,
+        running=running,
+        exit_class="zero" if exit_code == 0 else "nonzero",
+        fixed_bridge_last_entered_phase=(
+            producer.FIXED_BRIDGE_PHASE_BY_EXIT_CODE.get(
+                exit_code,
+                "not_reported",
+            )
+        ),
+        oom_killed=oom_killed,
+        dead=dead,
+        engine_error_present=engine_error_present,
+        health_status=health_status,
+    )
+
+
 FIXED_NODE_DIAGNOSTIC_KEYS = {
     "collection_status",
     "collection_reason_code",
@@ -4642,6 +4669,7 @@ FIXED_NODE_DIAGNOSTIC_KEYS = {
     "container_lifecycle_state",
     "container_running_state",
     "container_exit_class",
+    "fixed_bridge_last_entered_phase",
     "container_health_state",
     "container_failure_signal",
     "observation_semantics",
@@ -4770,13 +4798,67 @@ def test_fixed_node_scalar_parser_validates_and_discards_raw_identity(
     assert parsed == producer.FixedNodeContainerState(
         status="exited",
         running=False,
-        exit_code=1,
+        exit_class="nonzero",
+        fixed_bridge_last_entered_phase="not_reported",
         oom_killed=False,
         dead=False,
         engine_error_present=False,
         health_status="absent",
     )
     assert container_id not in repr(parsed)
+
+
+def test_producer_reserved_phase_normalization_matches_node_exit_contract() -> None:
+    assert producer.FIXED_BRIDGE_PHASE_BY_EXIT_CODE == {
+        exit_code: phase.value
+        for phase, exit_code in FIXED_BRIDGE_PHASE_EXIT_CODES.items()
+    }
+
+
+@pytest.mark.parametrize(
+    ("exit_code", "expected_phase"),
+    sorted(producer.FIXED_BRIDGE_PHASE_BY_EXIT_CODE.items()),
+)
+def test_fixed_node_scalar_parser_maps_every_reserved_exit_to_closed_phase(
+    tmp_path: Path,
+    exit_code: int,
+    expected_phase: str,
+) -> None:
+    state = _fixed_node_diagnostic_state(tmp_path / str(exit_code))
+
+    parsed = producer._parse_fixed_node_container_state(  # noqa: SLF001
+        state,
+        container_id="b" * 64,
+        stdout=_fixed_node_inspect_stdout(state, exit_code=str(exit_code)),
+    )
+    projection = producer._fixed_node_container_projection(  # noqa: SLF001
+        parsed,
+        collected=True,
+    )
+
+    assert parsed.fixed_bridge_last_entered_phase == expected_phase
+    assert projection["fixed_bridge_last_entered_phase"] == expected_phase
+    assert projection["container_exit_class"] == "nonzero"
+    assert str(exit_code) not in canonical_json(projection)
+    assert str(exit_code) not in repr(parsed)
+
+
+@pytest.mark.parametrize("exit_code", [0, 1, 79, 89, 255])
+def test_fixed_node_scalar_parser_normalizes_nonreserved_exit_as_not_reported(
+    tmp_path: Path,
+    exit_code: int,
+) -> None:
+    state = _fixed_node_diagnostic_state(tmp_path / str(exit_code))
+
+    parsed = producer._parse_fixed_node_container_state(  # noqa: SLF001
+        state,
+        container_id="b" * 64,
+        stdout=_fixed_node_inspect_stdout(state, exit_code=str(exit_code)),
+    )
+
+    assert parsed.fixed_bridge_last_entered_phase == "not_reported"
+    assert parsed.exit_class == ("zero" if exit_code == 0 else "nonzero")
+    assert str(exit_code) not in repr(parsed)
 
 
 def test_anchored_container_binding_rolls_back_after_post_bind_anchor_failure(
@@ -4959,6 +5041,7 @@ def test_fixed_node_mission_projection_rejects_identity_or_state_drift(
                 "container_lifecycle_state": "unknown",
                 "container_running_state": "unknown",
                 "container_exit_class": "unknown",
+                "fixed_bridge_last_entered_phase": "unknown",
                 "container_health_state": "unknown",
                 "container_failure_signal": "unknown",
             },
@@ -4971,12 +5054,13 @@ def test_fixed_node_mission_projection_rejects_identity_or_state_drift(
                 "container_lifecycle_state": "not_applicable",
                 "container_running_state": "not_applicable",
                 "container_exit_class": "not_applicable",
+                "fixed_bridge_last_entered_phase": "not_applicable",
                 "container_health_state": "not_applicable",
                 "container_failure_signal": "not_applicable",
             },
         ),
         (
-            producer.FixedNodeContainerState(
+            _fixed_node_container_state(
                 "running", True, 0, True, True, False, "starting"
             ),
             True,
@@ -4985,12 +5069,13 @@ def test_fixed_node_mission_projection_rejects_identity_or_state_drift(
                 "container_lifecycle_state": "running",
                 "container_running_state": "running",
                 "container_exit_class": "zero",
+                "fixed_bridge_last_entered_phase": "not_reported",
                 "container_health_state": "starting",
                 "container_failure_signal": "multiple",
             },
         ),
         (
-            producer.FixedNodeContainerState(
+            _fixed_node_container_state(
                 "exited", False, 255, False, False, True, "absent"
             ),
             True,
@@ -4999,6 +5084,7 @@ def test_fixed_node_mission_projection_rejects_identity_or_state_drift(
                 "container_lifecycle_state": "exited",
                 "container_running_state": "not_running",
                 "container_exit_class": "nonzero",
+                "fixed_bridge_last_entered_phase": "not_reported",
                 "container_health_state": "absent",
                 "container_failure_signal": "engine_error_present",
             },
@@ -5020,7 +5106,7 @@ def test_fixed_node_container_projection_is_closed_and_discards_raw_values(
         key
         for key in FIXED_NODE_DIAGNOSTIC_KEYS
         if key.startswith("container_")
-    }
+    } | {"fixed_bridge_last_entered_phase"}
     assert "255" not in json.dumps(projection)
 
 
@@ -5033,42 +5119,42 @@ def test_fixed_node_container_projection_is_closed_and_discards_raw_values(
             "fixed_node_container_missing",
         ),
         (
-            producer.FixedNodeContainerState(
+            _fixed_node_container_state(
                 "created", False, 0, False, False, False, "absent"
             ),
             ("queued", "not_claimed"),
             "fixed_node_container_created",
         ),
         (
-            producer.FixedNodeContainerState(
+            _fixed_node_container_state(
                 "exited", False, 1, False, False, True, "absent"
             ),
             ("queued", "not_claimed"),
             "fixed_node_container_runtime_error",
         ),
         (
-            producer.FixedNodeContainerState(
+            _fixed_node_container_state(
                 "exited", False, 1, False, False, False, "absent"
             ),
             ("queued", "not_claimed"),
             "fixed_node_exited_nonzero_before_claim",
         ),
         (
-            producer.FixedNodeContainerState(
+            _fixed_node_container_state(
                 "exited", False, 1, False, False, False, "absent"
             ),
             ("claimed", "claim_delivered"),
             "fixed_node_exited_nonzero_after_claim",
         ),
         (
-            producer.FixedNodeContainerState(
+            _fixed_node_container_state(
                 "running", True, 0, False, False, False, "unhealthy"
             ),
             ("claimed", "claim_delivered"),
             "fixed_node_running_unhealthy_socket_health_contract",
         ),
         (
-            producer.FixedNodeContainerState(
+            _fixed_node_container_state(
                 "exited", False, 0, False, False, False, "absent"
             ),
             ("queued", "not_claimed"),
@@ -5078,21 +5164,21 @@ def test_fixed_node_container_projection_is_closed_and_discards_raw_values(
             ),
         ),
         (
-            producer.FixedNodeContainerState(
+            _fixed_node_container_state(
                 "exited", True, 1, False, False, False, "absent"
             ),
             ("claimed", "claim_delivered"),
             "fixed_node_exited_observation_noncanonical",
         ),
         (
-            producer.FixedNodeContainerState(
+            _fixed_node_container_state(
                 "exited", False, 0, False, False, False, "absent"
             ),
             ("claimed", "claim_delivered"),
             "fixed_node_exited_zero_with_claim_observed",
         ),
         (
-            producer.FixedNodeContainerState(
+            _fixed_node_container_state(
                 "running", True, 0, False, False, False, "absent"
             ),
             ("claimed", "claim_delivered"),
@@ -5102,42 +5188,42 @@ def test_fixed_node_container_projection_is_closed_and_discards_raw_values(
             ),
         ),
         (
-            producer.FixedNodeContainerState(
+            _fixed_node_container_state(
                 "running", True, 0, False, False, False, "starting"
             ),
             ("claimed", "claim_delivered"),
             "fixed_node_running_health_starting_after_wait_failure",
         ),
         (
-            producer.FixedNodeContainerState(
+            _fixed_node_container_state(
                 "running", True, 0, False, False, False, "healthy"
             ),
             ("claimed", "claim_delivered"),
             "fixed_node_running_healthy_after_wait_failure",
         ),
         (
-            producer.FixedNodeContainerState(
+            _fixed_node_container_state(
                 "running", False, 0, False, False, False, "healthy"
             ),
             ("claimed", "claim_delivered"),
             "fixed_node_running_observation_noncanonical",
         ),
         (
-            producer.FixedNodeContainerState(
+            _fixed_node_container_state(
                 "paused", False, 0, False, False, False, "healthy"
             ),
             ("claimed", "claim_delivered"),
             "fixed_node_paused_after_wait_failure",
         ),
         (
-            producer.FixedNodeContainerState(
+            _fixed_node_container_state(
                 "exited", False, 1, False, False, False, "absent"
             ),
             ("runner_reported_failed", "not_claimed"),
             "fixed_node_claim_state_inconsistent",
         ),
         (
-            producer.FixedNodeContainerState(
+            _fixed_node_container_state(
                 "exited", False, 1, False, False, False, "absent"
             ),
             ("queued", "claim_delivered"),
@@ -5190,7 +5276,7 @@ def test_fixed_node_start_classification_cross_product_has_no_generic_result() -
                                 for mission_state, delivery_state in (
                                     valid_claim_phases
                                 ):
-                                    container = producer.FixedNodeContainerState(
+                                    container = _fixed_node_container_state(
                                         lifecycle,
                                         running,
                                         exit_code,
@@ -5276,6 +5362,7 @@ def test_fixed_node_sequential_observation_does_not_claim_causality(
                 "container_lifecycle_state": "not_applicable",
                 "container_running_state": "not_applicable",
                 "container_exit_class": "not_applicable",
+                "fixed_bridge_last_entered_phase": "not_applicable",
                 "container_health_state": "not_applicable",
                 "container_failure_signal": "not_applicable",
                 "observation_semantics": "sequential_container_then_mission",
@@ -5296,6 +5383,7 @@ def test_fixed_node_sequential_observation_does_not_claim_causality(
                 "container_lifecycle_state": "unknown",
                 "container_running_state": "unknown",
                 "container_exit_class": "unknown",
+                "fixed_bridge_last_entered_phase": "unknown",
                 "container_health_state": "unknown",
                 "container_failure_signal": "unknown",
                 "observation_semantics": "sequential_container_then_mission",
@@ -5316,6 +5404,7 @@ def test_fixed_node_sequential_observation_does_not_claim_causality(
                 "container_lifecycle_state": "unknown",
                 "container_running_state": "unknown",
                 "container_exit_class": "unknown",
+                "fixed_bridge_last_entered_phase": "unknown",
                 "container_health_state": "unknown",
                 "container_failure_signal": "unknown",
                 "observation_semantics": "sequential_container_then_mission",
@@ -5510,6 +5599,7 @@ def test_fixed_node_start_failure_collects_once_before_cleanup_without_hermes_or
         "container_lifecycle_state": "exited",
         "container_running_state": "not_running",
         "container_exit_class": "nonzero",
+        "fixed_bridge_last_entered_phase": "not_reported",
         "container_health_state": "absent",
         "container_failure_signal": "none",
         "observation_semantics": "sequential_container_then_mission",
@@ -5682,6 +5772,7 @@ def test_fixed_node_diagnostic_repeated_collection_is_fail_closed(
         "container_lifecycle_state": "unknown",
         "container_running_state": "unknown",
         "container_exit_class": "unknown",
+        "fixed_bridge_last_entered_phase": "unknown",
         "container_health_state": "unknown",
         "container_failure_signal": "unknown",
         "observation_semantics": "not_collected",

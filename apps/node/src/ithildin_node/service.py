@@ -16,7 +16,10 @@ from ithildin_schemas import JsonObject
 
 from ithildin_node.client import NodeClient, NodeClientError, NodeState, StoredNodeConfiguration
 from ithildin_node.fixed_runner_bridge import (
+    FIXED_BRIDGE_PHASE_EXIT_CODES,
     FIXED_RUNNER_ADAPTER,
+    FixedBridgePhase,
+    FixedBridgePhaseHook,
     run_fixed_mission_cycle,
 )
 
@@ -59,6 +62,7 @@ def synchronize_once(
     node_version: str,
     runner_adapter: str,
     deployment_topology: str,
+    phase_hook: FixedBridgePhaseHook | None = None,
 ) -> NodeServiceCycle:
     """Pull, verify, durably store, acknowledge, and report one Node cycle."""
 
@@ -93,6 +97,7 @@ def synchronize_once(
             state=pulled.state,
             configuration=pulled.configuration,
             node_version=node_version,
+            phase_hook=phase_hook,
         )
         mission_status = _response_string(mission_result, "status", "failed_closed")
     return NodeServiceCycle(
@@ -134,6 +139,17 @@ def run_service(
     effective_stop = stop_event or Event()
     attempts = 0
     consecutive_failures = 0
+    last_fixed_bridge_phase: FixedBridgePhase | None = None
+
+    def record_fixed_bridge_phase(phase: FixedBridgePhase) -> None:
+        nonlocal last_fixed_bridge_phase
+        last_fixed_bridge_phase = phase
+
+    phase_hook = (
+        record_fixed_bridge_phase
+        if runner_adapter == FIXED_RUNNER_ADAPTER and max_cycles == 1
+        else None
+    )
     lease_descriptor = _acquire_service_lease(state_path.parent / ".service.lock")
     try:
         while not effective_stop.is_set():
@@ -145,6 +161,7 @@ def run_service(
                     node_version=node_version,
                     runner_adapter=runner_adapter,
                     deployment_topology=deployment_topology,
+                    phase_hook=phase_hook,
                 )
                 consecutive_failures = 0
                 delay = cycle.heartbeat_interval_seconds
@@ -170,7 +187,11 @@ def run_service(
                     )
                 )
             if max_cycles is not None and attempts >= max_cycles:
-                return 0 if consecutive_failures == 0 else 1
+                if consecutive_failures == 0:
+                    return 0
+                if last_fixed_bridge_phase is not None:
+                    return FIXED_BRIDGE_PHASE_EXIT_CODES[last_fixed_bridge_phase]
+                return 1
             effective_stop.wait(delay)
         emit(
             json.dumps(
