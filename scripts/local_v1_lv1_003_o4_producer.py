@@ -1066,15 +1066,25 @@ class AnchoredExecutor:
         self._validate()
         try:
             self._delegate.bind_container_identity(container_id)
-        finally:
             self._validate()
+        except BaseException:
+            try:
+                self._delegate.discard_container_identity(container_id)
+            except BaseException as exc:
+                raise ProducerError("container_identity_discard_failed") from exc
+            raise
 
     def discard_container_identity(self, container_id: str) -> None:
-        self._validate()
         try:
-            self._delegate.discard_container_identity(container_id)
-        finally:
             self._validate()
+        except BaseException:
+            try:
+                self._delegate.discard_container_identity(container_id)
+            except BaseException as exc:
+                raise ProducerError("container_identity_discard_failed") from exc
+            raise
+        self._delegate.discard_container_identity(container_id)
+        self._validate()
 
     def run(
         self,
@@ -2050,6 +2060,7 @@ def run_producer(
                         )
                     )
                 raise ProducerError("fixed_node_start_failed")
+            _require_success(fixed_node_start, "fixed_node_start_failed")
             state.stage(12)
             state.hermes_attempts += 1
             if state.hermes_attempts != 1:

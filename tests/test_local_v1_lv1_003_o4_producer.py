@@ -292,6 +292,7 @@ class FakeExecutor:
         self.api_container_inspect_result: producer.CommandResult | None = None
         self.api_container_inspect_failure: str | None = None
         self.fixed_node_start_returncode = 0
+        self.fixed_node_start_result: producer.CommandResult | None = None
         self.fixed_node_container_id = "b" * 64
         self.fixed_node_container_query_result: producer.CommandResult | None = None
         self.fixed_node_container_query_failure: str | None = None
@@ -471,7 +472,10 @@ class FakeExecutor:
             "ithildin-node",
             fixed=True,
         ):
-            return producer.CommandResult(self.fixed_node_start_returncode, "")
+            return self.fixed_node_start_result or producer.CommandResult(
+                self.fixed_node_start_returncode,
+                "",
+            )
         for resource in ("container", "volume", "network"):
             if command == plan.resource_query(resource):
                 return producer.CommandResult(0, "")
@@ -4740,6 +4744,51 @@ def test_fixed_node_scalar_parser_validates_and_discards_raw_identity(
     assert container_id not in repr(parsed)
 
 
+def test_anchored_container_binding_rolls_back_after_post_bind_anchor_failure(
+    tmp_path: Path,
+) -> None:
+    delegate = FakeExecutor(FakePrivateDirectory(tmp_path / "runtime"))
+    container_id = "b" * 64
+
+    class FailsAfterInitialValidation:
+        def __init__(self) -> None:
+            self.calls = 0
+
+        def validate(self) -> None:
+            self.calls += 1
+            if self.calls > 1:
+                raise producer.ProducerError("candidate_snapshot_changed")
+
+    guarded = producer.AnchoredExecutor(
+        delegate,
+        (FailsAfterInitialValidation(),),
+    )
+
+    with pytest.raises(producer.ProducerError, match="candidate_snapshot_changed"):
+        guarded.bind_container_identity(container_id)
+
+    assert container_id not in delegate.bound_container_ids
+
+
+def test_anchored_container_discard_revokes_identity_despite_anchor_failure(
+    tmp_path: Path,
+) -> None:
+    delegate = FakeExecutor(FakePrivateDirectory(tmp_path / "runtime"))
+    container_id = "b" * 64
+    delegate.bind_container_identity(container_id)
+
+    class AlwaysFails:
+        def validate(self) -> None:
+            raise producer.ProducerError("candidate_snapshot_changed")
+
+    guarded = producer.AnchoredExecutor(delegate, (AlwaysFails(),))
+
+    with pytest.raises(producer.ProducerError, match="candidate_snapshot_changed"):
+        guarded.discard_container_identity(container_id)
+
+    assert container_id not in delegate.bound_container_ids
+
+
 @pytest.mark.parametrize(
     ("override", "value"),
     [
@@ -5044,6 +5093,44 @@ def test_fixed_node_start_failure_collects_once_before_cleanup_without_hermes_or
     assert executor.fixed_node_container_id not in json.dumps(nested)
     assert diagnostic["primary_failure_code"] == "fixed_node_start_failed"
     assert diagnostic["outward_failure_code"] == "fixed_node_start_failed"
+    assert assembler.calls == 0
+
+
+def test_fixed_node_success_with_forbidden_output_refuses_before_hermes(
+    fake_stack: tuple[
+        FakeRuntimeFactory,
+        FakeExecutorFactory,
+        FakeApiFactory,
+        FakeProvider,
+        FakeAssembler,
+    ],
+) -> None:
+    runtime, executors, apis, provider, assembler = fake_stack
+    executor = executors.executor
+    executor.fixed_node_start_result = producer.CommandResult(
+        0,
+        "token must not be reflected",
+    )
+
+    with pytest.raises(producer.ProducerError, match="subprocess_output_rejected"):
+        producer.run_producer(
+            gate=AllowGate(),
+            runtime_factory=runtime,
+            executor_factory=executors,
+            api_factory=apis,
+            provider=provider,
+            assembler=assembler,
+            candidate=(COMMIT, TREE),
+            environment={},
+            now=datetime(2026, 7, 24, 18, 0, tzinfo=UTC),
+        )
+
+    diagnostic = json.loads(runtime.receipts.files["diagnostic.json"])
+    assert diagnostic["primary_failure_code"] == "subprocess_output_rejected"
+    assert diagnostic["outward_failure_code"] == "subprocess_output_rejected"
+    assert "fixed_node_start_diagnostic" not in diagnostic
+    assert executor.hermes_commands == []
+    assert sum("down" in command for command in executor.commands) == 1
     assert assembler.calls == 0
 
 
