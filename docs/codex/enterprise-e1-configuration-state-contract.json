@@ -1,0 +1,67 @@
+{
+  "schema_version": "ithildin.enterprise-e1-configuration-state.v1",
+  "tool_count": 24,
+  "bundle": {
+    "authority": "gateway_signed_per_node_generation",
+    "policy_binding": ["policy_version", "policy_digest"],
+    "tool_binding": ["manifest_lock_digest"],
+    "target_binding": ["node_id", "principal_id", "workspace_id"],
+    "lifecycle_binding": ["generation", "issued_at", "not_before", "expires_at"],
+    "enforcement_claim": "stored_not_enforced"
+  },
+  "states": [
+    {
+      "id": "desired",
+      "source": "gateway_signed_latest_evidence_complete_generation",
+      "meaning": "Gateway-selected policy and bounded Node configuration"
+    },
+    {
+      "id": "acknowledged",
+      "source": "node_signed_stored_not_enforced_acknowledgment",
+      "meaning": "Node attested storage of the exact desired digest and generation"
+    },
+    {
+      "id": "stored",
+      "source": "node_private_atomic_verified_bundle",
+      "meaning": "Verified bundle persisted mode 0600; enforcement is not implied"
+    },
+    {
+      "id": "enforced",
+      "source": "gateway_governed_access_admission",
+      "meaning": "Current request passed policy, manifest, version, workspace, heartbeat, and generation checks"
+    },
+    {
+      "id": "stale",
+      "source": "gateway_comparison_and_expiry_checks",
+      "meaning": "Desired, acknowledged, observed, policy, manifest, version, or time binding is not current"
+    },
+    {
+      "id": "rejected",
+      "source": "node_verification_or_gateway_admission_failure",
+      "meaning": "No storage acknowledgment or governed action is accepted"
+    },
+    {
+      "id": "rollback",
+      "source": "gateway_manual_compare_and_set",
+      "meaning": "Prior payload becomes a fresh signed monotonic generation"
+    }
+  ],
+  "authenticated_paths": {
+    "admin_assign": "POST /nodes/{node_id}/configurations",
+    "admin_observe": "GET /nodes/{node_id}",
+    "admin_history": "GET /nodes/{node_id}/configurations",
+    "admin_rollback": "POST /nodes/{node_id}/configurations/rollback",
+    "node_retrieve": "POST /nodes/{node_id}/configuration",
+    "node_acknowledge": "POST /nodes/{node_id}/configuration/acknowledgments",
+    "node_governed_access": "POST /nodes/{node_id}/tools/call"
+  },
+  "authority": {
+    "gateway_remains_authoritative": true,
+    "node_self_configuration_allowed": false,
+    "offline_governed_actions_allowed": false,
+    "new_governed_tool": false,
+    "arbitrary_host_control": false,
+    "runner_enforcement_globally_proven": false,
+    "human_uat_complete": false
+  }
+}
