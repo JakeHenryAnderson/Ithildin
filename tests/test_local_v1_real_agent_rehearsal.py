@@ -104,6 +104,60 @@ def test_o2_evaluator_fails_closed_on_execution_or_wrong_identity() -> None:
     assert observations["approval_pending_without_execution"] is False
 
 
+@pytest.mark.parametrize(
+    "execution_event",
+    ("tool.execution.started", "tool.execution.failed"),
+)
+def test_o2_evaluator_counts_started_or_failed_denied_call_as_execution(
+    execution_event: str,
+) -> None:
+    events = [
+        _event(
+            "policy.evaluated",
+            "req-deny",
+            "fs.read",
+            decision="deny",
+            reason="Resource is outside the workspace scope.",
+        ),
+        _event(execution_event, "req-deny", "fs.read"),
+    ]
+
+    observations = real_agent.evaluate_o2_events(events, approval_statuses={})
+
+    assert observations["out_of_scope_read_denied_before_execution"] is False
+
+
+@pytest.mark.parametrize(
+    "execution_event",
+    ("tool.execution.started", "tool.execution.failed"),
+)
+def test_o2_evaluator_counts_started_or_failed_pending_write_as_execution(
+    execution_event: str,
+) -> None:
+    events = [
+        _event(
+            "policy.evaluated",
+            "req-write",
+            real_agent.EXPECTED_WRITE_TOOL,
+            decision="require_approval",
+        ),
+        _event(
+            "approval.created",
+            "req-write",
+            real_agent.EXPECTED_WRITE_TOOL,
+            approval_id="appr_test",
+        ),
+        _event(execution_event, "req-write", real_agent.EXPECTED_WRITE_TOOL),
+    ]
+
+    observations = real_agent.evaluate_o2_events(
+        events,
+        approval_statuses={"appr_test": "pending"},
+    )
+
+    assert observations["approval_pending_without_execution"] is False
+
+
 def test_docker_run_is_nonroot_bounded_and_has_no_docker_socket(tmp_path: Path) -> None:
     command = real_agent.docker_run_command(
         image="ithildin/hermes-local-v1-o2:test",
@@ -122,6 +176,50 @@ def test_docker_run_is_nonroot_bounded_and_has_no_docker_socket(tmp_path: Path) 
     assert "OPENAI" not in serialized
     assert "ANTHROPIC" not in serialized
     assert "sandbox_artifact_write_text" in serialized
+
+
+def test_docker_enumeration_failure_does_not_prove_absence(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def failed_command(
+        _command: list[str],
+        *,
+        failure: str,
+        check: bool = True,
+        timeout: int = real_agent.COMMAND_TIMEOUT_SECONDS,
+    ) -> object:
+        del failure, check, timeout
+        return type("Result", (), {"returncode": 1, "stdout": ""})()
+
+    monkeypatch.setattr(real_agent, "_run_command", failed_command)
+
+    with pytest.raises(real_agent.RealAgentError, match="container_enumeration_failed"):
+        real_agent._exact_container_names("ithildin-local-v1-o2-test")  # noqa: SLF001
+    with pytest.raises(real_agent.RealAgentError, match="image_enumeration_failed"):
+        real_agent._exact_image_references(  # noqa: SLF001
+            "ithildin/hermes-local-v1-o2:test"
+        )
+
+
+def test_runtime_evidence_capture_rejects_runner_symlink(tmp_path: Path) -> None:
+    run_root = tmp_path / "run"
+    runtime_root = run_root / "runtime"
+    database_root = runtime_root / "hermes-poc/db"
+    logs_root = runtime_root / "hermes-poc/logs"
+    database_root.mkdir(parents=True)
+    logs_root.mkdir()
+    ambient = tmp_path / "ambient.sqlite3"
+    ambient.write_bytes(b"not runtime evidence")
+    database_root.joinpath("ithildin.sqlite3").symlink_to(ambient)
+    audit = logs_root / "audit.jsonl"
+    audit.write_text("{}\n", encoding="utf-8")
+    os.chmod(audit, 0o600)
+
+    with pytest.raises(OSError):
+        real_agent._capture_runtime_evidence(  # noqa: SLF001
+            run_root=run_root,
+            runtime_root=runtime_root,
+        )
 
 
 def test_checker_rejects_unconfined_report(tmp_path: Path) -> None:

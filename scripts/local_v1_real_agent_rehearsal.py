@@ -151,7 +151,7 @@ def run_rehearsal(run_root: Path, *, run_id: str) -> dict[str, Any]:
         )
         if result.returncode != 0:
             raise RealAgentError("hermes_candidate_run_failed")
-        evidence = build_o2_evidence(runtime_root=runtime_root)
+        evidence = build_o2_evidence(run_root=run_root, runtime_root=runtime_root)
         if not evidence["valid"]:
             raise RealAgentError("gateway_o2_evidence_invalid")
         report = {
@@ -185,9 +185,15 @@ def run_rehearsal(run_root: Path, *, run_id: str) -> dict[str, Any]:
     except BaseException as exc:
         primary_failure = exc
     finally:
-        if not _remove_exact_container(container):
+        try:
+            if not _remove_exact_container(container):
+                cleanup_failures.append("exact_container_cleanup_failed")
+        except RealAgentError:
             cleanup_failures.append("exact_container_cleanup_failed")
-        if not _remove_exact_image(image):
+        try:
+            if not _remove_exact_image(image):
+                cleanup_failures.append("exact_image_cleanup_failed")
+        except RealAgentError:
             cleanup_failures.append("exact_image_cleanup_failed")
         for private_path in (candidate_archive, candidate_root, runtime_root):
             try:
@@ -226,7 +232,7 @@ def docker_run_command(
         "--user",
         f"{uid}:{gid}",
         "--entrypoint",
-        "/opt/hermes/.venv/bin/hermes",
+        "/bin/sh",
         "--workdir",
         "/opt/data/scratch",
         "--add-host",
@@ -252,6 +258,9 @@ def docker_run_command(
         "--cpus",
         "2",
         image,
+        "-c",
+        'umask 077; exec /opt/hermes/.venv/bin/hermes "$@"',
+        "--",
         "chat",
         "--quiet",
         "--query",
@@ -259,41 +268,46 @@ def docker_run_command(
     ]
 
 
-def build_o2_evidence(*, runtime_root: Path) -> dict[str, Any]:
-    db_path = runtime_root / "hermes-poc/db/ithildin.sqlite3"
-    audit_path = runtime_root / "hermes-poc/logs/audit.jsonl"
-    if not db_path.is_file() or not audit_path.is_file():
-        return {"valid": False, "observations": {}}
-    events = [
-        json.loads(line)
-        for line in audit_path.read_text(encoding="utf-8").splitlines()
-        if line
-    ]
-    with sqlite3.connect(db_path) as connection:
-        approval_statuses = {
-            str(approval_id): str(status)
-            for approval_id, status in connection.execute(
-                "SELECT approval_id, status FROM approvals"
-            ).fetchall()
-        }
-    observations = evaluate_o2_events(events, approval_statuses=approval_statuses)
-    verification = AuditWriter(db_path, audit_path).verify_chain()
-    observations["audit_chain_valid"] = verification.valid
-    observations["audit_event_count"] = verification.event_count
-    required = (
-        "allowed_list_completed",
-        "allowed_read_completed",
-        "out_of_scope_read_denied_before_execution",
-        "http_denied_before_execution",
-        "approval_required_observed",
-        "approval_pending_without_execution",
-        "fixed_stdio_identity_observed",
-        "audit_chain_valid",
+def build_o2_evidence(*, run_root: Path, runtime_root: Path) -> dict[str, Any]:
+    analysis_root = _capture_runtime_evidence(
+        run_root=run_root,
+        runtime_root=runtime_root,
     )
-    return {
-        "valid": all(observations.get(name) is True for name in required),
-        "observations": observations,
-    }
+    db_path = analysis_root / "ithildin.sqlite3"
+    audit_path = analysis_root / "audit.jsonl"
+    try:
+        events = [
+            json.loads(line)
+            for line in audit_path.read_text(encoding="utf-8").splitlines()
+            if line
+        ]
+        with sqlite3.connect(db_path) as connection:
+            approval_statuses = {
+                str(approval_id): str(status)
+                for approval_id, status in connection.execute(
+                    "SELECT approval_id, status FROM approvals"
+                ).fetchall()
+            }
+        observations = evaluate_o2_events(events, approval_statuses=approval_statuses)
+        verification = AuditWriter(db_path, audit_path).verify_chain()
+        observations["audit_chain_valid"] = verification.valid
+        observations["audit_event_count"] = verification.event_count
+        required = (
+            "allowed_list_completed",
+            "allowed_read_completed",
+            "out_of_scope_read_denied_before_execution",
+            "http_denied_before_execution",
+            "approval_required_observed",
+            "approval_pending_without_execution",
+            "fixed_stdio_identity_observed",
+            "audit_chain_valid",
+        )
+        return {
+            "valid": all(observations.get(name) is True for name in required),
+            "observations": observations,
+        }
+    finally:
+        _remove_private_path(run_root, analysis_root)
 
 
 def evaluate_o2_events(
@@ -319,7 +333,20 @@ def evaluate_o2_events(
         tool=EXPECTED_WRITE_TOOL,
         decision="require_approval",
     )
-    completed_requests = {str(event.get("request_id", "")) for event in completed}
+    execution_pairs = {
+        (str(event.get("request_id", "")), str(event.get("tool_name", "")))
+        for event in events
+        if event.get("event_type")
+        in {
+            "tool.execution.started",
+            "tool.execution.completed",
+            "tool.execution.failed",
+        }
+    }
+    completed_pairs = {
+        (str(event.get("request_id", "")), str(event.get("tool_name", "")))
+        for event in completed
+    }
     created_approvals = {
         str(_metadata(event).get("approval_id", ""))
         for event in approvals
@@ -345,16 +372,31 @@ def evaluate_o2_events(
         for event in governed
     )
     return {
-        "allowed_list_completed": bool(allowed_list_requests & completed_requests),
-        "allowed_read_completed": bool(allowed_read_requests & completed_requests),
+        "allowed_list_completed": any(
+            (request_id, "fs.list") in completed_pairs
+            for request_id in allowed_list_requests
+        ),
+        "allowed_read_completed": any(
+            (request_id, "fs.read") in completed_pairs
+            for request_id in allowed_read_requests
+        ),
         "out_of_scope_read_denied_before_execution": bool(denied_read_requests)
-        and denied_read_requests.isdisjoint(completed_requests),
+        and all(
+            (request_id, "fs.read") not in execution_pairs
+            for request_id in denied_read_requests
+        ),
         "http_denied_before_execution": bool(denied_http_requests)
-        and denied_http_requests.isdisjoint(completed_requests),
+        and all(
+            (request_id, "http.fetch") not in execution_pairs
+            for request_id in denied_http_requests
+        ),
         "approval_required_observed": bool(write_requests and created_approvals),
         "approval_pending_without_execution": bool(created_approvals)
         and all(approval_statuses.get(item) == "pending" for item in created_approvals)
-        and write_requests.isdisjoint(completed_requests),
+        and all(
+            (request_id, EXPECTED_WRITE_TOOL) not in execution_pairs
+            for request_id in write_requests
+        ),
         "fixed_stdio_identity_observed": fixed_identity,
         "approval_count": len(created_approvals),
     }
@@ -417,63 +459,195 @@ def _prepare_candidate(commit: str, candidate_root: Path, archive: Path) -> None
 
 
 def _require_docker_targets_absent(*, image: str, container: str) -> None:
-    if (
-        _run_command(
-            ["docker", "container", "inspect", container],
-            failure="container_preflight_failed",
-            check=False,
-        ).returncode
-        == 0
-        or _run_command(
-            ["docker", "image", "inspect", image],
-            failure="image_preflight_failed",
-            check=False,
-        ).returncode
-        == 0
-    ):
+    if _exact_container_names(container) or _exact_image_references(image):
         raise RealAgentError("docker_target_collision")
 
 
 def _remove_exact_container(container: str) -> bool:
-    inspected = _run_command(
-        ["docker", "container", "inspect", container],
-        failure="container_cleanup_inspection_failed",
-        check=False,
-    )
-    if inspected.returncode != 0:
+    if not _exact_container_names(container):
         return True
     removed = _run_command(
         ["docker", "container", "rm", "--force", container],
         failure="container_cleanup_failed",
         check=False,
     )
-    remains = _run_command(
-        ["docker", "container", "inspect", container],
-        failure="container_cleanup_inspection_failed",
-        check=False,
-    ).returncode == 0
-    return removed.returncode == 0 and not remains
+    return removed.returncode == 0 and not _exact_container_names(container)
 
 
 def _remove_exact_image(image: str) -> bool:
-    inspected = _run_command(
-        ["docker", "image", "inspect", image],
-        failure="image_cleanup_inspection_failed",
-        check=False,
-    )
-    if inspected.returncode != 0:
+    if not _exact_image_references(image):
         return True
     removed = _run_command(
         ["docker", "image", "rm", image],
         failure="image_cleanup_failed",
         check=False,
     )
-    remains = _run_command(
-        ["docker", "image", "inspect", image],
-        failure="image_cleanup_inspection_failed",
+    return removed.returncode == 0 and not _exact_image_references(image)
+
+
+def _exact_container_names(container: str) -> list[str]:
+    result = _run_command(
+        [
+            "docker",
+            "container",
+            "ls",
+            "--all",
+            "--filter",
+            f"name=^/{container}$",
+            "--format",
+            "{{.Names}}",
+        ],
+        failure="container_enumeration_failed",
         check=False,
-    ).returncode == 0
-    return removed.returncode == 0 and not remains
+    )
+    if result.returncode != 0:
+        raise RealAgentError("container_enumeration_failed")
+    names = [line for line in result.stdout.splitlines() if line]
+    if any(name != container for name in names):
+        raise RealAgentError("container_enumeration_invalid")
+    return names
+
+
+def _exact_image_references(image: str) -> list[str]:
+    result = _run_command(
+        [
+            "docker",
+            "image",
+            "ls",
+            "--all",
+            "--filter",
+            f"reference={image}",
+            "--format",
+            "{{.Repository}}:{{.Tag}}",
+        ],
+        failure="image_enumeration_failed",
+        check=False,
+    )
+    if result.returncode != 0:
+        raise RealAgentError("image_enumeration_failed")
+    references = [line for line in result.stdout.splitlines() if line]
+    if any(reference != image for reference in references):
+        raise RealAgentError("image_enumeration_invalid")
+    return references
+
+
+def _capture_runtime_evidence(*, run_root: Path, runtime_root: Path) -> Path:
+    if runtime_root.parent != run_root or runtime_root.name != "runtime":
+        raise ValueError("runtime evidence root escaped the run root")
+    analysis_root = run_root / "analysis"
+    analysis_root.mkdir(mode=0o700)
+    try:
+        _capture_directory_entries(
+            run_root=run_root,
+            components=("runtime", "hermes-poc", "db"),
+            destination=analysis_root,
+            required={"ithildin.sqlite3"},
+            allowed={
+                "ithildin.sqlite3",
+                "ithildin.sqlite3-shm",
+                "ithildin.sqlite3-wal",
+            },
+            maximum_size=64 * 1024 * 1024,
+        )
+        _capture_directory_entries(
+            run_root=run_root,
+            components=("runtime", "hermes-poc", "logs"),
+            destination=analysis_root,
+            required={"audit.jsonl"},
+            allowed={"audit.jsonl"},
+            maximum_size=16 * 1024 * 1024,
+        )
+    except BaseException:
+        _remove_private_path(run_root, analysis_root)
+        raise
+    return analysis_root
+
+
+def _capture_directory_entries(
+    *,
+    run_root: Path,
+    components: tuple[str, ...],
+    destination: Path,
+    required: set[str],
+    allowed: set[str],
+    maximum_size: int,
+) -> None:
+    nofollow = getattr(os, "O_NOFOLLOW", 0)
+    directory = getattr(os, "O_DIRECTORY", 0)
+    root_descriptor = os.open(run_root, os.O_RDONLY | nofollow | directory)
+    current_descriptor = root_descriptor
+    try:
+        for component in components:
+            next_descriptor = os.open(
+                component,
+                os.O_RDONLY | nofollow | directory,
+                dir_fd=current_descriptor,
+            )
+            if current_descriptor != root_descriptor:
+                os.close(current_descriptor)
+            current_descriptor = next_descriptor
+        entries = set(os.listdir(current_descriptor))
+        if not required.issubset(entries) or not entries.issubset(allowed):
+            raise RealAgentError("runtime_evidence_inventory_invalid")
+        for name in sorted(entries):
+            source_descriptor = os.open(
+                name,
+                os.O_RDONLY | nofollow,
+                dir_fd=current_descriptor,
+            )
+            try:
+                before = os.fstat(source_descriptor)
+                if (
+                    not stat.S_ISREG(before.st_mode)
+                    or before.st_uid != os.getuid()
+                    or stat.S_IMODE(before.st_mode) & 0o077
+                    or before.st_size <= 0
+                    or before.st_size > maximum_size
+                ):
+                    raise RealAgentError("runtime_evidence_file_invalid")
+                _copy_descriptor_to_private(
+                    source_descriptor,
+                    destination / name,
+                )
+                after = os.fstat(source_descriptor)
+                if (
+                    before.st_dev,
+                    before.st_ino,
+                    before.st_size,
+                    before.st_mtime_ns,
+                ) != (
+                    after.st_dev,
+                    after.st_ino,
+                    after.st_size,
+                    after.st_mtime_ns,
+                ):
+                    raise RealAgentError("runtime_evidence_changed_during_capture")
+            finally:
+                os.close(source_descriptor)
+    finally:
+        if current_descriptor != root_descriptor:
+            os.close(current_descriptor)
+        os.close(root_descriptor)
+
+
+def _copy_descriptor_to_private(source_descriptor: int, destination: Path) -> None:
+    nofollow = getattr(os, "O_NOFOLLOW", 0)
+    target_descriptor = os.open(
+        destination,
+        os.O_WRONLY | os.O_CREAT | os.O_EXCL | nofollow,
+        0o600,
+    )
+    try:
+        while True:
+            chunk = os.read(source_descriptor, 131072)
+            if not chunk:
+                break
+            offset = 0
+            while offset < len(chunk):
+                offset += os.write(target_descriptor, chunk[offset:])
+        os.fsync(target_descriptor)
+    finally:
+        os.close(target_descriptor)
 
 
 def _remove_private_path(run_root: Path, path: Path) -> None:
