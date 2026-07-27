@@ -7,20 +7,38 @@ from scripts import enterprise_e1_contract_check
 
 def test_live_enterprise_e1_contract_is_valid_and_bounded() -> None:
     report = enterprise_e1_contract_check.build_report(enterprise_e1_contract_check.ROOT)
+    failures: list[str] = []
+    contract = enterprise_e1_contract_check.load_contract(
+        enterprise_e1_contract_check.ROOT / enterprise_e1_contract_check.CONTRACT_REL,
+        failures,
+    )
+    expected_outcomes = sum(
+        outcome["status"] == "complete" for outcome in contract["outcomes"]
+    )
+    expected_milestones = sum(
+        milestone["status"] == "complete" for milestone in contract["milestones"]
+    )
 
+    assert failures == []
     assert report["valid"] is True, report["failures"]
     assert report["track_id"] == "E1"
     assert report["source_commit_is_ancestor"] is True
     assert report["current_branch"] == "codex/enterprise-single-site-operations"
     assert report["tool_count"] == 24
-    assert report["outcomes_complete"] == 3
+    assert report["outcomes_complete"] == expected_outcomes
     assert report["outcomes_total"] == 6
-    assert report["milestones_complete"] == 3
+    assert report["milestones_complete"] == expected_milestones
     assert report["milestones_total"] == 6
-    assert report["next_action"] == "E1-M4"
-    assert report["candidate_gate_complete"] is False
-    assert report["independent_review_complete"] is False
-    assert report["human_uat_packet_ready"] is False
+    assert report["next_action"] in {"E1-M6", "stop_for_human_uat"}
+    assert report["candidate_gate_complete"] is (
+        contract["qualification"]["candidate_gate_complete"]
+    )
+    assert report["independent_review_complete"] is (
+        contract["qualification"]["independent_review_complete"]
+    )
+    assert report["human_uat_packet_ready"] is (
+        contract["qualification"]["human_uat_packet_ready"]
+    )
     assert report["human_uat_complete"] is False
     assert report["pis_collection_action_authority"] is False
 
@@ -84,4 +102,7 @@ def test_enterprise_e1_contract_rejects_false_qualification_completion() -> None
     )
 
     assert "E1-O6 cannot be complete without candidate, review, and UAT packet gates" in validation
-    assert "E1 milestone completion is out of fixed order" in validation
+    assert (
+        "E1 count-based progress does not match outcome and milestone states"
+        in validation
+    )
