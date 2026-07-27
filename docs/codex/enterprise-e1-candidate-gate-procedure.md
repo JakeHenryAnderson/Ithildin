@@ -19,11 +19,21 @@ make enterprise-e1-candidate-check E1_CANDIDATE_COMMIT="$E1_CANDIDATE_COMMIT"
 ```
 
 The gate checks exact HEAD and tree identity plus cleanliness before and after the inventory. It
-runs every E1 milestone gate, the E1 tests, the inherited Local v1 candidate inventory on the
-descendant, the descendant-safe PIS wait, the 24-tool/no-new-powers guards, the full non-slow
-Python suite used by Local v1, strict shipped-source and E1 typing, all Command Center tests and
-production build, docs generation, the agent-workflow check, and a current npm high-advisory
-audit.
+runs every E1 milestone gate, the E1 tests, the descendant-safe Local v1 candidate inventory, the
+descendant-safe PIS wait, the 24-tool/no-new-powers guards, the full non-slow Python suite used by
+Local v1, strict shipped-source and E1 typing, all Command Center tests and production build, docs
+generation, the agent-workflow check, and a current npm high-advisory audit.
+
+The descendant-safe Local v1 inventory reruns the current Local v1 candidate inventory with one
+intentional evidence substitution. It does not rerun the historical
+`local-v1-o2-evidence-check`, because that check requires the exact O2 qualification-only
+descendant and its private evidence base. Instead,
+`enterprise-e1-inherited-local-v1-check` verifies that the frozen Local v1 candidate and tree are
+ancestors of E1, its hash-bound candidate and independent-review evidence remain complete, human
+UAT and release acceptance remain false, and all protected Local v1 qualification and UAT records
+are byte-for-byte unchanged from the required E1 source commit. All other Local v1 candidate
+inventory targets run in their original order. This preserves the historical O2 result as lineage;
+it does not relabel or reproduce that result against the E1 descendant.
 
 The transcript must be retained outside the repository and reduced to a non-sensitive durable gate
 record with transcript SHA-256. Generated packet paths, tokens, local state, and private identifiers

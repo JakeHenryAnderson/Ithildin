@@ -24,7 +24,7 @@ NODE_RELEASE_BUNDLE ?= var/node-release-artifact/node-release-$(NODE_RELEASE_VER
 .PHONY: mission-command-control-plane-poc mission-command-control-plane-poc-check mission-command-control-plane-focused-gates
 .PHONY: mission-command-runner-bridge-profile-check mission-command-runner-bridge-implementation-check local-v1-constrained-mission-contract-check local-v1-lv1-003-o4-execution-authorization-check local-v1-lv1-003-o4-producer-static-check local-v1-lv1-003-o4-producer-run local-v1-lv1-003-o4-image-recovery-run local-v1-lv1-003-o4-attempt008-port-recovery-check local-v1-lv1-003-o4-attempt008-port-release-check local-v1-lv1-003-o4-attempt008-port-release-run local-v1-lv1-003-o4-attempt008-node-identity-reconciliation-check local-v1-lv1-003-o4-attempt008-node-identity-reconciliation-run local-v1-lv1-003-o4-attempt008-quarantine-revocation-check local-v1-lv1-003-o4-attempt008-quarantine-revocation-run local-v1-lv1-003-o4-attempt008-two-container-revocation-check local-v1-lv1-003-o4-attempt008-two-container-revocation-run
 .PHONY: local-v1-contract-check local-v1-golden-path-check local-v1-inner-check local-v1-milestone-check local-v1-runtime-trust-check local-v1-test-fast local-v1-typecheck local-v1-hermes-evidence-check local-v1-o2-evidence-check local-v1-real-agent-static-check local-v1-real-agent-run local-v1-real-agent-check local-v1-node-journey local-v1-node-journey-check local-v1-failure-recovery-static-check local-v1-failure-recovery-run local-v1-failure-recovery-check local-v1-operations-static-check local-v1-operations-run local-v1-operations-check local-v1-ui-production-build local-v1-candidate-inventory local-v1-candidate-check local-v1-release-check
-.PHONY: enterprise-e1-contract-check enterprise-e1-milestone-check enterprise-e1-single-site-bootstrap enterprise-e1-single-site-config enterprise-e1-single-site-up enterprise-e1-single-site-health enterprise-e1-single-site-down enterprise-e1-single-site-deployment-check enterprise-e1-single-site-rehearsal enterprise-e1-configuration-check enterprise-e1-recovery-check enterprise-e1-cockpit-check enterprise-e1-evidence-check enterprise-e1-candidate-preflight enterprise-e1-candidate-inventory enterprise-e1-candidate-check
+.PHONY: enterprise-e1-contract-check enterprise-e1-milestone-check enterprise-e1-single-site-bootstrap enterprise-e1-single-site-config enterprise-e1-single-site-up enterprise-e1-single-site-health enterprise-e1-single-site-down enterprise-e1-single-site-deployment-check enterprise-e1-single-site-rehearsal enterprise-e1-configuration-check enterprise-e1-recovery-check enterprise-e1-cockpit-check enterprise-e1-evidence-check enterprise-e1-inherited-local-v1-check enterprise-e1-local-v1-descendant-inventory enterprise-e1-candidate-preflight enterprise-e1-candidate-inventory enterprise-e1-candidate-check
 
 test:
 	uv run pytest
@@ -162,11 +162,45 @@ enterprise-e1-candidate-preflight:
 	uv run python scripts/enterprise_e1_candidate_preflight.py \
 		--expected-candidate "$(E1_CANDIDATE_COMMIT)"
 
+enterprise-e1-inherited-local-v1-check:
+	uv run python scripts/enterprise_e1_inherited_local_v1_check.py
+
+enterprise-e1-local-v1-descendant-inventory:
+	$(MAKE) local-v1-contract-check
+	$(MAKE) local-v1-golden-path-check
+	$(MAKE) release-context
+	$(MAKE) manifest-lock-check
+	$(MAKE) release-guardrails
+	$(MAKE) tool-surface-invariant-gate
+	$(MAKE) no-new-powers-guardrail
+	$(MAKE) policy-test
+	$(MAKE) policy-parity
+	$(MAKE) filesystem-contract-check
+	$(MAKE) release-evidence-gate
+	$(MAKE) evidence-contracts-check
+	$(MAKE) determinism-check
+	$(MAKE) adversarial-corpus-check
+	$(MAKE) resource-limit-check
+	$(MAKE) local-v1-runtime-trust-check
+	$(MAKE) local-v1-operations-static-check
+	$(MAKE) local-v1-real-agent-static-check
+	$(MAKE) hermes-governance-poc-plan-check
+	$(MAKE) enterprise-e1-inherited-local-v1-check
+	$(MAKE) mission-command-control-plane-plan-check
+	$(MAKE) mission-command-control-plane-focused-gates
+	$(MAKE) local-v1-test-fast
+	$(MAKE) lint
+	$(MAKE) local-v1-typecheck
+	$(MAKE) ui-test
+	$(MAKE) local-v1-ui-production-build
+	$(MAKE) docs-site
+	$(MAKE) agent-workflow-check
+
 enterprise-e1-candidate-inventory:
 	$(MAKE) enterprise-e1-milestone-check
 	uv run pytest tests/test_enterprise_e1_*.py -q
 	uv run mypy --strict scripts/enterprise_e1_*.py
-	$(MAKE) local-v1-candidate-inventory
+	$(MAKE) enterprise-e1-local-v1-descendant-inventory
 	npm audit --prefix apps/ui --audit-level=high
 	git diff --check
 
