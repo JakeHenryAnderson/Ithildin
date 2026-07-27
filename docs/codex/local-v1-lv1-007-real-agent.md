@@ -30,8 +30,8 @@ identity:
   pending and no write execution.
 
 Hermes prose is discarded. Gateway policy, execution, approval, and audit state are authoritative.
-The Hermes process exit is runner observation only. Ollama availability is a model-provider
-dependency observation only.
+The Hermes process exit is recorded as a runner observation only and does not override complete
+Gateway evidence. Ollama availability is a model-provider dependency observation only.
 
 ## Boundaries
 

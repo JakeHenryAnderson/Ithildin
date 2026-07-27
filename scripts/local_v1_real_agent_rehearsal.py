@@ -33,6 +33,16 @@ HERMES_TIMEOUT_SECONDS = 920
 EXPECTED_PRINCIPAL = "agent:mcp-local"
 EXPECTED_SESSION = "mcp-stdio"
 EXPECTED_WRITE_TOOL = "sandbox.artifact.write_text"
+REQUIRED_GATEWAY_OBSERVATIONS = (
+    "allowed_list_completed",
+    "allowed_read_completed",
+    "out_of_scope_read_denied_before_execution",
+    "http_denied_before_execution",
+    "approval_required_observed",
+    "approval_pending_without_execution",
+    "fixed_stdio_identity_observed",
+    "audit_chain_valid",
+)
 FIXED_QUERY = (
     "Use only the available Ithildin MCP functions. "
     "Call mcp__ithildin_local__fs_list with workspace_id hermes-poc and path inbox. "
@@ -149,11 +159,10 @@ def run_rehearsal(run_root: Path, *, run_id: str) -> dict[str, Any]:
             check=False,
             timeout=HERMES_TIMEOUT_SECONDS,
         )
-        if result.returncode != 0:
-            raise RealAgentError("hermes_candidate_run_failed")
         evidence = build_o2_evidence(run_root=run_root, runtime_root=runtime_root)
         if not evidence["valid"]:
             raise RealAgentError("gateway_o2_evidence_invalid")
+        evidence["observations"]["runner_process_exit_zero"] = result.returncode == 0
         report = {
             "schema_version": "ithildin.local-v1-real-agent.v1",
             "result": "passed",
@@ -179,6 +188,7 @@ def run_rehearsal(run_root: Path, *, run_id: str) -> dict[str, Any]:
                 "The shared in-image fixture is not a non-bypass filesystem boundary.",
                 "Fixed stdio identity does not identify a specific Hermes instance or user.",
                 "Model prose is discarded and is not evidence.",
+                "Hermes process exit is runner observation, not Gateway outcome authority.",
                 "Passing evidence is not release acceptance or human UAT.",
             ],
         }
@@ -292,18 +302,8 @@ def build_o2_evidence(*, run_root: Path, runtime_root: Path) -> dict[str, Any]:
         verification = AuditWriter(db_path, audit_path).verify_chain()
         observations["audit_chain_valid"] = verification.valid
         observations["audit_event_count"] = verification.event_count
-        required = (
-            "allowed_list_completed",
-            "allowed_read_completed",
-            "out_of_scope_read_denied_before_execution",
-            "http_denied_before_execution",
-            "approval_required_observed",
-            "approval_pending_without_execution",
-            "fixed_stdio_identity_observed",
-            "audit_chain_valid",
-        )
         return {
-            "valid": all(observations.get(name) is True for name in required),
+            "valid": gateway_evidence_valid(observations),
             "observations": observations,
         }
     finally:
@@ -400,6 +400,12 @@ def evaluate_o2_events(
         "fixed_stdio_identity_observed": fixed_identity,
         "approval_count": len(created_approvals),
     }
+
+
+def gateway_evidence_valid(observations: dict[str, Any]) -> bool:
+    return all(
+        observations.get(name) is True for name in REQUIRED_GATEWAY_OBSERVATIONS
+    )
 
 
 def _events(events: list[JsonObject], event_type: str) -> list[JsonObject]:

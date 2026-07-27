@@ -158,6 +158,24 @@ def test_o2_evaluator_counts_started_or_failed_pending_write_as_execution(
     assert observations["approval_pending_without_execution"] is False
 
 
+def test_gateway_evidence_requirements_do_not_depend_on_runner_exit() -> None:
+    observations = {
+        "allowed_list_completed": True,
+        "allowed_read_completed": True,
+        "out_of_scope_read_denied_before_execution": True,
+        "http_denied_before_execution": True,
+        "approval_required_observed": True,
+        "approval_pending_without_execution": True,
+        "fixed_stdio_identity_observed": True,
+        "audit_chain_valid": True,
+        "runner_process_exit_zero": False,
+    }
+
+    assert real_agent.gateway_evidence_valid(observations) is True
+    observations["audit_chain_valid"] = False
+    assert real_agent.gateway_evidence_valid(observations) is False
+
+
 def test_docker_run_is_nonroot_bounded_and_has_no_docker_socket(tmp_path: Path) -> None:
     command = real_agent.docker_run_command(
         image="ithildin/hermes-local-v1-o2:test",

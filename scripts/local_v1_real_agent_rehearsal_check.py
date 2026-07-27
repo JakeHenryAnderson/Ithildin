@@ -79,6 +79,8 @@ def validate_report(report_path: Path, *, expected_candidate: str) -> list[str]:
         failures.append("required_observation_missing")
     if not isinstance(observations.get("audit_event_count"), int):
         failures.append("audit_event_count_invalid")
+    if not isinstance(observations.get("runner_process_exit_zero"), bool):
+        failures.append("runner_process_exit_observation_invalid")
     if observations.get("approval_count") != 1:
         failures.append("approval_count_invalid")
     topology = _mapping(report.get("topology"))
