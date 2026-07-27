@@ -39,6 +39,7 @@ LOCAL_V1_CANDIDATE_TARGETS = (
     "adversarial-corpus-check",
     "resource-limit-check",
     "local-v1-runtime-trust-check",
+    "local-v1-operations-static-check",
     "hermes-governance-poc-plan-check",
     "local-v1-hermes-evidence-check",
     "track-b-node-evidence-check",
@@ -290,6 +291,7 @@ def build_report(
             "$(MAKE) local-v1-inner-check",
             "$(MAKE) local-v1-golden-path-check",
             "$(MAKE) local-v1-failure-recovery-static-check",
+            "$(MAKE) local-v1-operations-static-check",
             "$(MAKE) agent-workflow-check",
             "tests/test_docs_site.py",
             "$(MAKE) docs-site",
@@ -316,6 +318,11 @@ def build_report(
         ),
         "local-v1-hermes-evidence-check": (
             "uv run python scripts/hermes_poc_evidence_check.py",
+        ),
+        "local-v1-operations-static-check": (
+            "tests/test_local_v1_operations_rehearsal.py",
+            "scripts/local_v1_operations_rehearsal.py",
+            "scripts/local_v1_operations_rehearsal_check.py",
         ),
         "local-v1-ui-production-build": (
             "npm run build --prefix apps/ui",

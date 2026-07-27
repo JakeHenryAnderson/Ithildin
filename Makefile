@@ -21,7 +21,7 @@ NODE_RELEASE_BUNDLE ?= var/node-release-artifact/node-release-$(NODE_RELEASE_VER
 .PHONY: hermes-poc-image hermes-poc-config-check hermes-poc-run hermes-poc-stop
 .PHONY: mission-command-control-plane-poc mission-command-control-plane-poc-check mission-command-control-plane-focused-gates
 .PHONY: mission-command-runner-bridge-profile-check mission-command-runner-bridge-implementation-check local-v1-constrained-mission-contract-check local-v1-lv1-003-o4-execution-authorization-check local-v1-lv1-003-o4-producer-static-check local-v1-lv1-003-o4-producer-run local-v1-lv1-003-o4-image-recovery-run local-v1-lv1-003-o4-attempt008-port-recovery-check local-v1-lv1-003-o4-attempt008-port-release-check local-v1-lv1-003-o4-attempt008-port-release-run local-v1-lv1-003-o4-attempt008-node-identity-reconciliation-check local-v1-lv1-003-o4-attempt008-node-identity-reconciliation-run local-v1-lv1-003-o4-attempt008-quarantine-revocation-check local-v1-lv1-003-o4-attempt008-quarantine-revocation-run local-v1-lv1-003-o4-attempt008-two-container-revocation-check local-v1-lv1-003-o4-attempt008-two-container-revocation-run
-.PHONY: local-v1-contract-check local-v1-golden-path-check local-v1-inner-check local-v1-milestone-check local-v1-runtime-trust-check local-v1-hermes-evidence-check local-v1-node-journey local-v1-node-journey-check local-v1-failure-recovery-static-check local-v1-failure-recovery-run local-v1-failure-recovery-check local-v1-ui-production-build local-v1-candidate-inventory local-v1-candidate-check local-v1-release-check
+.PHONY: local-v1-contract-check local-v1-golden-path-check local-v1-inner-check local-v1-milestone-check local-v1-runtime-trust-check local-v1-hermes-evidence-check local-v1-node-journey local-v1-node-journey-check local-v1-failure-recovery-static-check local-v1-failure-recovery-run local-v1-failure-recovery-check local-v1-operations-static-check local-v1-operations-run local-v1-operations-check local-v1-ui-production-build local-v1-candidate-inventory local-v1-candidate-check local-v1-release-check
 
 test:
 	uv run pytest
@@ -88,6 +88,21 @@ local-v1-failure-recovery-check:
 	uv run python -m scripts.local_v1_failure_recovery_check \
 		--evidence-root "$(LOCAL_V1_FAILURE_RECOVERY_EVIDENCE)" \
 		--expected-candidate "$(LOCAL_V1_FAILURE_RECOVERY_CANDIDATE)"
+
+local-v1-operations-static-check:
+	uv run pytest tests/test_local_v1_operations_rehearsal.py -q
+	uv run ruff check scripts/local_v1_operations_rehearsal.py scripts/local_v1_operations_rehearsal_check.py tests/test_local_v1_operations_rehearsal.py
+	uv run mypy --strict scripts/local_v1_operations_rehearsal.py scripts/local_v1_operations_rehearsal_check.py
+
+local-v1-operations-run:
+	uv run python -m scripts.local_v1_operations_rehearsal
+
+local-v1-operations-check:
+	@test -n "$(LOCAL_V1_OPERATIONS_REPORT)" || (echo "LOCAL_V1_OPERATIONS_REPORT is required" >&2; exit 2)
+	@test -n "$(LOCAL_V1_OPERATIONS_CANDIDATE)" || (echo "LOCAL_V1_OPERATIONS_CANDIDATE is required" >&2; exit 2)
+	uv run python -m scripts.local_v1_operations_rehearsal_check \
+		--report "$(LOCAL_V1_OPERATIONS_REPORT)" \
+		--expected-candidate "$(LOCAL_V1_OPERATIONS_CANDIDATE)"
 
 # CLOSED consumed successful Attempt 021 entrypoint; budget zero and no live authority.
 local-v1-lv1-003-o4-producer-run:
@@ -194,6 +209,7 @@ local-v1-milestone-check:
 	$(MAKE) mission-command-runner-bridge-decision-check
 	$(MAKE) mission-command-runner-bridge-authorization-frozen-check
 	$(MAKE) local-v1-failure-recovery-static-check
+	$(MAKE) local-v1-operations-static-check
 	$(MAKE) mission-command-runner-bridge-profile-check
 	$(MAKE) local-v1-constrained-mission-contract-check
 	$(MAKE) agent-workflow-check
@@ -247,6 +263,7 @@ local-v1-candidate-inventory:
 	$(MAKE) adversarial-corpus-check
 	$(MAKE) resource-limit-check
 	$(MAKE) local-v1-runtime-trust-check
+	$(MAKE) local-v1-operations-static-check
 	$(MAKE) hermes-governance-poc-plan-check
 	$(MAKE) local-v1-hermes-evidence-check
 	$(MAKE) track-b-node-evidence-check
