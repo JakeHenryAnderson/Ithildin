@@ -1,6 +1,6 @@
 # Ithildin Enterprise Track E1 Completion Contract
 
-Status: active implementation contract. Outcomes complete: `1/6`. Milestones complete: `1/6`.
+Status: active implementation contract. Outcomes complete: `2/6`. Milestones complete: `2/6`.
 
 The machine-readable authority is
 [`enterprise-e1-completion-contract.json`](enterprise-e1-completion-contract.json). Validate it
@@ -22,8 +22,8 @@ descendant branch and does not change Local v1 candidate, review, UAT, or releas
 | Milestone | Outcome | Current state |
 | --- | --- | --- |
 | `E1-M1` | `E1-O1` - Reproducible single-site deployment | `complete` |
-| `E1-M2` | `E1-O2` - Versioned policy and Node-configuration distribution | `in_progress` |
-| `E1-M3` | `E1-O3` - Safe upgrade, rollback, and recovery | `not_started` |
+| `E1-M2` | `E1-O2` - Versioned policy and Node-configuration distribution | `complete` |
+| `E1-M3` | `E1-O3` - Safe upgrade, rollback, and recovery | `in_progress` |
 | `E1-M4` | `E1-O4` - Authoritative mission and fleet operations cockpit | `not_started` |
 | `E1-M5` | `E1-O5` - Bounded operational evidence export | `not_started` |
 | `E1-M6` | `E1-O6` - Exact candidate qualification and UAT handoff | `not_started` |
@@ -49,12 +49,15 @@ outcome.
 
 ### E1-O2 - Versioned policy and Node-configuration distribution
 
-Reuse the existing signed per-Node configuration generations, server-derived Node/workspace
+E1 reuses the existing signed per-Node configuration generations, server-derived Node/workspace
 binding, private local storage, acknowledgment, offline enforcement, staleness rejection, trust
-rotation, and manual rollback-as-fresh-generation behavior. E1 still needs one checked bundle and
-operator-state contract that keeps desired, acknowledged, stored, enforced, stale, rejected, and
-rollback states distinct. No new governed tool or arbitrary host control is required. This is the
-active `E1-M2` checkpoint.
+rotation, and manual rollback-as-fresh-generation behavior.
+[`enterprise-e1-configuration-state-contract.md`](enterprise-e1-configuration-state-contract.md)
+defines the checked policy/configuration bundle and keeps desired, acknowledged, stored, enforced,
+stale, rejected, and rollback states distinct.
+[`enterprise-e1-m2-observed-results.md`](enterprise-e1-m2-observed-results.md) binds the focused
+authenticated checkpoint to exact commit `e15c524804f6b7d16704db3f4124eed2bda89a01`.
+No new governed tool or arbitrary host control was added. E1-O2 and E1-M2 are complete.
 
 ### E1-O3 - Safe upgrade, rollback, and recovery
 
@@ -62,6 +65,7 @@ Reuse Local v1 candidate-bound backup, failed-start, restore, restart, and evide
 machinery plus the database migration-backup helper. E1 still needs compatibility validation and a
 supported rehearsal spanning Gateway, Command Center, and optional Node continuity. Ambiguous
 ownership must remain a stop condition; cleanup cannot be inferred safe.
+This is the active `E1-M3` checkpoint.
 
 ### E1-O4 - Authoritative mission and fleet operations cockpit
 

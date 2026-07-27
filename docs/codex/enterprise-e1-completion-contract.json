@@ -44,26 +44,29 @@
       "id": "E1-O2",
       "milestone_id": "E1-M2",
       "title": "Versioned policy and Node-configuration distribution",
-      "status": "in_progress",
+      "status": "complete",
       "existing_evidence": [
         "apps/api/src/ithildin_api/node_configuration.py",
         "apps/node/src/ithildin_node/client.py",
         "docs/codex/track-b-node-configuration-architecture.md",
         "docs/codex/track-b-node-configuration-observed-results.md",
         "docs/codex/track-b-node-manual-rollback-observed-results.md",
-        "tests/test_node_configuration.py"
+        "docs/codex/enterprise-e1-configuration-state-contract.json",
+        "docs/codex/enterprise-e1-configuration-state-contract.md",
+        "docs/codex/enterprise-e1-m2-observed-results.md",
+        "scripts/enterprise_e1_configuration_check.py",
+        "tests/test_enterprise_e1_configuration.py",
+        "tests/test_node_configuration.py",
+        "tests/test_node_configuration_trust.py",
+        "tests/test_node_governed_access.py"
       ],
-      "remaining_requirements": [
-        "one E1 bundle contract covering policy and bounded Node configuration",
-        "operator-visible desired, acknowledged, stored, enforced, stale, rejected, and rollback states",
-        "authenticated distribution and observation checkpoint without a new governed tool"
-      ]
+      "remaining_requirements": []
     },
     {
       "id": "E1-O3",
       "milestone_id": "E1-M3",
       "title": "Safe upgrade, rollback, and recovery",
-      "status": "not_started",
+      "status": "in_progress",
       "existing_evidence": [
         "apps/api/src/ithildin_api/database_migration_backup.py",
         "docs/codex/local-v1-lv1-004-failure-recovery.md",
@@ -149,13 +152,13 @@
       "id": "E1-M2",
       "outcome_id": "E1-O2",
       "title": "Policy and Node configuration checkpoint",
-      "status": "in_progress"
+      "status": "complete"
     },
     {
       "id": "E1-M3",
       "outcome_id": "E1-O3",
       "title": "Upgrade and recovery checkpoint",
-      "status": "not_started"
+      "status": "in_progress"
     },
     {
       "id": "E1-M4",
@@ -177,9 +180,9 @@
     }
   ],
   "progress": {
-    "outcomes_complete": 1,
+    "outcomes_complete": 2,
     "outcomes_total": 6,
-    "milestones_complete": 1,
+    "milestones_complete": 2,
     "milestones_total": 6
   },
   "pis_wait": {
@@ -224,5 +227,5 @@
     "Local v1 release acceptance",
     "human UAT completion"
   ],
-  "next_action": "E1-M2"
+  "next_action": "E1-M3"
 }
