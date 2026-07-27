@@ -166,6 +166,15 @@ success report was retained, and no second rehearsal is authorized in that fresh
 `O2` and `LV1-007` remain `not_started`; all authority remains false. The durable disposition is
 `docs/codex/local-v1-lv1-007-o2-fresh-recovery-disposition.md`.
 
+The following continuation used reviewed candidate
+`91dc34274fbd9f736a1d9bc474661b15d8b427c2` to run three fixed single-purpose Hermes turns against
+one confined Gateway evidence store. Safe bitmap `111011` and seven valid audit events proved the
+allowed read, denied-before-execution read, approval creation, fixed identity, and audit chain. The
+combined approval-pending-without-execution condition remained false. Cleanup completed, no success
+report was retained, and no second rehearsal is authorized in that recovery task. `O2` and
+`LV1-007` remain `not_started`; all authority remains false. The durable disposition is
+`docs/codex/local-v1-lv1-007-o2-three-turn-recovery-disposition.md`.
+
 Historical `LV1-003` lineage follows.
 `MCC-007` exact reviewed candidate is authorized for code use only. Independent Sol xhigh review of
 candidate `da5fd021bddb48ad663aa0a409da036bc854b516` returned `GO` with zero Critical, High, Medium,
