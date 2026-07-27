@@ -107,21 +107,24 @@
       "id": "E1-O5",
       "milestone_id": "E1-M5",
       "title": "Bounded operational evidence export",
-      "status": "not_started",
+      "status": "complete",
       "existing_evidence": [
         "docs/codex/signed-audit-exports.md",
         "docs/codex/agent-run-evidence-export-implementation.md",
         "docs/codex/enterprise-status-export.md",
         "scripts/enterprise_status_export.py",
         "scripts/packet_redaction_scan.py",
-        "tests/test_redaction.py"
+        "tests/test_redaction.py",
+        "docs/codex/enterprise-e1-evidence-contract.json",
+        "docs/codex/enterprise-e1-evidence-export.md",
+        "docs/codex/enterprise-e1-m5-observed-results.md",
+        "scripts/enterprise_e1_evidence_check.py",
+        "scripts/enterprise_e1_operations_bundle.py",
+        "tests/fixtures/enterprise-e1-operations-input.json",
+        "tests/test_enterprise_e1_evidence.py",
+        "tests/test_enterprise_e1_operations_bundle.py"
       ],
-      "remaining_requirements": [
-        "deterministic receiver-neutral E1 operations bundle",
-        "deployment, configuration, upgrade, mission, fleet, approval, and audit sections",
-        "local verification and redaction manifest",
-        "explicit whole-host, SIEM, telemetry, notarization, and compliance nonclaims"
-      ]
+      "remaining_requirements": []
     },
     {
       "id": "E1-O6",
@@ -172,7 +175,7 @@
       "id": "E1-M5",
       "outcome_id": "E1-O5",
       "title": "Operational evidence export checkpoint",
-      "status": "not_started"
+      "status": "complete"
     },
     {
       "id": "E1-M6",
@@ -182,9 +185,9 @@
     }
   ],
   "progress": {
-    "outcomes_complete": 4,
+    "outcomes_complete": 5,
     "outcomes_total": 6,
-    "milestones_complete": 4,
+    "milestones_complete": 5,
     "milestones_total": 6
   },
   "pis_wait": {
@@ -229,5 +232,5 @@
     "Local v1 release acceptance",
     "human UAT completion"
   ],
-  "next_action": "E1-M5"
+  "next_action": "E1-M6"
 }

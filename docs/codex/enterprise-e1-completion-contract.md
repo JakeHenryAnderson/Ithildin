@@ -1,6 +1,6 @@
 # Ithildin Enterprise Track E1 Completion Contract
 
-Status: active implementation contract. Outcomes complete: `4/6`. Milestones complete: `4/6`.
+Status: active implementation contract. Outcomes complete: `5/6`. Milestones complete: `5/6`.
 
 The machine-readable authority is
 [`enterprise-e1-completion-contract.json`](enterprise-e1-completion-contract.json). Validate it
@@ -25,8 +25,8 @@ descendant branch and does not change Local v1 candidate, review, UAT, or releas
 | `E1-M2` | `E1-O2` - Versioned policy and Node-configuration distribution | `complete` |
 | `E1-M3` | `E1-O3` - Safe upgrade, rollback, and recovery | `complete` |
 | `E1-M4` | `E1-O4` - Authoritative mission and fleet operations cockpit | `complete` |
-| `E1-M5` | `E1-O5` - Bounded operational evidence export | `in_progress` |
-| `E1-M6` | `E1-O6` - Exact candidate qualification and UAT handoff | `not_started` |
+| `E1-M5` | `E1-O5` - Bounded operational evidence export | `complete` |
+| `E1-M6` | `E1-O6` - Exact candidate qualification and UAT handoff | `in_progress` |
 
 Milestones advance in this order. A later outcome may reuse or inspect existing behavior, but it
 does not become complete before the preceding checkpoint is complete.
@@ -90,7 +90,12 @@ deterministic, receiver-neutral, locally verifiable, redacted, and cover deploym
 configuration, upgrade/rollback, mission, fleet, approvals, and audit evidence without claiming
 whole-host coverage, SIEM custody, hosted telemetry, external notarization, or compliance
 automation.
-This is the active `E1-M5` checkpoint.
+[`enterprise-e1-evidence-export.md`](enterprise-e1-evidence-export.md) defines the seven-section
+canonical directory/ZIP export, redaction manifest, SHA-256 verification boundary, and nonclaims.
+[`enterprise-e1-m5-observed-results.md`](enterprise-e1-m5-observed-results.md) records
+byte-identical independent builds and matching directory/ZIP verification against exporter commit
+`8f010f54e12534ecc08b43433762074209d545d2`. Live-site snapshot flags remain false in the
+contract rehearsal. E1-O5 and E1-M5 are complete.
 
 ### E1-O6 - Exact candidate qualification and UAT handoff
 
@@ -98,6 +103,7 @@ Reuse Local v1 candidate-gate patterns only as implementation lineage. E1 requir
 candidate, dedicated gate, proportional independent review, and concise human UAT packet.
 Automated checks and reviews remain evidence only. Genuine human UAT stays false and is the final
 stop line.
+This is the active `E1-M6` checkpoint.
 
 ## Frozen boundaries and nonclaims
 
