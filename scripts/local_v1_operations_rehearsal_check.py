@@ -57,7 +57,7 @@ def validate_report(report_path: Path, *, expected_candidate: str) -> list[str]:
     if selected_report != root / operations.REPORT_NAME:
         return ["report_filename_invalid"]
     try:
-        text, entry = _read_report_nofollow(root)
+        text, entry, retained_names = _read_report_and_siblings_nofollow(root)
         if stat.S_IMODE(entry.st_mode) != 0o600:
             failures.append("report_not_private_regular_file")
         report = json.loads(text)
@@ -104,7 +104,7 @@ def validate_report(report_path: Path, *, expected_candidate: str) -> list[str]:
     if not isinstance(report.get("nonclaims"), list) or len(report["nonclaims"]) < 5:
         failures.append("nonclaims_incomplete")
     unexpected = sorted(
-        path.name for path in root.iterdir() if path.name != operations.REPORT_NAME
+        name for name in retained_names if name != operations.REPORT_NAME
     )
     if unexpected:
         failures.append("private_runtime_artifacts_retained")
@@ -116,11 +116,30 @@ def validate_report(report_path: Path, *, expected_candidate: str) -> list[str]:
     return failures
 
 
-def _read_report_nofollow(root: Path) -> tuple[str, os.stat_result]:
+def _read_report_and_siblings_nofollow(
+    root: Path,
+) -> tuple[str, os.stat_result, list[str]]:
     nofollow = getattr(os, "O_NOFOLLOW", 0)
     directory = getattr(os, "O_DIRECTORY", 0)
-    root_descriptor = os.open(root, os.O_RDONLY | nofollow | directory)
     try:
+        relative = root.relative_to(operations.ROOT)
+    except ValueError as exc:
+        raise ValueError("report root is outside the repository") from exc
+    repository_descriptor = os.open(
+        operations.ROOT,
+        os.O_RDONLY | nofollow | directory,
+    )
+    root_descriptor = repository_descriptor
+    try:
+        for component in relative.parts:
+            next_descriptor = os.open(
+                component,
+                os.O_RDONLY | nofollow | directory,
+                dir_fd=root_descriptor,
+            )
+            if root_descriptor != repository_descriptor:
+                os.close(root_descriptor)
+            root_descriptor = next_descriptor
         report_descriptor = os.open(
             operations.REPORT_NAME,
             os.O_RDONLY | nofollow,
@@ -131,11 +150,15 @@ def _read_report_nofollow(root: Path) -> tuple[str, os.stat_result]:
             if not stat.S_ISREG(entry.st_mode):
                 raise ValueError("report is not a regular file")
             with os.fdopen(os.dup(report_descriptor), encoding="utf-8") as stream:
-                return stream.read(), entry
+                text = stream.read()
+            retained_names = os.listdir(root_descriptor)
+            return text, entry, retained_names
         finally:
             os.close(report_descriptor)
     finally:
-        os.close(root_descriptor)
+        if root_descriptor != repository_descriptor:
+            os.close(root_descriptor)
+        os.close(repository_descriptor)
 
 
 def _mapping(value: Any) -> dict[str, Any]:

@@ -126,6 +126,38 @@ def test_checker_normalizes_documented_relative_report_path(
     assert "report_filename_invalid" not in failures
 
 
+def test_checker_reads_report_and_siblings_from_same_open_directory(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(operations, "ROOT", tmp_path)
+    monkeypatch.setattr(operations, "EVIDENCE_BASE", tmp_path / "var/local-v1-operations")
+    run_id = "20260727T120000Z-" + ("a" * 32)
+    root = operations.EVIDENCE_BASE / run_id
+    root.mkdir(parents=True)
+    report = root / operations.REPORT_NAME
+    report.write_text("{}\n", encoding="utf-8")
+    os.chmod(report, 0o600)
+    root.joinpath("retained-private-state").write_text("synthetic", encoding="utf-8")
+    replaced = root.with_name(f"{root.name}-replaced")
+    real_listdir = os.listdir
+
+    def swap_before_listdir(path: int | str | bytes | os.PathLike[str]) -> list[str]:
+        if isinstance(path, int):
+            root.rename(replaced)
+            root.mkdir()
+            root.joinpath(operations.REPORT_NAME).write_text("{}\n", encoding="utf-8")
+        return real_listdir(path)
+
+    monkeypatch.setattr(os, "listdir", swap_before_listdir)
+
+    _text, _entry, retained_names = (
+        operations_check._read_report_and_siblings_nofollow(root)  # noqa: SLF001
+    )
+
+    assert "retained-private-state" in retained_names
+
+
 def test_owner_only_tree_rejects_permissions_and_symlinks(tmp_path: Path) -> None:
     root = tmp_path / "state"
     root.mkdir(mode=0o700)
