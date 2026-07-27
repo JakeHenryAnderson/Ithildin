@@ -24,7 +24,7 @@ NODE_RELEASE_BUNDLE ?= var/node-release-artifact/node-release-$(NODE_RELEASE_VER
 .PHONY: mission-command-control-plane-poc mission-command-control-plane-poc-check mission-command-control-plane-focused-gates
 .PHONY: mission-command-runner-bridge-profile-check mission-command-runner-bridge-implementation-check local-v1-constrained-mission-contract-check local-v1-lv1-003-o4-execution-authorization-check local-v1-lv1-003-o4-producer-static-check local-v1-lv1-003-o4-producer-run local-v1-lv1-003-o4-image-recovery-run local-v1-lv1-003-o4-attempt008-port-recovery-check local-v1-lv1-003-o4-attempt008-port-release-check local-v1-lv1-003-o4-attempt008-port-release-run local-v1-lv1-003-o4-attempt008-node-identity-reconciliation-check local-v1-lv1-003-o4-attempt008-node-identity-reconciliation-run local-v1-lv1-003-o4-attempt008-quarantine-revocation-check local-v1-lv1-003-o4-attempt008-quarantine-revocation-run local-v1-lv1-003-o4-attempt008-two-container-revocation-check local-v1-lv1-003-o4-attempt008-two-container-revocation-run
 .PHONY: local-v1-contract-check local-v1-golden-path-check local-v1-inner-check local-v1-milestone-check local-v1-runtime-trust-check local-v1-test-fast local-v1-typecheck local-v1-hermes-evidence-check local-v1-o2-evidence-check local-v1-real-agent-static-check local-v1-real-agent-run local-v1-real-agent-check local-v1-node-journey local-v1-node-journey-check local-v1-failure-recovery-static-check local-v1-failure-recovery-run local-v1-failure-recovery-check local-v1-operations-static-check local-v1-operations-run local-v1-operations-check local-v1-ui-production-build local-v1-candidate-inventory local-v1-candidate-check local-v1-release-check
-.PHONY: enterprise-e1-contract-check enterprise-e1-milestone-check enterprise-e1-single-site-bootstrap enterprise-e1-single-site-config enterprise-e1-single-site-up enterprise-e1-single-site-health enterprise-e1-single-site-down enterprise-e1-single-site-deployment-check enterprise-e1-single-site-rehearsal enterprise-e1-configuration-check enterprise-e1-recovery-check
+.PHONY: enterprise-e1-contract-check enterprise-e1-milestone-check enterprise-e1-single-site-bootstrap enterprise-e1-single-site-config enterprise-e1-single-site-up enterprise-e1-single-site-health enterprise-e1-single-site-down enterprise-e1-single-site-deployment-check enterprise-e1-single-site-rehearsal enterprise-e1-configuration-check enterprise-e1-recovery-check enterprise-e1-cockpit-check
 
 test:
 	uv run pytest
@@ -120,11 +120,21 @@ enterprise-e1-recovery-check:
 	uv run ruff check scripts/enterprise_e1_recovery_check.py tests/test_enterprise_e1_recovery.py
 	uv run mypy --strict scripts/enterprise_e1_recovery_check.py
 
+enterprise-e1-cockpit-check:
+	uv run python scripts/enterprise_e1_cockpit_check.py
+	uv run pytest tests/test_enterprise_e1_cockpit.py -q
+	uv run ruff check scripts/enterprise_e1_cockpit_check.py tests/test_enterprise_e1_cockpit.py
+	uv run mypy --strict scripts/enterprise_e1_cockpit_check.py
+	npm run typecheck --prefix apps/ui
+	npm run test --prefix apps/ui
+	npm run build --prefix apps/ui
+
 enterprise-e1-milestone-check:
 	$(MAKE) enterprise-e1-contract-check
 	$(MAKE) enterprise-e1-single-site-deployment-check
 	$(MAKE) enterprise-e1-configuration-check
 	$(MAKE) enterprise-e1-recovery-check
+	$(MAKE) enterprise-e1-cockpit-check
 	$(MAKE) local-v1-contract-check
 	$(MAKE) production-identity-storage-pis-003-sd-pg-001-environment-evidence-collection-authority-descendant-check
 	$(MAKE) tool-surface-invariant-gate

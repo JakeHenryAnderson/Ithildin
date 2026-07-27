@@ -1,0 +1,141 @@
+{
+  "schema_version": "ithildin.enterprise-e1-cockpit.v1",
+  "tool_count": 24,
+  "surfaces": [
+    {
+      "id": "missions",
+      "gateway_sources": [
+        "GET /mission-templates",
+        "GET /missions?limit=50",
+        "GET /missions/{mission_id}"
+      ],
+      "operator_meaning": "Gateway mission admission, lifecycle, Node delivery, runner reports, and correlated governed-run evidence"
+    },
+    {
+      "id": "nodes",
+      "gateway_sources": [
+        "GET /nodes"
+      ],
+      "operator_meaning": "Gateway-derived identity, accepted-heartbeat connectivity, governed access, version, and configuration posture"
+    },
+    {
+      "id": "versions",
+      "gateway_sources": [
+        "GET /nodes"
+      ],
+      "operator_meaning": "Signed desired minimum compared with the version in the last Gateway-accepted signed heartbeat"
+    },
+    {
+      "id": "configuration",
+      "gateway_sources": [
+        "GET /nodes",
+        "GET /nodes/{node_id}/configurations"
+      ],
+      "operator_meaning": "Gateway desired generation compared with Node-attested storage; enforcement remains separate"
+    },
+    {
+      "id": "attention",
+      "gateway_sources": [
+        "GET /missions?limit=50",
+        "GET /nodes",
+        "GET /approvals/review?status=pending",
+        "GET /patch-proposals",
+        "GET /trusted-host-promotion-proposals"
+      ],
+      "operator_meaning": "Deterministic presentation of exceptions in loaded authoritative records"
+    },
+    {
+      "id": "approvals",
+      "gateway_sources": [
+        "GET /approvals/review?status=pending",
+        "GET /approvals"
+      ],
+      "operator_meaning": "Gateway-recorded request scope, decision state, expiry, and application evidence"
+    },
+    {
+      "id": "evidence",
+      "gateway_sources": [
+        "GET /audit-events?limit=100",
+        "GET /audit-events/verify",
+        "GET /runs/{run_id}/evidence-export"
+      ],
+      "operator_meaning": "Gateway audit and bounded run evidence with local digest and signing limitations"
+    }
+  ],
+  "truth_sources": {
+    "gateway": {
+      "authority": "authoritative_for_ithildin_admission_policy_approval_execution_and_audit",
+      "ui_label": "Gateway authoritative"
+    },
+    "node_connectivity": {
+      "authority": "gateway_accepted_signed_heartbeat_only",
+      "ui_label": "Observed connected",
+      "nonclaim": "runner_model_and_host_process_health"
+    },
+    "runner": {
+      "authority": "runner_reported_through_authenticated_node",
+      "ui_label": "Runner reported through Node",
+      "nonclaim": "runner_process_state_or_enforcement"
+    },
+    "model_provider": {
+      "authority": "external_provider",
+      "ui_label": "Unknown",
+      "nonclaim": "inference_output_correctness_chain_of_thought_or_provider_health"
+    }
+  },
+  "operator_actions": [
+    {
+      "id": "admit_synthetic_mission",
+      "path": "POST /missions",
+      "authority": "existing_gateway_governed_workflow"
+    },
+    {
+      "id": "request_gateway_cancellation",
+      "path": "POST /missions/{mission_id}/cancel",
+      "authority": "existing_gateway_governed_workflow"
+    },
+    {
+      "id": "issue_node_enrollment_code",
+      "path": "POST /nodes/enrollment-codes",
+      "authority": "existing_gateway_governed_workflow"
+    },
+    {
+      "id": "assign_signed_configuration",
+      "path": "POST /nodes/{node_id}/configurations",
+      "authority": "existing_gateway_governed_workflow"
+    },
+    {
+      "id": "assign_signed_configuration_trust_transition",
+      "path": "POST /nodes/{node_id}/configuration-trust-transitions",
+      "authority": "existing_gateway_governed_workflow"
+    },
+    {
+      "id": "revoke_node_identity",
+      "path": "POST /nodes/{node_id}/revoke",
+      "authority": "existing_gateway_governed_workflow"
+    },
+    {
+      "id": "decide_existing_approval",
+      "path": "POST /approvals/{approval_id}/{approve_or_deny}",
+      "authority": "existing_gateway_governed_workflow"
+    }
+  ],
+  "accessibility": {
+    "semantic_destination_regions": true,
+    "keyboard_skip_to_attention": true,
+    "focus_transfer_after_navigation": true,
+    "state_not_conveyed_by_color_alone": true,
+    "async_status_and_errors_announced": true,
+    "fresh_human_accessibility_uat_complete": false,
+    "wcag_conformance_claimed": false
+  },
+  "authority": {
+    "gateway_remains_authoritative": true,
+    "command_center_execution_authority": false,
+    "direct_runner_control": false,
+    "direct_model_provider_control": false,
+    "arbitrary_host_control": false,
+    "new_governed_tool": false,
+    "human_uat_complete": false
+  }
+}
