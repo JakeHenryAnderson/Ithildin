@@ -1332,7 +1332,50 @@ describe("Review console interactions", () => {
       "aria-current",
       "page",
     );
-    expect(document.getElementById("missions")).not.toBeNull();
+    const comprehensionPath = await screen.findByRole("navigation", {
+      name: "Operator comprehension path",
+    });
+    expect(within(comprehensionPath).getByRole("heading", {
+      name: "Understand this mission",
+    })).toBeInTheDocument();
+
+    await user.click(within(comprehensionPath).getByRole("button", {
+      name: /What happened and why/,
+    }));
+    const decision = screen.getByRole("region", { name: "Governed request decision" });
+    expect(decision).toHaveFocus();
+    expect(within(decision).getByText("What did the agent request?")).toBeInTheDocument();
+    expect(within(decision).getByText("Why?")).toBeInTheDocument();
+    expect(within(decision).getByText("Is human action required?")).toBeInTheDocument();
+
+    await user.click(within(comprehensionPath).getByRole("button", {
+      name: /Evidence closeout/,
+    }));
+    const evidence = screen.getByRole("region", { name: "Run evidence closeout" });
+    expect(evidence).toHaveFocus();
+    expect(within(evidence).getByRole("heading", { name: "Evidence closeout" })).toBeInTheDocument();
+
+    await user.click(within(comprehensionPath).getByRole("button", {
+      name: /Authority sources/,
+    }));
+    const truthSources = screen.getByLabelText("Mission truth sources");
+    expect(truthSources).toHaveFocus();
+    expect(within(truthSources).getByText("Gateway lifecycle")).toBeInTheDocument();
+    expect(within(truthSources).getByText("Node delivery")).toBeInTheDocument();
+    expect(within(truthSources).getByText("Runner report")).toBeInTheDocument();
+    expect(within(truthSources).getByText("Model provider")).toBeInTheDocument();
+
+    await user.click(within(comprehensionPath).getByRole("button", {
+      name: /What happened and why/,
+    }));
+    await user.click(within(comprehensionPath).getByRole("button", {
+      name: /Matching approval/,
+    }));
+    await waitFor(() => {
+      expect(screen.getByRole("article", {
+        name: "Approval appr_123456789 for Apply demo patch",
+      })).toHaveFocus();
+    });
   });
 
   it("switches the command rail between complete destination screens", async () => {
@@ -2674,7 +2717,7 @@ describe("Review console interactions", () => {
     expect(screen.getByText("demo (1)")).toBeInTheDocument();
     expect(screen.getByText("Run Evidence")).toBeInTheDocument();
     expect(await screen.findByLabelText("Run evidence closeout")).toBeInTheDocument();
-    expect(screen.getByText("Evidence closeout")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Evidence closeout" })).toBeInTheDocument();
     expect(await screen.findByText("1 bundle warnings")).toBeInTheDocument();
     expect(screen.getByText("Matches generated snapshot")).toBeInTheDocument();
     expect(screen.getByText("4 section digests")).toBeInTheDocument();

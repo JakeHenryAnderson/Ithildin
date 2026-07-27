@@ -883,6 +883,23 @@ export function App() {
       ) ?? data.approvals[0] ?? null,
     [data.approvals, selectedApprovalId],
   );
+  const selectedRunApproval = useMemo(() => {
+    if (!selectedRun) {
+      return null;
+    }
+    const preferredRequestId =
+      primaryAttention?.runId === selectedRun.run.run_id
+        ? primaryAttention.requestId
+        : selectedRun.run.last_request_id ?? "";
+    const requestId =
+      findDecisionEvent(selectedRun.timeline, preferredRequestId)?.request_id ??
+      preferredRequestId;
+    return (
+      data.approvals.find(
+        (candidate) => candidate.approval.request_id === requestId,
+      ) ?? null
+    );
+  }, [data.approvals, primaryAttention, selectedRun]);
   const investigationRuns = useMemo(
     () =>
       filterInvestigationRuns(
@@ -3620,6 +3637,17 @@ export function App() {
                       </button>
                     </div>
                   </div>
+                  <OperatorComprehensionPath
+                    approvalId={selectedRunApproval?.approval.approval_id ?? null}
+                    onOpenApproval={(approvalId) => {
+                      setSelectedApprovalId(approvalId);
+                      setActiveSection("approvals");
+                      window.setTimeout(
+                        () => scrollAndFocusElement(`approval-${approvalId}`),
+                        0,
+                      );
+                    }}
+                  />
                   <NodeRunAuthority
                     evidence={selectedRunEvidence}
                     evidenceError={runEvidenceError}
@@ -5910,7 +5938,12 @@ function MissionCommandCockpit({
                 </p>
               ) : null}
 
-              <div className="mission-truth-grid" aria-label="Mission truth sources">
+              <div
+                className="mission-truth-grid"
+                id="mission-truth-sources"
+                aria-label="Mission truth sources"
+                tabIndex={-1}
+              >
                 <MissionTruthCard
                   label="Gateway lifecycle"
                   value={humanize(displayedMission.lifecycle_state)}
@@ -6064,6 +6097,66 @@ function OperatorWorkbenchGuide() {
   );
 }
 
+function OperatorComprehensionPath({
+  approvalId,
+  onOpenApproval,
+}: {
+  approvalId: string | null;
+  onOpenApproval: (approvalId: string) => void;
+}) {
+  const destinations = [
+    {
+      label: "What happened and why",
+      detail: "Read the recorded request, policy decision, consequence, and any required human action.",
+      onSelect: () => scrollAndFocusElement("governed-request-decision"),
+    },
+    ...(approvalId
+      ? [{
+          label: "Matching approval",
+          detail: "Inspect the pending decision and its exact one-time scope before acting.",
+          onSelect: () => onOpenApproval(approvalId),
+        }]
+      : []),
+    {
+      label: "Evidence closeout",
+      detail: "Check the selected run snapshot, warnings, revision parity, and local digest verification.",
+      onSelect: () => scrollAndFocusElement("run-evidence-closeout"),
+    },
+    {
+      label: "Authority sources",
+      detail: "Separate Gateway truth from Node delivery, runner reports, and unknown model-provider state.",
+      onSelect: () => scrollAndFocusElement("mission-truth-sources"),
+    },
+  ];
+  return (
+    <nav className="operator-comprehension-path" aria-label="Operator comprehension path">
+      <div>
+        <p className="eyebrow">First-time operator path</p>
+        <h4>Understand this mission</h4>
+        <p>
+          Follow these existing records in order. Opening a matching approval, when required,
+          changes presentation context without changing Gateway authority.
+        </p>
+      </div>
+      <ol>
+        {destinations.map((destination, index) => (
+          <li key={destination.label}>
+            <button
+              className="secondary-action"
+              type="button"
+              onClick={destination.onSelect}
+            >
+              <span aria-hidden="true">{index + 1}</span>
+              <strong>{destination.label}</strong>
+              <small>{destination.detail}</small>
+            </button>
+          </li>
+        ))}
+      </ol>
+    </nav>
+  );
+}
+
 function RunSummary({ summary }: { summary: AgentRunSummary }) {
   const filters = Object.entries(summary.filters)
     .filter((entry): entry is [string, string] => typeof entry[1] === "string")
@@ -6214,7 +6307,12 @@ function EvidenceCloseout({
 
   if (!evidence) {
     return (
-      <section className="evidence-closeout" aria-label="Run evidence closeout">
+      <section
+        className="evidence-closeout"
+        id="run-evidence-closeout"
+        aria-label="Run evidence closeout"
+        tabIndex={-1}
+      >
         <div className="evidence-closeout-heading">
           <div>
             <p className="eyebrow">Evidence · selected run closeout</p>
@@ -6256,7 +6354,12 @@ function EvidenceCloseout({
         : "Verifying locally";
 
   return (
-    <section className="evidence-closeout" aria-label="Run evidence closeout">
+    <section
+      className="evidence-closeout"
+      id="run-evidence-closeout"
+      aria-label="Run evidence closeout"
+      tabIndex={-1}
+    >
       <div className="evidence-closeout-heading">
         <div>
           <p className="eyebrow">Evidence · selected run closeout</p>
@@ -6422,7 +6525,12 @@ function RunDecisionExplanation({
 
   if (!decisionEvent) {
     return (
-      <section className="decision-explanation" aria-label="Governed request decision">
+      <section
+        className="decision-explanation"
+        id="governed-request-decision"
+        aria-label="Governed request decision"
+        tabIndex={-1}
+      >
         <div className="decision-explanation-heading">
           <div>
             <p className="eyebrow">Workbench · recorded policy evidence</p>
@@ -6472,7 +6580,12 @@ function RunDecisionExplanation({
     : "Resource summary unavailable";
 
   return (
-    <section className="decision-explanation" aria-label="Governed request decision">
+    <section
+      className="decision-explanation"
+      id="governed-request-decision"
+      aria-label="Governed request decision"
+      tabIndex={-1}
+    >
       <div className="decision-explanation-heading">
         <div>
           <p className="eyebrow">Workbench · recorded policy evidence</p>

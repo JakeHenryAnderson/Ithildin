@@ -1315,6 +1315,72 @@ caption {
   padding-left: 9px;
 }
 
+.operator-comprehension-path {
+  background: #f3f8f5;
+  border: 1px solid #d5e7dd;
+  display: grid;
+  gap: 12px;
+  margin: 14px 0;
+  padding: 14px;
+}
+
+.operator-comprehension-path h4 {
+  font-size: 1rem;
+  margin: 2px 0 0;
+}
+
+.operator-comprehension-path > div > p:last-child {
+  color: #506057;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  margin: 5px 0 0;
+}
+
+.operator-comprehension-path ol {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.operator-comprehension-path li {
+  min-width: 0;
+}
+
+.operator-comprehension-path button {
+  align-items: start;
+  display: grid;
+  gap: 3px 8px;
+  grid-template-columns: 24px minmax(0, 1fr);
+  height: 100%;
+  text-align: left;
+  width: 100%;
+}
+
+.operator-comprehension-path button > span {
+  align-items: center;
+  background: #e4f5ed;
+  border: 1px solid #cbe3d7;
+  color: #185a42;
+  display: inline-flex;
+  font-size: 0.72rem;
+  grid-row: 1 / span 2;
+  height: 22px;
+  justify-content: center;
+  width: 22px;
+}
+
+.operator-comprehension-path button strong {
+  font-size: 0.8rem;
+}
+
+.operator-comprehension-path button small {
+  color: #607168;
+  line-height: 1.35;
+}
+
 .runner-governance-posture {
   background: linear-gradient(135deg, #0d2231, #0a1a28);
   border: 1px solid #31546a;
@@ -2090,6 +2156,7 @@ th {
   .run-filter-bar,
   .investigation-filter-bar,
   .operator-demo-guide,
+  .operator-comprehension-path ol,
   .run-evidence-overview,
   .attention-meta,
   .decision-context,
@@ -2428,6 +2495,7 @@ button:hover {
 .refresh-button,
 .evidence-block,
 .evidence-group,
+.operator-comprehension-path,
 .evidence-closeout,
 .evidence-closeout-grid article,
 .evidence-closeout-technical,
@@ -2441,6 +2509,8 @@ button:hover {
 .workspace-lenses strong,
 .workspace-lenses span,
 .operator-help p,
+.operator-comprehension-path > div > p:last-child,
+.operator-comprehension-path button small,
 .trust-service,
 .meta-list dt,
 th,
