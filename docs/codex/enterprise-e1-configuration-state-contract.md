@@ -9,6 +9,11 @@ digest, minimum Node version, allowed read-only risks, offline-deny posture, tim
 expiry. The Gateway signs and selects desired state; the Node can verify, privately store, and
 acknowledge it, but cannot choose or broaden it.
 
+Configuration-signing trust rotation remains a separate signed, Node-targeted transition:
+staged, Node-acknowledged, then Gateway-activated only after complete evidence. Expiry does not
+activate a transition, and rollback still requires a fresh operator-selected transition or
+configuration generation.
+
 ## State meanings
 
 | State | Authoritative meaning |
@@ -38,6 +43,7 @@ make enterprise-e1-configuration-check
 ```
 
 The checkpoint covers signed policy/manifest targeting, private storage semantics, drift,
-rejection, manual rollback-as-new-generation, and request-scoped governed admission. Existing
+rejection, trust rotation, manual rollback-as-new-generation, and request-scoped governed
+admission. Existing
 observed POC results remain supporting lineage; passing tests are not release, production, or UAT
 approval.

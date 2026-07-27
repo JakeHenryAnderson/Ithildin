@@ -100,9 +100,11 @@ enterprise-e1-configuration-check:
 	uv run pytest \
 		tests/test_enterprise_e1_configuration.py \
 		tests/test_node_configuration.py \
+		tests/test_node_configuration_trust.py \
 		tests/test_node_governed_access.py \
 		tests/test_api_service.py::test_node_signed_configuration_distribution_acknowledgment_and_drift_api \
 		tests/test_api_service.py::test_node_governed_read_uses_derived_identity_workspace_and_durable_replay \
+		tests/test_api_service.py::test_node_configuration_trust_transition_api_is_targeted_signed_and_audited \
 		-q
 	uv run ruff check scripts/enterprise_e1_configuration_check.py tests/test_enterprise_e1_configuration.py
 	uv run mypy --strict scripts/enterprise_e1_configuration_check.py

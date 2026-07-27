@@ -5,9 +5,17 @@
     "authority": "gateway_signed_per_node_generation",
     "policy_binding": ["policy_version", "policy_digest"],
     "tool_binding": ["manifest_lock_digest"],
+    "trust_binding": ["configuration_signing_key_id", "active_configuration_signing_key_id"],
     "target_binding": ["node_id", "principal_id", "workspace_id"],
     "lifecycle_binding": ["generation", "issued_at", "not_before", "expires_at"],
     "enforcement_claim": "stored_not_enforced"
+  },
+  "trust_rotation": {
+    "staged": "gateway_signed_targeted_transition",
+    "acknowledged": "node_signed_staged_key_acknowledgment",
+    "activated": "gateway_advanced_after_complete_evidence",
+    "expired": "transition_not_activated",
+    "rollback": "operator_selects_a_fresh_transition_or_configuration_generation"
   },
   "states": [
     {

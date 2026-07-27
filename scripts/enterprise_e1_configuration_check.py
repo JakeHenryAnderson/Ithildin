@@ -37,6 +37,15 @@ def build_report(root: Path) -> dict[str, Any]:
         failures.append("configuration states are not exact and ordered")
     if contract.get("tool_count") != 24:
         failures.append("configuration contract does not preserve 24 tools")
+    trust_rotation = contract.get("trust_rotation")
+    if not isinstance(trust_rotation, dict) or set(trust_rotation) != {
+        "staged",
+        "acknowledged",
+        "activated",
+        "expired",
+        "rollback",
+    }:
+        failures.append("configuration trust-rotation states are not closed")
     authority = contract.get("authority")
     if not isinstance(authority, dict):
         failures.append("configuration authority is unavailable")
@@ -60,6 +69,9 @@ def build_report(root: Path) -> dict[str, Any]:
         "governed_access": (
             root / "apps/api/src/ithildin_api/node_governed_access.py"
         ).read_text(encoding="utf-8"),
+        "trust": (
+            root / "apps/api/src/ithildin_api/node_configuration_trust.py"
+        ).read_text(encoding="utf-8"),
         "api": (root / "apps/api/src/ithildin_api/app.py").read_text(encoding="utf-8"),
         "node": (root / "apps/node/src/ithildin_node/client.py").read_text(
             encoding="utf-8"
@@ -77,6 +89,11 @@ def build_report(root: Path) -> dict[str, Any]:
             "Node desired policy is not current",
             "Node desired tool manifest is not current",
             "Node offline posture is not fail closed",
+        ],
+        "trust": [
+            "NodeConfigurationTrustTransitionStore",
+            "acknowledgment_evidence_status",
+            "trust transition expired",
         ],
         "api": [
             '"/nodes/{node_id}/configurations"',
@@ -100,6 +117,7 @@ def build_report(root: Path) -> dict[str, Any]:
         "tool_count": contract.get("tool_count"),
         "states": state_ids,
         "state_count": len(state_ids),
+        "trust_rotation_state_count": len(trust_rotation),
         "new_governed_tool": False,
         "gateway_authoritative": True,
         "human_uat_complete": False,
