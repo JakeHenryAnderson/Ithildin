@@ -179,10 +179,16 @@ completeness, and compliance claims false.
 
 The journey receipt preserves the Gateway Agent Run status `active`, exactly two
 Gateway `tool.execution.completed` events, and mission lifecycle `runner_reported_succeeded`.
-Mission, claim, envelope, correlated run, session, request IDs, tool names, and lifecycle come from
-the Gateway mission/run projections. No synthesized run completion is allowed. The closed Node
-receipt supplies only the handoff-nonce digest after its mission/claim/envelope binding matches
-Gateway truth. Cleanup fields become true only after direct absence probes.
+Mission, claim, envelope, correlated run, request IDs, tool names, and lifecycle come from the
+Gateway mission/run projections. The bridge-derived mission session is retained separately from
+the Gateway AgentRun session. The producer privately validates that the latter is the exact
+server-derived Node/configuration wrapper around the former, but publishes only one
+domain-separated AgentRun-session digest and the fixed
+`gateway_node_configuration_wrapped_mission_session` binding source on the run and both completed
+events. It never publishes the raw wrapped session because that value embeds private Node and
+configuration material. No synthesized run completion is allowed. The closed Node receipt supplies
+only the handoff-nonce digest after its mission/claim/envelope binding matches Gateway truth.
+Cleanup fields become true only after direct absence probes.
 
 ## Cleanup And Recovery
 

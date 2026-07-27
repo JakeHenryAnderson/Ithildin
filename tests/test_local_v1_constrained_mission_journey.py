@@ -53,6 +53,9 @@ def _receipts() -> tuple[JsonObject, JsonObject]:
     claim_id = "mclaim_" + ("6" * 32)
     envelope_digest = "sha256:" + ("7" * 64)
     session_id = f"mission:{mission_id}:{claim_id}:{'7' * 16}"
+    gateway_session_digest = journey.agent_run_session_digest(
+        "node:private:cfg:1:private:" + session_id
+    )
     run_id = "run_" + ("9" * 32)
     observed: JsonObject = {
         "candidate_commit": CANDIDATE,
@@ -69,7 +72,10 @@ def _receipts() -> tuple[JsonObject, JsonObject]:
         "gateway_agent_runs": [
             {
                 "run_id": run_id,
-                "session_id": session_id,
+                "agent_run_session_digest": gateway_session_digest,
+                "session_binding_source": (
+                    journey.AGENT_RUN_SESSION_BINDING_SOURCE
+                ),
                 "mission_id": mission_id,
                 "claim_id": claim_id,
                 "envelope_digest": envelope_digest,
@@ -88,7 +94,10 @@ def _receipts() -> tuple[JsonObject, JsonObject]:
                 "tool_name": tool_name,
                 "request_id": "req_" + (str(index) * 32),
                 "run_id": run_id,
-                "session_id": session_id,
+                "agent_run_session_digest": gateway_session_digest,
+                "session_binding_source": (
+                    journey.AGENT_RUN_SESSION_BINDING_SOURCE
+                ),
                 "mission_id": mission_id,
                 "claim_id": claim_id,
                 "envelope_digest": envelope_digest,
@@ -207,6 +216,18 @@ def test_constrained_journey_rejects_identity_drift_dirty_build_and_incomplete_e
         ),
         (
             "run",
+            "agent_run_session_digest",
+            "sha256:" + ("f" * 63),
+            "Agent Run binding is invalid",
+        ),
+        (
+            "run",
+            "session_binding_source",
+            "caller_supplied",
+            "Agent Run binding is invalid",
+        ),
+        (
+            "run",
             "tool_call_count",
             1,
             "Agent Run binding is invalid",
@@ -243,8 +264,14 @@ def test_constrained_journey_rejects_identity_drift_dirty_build_and_incomplete_e
         ),
         (
             "binding",
-            "session_id",
-            "mission:" + ("f" * 16),
+            "agent_run_session_digest",
+            "sha256:" + ("f" * 64),
+            "operation binding is invalid",
+        ),
+        (
+            "binding",
+            "session_binding_source",
+            "caller_supplied",
             "operation binding is invalid",
         ),
         (

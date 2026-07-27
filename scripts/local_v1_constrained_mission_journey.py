@@ -34,6 +34,10 @@ NODE_SOURCE_PATHS = (
 )
 REPORT_JSON = "report.json"
 REPORT_MARKDOWN = "report.md"
+AGENT_RUN_SESSION_BINDING_SOURCE = (
+    "gateway_node_configuration_wrapped_mission_session"
+)
+AGENT_RUN_SESSION_DIGEST_KIND = "ithildin_gateway_agent_run_session_v1"
 
 _COMMIT = re.compile(r"^[0-9a-f]{40}$")
 _TREE = _COMMIT
@@ -103,6 +107,16 @@ _JOURNEY_KEYS = {
 
 class ConstrainedJourneyError(RuntimeError):
     """Safe closed error for the evidence-only journey assembler."""
+
+
+def agent_run_session_digest(session_id: str) -> str:
+    return sha256_digest(
+        {
+            "schema_version": "1",
+            "kind": AGENT_RUN_SESSION_DIGEST_KIND,
+            "session_id": session_id,
+        }
+    )
 
 
 def main() -> int:
@@ -543,7 +557,8 @@ def _validate_journey_receipt(journey: JsonObject, profile: JsonObject) -> None:
         raise ConstrainedJourneyError("correlated Agent Run binding is invalid")
     expected_run_keys = {
         "run_id",
-        "session_id",
+        "agent_run_session_digest",
+        "session_binding_source",
         "mission_id",
         "claim_id",
         "envelope_digest",
@@ -553,11 +568,15 @@ def _validate_journey_receipt(journey: JsonObject, profile: JsonObject) -> None:
         "status",
     }
     run_id = agent_run.get("run_id")
+    run_session_digest = agent_run.get("agent_run_session_digest")
     if (
         set(agent_run) != expected_run_keys
         or not isinstance(run_id, str)
         or not _AGENT_RUN_ID.fullmatch(run_id)
-        or agent_run.get("session_id") != expected_session
+        or not isinstance(run_session_digest, str)
+        or not _DIGEST.fullmatch(run_session_digest)
+        or agent_run.get("session_binding_source")
+        != AGENT_RUN_SESSION_BINDING_SOURCE
         or agent_run.get("mission_id") != mission_id
         or agent_run.get("claim_id") != claim_id
         or agent_run.get("envelope_digest") != envelope_digest
@@ -594,7 +613,8 @@ def _validate_journey_receipt(journey: JsonObject, profile: JsonObject) -> None:
                 "tool_name",
                 "request_id",
                 "run_id",
-                "session_id",
+                "agent_run_session_digest",
+                "session_binding_source",
                 "mission_id",
                 "claim_id",
                 "envelope_digest",
@@ -613,7 +633,9 @@ def _validate_journey_receipt(journey: JsonObject, profile: JsonObject) -> None:
             or not isinstance(request_id, str)
             or not _REQUEST_ID.fullmatch(request_id)
             or binding.get("run_id") != run_id
-            or binding.get("session_id") != expected_session
+            or binding.get("agent_run_session_digest") != run_session_digest
+            or binding.get("session_binding_source")
+            != AGENT_RUN_SESSION_BINDING_SOURCE
             or binding.get("mission_id") != mission_id
             or binding.get("claim_id") != claim_id
             or binding.get("envelope_digest") != envelope_digest

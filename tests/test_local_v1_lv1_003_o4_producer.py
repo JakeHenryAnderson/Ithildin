@@ -23,8 +23,14 @@ MISSION_ID = "mission_" + "2" * 32
 CLAIM_ID = "mclaim_" + "3" * 32
 RUN_RECORD_ID = "run_" + "4" * 32
 ENVELOPE = "sha256:" + "5" * 64
-SESSION_ID = f"mission:{MISSION_ID}:{CLAIM_ID}:{'5' * 16}"
 DIGEST = "sha256:" + "6" * 64
+MISSION_SESSION_ID = f"mission:{MISSION_ID}:{CLAIM_ID}:{'5' * 16}"
+GATEWAY_SESSION_ID = (
+    f"node:{NODE_ID}:cfg:1:{DIGEST}:{MISSION_SESSION_ID}"
+)
+GATEWAY_SESSION_DIGEST = journey.agent_run_session_digest(
+    GATEWAY_SESSION_ID
+)
 VALID_ENROLLMENT_PROJECTION: JsonObject = {
     "node_id": NODE_ID,
     "principal_id": f"agent:node.{NODE_ID}",
@@ -774,7 +780,7 @@ class FakeApi:
             document = {
                 "run": {
                     "run_id": RUN_RECORD_ID,
-                    "session_id": SESSION_ID,
+                    "session_id": GATEWAY_SESSION_ID,
                     "principal_id": f"agent:node.{NODE_ID}",
                     "workspace_id": producer.WORKSPACE_ID,
                     "status": "active",
@@ -901,7 +907,7 @@ def _event(index: int, tool: str) -> JsonObject:
         "tool_name": tool,
         "metadata": {
             "run_id": RUN_RECORD_ID,
-            "session_id": SESSION_ID,
+            "session_id": GATEWAY_SESSION_ID,
             "workspace_id": producer.WORKSPACE_ID,
             "principal_id": f"agent:node.{NODE_ID}",
         },
@@ -1043,6 +1049,13 @@ def test_fake_full_journey_is_one_admission_one_devnull_hermes_attempt_and_close
     runs = assembler.journey["gateway_agent_runs"]
     assert isinstance(runs, list)
     assert runs[0]["status"] == "active"
+    assert runs[0]["agent_run_session_digest"] == GATEWAY_SESSION_DIGEST
+    assert runs[0]["session_binding_source"] == (
+        journey.AGENT_RUN_SESSION_BINDING_SOURCE
+    )
+    serialized_journey = canonical_json(assembler.journey)
+    assert GATEWAY_SESSION_ID not in serialized_journey
+    assert NODE_ID not in serialized_journey
     assert runtime.runtime.removed is True
     enroll_inputs = [
         value
@@ -5335,10 +5348,57 @@ def test_gateway_run_detail_uses_persisted_run_provenance_and_real_event_context
         for event in timeline
     )
 
-    journey = producer._gateway_journey(state, api)  # noqa: SLF001
+    journey_receipt = producer._gateway_journey(state, api)  # noqa: SLF001
 
-    assert journey["gateway_lifecycle_state"] == "runner_reported_succeeded"
-    assert len(cast(list[object], journey["gateway_operation_bindings"])) == 2
+    assert journey_receipt["gateway_lifecycle_state"] == "runner_reported_succeeded"
+    assert journey_receipt["mission_session_id"] == MISSION_SESSION_ID
+    runs = cast(list[JsonObject], journey_receipt["gateway_agent_runs"])
+    bindings = cast(
+        list[JsonObject],
+        journey_receipt["gateway_operation_bindings"],
+    )
+    assert runs[0]["agent_run_session_digest"] == GATEWAY_SESSION_DIGEST
+    assert runs[0]["session_binding_source"] == (
+        journey.AGENT_RUN_SESSION_BINDING_SOURCE
+    )
+    assert len(bindings) == 2
+    assert all(
+        binding["agent_run_session_digest"] == GATEWAY_SESSION_DIGEST
+        and binding["session_binding_source"]
+        == journey.AGENT_RUN_SESSION_BINDING_SOURCE
+        for binding in bindings
+    )
+    serialized = canonical_json(journey_receipt)
+    assert GATEWAY_SESSION_ID not in serialized
+    assert NODE_ID not in serialized
+
+
+@pytest.mark.parametrize(
+    "session_id",
+    [
+        MISSION_SESSION_ID,
+        f"node:node_{'f' * 32}:cfg:1:{DIGEST}:{MISSION_SESSION_ID}",
+        f"node:{NODE_ID}:cfg:2:{DIGEST}:{MISSION_SESSION_ID}",
+        (
+            f"node:{NODE_ID}:cfg:1:sha256:{'f' * 64}:"
+            f"{MISSION_SESSION_ID}"
+        ),
+    ],
+)
+def test_gateway_run_detail_rejects_noncanonical_gateway_session_binding(
+    tmp_path: Path,
+    session_id: str,
+) -> None:
+    state = _gateway_journey_state(tmp_path)
+    api = FakeApi()
+    detail = api.get(f"/runs/{RUN_RECORD_ID}")
+    run = detail["run"]
+    assert isinstance(run, dict)
+    run["session_id"] = session_id
+    api.run_detail_override = detail
+
+    with pytest.raises(producer.ProducerError, match="gateway_run_detail_invalid"):
+        producer._gateway_journey(state, api)  # noqa: SLF001
 
 
 @pytest.mark.parametrize(

@@ -3797,7 +3797,7 @@ def _gateway_journey(state: ProducerState, api: Api) -> JsonObject:
     timeline = run_detail.get("timeline")
     if not isinstance(run, dict) or not isinstance(timeline, list):
         raise ProducerError("gateway_run_detail_invalid")
-    session_id = (
+    mission_session_id = (
         f"mission:{state.mission_id}:{claim_id}:"
         f"{envelope_digest.removeprefix('sha256:')[:16]}"
     )
@@ -3808,6 +3808,13 @@ def _gateway_journey(state: ProducerState, api: Api) -> JsonObject:
     ):
         raise ProducerError("gateway_run_detail_invalid")
     principal_id = f"agent:node.{state.node_id}"
+    gateway_session_id = (
+        f"node:{state.node_id}:cfg:{state.configuration_generation}:"
+        f"{state.configuration_digest}:{mission_session_id}"
+    )
+    gateway_session_digest = assembler_module.agent_run_session_digest(
+        gateway_session_id
+    )
     run_metadata = run.get("metadata")
     expected_run_metadata: JsonObject = {
         "created_by": "governed_tool_call",
@@ -3827,7 +3834,7 @@ def _gateway_journey(state: ProducerState, api: Api) -> JsonObject:
     }
     if (
         run.get("run_id") != run_id
-        or run.get("session_id") != session_id
+        or run.get("session_id") != gateway_session_id
         or run.get("principal_id") != principal_id
         or run.get("workspace_id") != WORKSPACE_ID
         or run.get("status") != "active"
@@ -3861,7 +3868,7 @@ def _gateway_journey(state: ProducerState, api: Api) -> JsonObject:
             or not _REQUEST_ID.fullmatch(request_id)
             or event.get("tool_name") != expected_tool
             or metadata.get("run_id") != run_id
-            or metadata.get("session_id") != session_id
+            or metadata.get("session_id") != gateway_session_id
             or metadata.get("workspace_id") != WORKSPACE_ID
             or metadata.get("principal_id") != principal_id
         ):
@@ -3875,7 +3882,10 @@ def _gateway_journey(state: ProducerState, api: Api) -> JsonObject:
                 "tool_name": expected_tool,
                 "request_id": request_id,
                 "run_id": run_id,
-                "session_id": session_id,
+                "agent_run_session_digest": gateway_session_digest,
+                "session_binding_source": (
+                    assembler_module.AGENT_RUN_SESSION_BINDING_SOURCE
+                ),
                 "mission_id": state.mission_id,
                 "claim_id": claim_id,
                 "envelope_digest": envelope_digest,
@@ -3898,11 +3908,14 @@ def _gateway_journey(state: ProducerState, api: Api) -> JsonObject:
         "authority": "gateway_agent_run_evidence",
         "correlation_basis": "gateway_validated_claim_session",
         "rejected_correlation_count": 0,
-        "mission_session_id": session_id,
+        "mission_session_id": mission_session_id,
         "gateway_agent_runs": [
             {
                 "run_id": run_id,
-                "session_id": session_id,
+                "agent_run_session_digest": gateway_session_digest,
+                "session_binding_source": (
+                    assembler_module.AGENT_RUN_SESSION_BINDING_SOURCE
+                ),
                 "mission_id": state.mission_id,
                 "claim_id": claim_id,
                 "envelope_digest": envelope_digest,
