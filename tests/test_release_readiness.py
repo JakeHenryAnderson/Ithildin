@@ -649,7 +649,7 @@ def test_validation_performance_tiers_are_wired(tmp_path: Path) -> None:
     assert "$(MAKE) no-new-powers-guardrail" in capability_body
     assert "$(MAKE) runtime-check" in capability_body
     assert "$(MAKE) test-fast" in capability_body
-    evidence_body = makefile.partition("evidence-check:")[2].partition("\n\n")[0]
+    evidence_body = makefile.partition("\nevidence-check:")[2].partition("\n\n")[0]
     assert "$(MAKE) release-evidence-gate" in evidence_body
     assert "$(MAKE) review-run-manifest-check" in evidence_body
     assert "$(MAKE) docs-check" in evidence_body

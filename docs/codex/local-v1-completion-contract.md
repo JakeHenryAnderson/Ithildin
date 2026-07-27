@@ -266,9 +266,19 @@ JSON disposition, and is validated from a clean current checkout.
   `make local-v1-candidate-check` requires a clean checkout, emits exact candidate markers, runs the
   milestone gate, and executes a fixed target inventory. The inventory explicitly covers policy,
   auth, approval, audit, redaction, security, migrations, hardening, Node evidence, Mission Command
-  evidence and focused gates, the Hermes evidence path, UI accessibility tests, the production UI
-  build, docs, exact tool count, and no-new-powers checks. Evidence checkers do not reproduce live
-  evidence; the live POC commands are intentionally absent. Passing it is candidate evidence only.
+  evidence and focused gates, the historical Hermes plan plus the current digest-bound O2 evidence,
+  all non-slow core and Local-v1 tests, UI accessibility tests, the production UI build, docs, exact
+  tool count, and no-new-powers checks. The Local-v1 regression target excludes the legacy
+  enterprise-readiness matrix and closed LV1-003 exact-attempt suites: those tests are intentionally
+  bound to older exact candidates and their durable milestone dispositions are validated separately.
+  The candidate inventory likewise does not rerun legacy ambient Node evidence or the historical
+  Mission Command POC report, because those ignored reports either are not retained or bind an older
+  exact candidate. Their commands remain available for deliberate reproduction, their tracked plans
+  and durable milestone dispositions remain validated, and current Node and Mission Command behavior
+  stays covered by runtime-trust, focused, and regression tests. Local-v1 candidate qualification
+  neither refreshes nor supersedes those historical authority records. Evidence checkers do not
+  reproduce live evidence; the live POC commands are intentionally absent. Passing it is candidate
+  evidence only.
 - Release tier: `make local-v1-release-check` validates the current milestone wiring and the bound
   historical candidate disposition; it does not rerun candidate qualification against a later
   disposition commit. It is intentionally fail-closed until all eight outcomes, genuine human UAT,
