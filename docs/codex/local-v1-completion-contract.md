@@ -158,6 +158,14 @@ condition after three exact-candidate rehearsals. The final candidate
 remains false. The durable safe disposition is
 `docs/codex/local-v1-lv1-007-o2-repeated-live-gate-disposition.md`.
 
+The next automatic goal continuation started one fresh bounded O2 recovery and consumed exactly one
+new rehearsal on reviewed candidate `69de21a2526fa481972188e5624f27e90c4cff29`. The safe Gateway
+bitmap `110011` proved the allowed read, denied-before-execution read, fixed stdio identity, and
+valid audit chain, but Hermes did not invoke the approval-required write. Cleanup completed, no
+success report was retained, and no second rehearsal is authorized in that fresh recovery task.
+`O2` and `LV1-007` remain `not_started`; all authority remains false. The durable disposition is
+`docs/codex/local-v1-lv1-007-o2-fresh-recovery-disposition.md`.
+
 Historical `LV1-003` lineage follows.
 `MCC-007` exact reviewed candidate is authorized for code use only. Independent Sol xhigh review of
 candidate `da5fd021bddb48ad663aa0a409da036bc854b516` returned `GO` with zero Critical, High, Medium,
