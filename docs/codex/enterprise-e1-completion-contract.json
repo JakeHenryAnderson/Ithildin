@@ -130,20 +130,19 @@
       "id": "E1-O6",
       "milestone_id": "E1-M6",
       "title": "Exact candidate qualification and UAT handoff",
-      "status": "in_progress",
+      "status": "complete",
       "existing_evidence": [
-        "docs/codex/local-v1-candidate-gate.md",
-        "docs/codex/local-v1-independent-review.md",
-        "docs/codex/local-v1-human-uat-packet.md",
-        "scripts/local_v1_contract_check.py",
-        "tests/test_local_v1_contract.py"
+        "docs/codex/enterprise-e1-candidate-gate-procedure.md",
+        "docs/codex/enterprise-e1-candidate-gate.md",
+        "docs/codex/enterprise-e1-independent-review.md",
+        "docs/codex/enterprise-e1-human-uat-packet.md",
+        "docs/codex/enterprise-e1-human-uat-record-template.md",
+        "scripts/enterprise_e1_candidate_preflight.py",
+        "scripts/enterprise_e1_inherited_local_v1_check.py",
+        "tests/test_enterprise_e1_candidate_preflight.py",
+        "tests/test_enterprise_e1_inherited_local_v1.py"
       ],
-      "remaining_requirements": [
-        "one frozen E1 candidate and dedicated candidate gate",
-        "one proportional independent E1 review",
-        "concise E1 human UAT packet",
-        "stop before genuine human UAT"
-      ]
+      "remaining_requirements": []
     }
   ],
   "milestones": [
@@ -181,13 +180,13 @@
       "id": "E1-M6",
       "outcome_id": "E1-O6",
       "title": "Exact candidate and UAT handoff checkpoint",
-      "status": "in_progress"
+      "status": "complete"
     }
   ],
   "progress": {
-    "outcomes_complete": 5,
+    "outcomes_complete": 6,
     "outcomes_total": 6,
-    "milestones_complete": 5,
+    "milestones_complete": 6,
     "milestones_total": 6
   },
   "pis_wait": {
@@ -196,10 +195,10 @@
     "collection_action_authority": false
   },
   "qualification": {
-    "candidate_commit": null,
-    "candidate_gate_complete": false,
-    "independent_review_complete": false,
-    "human_uat_packet_ready": false,
+    "candidate_commit": "02e39d57a6d38a14d959bb88a32da79fe34e4e13",
+    "candidate_gate_complete": true,
+    "independent_review_complete": true,
+    "human_uat_packet_ready": true,
     "human_uat_complete": false
   },
   "authority": {
@@ -232,5 +231,5 @@
     "Local v1 release acceptance",
     "human UAT completion"
   ],
-  "next_action": "E1-M6"
+  "next_action": "stop_for_human_uat"
 }

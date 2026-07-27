@@ -94,6 +94,9 @@ def test_enterprise_e1_contract_rejects_false_qualification_completion() -> None
     contract["milestones"][-1]["status"] = "complete"
     contract["progress"]["outcomes_complete"] = 1
     contract["progress"]["milestones_complete"] = 1
+    contract["qualification"]["candidate_gate_complete"] = False
+    contract["qualification"]["independent_review_complete"] = False
+    contract["qualification"]["human_uat_packet_ready"] = False
     contract["next_action"] = "stop_for_human_uat"
 
     validation = enterprise_e1_contract_check.validate_contract(

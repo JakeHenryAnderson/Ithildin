@@ -1,6 +1,7 @@
 # Ithildin Enterprise Track E1 Completion Contract
 
-Status: active implementation contract. Outcomes complete: `5/6`. Milestones complete: `5/6`.
+Status: implementation complete; stopped for genuine human UAT. Outcomes complete: `6/6`.
+Milestones complete: `6/6`.
 
 The machine-readable authority is
 [`enterprise-e1-completion-contract.json`](enterprise-e1-completion-contract.json). Validate it
@@ -26,7 +27,7 @@ descendant branch and does not change Local v1 candidate, review, UAT, or releas
 | `E1-M3` | `E1-O3` - Safe upgrade, rollback, and recovery | `complete` |
 | `E1-M4` | `E1-O4` - Authoritative mission and fleet operations cockpit | `complete` |
 | `E1-M5` | `E1-O5` - Bounded operational evidence export | `complete` |
-| `E1-M6` | `E1-O6` - Exact candidate qualification and UAT handoff | `in_progress` |
+| `E1-M6` | `E1-O6` - Exact candidate qualification and UAT handoff | `complete` |
 
 Milestones advance in this order. A later outcome may reuse or inspect existing behavior, but it
 does not become complete before the preceding checkpoint is complete.
@@ -99,11 +100,26 @@ contract rehearsal. E1-O5 and E1-M5 are complete.
 
 ### E1-O6 - Exact candidate qualification and UAT handoff
 
-Reuse Local v1 candidate-gate patterns only as implementation lineage. E1 requires its own exact
-candidate, dedicated gate, proportional independent review, and concise human UAT packet.
-Automated checks and reviews remain evidence only. Genuine human UAT stays false and is the final
-stop line.
-This is the active `E1-M6` checkpoint.
+Reuse Local v1 candidate-gate patterns only as implementation lineage. The frozen E1 candidate is
+`02e39d57a6d38a14d959bb88a32da79fe34e4e13`, tree
+`9850b6cbd40742d67388527de802961ddef306bd`. Its dedicated candidate gate passed; the retained
+transcript has SHA-256
+`d01f03c18248f9c664ed2270e2bb30d9b5dacfebb9d426296a7890d35e82ffe0`.
+[`enterprise-e1-candidate-gate.md`](enterprise-e1-candidate-gate.md) records the exact inventory
+and evidence limits.
+
+Independent review first returned `NO_GO` with one Medium final-publication race finding against
+predecessor `894332d08417020a647728da5f4a82512a263366`. Candidate `02e39d57` closes that finding
+with exclusive, no-follow, ownership-safe publication and focused concurrency/failure coverage.
+The final proportional review is `GO` with Critical `0`, High `0`, Medium `0`, and Low `0`, as
+recorded in
+[`enterprise-e1-independent-review.md`](enterprise-e1-independent-review.md).
+
+The concise exact-candidate
+[`enterprise-e1-human-uat-packet.md`](enterprise-e1-human-uat-packet.md) and external
+[`enterprise-e1-human-uat-record-template.md`](enterprise-e1-human-uat-record-template.md) are
+ready. E1-O6 and E1-M6 are complete. Human UAT remains false, and
+`stop_for_human_uat` is the next action.
 
 ## Frozen boundaries and nonclaims
 
@@ -123,8 +139,8 @@ receipts.
 
 ## Candidate and UAT gates
 
-An E1 candidate is not qualified until all six outcomes and milestones are complete against one
-exact clean commit, the dedicated candidate gate passes, and the proportional independent review
-is recorded with its own evidence. A usable UAT packet may then be prepared. The implementation
-lane stops before genuine human UAT and does not mark production readiness, Local v1 acceptance,
-or public security-product readiness complete.
+All six outcomes and milestones are complete against the exact candidate named above. The
+dedicated gate passed, the proportional independent review is closed, and the usable UAT packet is
+ready. The implementation lane is now stopped before genuine human UAT. It does not mark human
+UAT, production readiness, Local v1 acceptance, release acceptance, public security-product
+readiness, or any external-system action complete.
