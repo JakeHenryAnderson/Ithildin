@@ -21,7 +21,7 @@ NODE_RELEASE_BUNDLE ?= var/node-release-artifact/node-release-$(NODE_RELEASE_VER
 .PHONY: hermes-poc-image hermes-poc-config-check hermes-poc-run hermes-poc-stop
 .PHONY: mission-command-control-plane-poc mission-command-control-plane-poc-check mission-command-control-plane-focused-gates
 .PHONY: mission-command-runner-bridge-profile-check mission-command-runner-bridge-implementation-check local-v1-constrained-mission-contract-check local-v1-lv1-003-o4-execution-authorization-check local-v1-lv1-003-o4-producer-static-check local-v1-lv1-003-o4-producer-run local-v1-lv1-003-o4-image-recovery-run local-v1-lv1-003-o4-attempt008-port-recovery-check local-v1-lv1-003-o4-attempt008-port-release-check local-v1-lv1-003-o4-attempt008-port-release-run local-v1-lv1-003-o4-attempt008-node-identity-reconciliation-check local-v1-lv1-003-o4-attempt008-node-identity-reconciliation-run local-v1-lv1-003-o4-attempt008-quarantine-revocation-check local-v1-lv1-003-o4-attempt008-quarantine-revocation-run local-v1-lv1-003-o4-attempt008-two-container-revocation-check local-v1-lv1-003-o4-attempt008-two-container-revocation-run
-.PHONY: local-v1-contract-check local-v1-golden-path-check local-v1-inner-check local-v1-milestone-check local-v1-runtime-trust-check local-v1-hermes-evidence-check local-v1-node-journey local-v1-node-journey-check local-v1-ui-production-build local-v1-candidate-inventory local-v1-candidate-check local-v1-release-check
+.PHONY: local-v1-contract-check local-v1-golden-path-check local-v1-inner-check local-v1-milestone-check local-v1-runtime-trust-check local-v1-hermes-evidence-check local-v1-node-journey local-v1-node-journey-check local-v1-failure-recovery-static-check local-v1-failure-recovery-run local-v1-failure-recovery-check local-v1-ui-production-build local-v1-candidate-inventory local-v1-candidate-check local-v1-release-check
 
 test:
 	uv run pytest
@@ -63,6 +63,28 @@ local-v1-lv1-003-o4-producer-static-check:
 		tests/test_local_v1_lv1_003_o4_producer.py \
 		tests/test_local_v1_constrained_mission_journey.py \
 		-q
+
+# Non-live contract and fixture checks for the LV1-004 recovery journey.
+local-v1-failure-recovery-static-check:
+	uv run pytest \
+		tests/test_local_v1_failure_recovery.py \
+		tests/test_api_service.py::test_node_signed_configuration_distribution_acknowledgment_and_drift_api \
+		tests/test_node_client.py::test_client_governed_read_partition_fails_without_retry_or_local_fallback \
+		-q
+
+# LIVE-LOCAL, clean-candidate, isolated loopback evidence journey. No Docker or provider.
+local-v1-failure-recovery-run:
+	uv run --offline --frozen python -m scripts.local_v1_failure_recovery_journey
+
+# Evidence-only checker. The selected root and expected candidate must be explicit.
+local-v1-failure-recovery-check:
+	@test -n "$(LOCAL_V1_FAILURE_RECOVERY_EVIDENCE)" || \
+		(echo "LOCAL_V1_FAILURE_RECOVERY_EVIDENCE is required" >&2; exit 2)
+	@test -n "$(LOCAL_V1_FAILURE_RECOVERY_CANDIDATE)" || \
+		(echo "LOCAL_V1_FAILURE_RECOVERY_CANDIDATE is required" >&2; exit 2)
+	uv run python -m scripts.local_v1_failure_recovery_check \
+		--evidence-root "$(LOCAL_V1_FAILURE_RECOVERY_EVIDENCE)" \
+		--expected-candidate "$(LOCAL_V1_FAILURE_RECOVERY_CANDIDATE)"
 
 # CLOSED consumed successful Attempt 021 entrypoint; budget zero and no live authority.
 local-v1-lv1-003-o4-producer-run:
