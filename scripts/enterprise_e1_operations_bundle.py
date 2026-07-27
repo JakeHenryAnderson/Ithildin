@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import re
 import shutil
 import stat
@@ -208,11 +209,10 @@ def build_bundle(
     value = _load_input(input_path, contract)
     archive_path = output_dir.parent / f"{output_dir.name}.zip"
     receipt_path = output_dir.parent / f"{output_dir.name}.zip.sha256"
-    for target in (output_dir, archive_path, receipt_path):
-        if target.exists() or target.is_symlink():
-            raise OperationsBundleError(f"output target already exists: {target}")
 
     staging = output_dir.parent / f".{output_dir.name}.tmp-{uuid.uuid4().hex}"
+    archive_fd: int | None = None
+    receipt_fd: int | None = None
     try:
         staging.mkdir(parents=False, mode=0o700)
         artifacts = _redacted_artifacts(value, contract)
@@ -230,21 +230,26 @@ def build_bundle(
             {path: content for path, content in sorted(artifacts.items())},
             contract,
         )
-        _write_archive(archive_path, artifacts)
-        archive_sha256 = _sha256(archive_path.read_bytes())
-        receipt_path.write_text(
-            f"{archive_sha256}  {archive_path.name}\n", encoding="utf-8"
+        archive_fd, receipt_fd = _reserve_output_set(
+            output_dir=output_dir,
+            archive_path=archive_path,
+            receipt_path=receipt_path,
         )
-        receipt_path.chmod(0o600)
-        staging.replace(output_dir)
-    except Exception:
+        _publish_directory_contents(output_dir, artifacts)
+        _write_archive(archive_fd, artifacts)
+        archive_sha256 = _sha256_fd(archive_fd)
+        _write_all(
+            receipt_fd,
+            f"{archive_sha256}  {archive_path.name}\n".encode(),
+        )
+        os.fsync(receipt_fd)
+    finally:
+        if archive_fd is not None:
+            os.close(archive_fd)
+        if receipt_fd is not None:
+            os.close(receipt_fd)
         if staging.exists():
             shutil.rmtree(staging)
-        if archive_path.exists():
-            archive_path.unlink()
-        if receipt_path.exists():
-            receipt_path.unlink()
-        raise
     return {
         "valid": True,
         "output_dir": output_dir.as_posix(),
@@ -260,14 +265,126 @@ def build_bundle(
     }
 
 
-def _write_archive(path: Path, artifacts: dict[str, bytes]) -> None:
-    with zipfile.ZipFile(path, "x", compression=zipfile.ZIP_STORED) as archive:
-        for name, content in sorted(artifacts.items()):
-            info = zipfile.ZipInfo(name, ZIP_TIMESTAMP)
-            info.compress_type = zipfile.ZIP_STORED
-            info.create_system = 3
-            info.external_attr = (stat.S_IFREG | 0o644) << 16
-            archive.writestr(info, content)
+def _reserve_output_set(
+    *,
+    output_dir: Path,
+    archive_path: Path,
+    receipt_path: Path,
+) -> tuple[int, int]:
+    archive_fd: int | None = None
+    receipt_fd: int | None = None
+    nofollow = _required_open_flag("O_NOFOLLOW")
+    try:
+        output_dir.mkdir(parents=False, mode=0o700)
+        archive_fd = os.open(
+            archive_path,
+            os.O_RDWR | os.O_CREAT | os.O_EXCL | nofollow,
+            0o600,
+        )
+        receipt_fd = os.open(
+            receipt_path,
+            os.O_WRONLY | os.O_CREAT | os.O_EXCL | nofollow,
+            0o600,
+        )
+    except FileExistsError as exc:
+        if archive_fd is not None:
+            os.close(archive_fd)
+        if receipt_fd is not None:
+            os.close(receipt_fd)
+        raise OperationsBundleError(
+            "output target already exists or was concurrently reserved: "
+            f"{exc.filename}"
+        ) from exc
+    except Exception:
+        if archive_fd is not None:
+            os.close(archive_fd)
+        if receipt_fd is not None:
+            os.close(receipt_fd)
+        raise
+    return archive_fd, receipt_fd
+
+
+def _publish_directory_contents(
+    output_dir: Path,
+    artifacts: dict[str, bytes],
+) -> None:
+    nofollow = _required_open_flag("O_NOFOLLOW")
+    directory = _required_open_flag("O_DIRECTORY")
+    root_fd = os.open(output_dir, os.O_RDONLY | directory | nofollow)
+    try:
+        for relative, content in sorted(artifacts.items()):
+            path = PurePosixPath(relative)
+            if not _safe_member(relative):
+                raise OperationsBundleError(
+                    f"internal bundle member path is unsafe: {relative}"
+                )
+            parent_fd = os.dup(root_fd)
+            try:
+                for part in path.parts[:-1]:
+                    try:
+                        os.mkdir(part, mode=0o700, dir_fd=parent_fd)
+                    except FileExistsError:
+                        pass
+                    child_fd = os.open(
+                        part,
+                        os.O_RDONLY | directory | nofollow,
+                        dir_fd=parent_fd,
+                    )
+                    os.close(parent_fd)
+                    parent_fd = child_fd
+                target_fd = os.open(
+                    path.name,
+                    os.O_WRONLY | os.O_CREAT | os.O_EXCL | nofollow,
+                    0o600,
+                    dir_fd=parent_fd,
+                )
+                try:
+                    _write_all(target_fd, content)
+                    os.fsync(target_fd)
+                finally:
+                    os.close(target_fd)
+            finally:
+                os.close(parent_fd)
+        os.fsync(root_fd)
+    finally:
+        os.close(root_fd)
+
+
+def _write_all(fd: int, content: bytes) -> None:
+    view = memoryview(content)
+    while view:
+        written = os.write(fd, view)
+        if written <= 0:
+            raise OperationsBundleError("reserved output write did not make progress")
+        view = view[written:]
+
+
+def _required_open_flag(name: str) -> int:
+    flag = getattr(os, name, None)
+    if not isinstance(flag, int) or flag == 0:
+        raise OperationsBundleError(f"required safe filesystem flag is unavailable: {name}")
+    return flag
+
+
+def _write_archive(fd: int, artifacts: dict[str, bytes]) -> None:
+    with os.fdopen(os.dup(fd), "w+b") as stream:
+        with zipfile.ZipFile(stream, "w", compression=zipfile.ZIP_STORED) as archive:
+            for name, content in sorted(artifacts.items()):
+                info = zipfile.ZipInfo(name, ZIP_TIMESTAMP)
+                info.compress_type = zipfile.ZIP_STORED
+                info.create_system = 3
+                info.external_attr = (stat.S_IFREG | 0o644) << 16
+                archive.writestr(info, content)
+        stream.flush()
+        os.fsync(stream.fileno())
+
+
+def _sha256_fd(fd: int) -> str:
+    digest = hashlib.sha256()
+    os.lseek(fd, 0, os.SEEK_SET)
+    while chunk := os.read(fd, 1024 * 1024):
+        digest.update(chunk)
+    return digest.hexdigest()
 
 
 def _safe_member(name: str) -> bool:

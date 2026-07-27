@@ -44,9 +44,14 @@ uv run python scripts/enterprise_e1_operations_bundle.py verify \
 ```
 
 Build fails closed if the input schema, commit, UTC time, site label, tool count, section set, or
-section object shape is invalid; if either output target already exists; or if redaction scanning
-finds forbidden runtime material. Verification rejects missing, extra, renamed, non-UTF-8, unsafe,
-or digest-mismatched members. An archive SHA-256 receipt is written beside the ZIP.
+section object shape is invalid; if any output target already exists or is concurrently reserved;
+or if redaction scanning finds forbidden runtime material. After validation and redaction, the
+builder exclusively reserves the directory, ZIP, and receipt before publishing through
+non-following file descriptors. It never replaces an output, follows a receipt symlink, or deletes
+a final output during exception cleanup. If publication fails after reservation, the partial
+reserved set remains for explicit operator inspection and removal; a retry cannot silently reuse
+it. Verification rejects missing, extra, renamed, non-UTF-8, unsafe, or digest-mismatched members.
+An archive SHA-256 receipt is written beside the ZIP.
 
 The manifest proves only local content consistency relative to the manifest being checked. Because
 the manifest and receipt can be replaced together, they are not origin authentication, a local
