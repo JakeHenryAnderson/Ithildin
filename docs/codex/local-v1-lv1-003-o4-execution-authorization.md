@@ -1,11 +1,54 @@
 # Local v1 LV1-003 O4 Execution Authorization Gate
 
 Status:
-`ATTEMPT_020_CONSUMED_GATEWAY_RUN_DETAIL_INVALID_CLEANUP_COMPLETE_NO_LIVE_AUTHORITY`
+`ATTEMPT_021_PREPARED_PENDING_EXACT_CANDIDATE_REVIEW_NO_LIVE_AUTHORITY`
 
-This record closes `LV1-003-O4-ATTEMPT-020`, preserves immutable consumed Attempts 001-020 and all
-tracked recovery history, and grants no live authority. Its machine contract is
+This record prepares `LV1-003-O4-ATTEMPT-021`, preserves immutable consumed Attempts 001-020 and all
+tracked recovery history, and grants no live authority before exact review and tagging. Its machine contract is
 `docs/codex/local-v1-lv1-003-o4-execution-authorization.json`.
+
+## Attempt 021 Prepared Boundary
+
+Attempt 021 is a fresh successor, never a retry, recovery, cleanup, continuation, or reopening of
+Attempts 001-020. It is bound to committed review record
+`bb5b37a39b196ab8dc468a49afc606196d4ee091`, tree
+`3b1da5679392ae1beb520d2821f18be0981f247b`, and the exact reviewed Gateway session-binding repair
+`a9ef905ee2ec3d5ecb63443d5ad567bf6bc09300`, tree
+`75816ab55d96be34f8d22c7e41ad925a1beaee24`, parent
+`3a9d522f329f348df43168ccd78cacfbdc338a5e`. The durable review record is
+`docs/codex/local-v1-lv1-003-o4-gateway-session-binding-repair-exact-review.md`, digest
+`sha256:bd6c8f6b84c2823dd7319d6beb07f1e62adb35d290274f7f73d3e83744eb19a2`,
+with `GO` and Critical 0, High 0, Medium 0, Low 0.
+
+The repair changes exactly five paths: the producer contract, constrained-journey script, producer
+script, constrained-journey tests, and producer tests. Their exact digests are
+`sha256:c0cede675f6bc1bcdb74ef331c498c3eae26b2aed46510edd57ffd3aa12a9b45`,
+`sha256:4719643b1513048410c2a5d4e12fefd95816856bd91d0c0a2f0a277abb7c1579`,
+`sha256:27b51fca84140762dbf6c323570fdb28ff80863275300573e1489e5f077340e3`,
+`sha256:b91058467089fe140d5b8099d0325eb776c5abcc9ba05fb177f4f3ccc63f4e43`, and
+`sha256:1747b53b6a695ced86585dbac1a06c2f0f9f792e20eda90bd022e2a31bc8c89e`.
+The execution candidate must be the clean immediate child of the review record and change exactly
+six paths: `Makefile`, `README.md`, this Markdown record, its JSON contract, the authorization
+validator, and its tests. Runtime parity must match the reviewed five-path repair byte for byte.
+The fixed annotated tag `ithildin/lv1-003-o4-attempt021-reviewed` must peel to that exact candidate.
+
+Before the exact annotated tag exists, validation fails closed solely for the missing or invalid
+tag: the effective budget is zero and all 19 authority fields are false. After a separately
+authorized exact review and annotated tag, the attempt budget is exactly one, `attempt_consumed`
+is false, and only the historical five-field ceiling may be true: `producer_code_authorized`,
+`docker_lifecycle_authorized`, `live_hermes_execution_authorized`,
+`model_provider_access_authorized`, and `o4_evidence_execution_authorized`. The remaining 14
+authority fields stay false.
+
+The only authorized live action after the exact tag and a fresh real green gate is one
+central-manager-supervised invocation of `make local-v1-lv1-003-o4-producer-run`, which dispatches
+`uv run python -m scripts.local_v1_lv1_003_o4_producer`. Retry, automatic retry, concurrent
+invocation, post-attempt retry, recovery, and cleanup authority are false. An immediate consumed
+disposition is required after the command returns or is interrupted. Success is not predicted.
+Tool count remains exactly 24; new tool, new power, release, promotion, production, and UAT remain
+false. Independent review of this gate may authorize only creation of the annotated review tag; it
+does not itself execute or authorize the producer, Docker, provider access, private-evidence
+inspection, commit, push, or O5.
 
 ## Attempt 020 Consumed Result
 
