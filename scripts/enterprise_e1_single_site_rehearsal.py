@@ -50,6 +50,15 @@ def main() -> int:
             ui_port=args.ui_port,
         )
     except (OSError, RehearsalError, enterprise_e1_single_site.SingleSiteError) as exc:
+        try:
+            shutil.rmtree(run_root)
+        except FileNotFoundError:
+            pass
+        except OSError:
+            print(
+                f"Enterprise E1 partial rehearsal cleanup required: {run_root}",
+                file=sys.stderr,
+            )
         print(f"Enterprise E1 single-site rehearsal refused: {exc}", file=sys.stderr)
         return 1
     print(f"Enterprise E1 single-site rehearsal passed: {report['result']}")
