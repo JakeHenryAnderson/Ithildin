@@ -33,17 +33,42 @@ def test_live_local_v1_golden_path_is_valid_and_fail_closed() -> None:
     assert report["uat_complete"] is False
 
 
+def test_mcc_authorization_modes_preserve_strict_current_and_frozen_review() -> None:
+    strict = (
+        local_v1_golden_path_check.mission_command_runner_bridge_authorization_check.build_report(
+            ROOT
+        )
+    )
+    frozen = (
+        local_v1_golden_path_check.mission_command_runner_bridge_authorization_check.build_report(
+            ROOT,
+            validate_current_state=False,
+        )
+    )
+
+    assert strict["current_state_validated"] is True
+    assert strict["valid"] is False
+    assert frozen["current_state_validated"] is False
+    assert frozen["valid"] is True, frozen["failures"]
+    assert frozen["code_implementation_authorized"] is True
+
+
 def test_golden_path_contract_stage_allows_reviewed_completion_and_future_progress() -> None:
     contract = (ROOT / local_v1_golden_path_check.CONTRACT_REL).read_text(
         encoding="utf-8"
     )
     future_progress = (
         contract.replace(
-            "Critical-path milestones complete: `3/8`",
             "Critical-path milestones complete: `4/8`",
+            "Critical-path milestones complete: `5/8`",
             1,
         )
-        .replace("Active next action: `LV1-003`", "Active next action: `LV1-004`", 1)
+        .replace("Active next action: `LV1-004`", "Active next action: `LV1-005`", 1)
+        .replace(
+            "| `LV1-004` | Failure and recovery | `not_started` |",
+            "| `LV1-004` | Failure and recovery | `complete` |",
+            1,
+        )
     )
 
     assert local_v1_golden_path_check._validate_contract_stage(future_progress) == []  # noqa: SLF001
@@ -55,11 +80,11 @@ def test_golden_path_contract_stage_rejects_stale_completion_status() -> None:
     )
     in_progress = (
         contract.replace(
-            "Critical-path milestones complete: `3/8`",
+            "Critical-path milestones complete: `4/8`",
             "Critical-path milestones complete: `1/8`",
             1,
         )
-        .replace("Active next action: `LV1-003`", "Active next action: `LV1-001`", 1)
+        .replace("Active next action: `LV1-004`", "Active next action: `LV1-001`", 1)
         .replace(
             "| `LV1-001` | Golden local path assembly | `complete` |",
             "| `LV1-001` | Golden local path assembly | `in_progress` |",
@@ -91,6 +116,18 @@ def test_golden_path_rejects_integrated_runner_and_authority_claims() -> None:
     assert any("real Hermes-through-Node mission is proven" in failure for failure in failures)
     assert any("MCC-007 live execution is authorized" in failure for failure in failures)
     assert any("human UAT is complete" in failure for failure in failures)
+
+
+def test_golden_path_rejects_stale_o4_incomplete_wording() -> None:
+    drifted = _golden().replace(
+        "closes `O4` and `LV1-003`",
+        "does not close `O4` or `LV1-003`",
+        1,
+    )
+
+    failures = local_v1_golden_path_check.validate_golden_text(drifted)
+
+    assert any("closes `O4` and `LV1-003`" in failure for failure in failures)
 
 
 def test_golden_path_rejects_cleanup_before_start() -> None:

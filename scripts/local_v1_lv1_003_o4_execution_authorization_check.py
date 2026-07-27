@@ -116,6 +116,12 @@ ATTEMPT_020_DISPOSITION_JSON = Path(
 ATTEMPT_020_DISPOSITION_DOCUMENT = Path(
     "docs/codex/local-v1-lv1-003-o4-attempt-020-disposition.md"
 )
+ATTEMPT_021_DISPOSITION_JSON = Path(
+    "docs/codex/local-v1-lv1-003-o4-attempt-021-disposition.json"
+)
+ATTEMPT_021_DISPOSITION_DOCUMENT = Path(
+    "docs/codex/local-v1-lv1-003-o4-attempt-021-disposition.md"
+)
 FIXED_NODE_START_DIAGNOSTIC_REVIEW = Path(
     "docs/codex/local-v1-lv1-003-o4-fixed-node-start-diagnostic-exact-review.md"
 )
@@ -196,8 +202,7 @@ PRODUCER_STATIC_TARGET = "local-v1-lv1-003-o4-producer-static-check"
 PRODUCER_RUN_TARGET = "local-v1-lv1-003-o4-producer-run"
 PRODUCER_MODULE_INVOCATION = "uv run python -m scripts.local_v1_lv1_003_o4_producer"
 PRODUCER_RUN_COMMENT = (
-    "# PREPARED, gate-protected one-shot Attempt 021 entrypoint; "
-    "exact annotated review tag required."
+    "# CLOSED consumed successful Attempt 021 entrypoint; budget zero and no live authority."
 )
 FAILED_FILE_PATH_INVOCATION = "uv run python scripts/local_v1_lv1_003_o4_producer.py"
 ENTRYPOINT_REPAIR_BASE_COMMIT = "148effd50c69b40a005f86f6217fc3db8b665a06"
@@ -860,6 +865,58 @@ ATTEMPT_020_DISPOSITION_SIZE = 128
 ATTEMPT_020_SNAPSHOT_FILE_COUNT = 668
 ATTEMPT_021_ID = "LV1-003-O4-ATTEMPT-021"
 ATTEMPT_021_REVIEW_TAG = "ithildin/lv1-003-o4-attempt021-reviewed"
+ATTEMPT_021_CANDIDATE_COMMIT = "cd267b4454af3e28f71d0f7c2e065d6e28c2d55c"
+ATTEMPT_021_CANDIDATE_TREE = "506c6f61041204debaeef339ec7d8a0fadf51346"
+ATTEMPT_021_DISPOSITION_JSON_DIGEST = (
+    "sha256:b92234b7164e40f42ca78d56667398e826f6c0d0e3bdd531d36fc0432dbd328e"
+)
+ATTEMPT_021_DISPOSITION_DOCUMENT_DIGEST = (
+    "sha256:0675a56e5239799af85645c939bdcdde54e5ad5d99f39ad190b14db9bc45c4cc"
+)
+ATTEMPT_021_RECEIPT_FILES: dict[str, tuple[int, int, str]] = {
+    "build-receipt.json": (
+        0o600,
+        1261,
+        "sha256:40af436862e81322d4f44d9ca925346c31061efd08f0f0c45381667aa537a74b",
+    ),
+    "journey-receipt.json": (
+        0o600,
+        3502,
+        "sha256:8edd6654765e3c7e5e14681aaa16a2c61813c5d1c85fd26c86527e37153ef6f8",
+    ),
+    "image-artifact-inventory.json": (
+        0o600,
+        7001,
+        "sha256:cf62cd7ec8c2ac8359316feffb13b3754ddfc05da00bb54e1d1cc0642fdb70a4",
+    ),
+    "license-source-inventory.json": (
+        0o600,
+        586,
+        "sha256:b0e07c5d6f565b582653c4d16a3e4035ad2c2758ca79e74f19b98563d673e8fa",
+    ),
+}
+ATTEMPT_021_MANIFEST_SIZE = 97421
+ATTEMPT_021_MANIFEST_DIGEST = (
+    "sha256:273d2e55d03815ca2b782726e4aace5838b6755cebc80bc4636e12bc2ce82036"
+)
+ATTEMPT_021_RECEIPT_DISPOSITION_SIZE = 256
+ATTEMPT_021_RECEIPT_DISPOSITION_DIGEST = (
+    "sha256:adccc93530980c62c75b7cd09634d7a004e3c19de31708b356dfcdae0ddaf173"
+)
+ATTEMPT_021_SNAPSHOT_FILE_COUNT = 668
+ATTEMPT_021_REPORT_FILES: dict[str, tuple[int, int, str]] = {
+    "report.json": (
+        0o600,
+        5362,
+        "sha256:57becae2e56fecf015e3d06fbf23e420e216d157a6cf2ad94ba633c0616cecb5",
+    ),
+    "report.md": (
+        0o600,
+        844,
+        "sha256:cba02987a6dcc0822a3fc7e363fca917cce2bae35b4874262613f55a4472e2da",
+    ),
+}
+ATTEMPT_021_SUCCESS_RECORDED = True
 GATEWAY_SESSION_BINDING_REPAIR_REVIEW_DIGEST = (
     "sha256:bd6c8f6b84c2823dd7319d6beb07f1e62adb35d290274f7f73d3e83744eb19a2"
 )
@@ -1111,9 +1168,9 @@ TERMINAL_HEALTH_PHASE_PROJECTION_PATH_DIGESTS: JsonObject = {
         "sha256:2eaba1dfe1835f8ae507af93d74c2d78ae192cf93ae4330e7b296ba94727f50f"
     ),
 }
-CANDIDATE_PARENT_COMMIT = GATEWAY_SESSION_BINDING_REPAIR_REVIEW_RECORD_COMMIT
-CANDIDATE_PARENT_TREE = GATEWAY_SESSION_BINDING_REPAIR_REVIEW_RECORD_TREE
-CANDIDATE_PARENT_PARENT = GATEWAY_SESSION_BINDING_REPAIR_COMMIT
+CANDIDATE_PARENT_COMMIT = ATTEMPT_021_CANDIDATE_COMMIT
+CANDIDATE_PARENT_TREE = ATTEMPT_021_CANDIDATE_TREE
+CANDIDATE_PARENT_PARENT = GATEWAY_SESSION_BINDING_REPAIR_REVIEW_RECORD_COMMIT
 MCC_AUTHORIZATION_INDEX_RECONCILIATION_REVIEW_DIGEST = (
     "sha256:5e01639bc661da2bec28ebc6a2edb5b7cc30c3bc71d45290c2274d260ea42c9c"
 )
@@ -1798,6 +1855,24 @@ ATTEMPT_021_CONTROL_PATH_ALLOWLIST = [
     "tests/test_local_v1_lv1_003_o4_execution_authorization_check.py",
 ]
 ATTEMPT_021_RUNTIME_PATHS = list(GATEWAY_SESSION_BINDING_REPAIR_PATH_DIGESTS)
+ATTEMPT_021_CLOSURE_CONTROL_PATH_ALLOWLIST = [
+    "Makefile",
+    "README.md",
+    ATTEMPT_021_DISPOSITION_JSON.as_posix(),
+    ATTEMPT_021_DISPOSITION_DOCUMENT.as_posix(),
+    CONTRACT.as_posix(),
+    DOCUMENT.as_posix(),
+    "docs/codex/local-v1-completion-contract.md",
+    "docs/codex/local-v1-golden-path.md",
+    "scripts/local_v1_contract_check.py",
+    "scripts/local_v1_golden_path_check.py",
+    "scripts/local_v1_lv1_003_o4_execution_authorization_check.py",
+    "scripts/mission_command_runner_bridge_authorization_check.py",
+    "tests/test_local_v1_contract.py",
+    "tests/test_local_v1_golden_path.py",
+    "tests/test_local_v1_lv1_003_o4_execution_authorization_check.py",
+    "tests/test_mission_command_runner_bridge_authorization_check.py",
+]
 IMAGE_READABILITY_REPAIR_PATHS = list(IMAGE_READABILITY_REPAIR_PATH_DIGESTS)
 APPLICATION_STARTUP_STAGE_DIAGNOSTIC_PATHS = list(APPLICATION_STARTUP_STAGE_PATH_DIGESTS)
 DIAGNOSTIC_REPAIR_PATHS = [
@@ -2701,6 +2776,17 @@ TOP_LEVEL_FIELDS = {
     "attempt_021_success_not_predicted",
     "attempt_021_immediate_consumed_disposition_required",
     "attempt_021_authority_derived_from_history_or_recovery",
+    "attempt_021_attempted_candidate_commit",
+    "attempt_021_attempted_candidate_tree",
+    "attempt_021_make_exit_code",
+    "attempt_021_producer_exit_code",
+    "attempt_021_disposition_json",
+    "attempt_021_disposition_json_sha256",
+    "attempt_021_disposition_document",
+    "attempt_021_disposition_document_sha256",
+    "attempt_021_o4_complete",
+    "attempt_021_lv1_003_complete",
+    "attempt_021_o5_authorized",
     "mcc_authorization_index_reconciliation_review_record",
     "mcc_authorization_index_reconciliation_review_sha256",
     "mcc_reviewed_candidate_commit",
@@ -2951,16 +3037,14 @@ HISTORICAL_TRUE_AUTHORITY_FIELDS = {
 HISTORICAL_AUTHORITY: JsonObject = {
     key: key in HISTORICAL_TRUE_AUTHORITY_FIELDS for key in AUTHORITY_FIELDS
 }
-TRUE_AUTHORITY_FIELDS = HISTORICAL_TRUE_AUTHORITY_FIELDS
+TRUE_AUTHORITY_FIELDS: set[str] = set()
 CLOSED_AUTHORITY: JsonObject = {key: False for key in AUTHORITY_FIELDS}
 ATTEMPT_002_AUTHORITY: JsonObject = {
     key: key in HISTORICAL_TRUE_AUTHORITY_FIELDS for key in AUTHORITY_FIELDS
 }
 ATTEMPT_003_AUTHORITY: JsonObject = {key: False for key in AUTHORITY_FIELDS}
 ATTEMPT_004_AUTHORITY: JsonObject = {key: False for key in AUTHORITY_FIELDS}
-EXPECTED_AUTHORITY: JsonObject = {
-    key: key in TRUE_AUTHORITY_FIELDS for key in AUTHORITY_FIELDS
-}
+EXPECTED_AUTHORITY: JsonObject = {key: False for key in AUTHORITY_FIELDS}
 
 
 class O4ExecutionAuthorizationError(RuntimeError):
@@ -3198,6 +3282,14 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         repo_root / ATTEMPT_020_DISPOSITION_DOCUMENT,
         failures,
     )
+    attempt_021_disposition = _read_contract(
+        repo_root / ATTEMPT_021_DISPOSITION_JSON,
+        failures,
+    )
+    attempt_021_disposition_document = _read_text(
+        repo_root / ATTEMPT_021_DISPOSITION_DOCUMENT,
+        failures,
+    )
     fixed_node_start_diagnostic_review = _read_text(
         repo_root / FIXED_NODE_START_DIAGNOSTIC_REVIEW,
         failures,
@@ -3390,6 +3482,11 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         attempt_020_disposition_document,
         failures,
     )
+    _validate_attempt_021_disposition(
+        attempt_021_disposition,
+        attempt_021_disposition_document,
+        failures,
+    )
     _validate_fixed_node_start_diagnostic_review(
         repo_root,
         fixed_node_start_diagnostic_review,
@@ -3458,6 +3555,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     _validate_attempt_018_receipts(repo_root, failures)
     _validate_attempt_019_receipts(repo_root, failures)
     _validate_attempt_020_receipts(repo_root, failures)
+    _validate_attempt_021_receipts(repo_root, failures)
     _validate_retained_attempt_evidence(repo_root, failures)
     _validate_evidence_ignore_patterns(repo_root, failures)
     _validate_bound_documents(repo_root, failures)
@@ -3479,9 +3577,9 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         failures,
         candidate_parent_commit=CANDIDATE_PARENT_COMMIT,
         candidate_parent_tree=CANDIDATE_PARENT_TREE,
-        reviewed_commit=GATEWAY_SESSION_BINDING_REPAIR_COMMIT,
+        reviewed_commit=ATTEMPT_021_CANDIDATE_COMMIT,
         runtime_paths=ATTEMPT_021_RUNTIME_PATHS,
-        control_paths=ATTEMPT_021_CONTROL_PATH_ALLOWLIST,
+        control_paths=ATTEMPT_021_CLOSURE_CONTROL_PATH_ALLOWLIST,
         candidate_ref="HEAD",
         require_clean_worktree=True,
     )
@@ -3549,8 +3647,8 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     )
     _validate_attempt_021_review_binding(
         repo_root,
-        candidate_commit=checkout_commit,
-        candidate_tree=checkout_tree,
+        candidate_commit=ATTEMPT_021_CANDIDATE_COMMIT,
+        candidate_tree=ATTEMPT_021_CANDIDATE_TREE,
         failures=failures,
     )
     valid = not failures
@@ -3564,8 +3662,8 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "reviewed_implementation_commit": contract.get("reviewed_implementation_commit"),
         "code_authorization_commit": contract.get("code_authorization_commit"),
         "attempt_id": contract.get("attempt_021_id"),
-        "attempted_candidate_commit": checkout_commit,
-        "attempted_candidate_tree": checkout_tree,
+        "attempted_candidate_commit": ATTEMPT_021_CANDIDATE_COMMIT,
+        "attempted_candidate_tree": ATTEMPT_021_CANDIDATE_TREE,
         "execution_candidate_commit": checkout_commit,
         "execution_candidate_tree": checkout_tree,
         "attempt_002_attempted_candidate_commit": contract.get(
@@ -3624,7 +3722,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "attempt_018_consumed": True,
         "attempt_019_consumed": True,
         "attempt_020_consumed": True,
-        "attempt_021_consumed": False,
+        "attempt_021_consumed": True,
         "attempt_consumed": contract.get("attempt_consumed"),
         "retry_authorized": contract.get("retry_authorized"),
         "execution_checkout_commit": checkout_commit,
@@ -3632,11 +3730,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "execution_attempt_budget": (
             contract.get("execution_attempt_budget") if valid else 0
         ),
-        "next_action": (
-            "execute_attempt_021_once_then_record_immediate_consumed_disposition"
-            if valid
-            else "review_attempt_021_exact_candidate"
-        ),
+        "next_action": "pause_after_o4_lv1_003_complete_do_not_start_lv1_004_or_o5",
         "producer_code_authorized": (
             authority.get("producer_code_authorized", False)
             if valid
@@ -3696,7 +3790,7 @@ def _validate_contract(contract: JsonObject, failures: list[str]) -> None:
         "schema_version": "1",
         "record_type": "local_v1_lv1_003_o4_execution_authorization",
         "record_status": (
-            "ATTEMPT_021_PREPARED_PENDING_EXACT_CANDIDATE_REVIEW_NO_LIVE_AUTHORITY"
+            "ATTEMPT_021_CONSUMED_SUCCESS_O4_LV1_003_COMPLETE_NO_LIVE_AUTHORITY"
         ),
         "ticket_id": "LV1-003",
         "outcome_id": "O4",
@@ -4957,7 +5051,7 @@ def _validate_contract(contract: JsonObject, failures: list[str]) -> None:
             "fresh_separately_authorized_gateway_session_binding_successor_"
             "not_retry_recovery_cleanup_or_continuation"
         ),
-        "attempt_021_execution_authorized": True,
+        "attempt_021_execution_authorized": False,
         "attempt_021_automatic_retry_authorized": False,
         "attempt_021_concurrent_invocation_authorized": False,
         "attempt_021_post_attempt_retry_authorized": False,
@@ -4967,6 +5061,19 @@ def _validate_contract(contract: JsonObject, failures: list[str]) -> None:
         "attempt_021_success_not_predicted": True,
         "attempt_021_immediate_consumed_disposition_required": True,
         "attempt_021_authority_derived_from_history_or_recovery": False,
+        "attempt_021_attempted_candidate_commit": ATTEMPT_021_CANDIDATE_COMMIT,
+        "attempt_021_attempted_candidate_tree": ATTEMPT_021_CANDIDATE_TREE,
+        "attempt_021_make_exit_code": 0,
+        "attempt_021_producer_exit_code": 0,
+        "attempt_021_disposition_json": ATTEMPT_021_DISPOSITION_JSON.as_posix(),
+        "attempt_021_disposition_json_sha256": ATTEMPT_021_DISPOSITION_JSON_DIGEST,
+        "attempt_021_disposition_document": ATTEMPT_021_DISPOSITION_DOCUMENT.as_posix(),
+        "attempt_021_disposition_document_sha256": (
+            ATTEMPT_021_DISPOSITION_DOCUMENT_DIGEST
+        ),
+        "attempt_021_o4_complete": True,
+        "attempt_021_lv1_003_complete": True,
+        "attempt_021_o5_authorized": False,
         "mcc_authorization_index_reconciliation_review_record": (
             MCC_AUTHORIZATION_INDEX_RECONCILIATION_REVIEW.as_posix()
         ),
@@ -5041,15 +5148,14 @@ def _validate_contract(contract: JsonObject, failures: list[str]) -> None:
         "attempt_002_execution_authorized": False,
         "attempt_002_automatic_retry_authorized": False,
         "execution_candidate_binding_mode": (
-            "exact_six_path_immediate_child_of_committed_review_record_"
-            "with_required_annotated_review_tag"
+            "exact_consumed_success_disposition_bound_to_reviewed_attempt_candidate"
         ),
-        "execution_attempt_budget": 1,
-        "attempt_consumed": False,
+        "execution_attempt_budget": 0,
+        "attempt_consumed": True,
         "retry_authorized": False,
         "attempt_custody": "central_manager_supervised_local_invocation",
         "persistent_cross_process_budget_consumption_claimed": False,
-        "immediate_post_attempt_disposition_recorded": False,
+        "immediate_post_attempt_disposition_recorded": True,
         "prior_attempt_detection_roots": PRIOR_ATTEMPT_ROOTS,
         "external_preflight_requirements": EXTERNAL_PREFLIGHT,
     }
@@ -5080,7 +5186,7 @@ def _validate_contract(contract: JsonObject, failures: list[str]) -> None:
 def _validate_document(document: str, failures: list[str]) -> None:
     normalized = " ".join(document.split())
     for phrase in (
-        "Status: `ATTEMPT_021_PREPARED_PENDING_EXACT_CANDIDATE_REVIEW_"
+        "Status: `ATTEMPT_021_CONSUMED_SUCCESS_O4_LV1_003_COMPLETE_"
         "NO_LIVE_AUTHORITY`",
         ATTEMPT_021_ID,
         ATTEMPT_021_REVIEW_TAG,
@@ -5090,12 +5196,13 @@ def _validate_document(document: str, failures: list[str]) -> None:
         GATEWAY_SESSION_BINDING_REPAIR_TREE,
         GATEWAY_SESSION_BINDING_REPAIR_PARENT_COMMIT,
         GATEWAY_SESSION_BINDING_REPAIR_REVIEW_DIGEST,
-        "Attempt 021 is a fresh successor",
+        "single supervised invocation succeeded",
         "exactly five paths",
         "exactly six paths",
-        "effective budget is zero and all 19 authority fields are false",
-        "attempt budget is exactly one",
-        "immediate consumed disposition is required",
+        "Attempt 021 is consumed with budget zero",
+        "All 19 authority fields are false",
+        "LV1-004",
+        "paused and not started",
         "new tool, new power, release, promotion, production, and UAT remain false",
         ATTEMPT_020_ID,
         ATTEMPT_020_REVIEW_TAG,
@@ -5177,7 +5284,7 @@ def _validate_document(document: str, failures: list[str]) -> None:
         "runner_reported_running",
         "completion_pending",
         "failed_closed",
-        "all 19 authority fields are false",
+        "all 19 authority fields false",
         "not Attempt 018 or repair authority",
         ATTEMPT_016_ID,
         ATTEMPT_016_REVIEW_TAG,
@@ -9901,6 +10008,77 @@ def _validate_attempt_020_disposition(
         failures.append("O4 Attempt 020 disposition document digest is invalid")
 
 
+def _validate_attempt_021_disposition(
+    disposition: JsonObject,
+    document: str,
+    failures: list[str],
+) -> None:
+    if (
+        disposition.get("record_status")
+        != "ATTEMPT_021_CONSUMED_SUCCESS_O4_LV1_003_COMPLETE_NO_LIVE_AUTHORITY"
+        or disposition.get("attempt_id") != ATTEMPT_021_ID
+        or disposition.get("execution_candidate_commit") != ATTEMPT_021_CANDIDATE_COMMIT
+        or disposition.get("execution_candidate_tree") != ATTEMPT_021_CANDIDATE_TREE
+        or disposition.get("execution_candidate_parent")
+        != GATEWAY_SESSION_BINDING_REPAIR_REVIEW_RECORD_COMMIT
+        or disposition.get("review_tag") != ATTEMPT_021_REVIEW_TAG
+        or disposition.get("tool_count") != 24
+    ):
+        failures.append("O4 Attempt 021 consumed-success disposition identity is invalid")
+    invocation = disposition.get("invocation")
+    attempt_contract = disposition.get("attempt_contract")
+    authority = disposition.get("authority")
+    closure = disposition.get("closure")
+    evidence = disposition.get("bounded_evidence")
+    limits = disposition.get("evidence_limits")
+    if not isinstance(invocation, dict) or (
+        invocation.get("make_exit_code") != 0
+        or invocation.get("producer_exit_code") != 0
+        or invocation.get("raw_invocation_output_size") != 195
+        or invocation.get("raw_invocation_output_sha256")
+        != "sha256:98f74c1020caa3ed27258e0a27170236bde61cff0f5a71baa8f35b4860746e73"
+        or invocation.get("raw_output_reproduced") is not False
+    ):
+        failures.append("O4 Attempt 021 invocation binding is invalid")
+    if not _exact_json_equal(
+        attempt_contract,
+        {
+            "execution_attempt_budget": 0,
+            "attempt_consumed": True,
+            "retry_authorized": False,
+            "automatic_retry_authorized": False,
+            "concurrent_invocation_authorized": False,
+            "post_attempt_retry_authorized": False,
+            "recovery_authorized": False,
+            "cleanup_authorized": False,
+            "successor_attempt_authorized": False,
+        },
+    ):
+        failures.append("O4 Attempt 021 consumed attempt contract is invalid")
+    if not _exact_json_equal(authority, CLOSED_AUTHORITY):
+        failures.append("O4 Attempt 021 authority is not fully closed")
+    if not isinstance(closure, dict) or (
+        closure.get("o4_complete") is not True
+        or closure.get("lv1_003_complete") is not True
+        or closure.get("o5_authorized") is not False
+        or closure.get("active_next_action") != "LV1-004"
+        or closure.get("next_action_started") is not False
+        or closure.get("pause_reason") != "user_directed_pause_after_o4"
+    ):
+        failures.append("O4 Attempt 021 closure boundary is invalid")
+    if not isinstance(evidence, dict) or (
+        evidence.get("gateway_lifecycle_status") != "runner_reported_succeeded"
+        or evidence.get("runner_state_authority") != "runner_reported_only"
+        or evidence.get("model_provider_state_known") is not False
+        or evidence.get("tool_call_count") != 2
+    ):
+        failures.append("O4 Attempt 021 bounded evidence is invalid")
+    if not isinstance(limits, dict) or any(value is not False for value in limits.values()):
+        failures.append("O4 Attempt 021 evidence limits are not fully false")
+    if _digest(document) != ATTEMPT_021_DISPOSITION_DOCUMENT_DIGEST:
+        failures.append("O4 Attempt 021 disposition document digest is invalid")
+
+
 def _validate_attempt_004_disposition(
     disposition: JsonObject,
     document: str,
@@ -10750,6 +10928,11 @@ def _validate_repo_relative_absence(
     label: str,
     failures: list[str],
 ) -> None:
+    if ATTEMPT_021_SUCCESS_RECORDED and relative == ATTEMPT_002_REPORT_BASE:
+        # Earlier dispositions bind the report base's absence at their observation
+        # time. Successful Attempt 021 legitimately created the first published
+        # report; its exact owner-only contents are validated separately.
+        return
     if not _safe_snapshot_relative_path(relative.as_posix()):
         failures.append(f"{label} path is not a safe repository-relative path")
         return
@@ -11690,13 +11873,15 @@ def _validate_retained_attempt_receipt(
     *,
     label: str,
     run_id: str,
-    disposition_bytes: bytes,
+    disposition_bytes: bytes | None,
     disposition_digest: str,
     manifest_size: int,
     manifest_digest: str,
     candidate_commit: str,
     candidate_tree: str,
     snapshot_file_count: int,
+    disposition_size: int | None = None,
+    additional_receipt_files: dict[str, tuple[int, int, str]] | None = None,
     diagnostic_size: int | None = None,
     diagnostic_digest: str | None = None,
     diagnostic_attempt: int | None = None,
@@ -11721,21 +11906,46 @@ def _validate_retained_attempt_receipt(
             ]
             if diagnostic_size is not None or diagnostic_digest is not None:
                 expected_entries.append("diagnostic.json")
+            if additional_receipt_files is not None:
+                expected_entries.extend(additional_receipt_files)
             if sorted(os.listdir(receipt_root)) != sorted(expected_entries):
                 failures.append(f"{label} receipt root entries are not exact")
         except OSError:
             failures.append(f"{label} receipt root cannot be enumerated")
+        expected_disposition_size = (
+            len(disposition_bytes)
+            if disposition_bytes is not None
+            else disposition_size
+        )
+        if expected_disposition_size is None:
+            failures.append(f"{label} disposition size expectation is missing")
+            return
         disposition = _read_owned_child_file(
             receipt_root,
             "disposition.json",
             mode=0o600,
-            size=len(disposition_bytes),
+            size=expected_disposition_size,
             digest=disposition_digest,
             label=f"{label} quarantine disposition",
             failures=failures,
         )
-        if disposition is not None and disposition != disposition_bytes:
+        if (
+            disposition_bytes is not None
+            and disposition is not None
+            and disposition != disposition_bytes
+        ):
             failures.append(f"{label} quarantine disposition content is not exact")
+        if additional_receipt_files is not None:
+            for name, (mode, size, digest) in additional_receipt_files.items():
+                _read_owned_child_file(
+                    receipt_root,
+                    name,
+                    mode=mode,
+                    size=size,
+                    digest=digest,
+                    label=f"{label} {name}",
+                    failures=failures,
+                )
         if diagnostic_size is not None and diagnostic_digest is not None:
             diagnostic_bytes = _read_owned_child_file(
                 receipt_root,
@@ -12616,6 +12826,93 @@ def _private_attempt_020_run_name(receipt_base: int, failures: list[str]) -> str
     return matching[0]
 
 
+def _owned_child_file_matches(
+    parent_descriptor: int,
+    name: str,
+    *,
+    mode: int,
+    size: int,
+    digest: str,
+) -> bool:
+    descriptor = -1
+    try:
+        details = os.stat(name, dir_fd=parent_descriptor, follow_symlinks=False)
+        if (
+            not stat.S_ISREG(details.st_mode)
+            or stat.S_IMODE(details.st_mode) != mode
+            or details.st_uid != os.geteuid()
+            or details.st_gid != os.getegid()
+            or details.st_size != size
+        ):
+            return False
+        descriptor = os.open(name, _file_open_flags(), dir_fd=parent_descriptor)
+        opened = os.fstat(descriptor)
+        if not _same_inode(details, opened):
+            return False
+        content = bytearray()
+        while len(content) <= size:
+            chunk = os.read(descriptor, min(65536, size + 1 - len(content)))
+            if not chunk:
+                break
+            content.extend(chunk)
+        after = os.fstat(descriptor)
+    except OSError:
+        return False
+    finally:
+        if descriptor >= 0:
+            os.close(descriptor)
+    return (
+        _same_inode(opened, after)
+        and len(content) == size
+        and "sha256:" + hashlib.sha256(content).hexdigest() == digest
+    )
+
+
+def _private_root_matching_file(
+    base_descriptor: int,
+    *,
+    file_name: str,
+    mode: int,
+    size: int,
+    digest: str,
+    label: str,
+    failures: list[str],
+) -> str | None:
+    try:
+        candidates = os.listdir(base_descriptor)
+    except OSError:
+        failures.append(f"{label} private root selection is unavailable")
+        return None
+    matching: list[str] = []
+    for candidate in candidates:
+        if re.fullmatch(r"[0-9]{8}T[0-9]{6}Z-[0-9a-f]{8}", candidate) is None:
+            continue
+        child = _open_owned_child_directory_optional_mode(
+            base_descriptor,
+            candidate,
+            0o700,
+            f"{label} candidate root",
+            [],
+        )
+        if child is None:
+            continue
+        try:
+            if _owned_child_file_matches(
+                child,
+                file_name,
+                mode=mode,
+                size=size,
+                digest=digest,
+            ):
+                matching.append(candidate)
+        finally:
+            os.close(child)
+    if len(matching) != 1:
+        failures.append(f"{label} private root selection did not resolve exactly one root")
+        return None
+    return matching[0]
+
+
 def _validate_attempt_015_receipts(repo_root: Path, failures: list[str]) -> None:
     repository_descriptor = _open_repository_root(repo_root, failures)
     if repository_descriptor is None:
@@ -13072,6 +13369,125 @@ def _validate_attempt_020_receipts(repo_root: Path, failures: list[str]) -> None
         os.close(receipt_base)
 
 
+def _validate_attempt_021_receipts(
+    repo_root: Path,
+    failures: list[str],
+) -> None:
+    repository_descriptor = _open_repository_root(repo_root, failures)
+    if repository_descriptor is None:
+        return
+    receipt_base: int | None = None
+    report_base: int | None = None
+    receipt_run_name: str | None = None
+    report_run_name: str | None = None
+    try:
+        receipt_base = _open_repo_relative_directory(
+            repository_descriptor,
+            ATTEMPT_002_RECEIPT_BASE,
+            expected_modes={ATTEMPT_002_RECEIPT_BASE.as_posix(): 0o700},
+            label="O4 Attempt 021 receipt base",
+            failures=failures,
+        )
+        report_base = _open_repo_relative_directory(
+            repository_descriptor,
+            ATTEMPT_002_REPORT_BASE,
+            expected_modes={ATTEMPT_002_REPORT_BASE.as_posix(): 0o700},
+            label="O4 Attempt 021 report base",
+            failures=failures,
+        )
+        if receipt_base is not None:
+            receipt_run_name = _private_root_matching_file(
+                receipt_base,
+                file_name="candidate-manifest.json",
+                mode=0o600,
+                size=ATTEMPT_021_MANIFEST_SIZE,
+                digest=ATTEMPT_021_MANIFEST_DIGEST,
+                label="O4 Attempt 021 receipt",
+                failures=failures,
+            )
+        if report_base is not None:
+            report_mode, report_size, report_digest = ATTEMPT_021_REPORT_FILES[
+                "report.json"
+            ]
+            report_run_name = _private_root_matching_file(
+                report_base,
+                file_name="report.json",
+                mode=report_mode,
+                size=report_size,
+                digest=report_digest,
+                label="O4 Attempt 021 report",
+                failures=failures,
+            )
+        if receipt_run_name is not None:
+            _validate_repo_relative_absence(
+                repository_descriptor,
+                ATTEMPT_002_RUNTIME_BASE / receipt_run_name,
+                expected_parent_modes={ATTEMPT_002_RUNTIME_BASE.as_posix(): 0o700},
+                label="O4 Attempt 021 runtime root",
+                failures=failures,
+            )
+    finally:
+        os.close(repository_descriptor)
+    if receipt_base is not None and receipt_run_name is not None:
+        _validate_retained_attempt_receipt(
+            repo_root,
+            receipt_base,
+            failures,
+            label="O4 Attempt 021",
+            run_id=receipt_run_name,
+            disposition_bytes=None,
+            disposition_size=ATTEMPT_021_RECEIPT_DISPOSITION_SIZE,
+            disposition_digest=ATTEMPT_021_RECEIPT_DISPOSITION_DIGEST,
+            manifest_size=ATTEMPT_021_MANIFEST_SIZE,
+            manifest_digest=ATTEMPT_021_MANIFEST_DIGEST,
+            candidate_commit=ATTEMPT_021_CANDIDATE_COMMIT,
+            candidate_tree=ATTEMPT_021_CANDIDATE_TREE,
+            snapshot_file_count=ATTEMPT_021_SNAPSHOT_FILE_COUNT,
+            additional_receipt_files=ATTEMPT_021_RECEIPT_FILES,
+        )
+    if receipt_base is not None:
+        os.close(receipt_base)
+    if report_base is None:
+        return
+    try:
+        if report_run_name is None:
+            return
+        try:
+            if sorted(os.listdir(report_base)) != [report_run_name]:
+                failures.append("O4 Attempt 021 report base entries are not exact")
+        except OSError:
+            failures.append("O4 Attempt 021 report base cannot be enumerated")
+        report_root = _open_owned_child_directory(
+            report_base,
+            report_run_name,
+            0o700,
+            "O4 Attempt 021 report root",
+            failures,
+        )
+        if report_root is None:
+            return
+        try:
+            try:
+                if sorted(os.listdir(report_root)) != sorted(ATTEMPT_021_REPORT_FILES):
+                    failures.append("O4 Attempt 021 report entries are not exact")
+            except OSError:
+                failures.append("O4 Attempt 021 report root cannot be enumerated")
+            for name, (mode, size, digest) in ATTEMPT_021_REPORT_FILES.items():
+                _read_owned_child_file(
+                    report_root,
+                    name,
+                    mode=mode,
+                    size=size,
+                    digest=digest,
+                    label=f"O4 Attempt 021 {name}",
+                    failures=failures,
+                )
+        finally:
+            os.close(report_root)
+    finally:
+        os.close(report_base)
+
+
 def _validate_retained_attempt_evidence(
     repo_root: Path,
     failures: list[str],
@@ -13102,6 +13518,15 @@ def _validate_retained_attempt_evidence(
     attempt_018_run_name = _private_attempt_018_run_name(receipt_base, failures)
     attempt_019_run_name = _private_attempt_019_run_name(receipt_base, failures)
     attempt_020_run_name = _private_attempt_020_run_name(receipt_base, failures)
+    attempt_021_run_name = _private_root_matching_file(
+        receipt_base,
+        file_name="candidate-manifest.json",
+        mode=0o600,
+        size=ATTEMPT_021_MANIFEST_SIZE,
+        digest=ATTEMPT_021_MANIFEST_DIGEST,
+        label="O4 Attempt 021 receipt",
+        failures=failures,
+    )
     try:
         try:
             expected_runs = sorted(
@@ -13159,6 +13584,11 @@ def _validate_retained_attempt_evidence(
                     *(
                         [attempt_020_run_name]
                         if attempt_020_run_name is not None
+                        else []
+                    ),
+                    *(
+                        [attempt_021_run_name]
+                        if attempt_021_run_name is not None
                         else []
                     ),
                 ]
@@ -13805,6 +14235,16 @@ def _validate_bound_documents(repo_root: Path, failures: list[str]) -> None:
             "Attempt 020 disposition document",
         ),
         (
+            ATTEMPT_021_DISPOSITION_JSON,
+            ATTEMPT_021_DISPOSITION_JSON_DIGEST,
+            "Attempt 021 disposition",
+        ),
+        (
+            ATTEMPT_021_DISPOSITION_DOCUMENT,
+            ATTEMPT_021_DISPOSITION_DOCUMENT_DIGEST,
+            "Attempt 021 disposition document",
+        ),
+        (
             SOCKET_PARENT_MODE_REVIEW,
             SOCKET_PARENT_MODE_REVIEW_DIGEST,
             "socket-parent mode exact review",
@@ -14127,16 +14567,15 @@ def _validate_wiring(repo_root: Path, failures: list[str]) -> None:
     if PRODUCER_MODULE_INVOCATION not in readme:
         failures.append("README does not bind the O4 module invocation")
     for phrase in (
-        "prepared Attempt 021 one-shot gate",
-        "immutable consumed Attempts 001-020",
-        "required annotated review tag",
-        "effective budget zero",
-        "all 19 authority fields are false",
-        "five-field maximum live-authority ceiling",
-        "prepared gate-protected one-shot Attempt 021 entrypoint",
-        "refuses before activity until",
+        "closed consumed successful Attempt 021 gate",
+        "immutable consumed Attempts 001-021",
+        "budget zero",
+        "all 19 authority fields false",
+        "O4/LV1-003 completion",
+        "closed consumed successful Attempt 021 entrypoint",
+        "refuses before activity",
         "outside release, milestone, and static checks",
-        "immediate consumed disposition",
+        "no LV1-004/O5",
     ):
         if phrase not in readme:
             failures.append(f"README is missing current O4 Attempt 021 guidance: {phrase}")

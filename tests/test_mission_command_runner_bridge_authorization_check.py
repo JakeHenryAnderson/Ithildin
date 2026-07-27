@@ -6,14 +6,18 @@ from pathlib import Path
 from scripts import mission_command_runner_bridge_authorization_check as authorization_check
 
 
-def test_runner_bridge_authorization_is_exact_reviewed_code_only() -> None:
-    report = authorization_check.build_report(Path("."))
+def test_runner_bridge_frozen_authorization_is_exact_reviewed_code_only() -> None:
+    report = authorization_check.build_report(
+        Path("."),
+        validate_current_state=False,
+    )
 
     assert report["valid"] is True, report["failures"]
+    assert report["current_state_validated"] is False
     assert report["tool_count"] == 24
     assert report["reviewed_candidate_commit"] == authorization_check.REVIEWED_COMMIT
     assert report["code_implementation_authorized"] is True
-    assert report["authorized_runtime_matches_reviewed_candidate"] is True
+    assert report["authorized_runtime_matches_reviewed_candidate"] is None
     assert report["live_hermes_execution_authorized"] is False
     assert report["docker_lifecycle_authorized"] is False
     assert report["o4_evidence_execution_authorized"] is False

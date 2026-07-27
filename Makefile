@@ -51,6 +51,9 @@ mission-command-runner-bridge-decision-check:
 mission-command-runner-bridge-authorization-check:
 	uv run python scripts/mission_command_runner_bridge_authorization_check.py
 
+mission-command-runner-bridge-authorization-frozen-check:
+	uv run python scripts/mission_command_runner_bridge_authorization_check.py --frozen-review
+
 local-v1-lv1-003-o4-execution-authorization-check:
 	uv run python scripts/local_v1_lv1_003_o4_execution_authorization_check.py
 
@@ -61,7 +64,7 @@ local-v1-lv1-003-o4-producer-static-check:
 		tests/test_local_v1_constrained_mission_journey.py \
 		-q
 
-# PREPARED, gate-protected one-shot Attempt 021 entrypoint; exact annotated review tag required.
+# CLOSED consumed successful Attempt 021 entrypoint; budget zero and no live authority.
 local-v1-lv1-003-o4-producer-run:
 	uv run python -m scripts.local_v1_lv1_003_o4_producer
 
@@ -164,7 +167,7 @@ local-v1-milestone-check:
 	$(MAKE) local-v1-inner-check
 	$(MAKE) local-v1-golden-path-check
 	$(MAKE) mission-command-runner-bridge-decision-check
-	$(MAKE) mission-command-runner-bridge-authorization-check
+	$(MAKE) mission-command-runner-bridge-authorization-frozen-check
 	$(MAKE) local-v1-lv1-003-o4-execution-authorization-check
 	$(MAKE) local-v1-lv1-003-o4-producer-static-check
 	$(MAKE) mission-command-runner-bridge-profile-check

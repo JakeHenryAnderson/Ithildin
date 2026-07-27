@@ -12,8 +12,9 @@ components. It is intentionally a **two-leg path**:
 
 The legs are not an integrated runner path. This walkthrough does not claim or demonstrate a real
 Hermes-through-Node mission. The exact-reviewed fixed-bridge implementation candidate is authorized
-for code use only under `MCC-007`; this walkthrough does not exercise that seam, and live
-Hermes/Docker/O4 evidence authority remains false.
+for code use only under `MCC-007`; this walkthrough itself does not exercise that seam. The separate
+Attempt 021 disposition records the completed integrated mission, while current
+Hermes/Docker/O4 execution authority is closed.
 
 ## Prerequisites And Trust Ceiling
 
@@ -363,24 +364,25 @@ checker reports malformed/stale evidence.
   accepted governed-MCP denial, durable-approval, execution, and replay evidence.
 - Synthetic Node and Mission Command POCs separately demonstrate their recorded authentication,
   identity, governed-access, restart/replay/partition, and truth-separation claims.
+- Separately from this two-leg walkthrough, exact consumed Attempt 021 provides one integrated
+  Hermes-through-Node constrained mission with digest-safe evidence bound by
+  `local-v1-lv1-003-o4-attempt-021-disposition.md`. It closes `O4` and `LV1-003` without claiming
+  that this ordinary walkthrough executed that mission.
 
 ## What This Path Does Not Prove
 
-- It does not prove a real Hermes-through-Node mission or close Local-v1 outcome `O4`.
+- This walkthrough itself does not prove the separately recorded real constrained mission; the
+  exact Attempt 021 disposition is the authority for the completed `O4`/`LV1-003` claim.
 - It does not exercise `MCC-007`, a runner bridge, generic process control, or arbitrary host
   control. The exact-reviewed fixed-bridge implementation candidate is authorized for code use
-  only; live execution remains unauthorized.
+  only; this walkthrough grants no live execution authority, and current Attempt 021 authority is
+  closed.
 - It does not prove production identity/storage, production deployment, remote hosting, whole-host
   isolation, filesystem non-bypass, compliance, SIEM custody, or public security-product claims.
 - It does not qualify a release candidate, complete human UAT, accept Local v1.0, or grant runtime,
   release, promotion, credential-custody, or external-system authority.
 
-The live runtime seam remains `LV1-003`: the revised capability decision, exact-reviewed
-implementation candidate, and code-only authorization disposition define the smallest fixed runner
-bridge. Leg A and Leg B remain deliberately separate until a separate live authorization permits
-one exact-candidate `O4` evidence run.
-The prepared `PREPARE_REVIEW` gate and future producer contract blocked on mandatory assembler
-reconciliation are
-`local-v1-lv1-003-o4-execution-authorization.md` and
-`local-v1-lv1-003-o4-producer-contract.md`. They authorize no Docker, Hermes, provider, Node, or
-`O4` execution and do not change this walkthrough.
+The live runtime seam `LV1-003` is complete through the separate exact Attempt 021 disposition.
+Leg A and Leg B above remain deliberately historical and separate; they are not rewritten as the
+integrated run. The next ordered milestone is `LV1-004`, but it is paused and not started at the
+user-directed O4 boundary. O5 authority, release, and UAT remain false.

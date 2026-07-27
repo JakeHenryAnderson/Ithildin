@@ -87,6 +87,23 @@ def test_live_local_v1_contract_is_internally_consistent_at_any_lifecycle_stage(
         assert report["release_accepted"] is True
 
 
+def test_contract_rejects_stale_o4_incomplete_or_live_authority_wording() -> None:
+    contract = (ROOT / local_v1_contract_check.CONTRACT_REL).read_text(encoding="utf-8")
+    stale = contract.replace(
+        "| `O4` | One real constrained mission | `complete` |",
+        "| `O4` | One real constrained mission | `not_started` |",
+        1,
+    ).replace(
+        "O5 is not authorized.",
+        "O5 live authority is authorized.",
+        1,
+    )
+
+    failures, _, _ = local_v1_contract_check.validate_contract_text(stale)
+
+    assert failures
+
+
 def test_uninitialized_local_v1_release_check_fails_closed() -> None:
     report = local_v1_contract_check.build_report(
         ROOT,

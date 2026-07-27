@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import argparse
 import hashlib
 import json
 import subprocess
@@ -16,6 +17,7 @@ from scripts import mission_command_runner_bridge_decision_check as decision_che
 
 ROOT = Path(__file__).resolve().parents[1]
 TARGET = "mission-command-runner-bridge-authorization-check"
+FROZEN_TARGET = "mission-command-runner-bridge-authorization-frozen-check"
 AUTHORIZATION = "docs/codex/mission-command-runner-bridge-authorization-record.md"
 REVIEW_DOCUMENT = "docs/codex/local-v1-lv1-003-o4-producer-exact-review.md"
 PREVIOUS_REVIEW_DOCUMENT = "docs/codex/local-v1-lv1-003-exact-review.md"
@@ -323,10 +325,29 @@ class AuthorizationContractError(ValueError):
     """Raised when the authorization contract is ambiguous."""
 
 
-def build_report(repo_root: Path) -> dict[str, Any]:
+def build_report(
+    repo_root: Path,
+    *,
+    validate_current_state: bool = True,
+) -> dict[str, Any]:
+    """Validate the authorization, optionally against its frozen reviewed snapshot.
+
+    The frozen mode preserves the historical code-only authorization check for later
+    milestone documents without claiming that the original runtime tip is still the
+    current source candidate.
+    """
     failures: list[str] = []
     authorization_text = _read(repo_root / AUTHORIZATION, failures)
-    decision_text = _read(repo_root / decision_check.DECISION, failures)
+    decision_text = (
+        _read(repo_root / decision_check.DECISION, failures)
+        if validate_current_state
+        else _git(
+            repo_root,
+            ["show", f"{REVIEWED_COMMIT}:{decision_check.DECISION}"],
+            failures,
+            strip=False,
+        )
+    )
     review_text = _read(repo_root / REVIEW_DOCUMENT, failures)
     previous_review_text = _read(repo_root / PREVIOUS_REVIEW_DOCUMENT, failures)
     try:
@@ -336,11 +357,12 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         authorization = {}
 
     _validate_contract(authorization, decision_text, failures)
-    decision_report = decision_check.build_report(repo_root)
-    if not decision_report["valid"]:
-        failures.append("reviewed runner-bridge decision is not currently valid")
-    if decision_report["implementation_authorized"] is not False:
-        failures.append("decision candidate must remain non-authorizing")
+    if validate_current_state:
+        decision_report = decision_check.build_report(repo_root)
+        if not decision_report["valid"]:
+            failures.append("reviewed runner-bridge decision is not currently valid")
+        if decision_report["implementation_authorized"] is not False:
+            failures.append("decision candidate must remain non-authorizing")
 
     reviewed_tree = _git(
         repo_root,
@@ -422,11 +444,13 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     if candidate_ancestry.returncode != 0:
         failures.append("exact reviewed implementation candidate is not an ancestor of HEAD")
 
-    authorized_runtime_matches_reviewed_candidate = _validate_authorized_runtime_state(
-        repo_root,
-        failures,
-        reviewed_commit=AUTHORIZED_RUNTIME_TIP_COMMIT,
-    )
+    authorized_runtime_matches_reviewed_candidate = None
+    if validate_current_state:
+        authorized_runtime_matches_reviewed_candidate = _validate_authorized_runtime_state(
+            repo_root,
+            failures,
+            reviewed_commit=AUTHORIZED_RUNTIME_TIP_COMMIT,
+        )
     _validate_authorized_runtime_lineage(repo_root, failures)
     _validate_text(authorization_text, failures)
     _validate_review_text(review_text, failures)
@@ -438,6 +462,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "valid": not failures,
         "failures": failures,
         "tool_count": authorization.get("tool_count"),
+        "current_state_validated": validate_current_state,
         "reviewed_candidate_commit": authorization.get(
             "reviewed_candidate_commit"
         ),
@@ -753,14 +778,28 @@ def _validate_wiring(repo_root: Path, failures: list[str]) -> None:
         failures.append(
             "runner-bridge authorization check must have exactly one Make target definition"
         )
+    frozen_target_definitions = sum(
+        line.startswith(f"{FROZEN_TARGET}:") for line in makefile.splitlines()
+    )
+    if frozen_target_definitions != 1:
+        failures.append(
+            "frozen runner-bridge authorization check must have exactly one "
+            "Make target definition"
+        )
     milestone_body = decision_check._target_body(  # noqa: SLF001
         makefile, "local-v1-milestone-check"
     )
-    invocation = f"\t$(MAKE) {TARGET}"
-    if milestone_body.count(invocation) != 1:
+    current_invocation = f"\t$(MAKE) {TARGET}"
+    frozen_invocation = f"\t$(MAKE) {FROZEN_TARGET}"
+    if milestone_body.count(frozen_invocation) != 1:
         failures.append(
-            "runner-bridge authorization check must occur exactly once in "
+            "frozen runner-bridge authorization check must occur exactly once in "
             "local-v1-milestone-check"
+        )
+    if milestone_body.count(current_invocation) != 0:
+        failures.append(
+            "strict current-state runner-bridge authorization check must not "
+            "block the historical local-v1 milestone aggregate"
         )
     release_dependencies = [
         dependency
@@ -819,6 +858,7 @@ def render_report(report: dict[str, Any]) -> str:
         "MCC-007 fixed runner-bridge authorization check",
         f"valid: {str(report['valid']).lower()}",
         f"tool_count: {report['tool_count']}",
+        f"current_state_validated: {str(report['current_state_validated']).lower()}",
         "code_implementation_authorized: "
         f"{str(report['code_implementation_authorized']).lower()}",
         "authorized_runtime_matches_reviewed_candidate: "
@@ -839,7 +879,16 @@ def render_report(report: dict[str, Any]) -> str:
 
 
 def main() -> int:
-    report = build_report(ROOT)
+    parser = argparse.ArgumentParser(
+        description="Validate the MCC-007 code-only authorization record."
+    )
+    parser.add_argument(
+        "--frozen-review",
+        action="store_true",
+        help="validate the frozen exact review without claiming current source parity",
+    )
+    args = parser.parse_args()
+    report = build_report(ROOT, validate_current_state=not args.frozen_review)
     print(render_report(report))
     return 0 if report["valid"] else 1
 

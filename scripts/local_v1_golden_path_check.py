@@ -121,7 +121,12 @@ REQUIRED_PHRASES = (
     "What This Path Does Not Prove",
     "does not qualify a release candidate",
     "complete human UAT",
-    "The live runtime seam remains `LV1-003`",
+    "exact consumed Attempt 021",
+    "local-v1-lv1-003-o4-attempt-021-disposition.md",
+    "closes `O4` and `LV1-003`",
+    "walkthrough itself does not prove",
+    "paused and not started at the user-directed O4 boundary",
+    "O5 authority, release, and UAT remain false",
 )
 
 ORDERED_COMMANDS = (
@@ -199,7 +204,8 @@ def main() -> int:
 def build_report(repo_root: Path, *, golden_override: str | None = None) -> dict[str, Any]:
     failures: list[str] = []
     authorization_report = mission_command_runner_bridge_authorization_check.build_report(
-        repo_root
+        repo_root,
+        validate_current_state=False,
     )
     if not authorization_report["valid"]:
         failures.extend(
@@ -284,8 +290,8 @@ def build_report(repo_root: Path, *, golden_override: str | None = None) -> dict
         "remain false",
         "`MCC-007` exact reviewed candidate is authorized for code use only",
         "docs/codex/local-v1-lv1-003-exact-review.md",
-        "Live Hermes execution, Docker lifecycle action, and `O4` evidence "
-        "execution remain separately unauthorized",
+        "`LV1-003` and `O4` are complete",
+        "docs/codex/local-v1-lv1-003-o4-attempt-021-disposition.md",
     ):
         if phrase not in normalized_contract:
             failures.append(f"Local-v1 contract lost authority ceiling phrase: {phrase}")
