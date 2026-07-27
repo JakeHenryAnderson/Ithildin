@@ -1,20 +1,20 @@
 {
   "schema_version": "1",
   "record_type": "ithildin_local_v1_release_disposition",
-  "record_status": "uninitialized",
+  "record_status": "candidate_recorded",
   "candidate": {
-    "frozen_commit": null,
-    "identity_evidence_path": null,
-    "identity_evidence_sha256": null,
-    "clean_tree_observed": false,
-    "clean_tree_observation_method": null,
-    "clean_tree_observation_commit": null
+    "frozen_commit": "ab4162d8f4b6d3f45a68f33316f4b765a45765db",
+    "identity_evidence_path": "docs/codex/local-v1-candidate-identity.md",
+    "identity_evidence_sha256": "ab96dcb713a92d0c1c6d4639b9dc367aa723ba323c3894bfee6f8ec061cb8e9a",
+    "clean_tree_observed": true,
+    "clean_tree_observation_method": "candidate_gate_transcript",
+    "clean_tree_observation_commit": "ab4162d8f4b6d3f45a68f33316f4b765a45765db"
   },
   "candidate_gate": {
-    "passed": false,
-    "candidate_commit": null,
-    "transcript_path": null,
-    "transcript_sha256": null
+    "passed": true,
+    "candidate_commit": "ab4162d8f4b6d3f45a68f33316f4b765a45765db",
+    "transcript_path": "docs/codex/local-v1-candidate-gate.md",
+    "transcript_sha256": "6da7ac1a34c411475b71132733e6eab9e959ce5a6f6179b3d77a3c9e48b70617"
   },
   "independent_review": {
     "completed": false,
@@ -51,7 +51,7 @@
     ]
   },
   "authority": {
-    "candidate_qualified": false,
+    "candidate_qualified": true,
     "release_allowed": false,
     "promotion_allowed": false,
     "production_allowed": false,
