@@ -700,6 +700,7 @@ class FakeApi:
         self.mission_delivery_state = "claim_delivered"
         self.mission_evidence_state = "complete"
         self.mission_detail_override: JsonObject = {}
+        self.run_detail_override: JsonObject = {}
         self.mission_query_failure: BaseException | None = None
         self.revoke_failure: str | None = None
 
@@ -759,6 +760,8 @@ class FakeApi:
                     "runs": [
                         {
                             "run_id": RUN_RECORD_ID,
+                            "principal_id": f"agent:node.{NODE_ID}",
+                            "workspace_id": producer.WORKSPACE_ID,
                             "status": "active",
                             "tool_call_count": 2,
                         }
@@ -768,18 +771,42 @@ class FakeApi:
             document.update(self.mission_detail_override)
             return document
         if path == f"/runs/{RUN_RECORD_ID}":
-            return {
+            document = {
                 "run": {
                     "run_id": RUN_RECORD_ID,
                     "session_id": SESSION_ID,
+                    "principal_id": f"agent:node.{NODE_ID}",
+                    "workspace_id": producer.WORKSPACE_ID,
                     "status": "active",
                     "tool_call_count": 2,
+                    "metadata": {
+                        "created_by": "governed_tool_call",
+                        "ingress_kind": "node_governed_access",
+                        "identity_source": "gateway_derived_node",
+                        "node_id": NODE_ID,
+                        "node_display_name": "Local v1 O4 Node 1234abcd",
+                        "authorization_profile": (
+                            "agent:node-local-preview-readonly"
+                        ),
+                        "configuration_generation": 1,
+                        "configuration_digest": DIGEST,
+                        "offline_fallback_allowed": False,
+                        "runner_enforcement_proven": False,
+                        "mission_id": MISSION_ID,
+                        "mission_claim_id": CLAIM_ID,
+                        "mission_envelope_digest": ENVELOPE,
+                        "mission_binding_source": (
+                            "gateway_validated_claim_session"
+                        ),
+                    },
                 },
                 "timeline": [
                     _event(1, "project.structure.summary"),
                     _event(2, "project.test.summary"),
                 ],
             }
+            document.update(self.run_detail_override)
+            return document
         raise AssertionError(path)
 
     def post(self, path: str, payload: JsonObject) -> JsonObject:
@@ -874,9 +901,9 @@ def _event(index: int, tool: str) -> JsonObject:
         "tool_name": tool,
         "metadata": {
             "run_id": RUN_RECORD_ID,
-            "mission_id": MISSION_ID,
-            "mission_claim_id": CLAIM_ID,
-            "mission_envelope_digest": ENVELOPE,
+            "session_id": SESSION_ID,
+            "workspace_id": producer.WORKSPACE_ID,
+            "principal_id": f"agent:node.{NODE_ID}",
         },
     }
 
@@ -5276,6 +5303,108 @@ def test_gateway_mission_projection_hostile_type_is_written_to_failure_receipt(
     assert projection["mission_lifecycle_state"] == "unrecognized"
     assert MISSION_ID not in canonical_json(projection)
     assert NODE_ID not in canonical_json(projection)
+
+
+def _gateway_journey_state(tmp_path: Path) -> producer.ProducerState:
+    state = _fixed_node_diagnostic_state(tmp_path)
+    state.node_id = NODE_ID
+    state.configuration_generation = 1
+    state.configuration_digest = DIGEST
+    state.snapshot = FakeCandidateSnapshot(cast(FakePrivateDirectory, state.runtime))
+    return state
+
+
+def test_gateway_run_detail_uses_persisted_run_provenance_and_real_event_context(
+    tmp_path: Path,
+) -> None:
+    state = _gateway_journey_state(tmp_path)
+    api = FakeApi()
+    detail = api.get(f"/runs/{RUN_RECORD_ID}")
+    run = detail["run"]
+    timeline = detail["timeline"]
+    assert isinstance(run, dict)
+    assert isinstance(timeline, list)
+    assert isinstance(run["metadata"], dict)
+    assert run["metadata"]["mission_id"] == MISSION_ID
+    assert all(
+        isinstance(event, dict)
+        and isinstance(event.get("metadata"), dict)
+        and "mission_id" not in event["metadata"]
+        and "mission_claim_id" not in event["metadata"]
+        and "mission_envelope_digest" not in event["metadata"]
+        for event in timeline
+    )
+
+    journey = producer._gateway_journey(state, api)  # noqa: SLF001
+
+    assert journey["gateway_lifecycle_state"] == "runner_reported_succeeded"
+    assert len(cast(list[object], journey["gateway_operation_bindings"])) == 2
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("mission_id", "mission_" + "f" * 32),
+        ("mission_claim_id", None),
+        ("mission_envelope_digest", "sha256:" + "f" * 64),
+        ("mission_binding_source", "runner_reported"),
+        ("identity_source", "runner_reported"),
+        ("configuration_digest", "sha256:" + "f" * 64),
+    ],
+)
+def test_gateway_run_detail_rejects_missing_or_conflicting_run_provenance(
+    tmp_path: Path,
+    field: str,
+    value: object,
+) -> None:
+    state = _gateway_journey_state(tmp_path)
+    api = FakeApi()
+    detail = api.get(f"/runs/{RUN_RECORD_ID}")
+    run = detail["run"]
+    assert isinstance(run, dict)
+    metadata = run["metadata"]
+    assert isinstance(metadata, dict)
+    if value is None:
+        metadata.pop(field)
+    else:
+        metadata[field] = value
+    api.run_detail_override = detail
+
+    with pytest.raises(producer.ProducerError, match="gateway_run_detail_invalid"):
+        producer._gateway_journey(state, api)  # noqa: SLF001
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("run_id", "run_" + "f" * 32),
+        ("session_id", "mission:conflicting"),
+        ("workspace_id", "conflicting"),
+        ("principal_id", "agent:conflicting"),
+    ],
+)
+def test_gateway_run_detail_rejects_mismatched_event_run_context(
+    tmp_path: Path,
+    field: str,
+    value: str,
+) -> None:
+    state = _gateway_journey_state(tmp_path)
+    api = FakeApi()
+    detail = api.get(f"/runs/{RUN_RECORD_ID}")
+    timeline = detail["timeline"]
+    assert isinstance(timeline, list)
+    first = timeline[0]
+    assert isinstance(first, dict)
+    metadata = first["metadata"]
+    assert isinstance(metadata, dict)
+    metadata[field] = value
+    api.run_detail_override = detail
+
+    with pytest.raises(
+        producer.ProducerError,
+        match="gateway_completed_event_binding_invalid",
+    ):
+        producer._gateway_journey(state, api)  # noqa: SLF001
 
 
 @pytest.mark.parametrize(

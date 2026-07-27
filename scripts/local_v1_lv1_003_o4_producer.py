@@ -3784,6 +3784,8 @@ def _gateway_journey(state: ProducerState, api: Api) -> JsonObject:
         or not _RUN_RECORD_ID.fullmatch(run_id)
         or run_summary.get("status") != "active"
         or run_summary.get("tool_call_count") != 2
+        or run_summary.get("principal_id") != f"agent:node.{state.node_id}"
+        or run_summary.get("workspace_id") != WORKSPACE_ID
         or not isinstance(claim_id, str)
         or not _CLAIM_ID.fullmatch(claim_id)
         or not isinstance(envelope_digest, str)
@@ -3800,10 +3802,37 @@ def _gateway_journey(state: ProducerState, api: Api) -> JsonObject:
         f"{envelope_digest.removeprefix('sha256:')[:16]}"
     )
     if (
+        state.node_id is None
+        or state.configuration_generation is None
+        or state.configuration_digest is None
+    ):
+        raise ProducerError("gateway_run_detail_invalid")
+    principal_id = f"agent:node.{state.node_id}"
+    run_metadata = run.get("metadata")
+    expected_run_metadata: JsonObject = {
+        "created_by": "governed_tool_call",
+        "ingress_kind": "node_governed_access",
+        "identity_source": "gateway_derived_node",
+        "node_id": state.node_id,
+        "node_display_name": f"Local v1 O4 Node {state.plan.suffix}",
+        "authorization_profile": "agent:node-local-preview-readonly",
+        "configuration_generation": state.configuration_generation,
+        "configuration_digest": state.configuration_digest,
+        "offline_fallback_allowed": False,
+        "runner_enforcement_proven": False,
+        "mission_id": state.mission_id,
+        "mission_claim_id": claim_id,
+        "mission_envelope_digest": envelope_digest,
+        "mission_binding_source": "gateway_validated_claim_session",
+    }
+    if (
         run.get("run_id") != run_id
         or run.get("session_id") != session_id
+        or run.get("principal_id") != principal_id
+        or run.get("workspace_id") != WORKSPACE_ID
         or run.get("status") != "active"
         or run.get("tool_call_count") != 2
+        or run_metadata != expected_run_metadata
     ):
         raise ProducerError("gateway_run_detail_invalid")
     completed = [
@@ -3832,9 +3861,9 @@ def _gateway_journey(state: ProducerState, api: Api) -> JsonObject:
             or not _REQUEST_ID.fullmatch(request_id)
             or event.get("tool_name") != expected_tool
             or metadata.get("run_id") != run_id
-            or metadata.get("mission_id") != state.mission_id
-            or metadata.get("mission_claim_id") != claim_id
-            or metadata.get("mission_envelope_digest") != envelope_digest
+            or metadata.get("session_id") != session_id
+            or metadata.get("workspace_id") != WORKSPACE_ID
+            or metadata.get("principal_id") != principal_id
         ):
             raise ProducerError("gateway_completed_event_binding_invalid")
         bindings.append(
