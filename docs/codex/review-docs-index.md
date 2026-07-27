@@ -15,6 +15,10 @@ externally closed.
   desired, acknowledged, stored, enforced, stale, rejected, rollback, and trust-rotation meanings.
 - [Enterprise E1-M2 Policy and Node-Configuration Observed Results](enterprise-e1-m2-observed-results.md) -
   exact focused authenticated distribution, observation, rejection, rollback, and admission result.
+- [Enterprise E1 Upgrade, Rollback, and Recovery Contract](enterprise-e1-recovery-contract.md) -
+  clean-stop backup, compatibility, restore-only downgrade, and optional-Node ambiguity boundary.
+- [Enterprise E1-M3 Upgrade and Recovery Observed Results](enterprise-e1-m3-observed-results.md) -
+  exact container and Gateway/Node restart, failure, restore, and cleanup evidence.
 - [Ithildin Local v1.0 Golden Path](local-v1-golden-path.md) - executable `LV1-001`
   install/start/exercise/evidence/stop walkthrough with separate real-agent and synthetic POC legs.
 - [Local v1.0 Release Disposition](local-v1-release-disposition.json) - false/null candidate,

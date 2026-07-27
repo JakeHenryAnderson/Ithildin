@@ -1,6 +1,6 @@
 # Ithildin Enterprise Track E1 Completion Contract
 
-Status: active implementation contract. Outcomes complete: `2/6`. Milestones complete: `2/6`.
+Status: active implementation contract. Outcomes complete: `3/6`. Milestones complete: `3/6`.
 
 The machine-readable authority is
 [`enterprise-e1-completion-contract.json`](enterprise-e1-completion-contract.json). Validate it
@@ -23,8 +23,8 @@ descendant branch and does not change Local v1 candidate, review, UAT, or releas
 | --- | --- | --- |
 | `E1-M1` | `E1-O1` - Reproducible single-site deployment | `complete` |
 | `E1-M2` | `E1-O2` - Versioned policy and Node-configuration distribution | `complete` |
-| `E1-M3` | `E1-O3` - Safe upgrade, rollback, and recovery | `in_progress` |
-| `E1-M4` | `E1-O4` - Authoritative mission and fleet operations cockpit | `not_started` |
+| `E1-M3` | `E1-O3` - Safe upgrade, rollback, and recovery | `complete` |
+| `E1-M4` | `E1-O4` - Authoritative mission and fleet operations cockpit | `in_progress` |
 | `E1-M5` | `E1-O5` - Bounded operational evidence export | `not_started` |
 | `E1-M6` | `E1-O6` - Exact candidate qualification and UAT handoff | `not_started` |
 
@@ -61,11 +61,13 @@ No new governed tool or arbitrary host control was added. E1-O2 and E1-M2 are co
 
 ### E1-O3 - Safe upgrade, rollback, and recovery
 
-Reuse Local v1 candidate-bound backup, failed-start, restore, restart, and evidence-preservation
-machinery plus the database migration-backup helper. E1 still needs compatibility validation and a
-supported rehearsal spanning Gateway, Command Center, and optional Node continuity. Ambiguous
-ownership must remain a stop condition; cleanup cannot be inferred safe.
-This is the active `E1-M3` checkpoint.
+E1 reuses Local v1 candidate-bound backup, failed-start, restore, restart, and evidence-preservation
+machinery plus the database migration-backup helper.
+[`enterprise-e1-recovery-contract.md`](enterprise-e1-recovery-contract.md) fixes the clean-stop,
+backup, compatibility, failed-upgrade, restore-only downgrade, exact cleanup, and optional-Node
+ambiguity boundaries. [`enterprise-e1-m3-observed-results.md`](enterprise-e1-m3-observed-results.md)
+binds two independently valid live-local legs to exact commit
+`cd56a8ad1ef2f7b3509dc0beb8f51a2f9d8bb8d9`. E1-O3 and E1-M3 are complete.
 
 ### E1-O4 - Authoritative mission and fleet operations cockpit
 
@@ -75,6 +77,7 @@ lineage, not E1 qualification. The E1 checkpoint must prove accessible operator 
 the distinction between Gateway truth, Node connectivity, runner-reported state, and unknown
 model-provider state. Command Center remains a presentation and initiation surface over existing
 Gateway-governed workflows.
+This is the active `E1-M4` checkpoint.
 
 ### E1-O5 - Bounded operational evidence export
 

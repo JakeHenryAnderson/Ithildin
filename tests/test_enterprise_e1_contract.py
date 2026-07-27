@@ -13,11 +13,11 @@ def test_live_enterprise_e1_contract_is_valid_and_bounded() -> None:
     assert report["source_commit_is_ancestor"] is True
     assert report["current_branch"] == "codex/enterprise-single-site-operations"
     assert report["tool_count"] == 24
-    assert report["outcomes_complete"] == 2
+    assert report["outcomes_complete"] == 3
     assert report["outcomes_total"] == 6
-    assert report["milestones_complete"] == 2
+    assert report["milestones_complete"] == 3
     assert report["milestones_total"] == 6
-    assert report["next_action"] == "E1-M3"
+    assert report["next_action"] == "E1-M4"
     assert report["candidate_gate_complete"] is False
     assert report["independent_review_complete"] is False
     assert report["human_uat_packet_ready"] is False

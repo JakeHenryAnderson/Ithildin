@@ -66,27 +66,27 @@
       "id": "E1-O3",
       "milestone_id": "E1-M3",
       "title": "Safe upgrade, rollback, and recovery",
-      "status": "in_progress",
+      "status": "complete",
       "existing_evidence": [
         "apps/api/src/ithildin_api/database_migration_backup.py",
         "docs/codex/local-v1-lv1-004-failure-recovery.md",
         "docs/codex/local-v1-lv1-006-operations.md",
         "scripts/local_v1_failure_recovery_journey.py",
         "scripts/local_v1_operations_rehearsal.py",
-        "tests/test_local_v1_failure_recovery.py"
+        "docs/codex/enterprise-e1-recovery-contract.md",
+        "docs/codex/enterprise-e1-m3-observed-results.md",
+        "scripts/enterprise_e1_recovery_check.py",
+        "tests/test_enterprise_e1_recovery.py",
+        "tests/test_local_v1_failure_recovery.py",
+        "tests/test_local_v1_operations_rehearsal.py"
       ],
-      "remaining_requirements": [
-        "candidate-bound E1 backup and compatibility preflight",
-        "failed-upgrade and rollback rehearsal across Gateway and Command Center",
-        "optional Node continuity and ambiguity handling",
-        "restart recovery with preserved deterministic evidence"
-      ]
+      "remaining_requirements": []
     },
     {
       "id": "E1-O4",
       "milestone_id": "E1-M4",
       "title": "Authoritative mission and fleet operations cockpit",
-      "status": "not_started",
+      "status": "in_progress",
       "existing_evidence": [
         "apps/ui/src/App.tsx",
         "apps/ui/src/App.test.tsx",
@@ -158,13 +158,13 @@
       "id": "E1-M3",
       "outcome_id": "E1-O3",
       "title": "Upgrade and recovery checkpoint",
-      "status": "in_progress"
+      "status": "complete"
     },
     {
       "id": "E1-M4",
       "outcome_id": "E1-O4",
       "title": "Operations cockpit checkpoint",
-      "status": "not_started"
+      "status": "in_progress"
     },
     {
       "id": "E1-M5",
@@ -180,9 +180,9 @@
     }
   ],
   "progress": {
-    "outcomes_complete": 2,
+    "outcomes_complete": 3,
     "outcomes_total": 6,
-    "milestones_complete": 2,
+    "milestones_complete": 3,
     "milestones_total": 6
   },
   "pis_wait": {
@@ -227,5 +227,5 @@
     "Local v1 release acceptance",
     "human UAT completion"
   ],
-  "next_action": "E1-M3"
+  "next_action": "E1-M4"
 }
