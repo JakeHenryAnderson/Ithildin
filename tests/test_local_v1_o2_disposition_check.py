@@ -141,6 +141,15 @@ def test_candidate_inventory_uses_current_o2_evidence_not_ambient_hermes_runtime
     assert "$(MAKE) local-v1-hermes-evidence-check" not in inventory
     assert "$(MAKE) local-v1-test-fast" in inventory
     assert "$(MAKE) test-fast" not in inventory
+    assert "$(MAKE) local-v1-typecheck" in inventory
+    assert "$(MAKE) typecheck" not in inventory
+    typecheck = makefile.split("local-v1-typecheck:", 1)[1].split(
+        "\nlocal-v1-hermes-evidence-check:",
+        1,
+    )[0]
+    assert typecheck.count("uv run mypy --strict") == 3
+    assert "tests/" not in typecheck
+    assert "--exclude" not in typecheck
     for legacy_evidence_target in (
         "track-b-node-evidence-check",
         "track-b-node-configuration-evidence-check",

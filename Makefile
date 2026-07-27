@@ -21,7 +21,7 @@ NODE_RELEASE_BUNDLE ?= var/node-release-artifact/node-release-$(NODE_RELEASE_VER
 .PHONY: hermes-poc-image hermes-poc-config-check hermes-poc-run hermes-poc-stop
 .PHONY: mission-command-control-plane-poc mission-command-control-plane-poc-check mission-command-control-plane-focused-gates
 .PHONY: mission-command-runner-bridge-profile-check mission-command-runner-bridge-implementation-check local-v1-constrained-mission-contract-check local-v1-lv1-003-o4-execution-authorization-check local-v1-lv1-003-o4-producer-static-check local-v1-lv1-003-o4-producer-run local-v1-lv1-003-o4-image-recovery-run local-v1-lv1-003-o4-attempt008-port-recovery-check local-v1-lv1-003-o4-attempt008-port-release-check local-v1-lv1-003-o4-attempt008-port-release-run local-v1-lv1-003-o4-attempt008-node-identity-reconciliation-check local-v1-lv1-003-o4-attempt008-node-identity-reconciliation-run local-v1-lv1-003-o4-attempt008-quarantine-revocation-check local-v1-lv1-003-o4-attempt008-quarantine-revocation-run local-v1-lv1-003-o4-attempt008-two-container-revocation-check local-v1-lv1-003-o4-attempt008-two-container-revocation-run
-.PHONY: local-v1-contract-check local-v1-golden-path-check local-v1-inner-check local-v1-milestone-check local-v1-runtime-trust-check local-v1-test-fast local-v1-hermes-evidence-check local-v1-o2-evidence-check local-v1-real-agent-static-check local-v1-real-agent-run local-v1-real-agent-check local-v1-node-journey local-v1-node-journey-check local-v1-failure-recovery-static-check local-v1-failure-recovery-run local-v1-failure-recovery-check local-v1-operations-static-check local-v1-operations-run local-v1-operations-check local-v1-ui-production-build local-v1-candidate-inventory local-v1-candidate-check local-v1-release-check
+.PHONY: local-v1-contract-check local-v1-golden-path-check local-v1-inner-check local-v1-milestone-check local-v1-runtime-trust-check local-v1-test-fast local-v1-typecheck local-v1-hermes-evidence-check local-v1-o2-evidence-check local-v1-real-agent-static-check local-v1-real-agent-run local-v1-real-agent-check local-v1-node-journey local-v1-node-journey-check local-v1-failure-recovery-static-check local-v1-failure-recovery-run local-v1-failure-recovery-check local-v1-operations-static-check local-v1-operations-run local-v1-operations-check local-v1-ui-production-build local-v1-candidate-inventory local-v1-candidate-check local-v1-release-check
 
 test:
 	uv run pytest
@@ -246,6 +246,36 @@ local-v1-test-fast:
 		--ignore=tests/test_release_readiness.py \
 		--ignore-glob="tests/test_local_v1_lv1_003_o4_*.py"
 
+local-v1-typecheck:
+	uv run mypy --strict \
+		apps/api/src \
+		apps/mcp-server/src \
+		apps/node/src \
+		packages/audit-core/src \
+		packages/policy-core/src \
+		packages/schemas/src \
+		packages/tool-sdk/src
+	uv run mypy --strict \
+		scripts/local_v1_contract_check.py \
+		scripts/local_v1_golden_path_check.py \
+		scripts/local_v1_node_journey.py \
+		scripts/local_v1_node_journey_evidence.py \
+		scripts/local_v1_node_journey_check.py \
+		scripts/local_v1_constrained_mission_journey.py \
+		scripts/local_v1_constrained_mission_journey_check.py \
+		scripts/local_v1_failure_recovery_check.py \
+		scripts/local_v1_failure_recovery_journey.py \
+		scripts/local_v1_operations_rehearsal.py \
+		scripts/local_v1_operations_rehearsal_check.py \
+		scripts/local_v1_real_agent_rehearsal.py \
+		scripts/local_v1_real_agent_rehearsal_check.py \
+		scripts/local_v1_o2_disposition_check.py
+	uv run mypy --strict \
+		scripts/mission_command_control_plane_plan_check.py \
+		scripts/mission_command_control_plane_poc_evidence_check.py \
+		scripts/mission_command_runner_bridge_decision_check.py \
+		scripts/mission_command_runner_bridge_authorization_check.py
+
 local-v1-hermes-evidence-check:
 	uv run python scripts/hermes_poc_evidence_check.py
 
@@ -295,7 +325,7 @@ local-v1-candidate-inventory:
 	$(MAKE) mission-command-control-plane-focused-gates
 	$(MAKE) local-v1-test-fast
 	$(MAKE) lint
-	$(MAKE) typecheck
+	$(MAKE) local-v1-typecheck
 	$(MAKE) ui-test
 	$(MAKE) local-v1-ui-production-build
 	$(MAKE) docs-site
