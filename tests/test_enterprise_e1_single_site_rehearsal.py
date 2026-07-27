@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from copy import deepcopy
-from pathlib import Path
 
 import pytest
 
@@ -68,5 +67,5 @@ def test_rehearsal_root_is_confined() -> None:
     assert enterprise_e1_single_site_rehearsal.confined_run_root(valid) == valid
     with pytest.raises(enterprise_e1_single_site_rehearsal.RehearsalError):
         enterprise_e1_single_site_rehearsal.confined_run_root(
-            Path("/tmp/20260727T120000Z-0123456789abcdef")
+            base.parent / "20260727T120000Z-0123456789abcdef"
         )
