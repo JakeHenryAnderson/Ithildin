@@ -1,13 +1,49 @@
 # Local v1 LV1-003 O4 Execution Authorization Gate
 
 Status:
-`ATTEMPT_018_PREPARED_PENDING_EXACT_CANDIDATE_REVIEW_NO_LIVE_AUTHORITY`
+`ATTEMPT_018_CONSUMED_GATEWAY_MISSION_PROJECTION_INVALID_BRIDGE_DISCONNECTED_CLEANUP_COMPLETE_NO_LIVE_AUTHORITY`
 
-This record prepares `LV1-003-O4-ATTEMPT-018`, preserves immutable consumed Attempts 001-017 and all
-tracked recovery history, and grants no live authority before exact candidate review. Its machine contract is
+This record closes `LV1-003-O4-ATTEMPT-018`, preserves immutable consumed Attempts 001-017 and all
+tracked recovery history, and grants no live or successor authority. Its machine contract is
 `docs/codex/local-v1-lv1-003-o4-execution-authorization.json`.
 
-## Attempt 018 Prepared Boundary
+## Attempt 018 Consumed Result
+
+Attempt `LV1-003-O4-ATTEMPT-018` consumed its single budget on exact candidate
+`bae6be514b9c8d47e09a69fb413f097d9af1d7d4`, tree
+`2317226c58ea0000435e79b2d7c4efe6dce088e3`, fixed by annotated tag
+`ithildin/lv1-003-o4-attempt018-reviewed`. Make exited `2`, the producer exited `1`, and the outward
+and primary failure were `gateway_mission_projection_invalid` at stage `13`. Base and bridge builds
+completed, four image identities were bound, cleanup failures were empty, and recovery was false.
+
+The identity-free Gateway projection is collection `complete`, reason
+`gateway_mission_projection_state_collected`, mission identity `matched`, mission lifecycle
+`runner_reported_running`, target Node identity `matched`, delivery `present_object`, and
+governed-agent-runs `present_object`. The identity-free Node receipt projection is collection
+`complete`, reason `node_receipt_projection_state_collected`, receipt shape `exact`, mission
+identity `matched`, claim `valid_format`, envelope `valid_digest`, handoff nonce `valid_digest`,
+next operation `completion_pending`, last closed status `failed_closed`, and stable last closed
+reason `bridge_disconnected`. The terminal reason is bounded runner-receipt evidence only and does
+not establish causality.
+
+Private run/project identities and output remain digest-only. The exact receipt bindings are
+recorded in `docs/codex/local-v1-lv1-003-o4-attempt-018-disposition.json`; no raw private identity
+or content is reproduced. The run, project, manifest, diagnostic, and disposition digests are
+`sha256:fe1e0bf962c4ec5fa4bda96d02033c074f584cbf4db65807730ebad657fb6ef6`,
+`sha256:1f7a4ce1caa4674ecb5d63822420bfdb18f76f0dfc3ac521655e80c793179511`,
+`sha256:7faf7c164ded73aeb5fccfdc39940dfeedc3c3144d7b7590f7ad1dbd4c884f17`,
+`sha256:cc6fb52aa23e60341e0fd54f7812f2ce88bfc1f4d78f1ee5c291939d75e53b32`,
+and `sha256:76111fb55e47a53554a22326499aa8a1b98fc9280ffb80b471e953cc4b645762`.
+Exact runtime/report roots were absent and the report base was absent point-in-time, without generic
+absence claims.
+
+Attempt budget is zero, `attempt_consumed` is true, retry, automatic retry, concurrent invocation,
+and post-attempt retry are false, and all 19 authority fields are false. Tool count remains 24;
+release, promotion, production, and UAT remain false. The producer entrypoint refuses before
+activity. The next action is only a separately reviewed bounded diagnosis of the Gateway/runner
+liveness discrepancy or why the bridge disconnected, not Attempt 019 or repair authority.
+
+## Attempt 018 Historical Authorization Boundary
 
 Attempt 018 is a fresh successor, not a retry, recovery, repair, cleanup, or continuation of
 Attempt 017. It is bound to committed review record
@@ -19,21 +55,12 @@ implementation `694e464d79afd00bc6af7f847acd3c7901fa4086`, tree
 `sha256:d7fff00bed23368467f1c05f9fa05c629d2f0d37f12c0ac93c1a0fde58774ccb`,
 with `GO_CODE_ONLY` and Critical 0, High 0, Medium 0, Low 0.
 
-The exact candidate must be the immediate child of that review record and change exactly six paths:
+The exact candidate was the immediate child of that review record and changed exactly six paths:
 `Makefile`, `README.md`, this Markdown record, its JSON contract, the authorization validator, and
-its tests. Live authority requires the fixed annotated tag
-`ithildin/lv1-003-o4-attempt018-reviewed` to peel to that exact commit and tree. Before the tag
-exists, validation is intentionally invalid only for the missing or non-annotated exact tag,
-effective budget is zero, all 19 authority fields are false, and the next action is
-`review_attempt_018_execution_authorization_exact_candidate`.
-
-After an exact review and tag, the contract permits one central-manager-supervised invocation with
-budget one. Only the historical five-field maximum live-authority ceiling may become true:
-producer code, Docker lifecycle, live Hermes execution, model-provider access, and O4 evidence
-execution. The remaining 14 authority fields stay false. Automatic retry, concurrent invocation,
-post-attempt retry, release, promotion, production, UAT, a new governed tool, and a new governed
-power all remain false. Exactly one invocation requires an immediate consumed disposition; this
-preparation record does not itself execute the producer, inspect credentials, or prove success.
+its tests. The fixed annotated tag `ithildin/lv1-003-o4-attempt018-reviewed` peeled to that exact
+candidate. Historical review and tag existence no longer grant live authority. At the reviewed
+pre-run gate, only the five-field maximum live-authority ceiling could be true; the remaining 14
+authority fields stayed false. The single invocation is now consumed permanently.
 
 ## Attempt 017 Consumed Result
 
