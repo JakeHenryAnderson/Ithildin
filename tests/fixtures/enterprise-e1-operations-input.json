@@ -1,0 +1,49 @@
+{
+  "schema_version": "ithildin.enterprise-e1-operations-input.v1",
+  "candidate_commit": "1111111111111111111111111111111111111111",
+  "generated_at": "2026-07-27T18:00:00Z",
+  "site_label": "local-e1-test",
+  "tool_count": 24,
+  "sections": {
+    "deployment": {
+      "status": "healthy",
+      "candidate_image": "ithildin-api:1.0.0-e1",
+      "topology": "single_gateway_command_center",
+      "token": "must-not-leak"
+    },
+    "configuration": {
+      "desired_generation": 2,
+      "acknowledged_generation": 2,
+      "storage_status": "stored_not_enforced",
+      "policy_version": "v1"
+    },
+    "recovery": {
+      "backup_manifest_matched": true,
+      "failed_update_failed_closed": true,
+      "restore_manifest_matched": true
+    },
+    "missions": {
+      "mission_id": "mission_fixture",
+      "gateway_state": "admitted",
+      "runner_state": "runner_reported_only",
+      "model_provider_state": "unknown"
+    },
+    "fleet": {
+      "node_id": "node_fixture",
+      "connectivity_source": "gateway_accepted_heartbeat",
+      "runner_health_known": false,
+      "host_path": "/must/not/leak"
+    },
+    "approvals": {
+      "approval_id": "approval_fixture",
+      "status": "approved",
+      "application_status": "not_started"
+    },
+    "audit": {
+      "event_count": 4,
+      "chain_verified": true,
+      "head_hash": "sha256:fixture",
+      "private_key": "must-not-leak"
+    }
+  }
+}

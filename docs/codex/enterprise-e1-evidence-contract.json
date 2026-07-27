@@ -1,0 +1,83 @@
+{
+  "schema_version": "ithildin.enterprise-e1-operational-evidence.v1",
+  "input_schema_version": "ithildin.enterprise-e1-operations-input.v1",
+  "tool_count": 24,
+  "required_sections": [
+    "deployment",
+    "configuration",
+    "recovery",
+    "missions",
+    "fleet",
+    "approvals",
+    "audit"
+  ],
+  "required_artifacts": [
+    "README.md",
+    "redaction-manifest.json",
+    "sections/deployment.json",
+    "sections/configuration.json",
+    "sections/recovery.json",
+    "sections/missions.json",
+    "sections/fleet.json",
+    "sections/approvals.json",
+    "sections/audit.json"
+  ],
+  "archive": {
+    "format": "zip",
+    "compression": "stored",
+    "member_timestamp": "1980-01-01T00:00:00",
+    "member_mode": "0644",
+    "ordering": "lexicographic",
+    "receiver_specific_metadata": false
+  },
+  "verification": {
+    "algorithm": "sha256",
+    "canonical_json": "utf8_sorted_keys_indent_2_lf",
+    "manifest_self_authentication_claimed": false,
+    "external_notarization_claimed": false,
+    "local_content_integrity_only": true
+  },
+  "redaction": {
+    "baseline_secret_patterns": true,
+    "receiver_neutral_local_metadata_keys": [
+      "absolute_path",
+      "client_secret",
+      "credential",
+      "credentials",
+      "dsn",
+      "env",
+      "environment",
+      "host_path",
+      "local_path",
+      "signing_private_key"
+    ],
+    "excluded_categories": [
+      "credentials_and_secrets",
+      "model_chain_of_thought",
+      "private_keys",
+      "provider_internal_state",
+      "raw_paths",
+      "raw_prompts",
+      "raw_tool_arguments",
+      "tool_response_bodies",
+      "whole_host_activity"
+    ]
+  },
+  "nonclaims": [
+    "SIEM custody",
+    "hosted telemetry",
+    "external notarization",
+    "whole-host coverage",
+    "compliance automation",
+    "production identity",
+    "enterprise production readiness",
+    "human UAT completion"
+  ],
+  "authority": {
+    "export_is_authorization_input": false,
+    "external_delivery_performed": false,
+    "new_governed_tool": false,
+    "arbitrary_host_control": false,
+    "human_uat_complete": false
+  }
+}
