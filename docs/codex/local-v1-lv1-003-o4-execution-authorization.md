@@ -1,11 +1,39 @@
 # Local v1 LV1-003 O4 Execution Authorization Gate
 
 Status:
-`ATTEMPT_017_CONSUMED_GATEWAY_MISSION_PROJECTION_INVALID_CLEANUP_COMPLETE_NO_LIVE_AUTHORITY`
+`ATTEMPT_018_PREPARED_PENDING_EXACT_CANDIDATE_REVIEW_NO_LIVE_AUTHORITY`
 
-This record closes `LV1-003-O4-ATTEMPT-017`, preserves immutable consumed Attempts 001-016 and all
-tracked recovery history, and grants no live or successor authority. Its machine contract is
+This record prepares `LV1-003-O4-ATTEMPT-018`, preserves immutable consumed Attempts 001-017 and all
+tracked recovery history, and grants no live authority before exact candidate review. Its machine contract is
 `docs/codex/local-v1-lv1-003-o4-execution-authorization.json`.
+
+## Attempt 018 Prepared Boundary
+
+Attempt 018 is a fresh successor, not a retry, recovery, repair, cleanup, or continuation of
+Attempt 017. It is bound to committed review record
+`30af9b4694c3826979c868eb7fb9cb2369bd92a9`, tree
+`e57c2e31c0a51e191e42c12580cf29813c56051b`, and preserves runtime parity to reviewed
+implementation `694e464d79afd00bc6af7f847acd3c7901fa4086`, tree
+`2bdb9e12e9ae65ea71064e8caf20ae3ce5fcda58`. The committed review is
+`docs/codex/local-v1-lv1-003-o4-mission-liveness-and-terminal-reason-exact-review.md`, digest
+`sha256:d7fff00bed23368467f1c05f9fa05c629d2f0d37f12c0ac93c1a0fde58774ccb`,
+with `GO_CODE_ONLY` and Critical 0, High 0, Medium 0, Low 0.
+
+The exact candidate must be the immediate child of that review record and change exactly six paths:
+`Makefile`, `README.md`, this Markdown record, its JSON contract, the authorization validator, and
+its tests. Live authority requires the fixed annotated tag
+`ithildin/lv1-003-o4-attempt018-reviewed` to peel to that exact commit and tree. Before the tag
+exists, validation is intentionally invalid only for the missing or non-annotated exact tag,
+effective budget is zero, all 19 authority fields are false, and the next action is
+`review_attempt_018_execution_authorization_exact_candidate`.
+
+After an exact review and tag, the contract permits one central-manager-supervised invocation with
+budget one. Only the historical five-field maximum live-authority ceiling may become true:
+producer code, Docker lifecycle, live Hermes execution, model-provider access, and O4 evidence
+execution. The remaining 14 authority fields stay false. Automatic retry, concurrent invocation,
+post-attempt retry, release, promotion, production, UAT, a new governed tool, and a new governed
+power all remain false. Exactly one invocation requires an immediate consumed disposition; this
+preparation record does not itself execute the producer, inspect credentials, or prove success.
 
 ## Attempt 017 Consumed Result
 
