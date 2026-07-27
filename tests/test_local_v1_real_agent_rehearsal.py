@@ -188,8 +188,10 @@ def test_docker_run_is_nonroot_bounded_and_has_no_docker_socket(tmp_path: Path) 
     assert command[:2] == ["docker", "run"]
     assert "--user" in command
     assert f"{os.getuid()}:{os.getgid()}" in command
+    assert "--env" in command and "HERMES_HOME=/opt/data" in command
     assert "--cap-drop" in command and "ALL" in command
     assert "no-new-privileges:true" in command
+    assert f"/opt/data:uid={os.getuid()},gid={os.getgid()},mode=0700" in command
     assert "/var/run/docker.sock" not in serialized
     assert "OPENAI" not in serialized
     assert "ANTHROPIC" not in serialized
@@ -234,6 +236,56 @@ def test_runtime_evidence_capture_rejects_runner_symlink(tmp_path: Path) -> None
     os.chmod(audit, 0o600)
 
     with pytest.raises(OSError):
+        real_agent._capture_runtime_evidence(  # noqa: SLF001
+            run_root=run_root,
+            runtime_root=runtime_root,
+        )
+
+
+def test_runtime_evidence_capture_distinguishes_missing_audit(
+    tmp_path: Path,
+) -> None:
+    run_root = tmp_path / "run"
+    runtime_root = run_root / "runtime"
+    database_root = runtime_root / "hermes-poc/db"
+    logs_root = runtime_root / "hermes-poc/logs"
+    database_root.mkdir(parents=True)
+    logs_root.mkdir()
+    database = database_root / "ithildin.sqlite3"
+    database.write_bytes(b"synthetic database evidence")
+    os.chmod(database, 0o600)
+
+    with pytest.raises(
+        real_agent.RealAgentError,
+        match="runtime_audit_required_evidence_missing",
+    ):
+        real_agent._capture_runtime_evidence(  # noqa: SLF001
+            run_root=run_root,
+            runtime_root=runtime_root,
+        )
+
+
+def test_runtime_evidence_capture_distinguishes_unexpected_database_entry(
+    tmp_path: Path,
+) -> None:
+    run_root = tmp_path / "run"
+    runtime_root = run_root / "runtime"
+    database_root = runtime_root / "hermes-poc/db"
+    logs_root = runtime_root / "hermes-poc/logs"
+    database_root.mkdir(parents=True)
+    logs_root.mkdir()
+    for path in (
+        database_root / "ithildin.sqlite3",
+        database_root / "unexpected.sqlite3",
+        logs_root / "audit.jsonl",
+    ):
+        path.write_bytes(b"synthetic runtime evidence")
+        os.chmod(path, 0o600)
+
+    with pytest.raises(
+        real_agent.RealAgentError,
+        match="runtime_database_evidence_inventory_invalid",
+    ):
         real_agent._capture_runtime_evidence(  # noqa: SLF001
             run_root=run_root,
             runtime_root=runtime_root,

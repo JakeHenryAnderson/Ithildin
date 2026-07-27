@@ -241,6 +241,8 @@ def docker_run_command(
         container,
         "--user",
         f"{uid}:{gid}",
+        "--env",
+        "HERMES_HOME=/opt/data",
         "--entrypoint",
         "/bin/sh",
         "--workdir",
@@ -255,6 +257,8 @@ def docker_run_command(
         ),
         "--mount",
         f"type=bind,src={runtime_root},dst=/opt/ithildin/var",
+        "--tmpfs",
+        f"/opt/data:uid={uid},gid={gid},mode=0700",
         "--tmpfs",
         f"/opt/data/scratch:uid={uid},gid={gid},mode=0700",
         "--cap-drop",
@@ -554,6 +558,7 @@ def _capture_runtime_evidence(*, run_root: Path, runtime_root: Path) -> Path:
                 "ithildin.sqlite3-wal",
             },
             maximum_size=64 * 1024 * 1024,
+            evidence_kind="database",
         )
         _capture_directory_entries(
             run_root=run_root,
@@ -562,6 +567,7 @@ def _capture_runtime_evidence(*, run_root: Path, runtime_root: Path) -> Path:
             required={"audit.jsonl"},
             allowed={"audit.jsonl"},
             maximum_size=16 * 1024 * 1024,
+            evidence_kind="audit",
         )
     except BaseException:
         _remove_private_path(run_root, analysis_root)
@@ -577,6 +583,7 @@ def _capture_directory_entries(
     required: set[str],
     allowed: set[str],
     maximum_size: int,
+    evidence_kind: str,
 ) -> None:
     nofollow = getattr(os, "O_NOFOLLOW", 0)
     directory = getattr(os, "O_DIRECTORY", 0)
@@ -593,8 +600,14 @@ def _capture_directory_entries(
                 os.close(current_descriptor)
             current_descriptor = next_descriptor
         entries = set(os.listdir(current_descriptor))
-        if not required.issubset(entries) or not entries.issubset(allowed):
-            raise RealAgentError("runtime_evidence_inventory_invalid")
+        if not required.issubset(entries):
+            raise RealAgentError(
+                f"runtime_{evidence_kind}_required_evidence_missing"
+            )
+        if not entries.issubset(allowed):
+            raise RealAgentError(
+                f"runtime_{evidence_kind}_evidence_inventory_invalid"
+            )
         for name in sorted(entries):
             source_descriptor = os.open(
                 name,

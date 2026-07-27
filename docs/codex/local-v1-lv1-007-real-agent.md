@@ -37,9 +37,12 @@ Gateway evidence. Ollama availability is a model-provider dependency observation
 
 The harness builds from `git archive` of the recorded candidate, starts one uniquely named
 candidate-specific container, mounts only its private synthetic evidence directory plus the tracked
-read-only Hermes configuration, and removes that exact container and image. It never mounts the
-Docker socket into Ithildin or Hermes. It grants no generic container control, API change, new
-governed tool, new power, production authority, release acceptance, or UAT completion.
+read-only Hermes configuration, and removes that exact container and image. The operator harness
+sets the pinned runner's home explicitly and supplies a private home tmpfs so the host-matching
+nonroot UID can read the tracked configuration without writing runner state into the image or host.
+It never mounts the Docker socket into Ithildin or Hermes. It grants no generic container control,
+API change, new governed tool, new power, production authority, release acceptance, or UAT
+completion.
 
 The final mode-`0600` report contains candidate identity, booleans, counts, truth-source labels, and
 non-claims only. It excludes model output, prompts, fixture bodies, approval/request IDs, raw run
