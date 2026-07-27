@@ -37,7 +37,8 @@ REQUIRED_GATEWAY_OBSERVATIONS = (
     "allowed_read_completed",
     "out_of_scope_read_denied_before_execution",
     "approval_required_observed",
-    "approval_pending_without_execution",
+    "approval_v2_pending_storage_observed",
+    "approval_request_not_executed",
     "fixed_stdio_identity_observed",
     "audit_chain_valid",
 )
@@ -336,14 +337,8 @@ def build_o2_evidence(*, run_root: Path, runtime_root: Path) -> dict[str, Any]:
             for line in audit_path.read_text(encoding="utf-8").splitlines()
             if line
         ]
-        with sqlite3.connect(db_path) as connection:
-            approval_statuses = {
-                str(approval_id): str(status)
-                for approval_id, status in connection.execute(
-                    "SELECT approval_id, status FROM approvals"
-                ).fetchall()
-            }
-        observations = evaluate_o2_events(events, approval_statuses=approval_statuses)
+        approval_storage = _approval_storage(db_path)
+        observations = evaluate_o2_events(events, approval_storage=approval_storage)
         verification = AuditWriter(db_path, audit_path).verify_chain()
         observations["audit_chain_valid"] = verification.valid
         observations["audit_event_count"] = verification.event_count
@@ -355,10 +350,23 @@ def build_o2_evidence(*, run_root: Path, runtime_root: Path) -> dict[str, Any]:
         _remove_private_path(run_root, analysis_root)
 
 
+def _approval_storage(db_path: Path) -> dict[str, tuple[str, str]]:
+    with sqlite3.connect(db_path) as connection:
+        return {
+            str(approval_id): (str(status), str(contract_version))
+            for approval_id, status, contract_version in connection.execute(
+                """
+                SELECT approval_id, status, approval_contract_version
+                FROM approvals
+                """
+            ).fetchall()
+        }
+
+
 def evaluate_o2_events(
     events: list[JsonObject],
     *,
-    approval_statuses: dict[str, str],
+    approval_storage: dict[str, tuple[str, str]],
 ) -> dict[str, Any]:
     policies = _events(events, "policy.evaluated")
     completed = _events(events, "tool.execution.completed")
@@ -424,9 +432,14 @@ def evaluate_o2_events(
             (request_id, "fs.read") not in execution_pairs
             for request_id in denied_read_requests
         ),
-        "approval_required_observed": bool(write_requests and created_approvals),
-        "approval_pending_without_execution": bool(created_approvals)
-        and all(approval_statuses.get(item) == "pending" for item in created_approvals)
+        "approval_required_observed": len(write_requests) == 1
+        and len(created_approvals) == 1,
+        "approval_v2_pending_storage_observed": bool(created_approvals)
+        and all(
+            approval_storage.get(item) == ("v2_pending", "2")
+            for item in created_approvals
+        ),
+        "approval_request_not_executed": bool(write_requests)
         and all(
             (request_id, EXPECTED_WRITE_TOOL) not in execution_pairs
             for request_id in write_requests

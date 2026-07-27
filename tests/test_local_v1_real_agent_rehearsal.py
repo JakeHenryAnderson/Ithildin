@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import sqlite3
 import subprocess
 from pathlib import Path
 
@@ -65,16 +66,44 @@ def test_o2_evaluator_distinguishes_allowed_denied_and_approval_required() -> No
 
     observations = real_agent.evaluate_o2_events(
         events,
-        approval_statuses={"appr_test": "pending"},
+        approval_storage={"appr_test": ("v2_pending", "2")},
     )
 
     assert observations == {
         "allowed_read_completed": True,
         "out_of_scope_read_denied_before_execution": True,
         "approval_required_observed": True,
-        "approval_pending_without_execution": True,
+        "approval_v2_pending_storage_observed": True,
+        "approval_request_not_executed": True,
         "fixed_stdio_identity_observed": True,
         "approval_count": 1,
+    }
+
+
+def test_approval_storage_reads_exact_versioned_persistence_contract(
+    tmp_path: Path,
+) -> None:
+    db_path = tmp_path / "ithildin.sqlite3"
+    with sqlite3.connect(db_path) as connection:
+        connection.execute(
+            """
+            CREATE TABLE approvals (
+                approval_id TEXT PRIMARY KEY,
+                status TEXT NOT NULL,
+                approval_contract_version TEXT NOT NULL
+            )
+            """
+        )
+        connection.execute(
+            """
+            INSERT INTO approvals (
+                approval_id, status, approval_contract_version
+            ) VALUES ('appr_test', 'v2_pending', '2')
+            """
+        )
+
+    assert real_agent._approval_storage(db_path) == {  # noqa: SLF001
+        "appr_test": ("v2_pending", "2")
     }
 
 
@@ -93,11 +122,12 @@ def test_o2_evaluator_fails_closed_on_execution_or_wrong_identity() -> None:
     assert isinstance(metadata, dict)
     metadata["principal_id"] = "agent:wrong"
 
-    observations = real_agent.evaluate_o2_events(events, approval_statuses={})
+    observations = real_agent.evaluate_o2_events(events, approval_storage={})
 
     assert observations["out_of_scope_read_denied_before_execution"] is False
     assert observations["fixed_stdio_identity_observed"] is False
-    assert observations["approval_pending_without_execution"] is False
+    assert observations["approval_v2_pending_storage_observed"] is False
+    assert observations["approval_request_not_executed"] is False
 
 
 @pytest.mark.parametrize(
@@ -118,16 +148,20 @@ def test_o2_evaluator_counts_started_or_failed_denied_call_as_execution(
         _event(execution_event, "req-deny", "fs.read"),
     ]
 
-    observations = real_agent.evaluate_o2_events(events, approval_statuses={})
+    observations = real_agent.evaluate_o2_events(events, approval_storage={})
 
     assert observations["out_of_scope_read_denied_before_execution"] is False
 
 
 @pytest.mark.parametrize(
     "execution_event",
-    ("tool.execution.started", "tool.execution.failed"),
+    (
+        "tool.execution.started",
+        "tool.execution.completed",
+        "tool.execution.failed",
+    ),
 )
-def test_o2_evaluator_counts_started_or_failed_pending_write_as_execution(
+def test_o2_evaluator_counts_approval_write_lifecycle_as_execution(
     execution_event: str,
 ) -> None:
     events = [
@@ -148,10 +182,87 @@ def test_o2_evaluator_counts_started_or_failed_pending_write_as_execution(
 
     observations = real_agent.evaluate_o2_events(
         events,
-        approval_statuses={"appr_test": "pending"},
+        approval_storage={"appr_test": ("v2_pending", "2")},
     )
 
-    assert observations["approval_pending_without_execution"] is False
+    assert observations["approval_v2_pending_storage_observed"] is True
+    assert observations["approval_request_not_executed"] is False
+
+
+@pytest.mark.parametrize(
+    ("stored_status", "contract_version"),
+    (
+        ("pending", "2"),
+        ("v2_pending", "1"),
+        ("v2_approved", "2"),
+    ),
+)
+def test_o2_evaluator_requires_exact_v2_pending_storage(
+    stored_status: str,
+    contract_version: str,
+) -> None:
+    events = [
+        _event(
+            "policy.evaluated",
+            "req-write",
+            real_agent.EXPECTED_WRITE_TOOL,
+            decision="require_approval",
+        ),
+        _event(
+            "approval.created",
+            "req-write",
+            real_agent.EXPECTED_WRITE_TOOL,
+            approval_id="appr_test",
+        ),
+    ]
+
+    observations = real_agent.evaluate_o2_events(
+        events,
+        approval_storage={"appr_test": (stored_status, contract_version)},
+    )
+
+    assert observations["approval_v2_pending_storage_observed"] is False
+    assert observations["approval_request_not_executed"] is True
+
+
+def test_o2_evaluator_requires_exactly_one_approval_request() -> None:
+    events = [
+        _event(
+            "policy.evaluated",
+            "req-write-1",
+            real_agent.EXPECTED_WRITE_TOOL,
+            decision="require_approval",
+        ),
+        _event(
+            "approval.created",
+            "req-write-1",
+            real_agent.EXPECTED_WRITE_TOOL,
+            approval_id="appr_1",
+        ),
+        _event(
+            "policy.evaluated",
+            "req-write-2",
+            real_agent.EXPECTED_WRITE_TOOL,
+            decision="require_approval",
+        ),
+        _event(
+            "approval.created",
+            "req-write-2",
+            real_agent.EXPECTED_WRITE_TOOL,
+            approval_id="appr_2",
+        ),
+    ]
+
+    observations = real_agent.evaluate_o2_events(
+        events,
+        approval_storage={
+            "appr_1": ("v2_pending", "2"),
+            "appr_2": ("v2_pending", "2"),
+        },
+    )
+
+    assert observations["approval_required_observed"] is False
+    assert observations["approval_count"] == 2
 
 
 def test_gateway_evidence_requirements_do_not_depend_on_runner_exit() -> None:
@@ -159,7 +270,8 @@ def test_gateway_evidence_requirements_do_not_depend_on_runner_exit() -> None:
         "allowed_read_completed": True,
         "out_of_scope_read_denied_before_execution": True,
         "approval_required_observed": True,
-        "approval_pending_without_execution": True,
+        "approval_v2_pending_storage_observed": True,
+        "approval_request_not_executed": True,
         "fixed_stdio_identity_observed": True,
         "audit_chain_valid": True,
         "runner_process_exit_zero": False,
@@ -175,7 +287,8 @@ def test_gateway_evidence_failure_is_fixed_secret_safe_projection() -> None:
         "allowed_read_completed": True,
         "out_of_scope_read_denied_before_execution": False,
         "approval_required_observed": True,
-        "approval_pending_without_execution": False,
+        "approval_v2_pending_storage_observed": False,
+        "approval_request_not_executed": True,
         "fixed_stdio_identity_observed": True,
         "audit_chain_valid": True,
         "audit_event_count": 17,
@@ -185,7 +298,7 @@ def test_gateway_evidence_failure_is_fixed_secret_safe_projection() -> None:
 
     assert real_agent.gateway_evidence_failure(observations) == (
         "gateway_o2_evidence_invalid;"
-        "required_bitmap=101011;audit_event_count=17"
+        "required_bitmap=1010111;audit_event_count=17"
     )
 
 
@@ -200,7 +313,7 @@ def test_gateway_evidence_failure_rejects_unbounded_event_count(
 
     assert real_agent.gateway_evidence_failure(observations) == (
         "gateway_o2_evidence_invalid;"
-        "required_bitmap=000000;audit_event_count=invalid"
+        "required_bitmap=0000000;audit_event_count=invalid"
     )
 
 

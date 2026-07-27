@@ -56,9 +56,12 @@ non-claims only. It excludes model output, prompts, fixture bodies, approval/req
 identity, environment values, and credentials. All private runtime evidence and the extracted
 candidate tree are removed before success is recorded.
 
-On a complete-but-invalid Gateway evidence set, stderr contains only a fixed six-bit observation
+On a complete-but-invalid Gateway evidence set, stderr contains only a fixed seven-bit observation
 bitmap plus the bounded audit-event count. The bit order is `allowed_read_completed`,
 `out_of_scope_read_denied_before_execution`, `approval_required_observed`,
-`approval_pending_without_execution`, `fixed_stdio_identity_observed`, and `audit_chain_valid`.
-It never contains event payloads, model output, prompts, fixture bodies, raw identities, or
-environment values.
+`approval_v2_pending_storage_observed`, `approval_request_not_executed`,
+`fixed_stdio_identity_observed`, and `audit_chain_valid`. The storage observation requires the
+current approval contract version `2` and its exact persisted `v2_pending` status. The independent
+non-execution observation rejects `tool.execution.started`, `tool.execution.completed`, and
+`tool.execution.failed` for the approval-required request. The projection never contains event
+payloads, model output, prompts, fixture bodies, raw identities, or environment values.
