@@ -25,6 +25,7 @@ ENV_KEYS = {
     "ITHILDIN_E1_DATA_ROOT",
     "ITHILDIN_E1_RUNTIME_INVENTORY_PATH",
     "ITHILDIN_E1_RUNTIME_AUTHORITY_PATH",
+    "ITHILDIN_E1_EXPECTED_RUNTIME_POSTURE",
     "ITHILDIN_ADMIN_TOKEN",
     "ITHILDIN_CONTAINER_UID",
     "ITHILDIN_CONTAINER_GID",
@@ -61,6 +62,8 @@ class SingleSiteConfig:
     data_root: Path
     runtime_inventory_path: Path
     runtime_authority_path: Path
+    expected_runtime_posture: str
+    admin_token: str
     container_uid: int
     container_gid: int
 
@@ -75,6 +78,7 @@ class SingleSiteConfig:
             "data_root": str(self.data_root),
             "runtime_inventory_path": str(self.runtime_inventory_path),
             "runtime_authority_path": str(self.runtime_authority_path),
+            "expected_runtime_posture": self.expected_runtime_posture,
             "container_uid": self.container_uid,
             "container_gid": self.container_gid,
             "admin_token_configured": True,
@@ -216,13 +220,18 @@ def validate_environment(
     _validate_evidence_file(
         inventory_path,
         label="runtime inventory",
-        allowed_modes={0o600, 0o644},
+        allowed_modes={0o400, 0o444},
     )
     _validate_evidence_file(
         authority_path,
         label="runtime authority record",
-        allowed_modes={0o600},
+        allowed_modes={0o400, 0o444},
     )
+    expected_runtime_posture = environment["ITHILDIN_E1_EXPECTED_RUNTIME_POSTURE"]
+    if expected_runtime_posture not in {"reviewed", "unreviewed_local"}:
+        raise SingleSiteError(
+            "expected runtime posture must be reviewed or unreviewed_local"
+        )
 
     token = environment["ITHILDIN_ADMIN_TOKEN"]
     if (
@@ -242,6 +251,8 @@ def validate_environment(
         data_root=data_root,
         runtime_inventory_path=inventory_path,
         runtime_authority_path=authority_path,
+        expected_runtime_posture=expected_runtime_posture,
+        admin_token=token,
         container_uid=container_uid,
         container_gid=container_gid,
     )
@@ -261,40 +272,70 @@ def validate_state(config: SingleSiteConfig) -> None:
     _validate_evidence_file(
         config.runtime_inventory_path,
         label="runtime inventory",
-        allowed_modes={0o600, 0o644},
+        allowed_modes={0o400, 0o444},
     )
     _validate_evidence_file(
         config.runtime_authority_path,
         label="runtime authority record",
-        allowed_modes={0o600},
+        allowed_modes={0o400, 0o444},
     )
 
 
 def probe_health(config: SingleSiteConfig) -> dict[str, Any]:
     api_url = f"http://127.0.0.1:{config.api_port}/healthz"
     ui_url = f"http://127.0.0.1:{config.ui_port}/"
-    api_payload = _bounded_get(api_url, 4096)
+    api_payload = _bounded_get(api_url, 4096, headers={})
     try:
         api_document = json.loads(api_payload)
     except json.JSONDecodeError as exc:
         raise SingleSiteError("Gateway health response is not valid JSON") from exc
     if api_document != {"status": "ok", "service": "ithildin-api"}:
         raise SingleSiteError("Gateway health response is not the expected bounded document")
-    ui_payload = _bounded_get(ui_url, 65536)
+    headers = {"Authorization": f"Bearer {config.admin_token}"}
+    status_payload = _bounded_get(
+        f"http://127.0.0.1:{config.api_port}/system/status",
+        65536,
+        headers=headers,
+    )
+    try:
+        status_document = json.loads(status_payload)
+    except json.JSONDecodeError as exc:
+        raise SingleSiteError("Gateway status response is not valid JSON") from exc
+    if not isinstance(status_document, dict) or status_document.get("tool_count") != 24:
+        raise SingleSiteError("Gateway status does not report exactly 24 governed tools")
+    runtime_candidate = status_document.get("runtime_candidate")
+    if (
+        not isinstance(runtime_candidate, dict)
+        or runtime_candidate.get("posture") != config.expected_runtime_posture
+    ):
+        raise SingleSiteError("Gateway runtime-candidate posture does not match preflight")
+    storage = status_document.get("storage")
+    if not isinstance(storage, dict) or storage.get("runtime_backend") != "sqlite":
+        raise SingleSiteError("Gateway status does not report the bounded SQLite backend")
+    ui_payload = _bounded_get(ui_url, 65536, headers={})
     if b"<html" not in ui_payload.lower():
         raise SingleSiteError("Command Center response is not an HTML document")
     return {
         "gateway_http_ready": True,
         "command_center_http_reachable": True,
+        "authenticated_tool_count": 24,
+        "storage_backend": "sqlite",
+        "runtime_candidate_posture": config.expected_runtime_posture,
         "node_connectivity": "not_part_of_e1_m1",
         "runner_state": "unknown",
         "model_provider_state": "unknown",
     }
 
 
-def _bounded_get(url: str, maximum_bytes: int) -> bytes:
+def _bounded_get(
+    url: str,
+    maximum_bytes: int,
+    *,
+    headers: dict[str, str],
+) -> bytes:
     try:
-        with urllib.request.urlopen(url, timeout=3) as response:
+        request = urllib.request.Request(url, headers=headers)
+        with urllib.request.urlopen(request, timeout=3) as response:
             if response.status != 200:
                 raise SingleSiteError("bounded loopback health probe returned non-200")
             payload = cast(bytes, response.read(maximum_bytes + 1))

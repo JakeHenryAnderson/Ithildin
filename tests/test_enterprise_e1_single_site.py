@@ -11,10 +11,10 @@ from scripts import enterprise_e1_single_site, enterprise_e1_single_site_deploym
 def _environment(tmp_path: Path) -> dict[str, str]:
     inventory = tmp_path / "runtime-candidate-inventory.json"
     inventory.write_text('{"inventory":"fixture"}\n', encoding="utf-8")
-    inventory.chmod(0o644)
+    inventory.chmod(0o444)
     authority = tmp_path / "api-candidate.json"
     authority.write_text('{"candidate":"fixture"}\n', encoding="utf-8")
-    authority.chmod(0o600)
+    authority.chmod(0o400)
     return {
         "ITHILDIN_E1_SITE_ID": "site-001",
         "ITHILDIN_E1_VERSION": "1.0.0-e1",
@@ -28,6 +28,7 @@ def _environment(tmp_path: Path) -> dict[str, str]:
         "ITHILDIN_E1_DATA_ROOT": str(tmp_path / "site-001"),
         "ITHILDIN_E1_RUNTIME_INVENTORY_PATH": str(inventory),
         "ITHILDIN_E1_RUNTIME_AUTHORITY_PATH": str(authority),
+        "ITHILDIN_E1_EXPECTED_RUNTIME_POSTURE": "unreviewed_local",
         "ITHILDIN_ADMIN_TOKEN": "fixture-token-with-more-than-32-characters",
         "ITHILDIN_CONTAINER_UID": str(os.getuid()),
         "ITHILDIN_CONTAINER_GID": str(os.getgid()),
@@ -57,6 +58,7 @@ def test_single_site_bootstrap_creates_only_private_owned_state(tmp_path: Path) 
     assert summary["storage_backend"] == "sqlite"
     assert summary["docker_authority_granted"] is False
     assert summary["optional_node_in_m1"] is False
+    assert summary["expected_runtime_posture"] == "unreviewed_local"
 
 
 @pytest.mark.parametrize(
@@ -67,6 +69,7 @@ def test_single_site_bootstrap_creates_only_private_owned_state(tmp_path: Path) 
         ("ITHILDIN_E1_DATA_ROOT", "relative/state", "explicit absolute path"),
         ("ITHILDIN_E1_SOURCE_REVISION", "0" * 40, "does not match"),
         ("ITHILDIN_CONTAINER_UID", "999999", "must match"),
+        ("ITHILDIN_E1_EXPECTED_RUNTIME_POSTURE", "assumed", "expected runtime posture"),
     ],
 )
 def test_single_site_environment_rejects_unsafe_inputs(
@@ -128,7 +131,7 @@ def test_single_site_state_rejects_symlink_or_unsafe_mode(tmp_path: Path) -> Non
     with pytest.raises(enterprise_e1_single_site.SingleSiteError, match="mode must be 0700"):
         enterprise_e1_single_site.validate_state(config)
     (config.data_root / "gateway").chmod(0o700)
-    config.runtime_inventory_path.chmod(0o666)
+    config.runtime_inventory_path.chmod(0o600)
     with pytest.raises(enterprise_e1_single_site.SingleSiteError, match="inventory mode"):
         enterprise_e1_single_site.validate_state(config)
 
