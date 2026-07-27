@@ -1,51 +1,58 @@
 # Local v1 LV1-003 O4 Execution Authorization Gate
 
 Status:
-`ATTEMPT_019_PREPARED_PENDING_EXACT_CANDIDATE_REVIEW_NO_LIVE_AUTHORITY`
+`ATTEMPT_019_CONSUMED_GATEWAY_RUN_DETAIL_INVALID_TERMINAL_MISSION_GATE_PASSED_CLEANUP_COMPLETE_NO_LIVE_AUTHORITY`
 
-This record prepares `LV1-003-O4-ATTEMPT-019`, preserves immutable consumed Attempts 001-018 and all
-tracked recovery history, and grants no live authority before exact review. Its machine contract is
+This record closes `LV1-003-O4-ATTEMPT-019`, preserves immutable consumed Attempts 001-019 and all
+tracked recovery history, and grants no live authority. Its machine contract is
 `docs/codex/local-v1-lv1-003-o4-execution-authorization.json`.
 
-## Attempt 019 Prepared Boundary
+## Attempt 019 Consumed Result
 
-Attempt 019 is a fresh successor, not a retry, recovery, repair, cleanup, or continuation of
-Attempt 018. It is bound to committed review record
+Attempt `LV1-003-O4-ATTEMPT-019` consumed its single budget on exact reviewed candidate
+`ae94ec4b57ddd053d60ab8ffddd36b2026ac6184`, tree
+`4a5bcb797e7cc6ddb844469728db2bf3cb452360`, fixed by annotated tag
+`ithildin/lv1-003-o4-attempt019-reviewed`. Make exited `2`; the producer exited `1`. The outward and
+primary failure were `gateway_run_detail_invalid` at stage `13`. Base and bridge builds completed,
+four image identities were bound, cleanup failures were empty, and recovery was false.
+
+The identity-free Node receipt projection is collection `complete`, reason
+`node_receipt_projection_state_collected`, receipt shape `exact`, mission identity `matched`, claim
+`valid_format`, envelope `valid_digest`, handoff nonce `valid_digest`, next operation
+`completion_recorded`, last closed status `runner_reported_succeeded`, and last closed reason
+`none`. No Gateway mission projection is stored or reproduced. Reviewed source control flow
+establishes only that the terminal mission-level projection gate passed before the later failure;
+that is not proof of overall O4 success.
+
+Private run/project identities and raw output remain digest-only. The run and project bindings are
+`sha256:d457ee920144aaeb9bb0dd8271c5e569574303bba0d4269a5c0cc506e9731de9` and
+`sha256:17f4845be1b0026285f8f645b5830cf9894495e23dead3a136ef5e7246950dec`.
+The exact manifest, diagnostic, and disposition receipt digests are
+`sha256:6d07ee192b53b15877d79feb0f3b252dd007b0fc90f2502029c2124a490a88cb`,
+`sha256:1efdf13c9ee8741bb357b2776a43cf12f4de640b748fa41c5ae48a317ea8f783`, and
+`sha256:2a10f131d5c4e87270b674cd54a96a9d6a932d8b20e44b6f3ff206bd70afe573`.
+The exact runtime and report roots were absent and the report base was absent point-in-time.
+
+Attempt budget is zero, `attempt_consumed` is true, the immediate consumed disposition is recorded,
+and retry, automatic retry, concurrent invocation, post-attempt retry, recovery, cleanup, and
+successor-attempt authority are false. All 19 authority fields are false. Tool count remains
+exactly 24; release, promotion, production, and UAT remain false. The producer entrypoint refuses
+before activity. The next action is only a separately reviewed bounded Gateway run-detail status or
+projection diagnosis; this record authorizes no Attempt 020, repair, retry, or execution.
+
+## Attempt 019 Historical Authorization Boundary
+
+Attempt 019 was a fresh successor, not a retry, recovery, repair, cleanup, or continuation of
+Attempt 018. It was bound to committed review record
 `abbbd64e577dc7e124a09b5ce0befc23e1152e44`, tree
 `6e979c75351d7f68b052b51ac6fd73d0a3ffd698`, and the exact reviewed two-operation terminal repair
 `897b22de9b3bd82113f37dc894fb8034f1a8799b`, tree
 `b0ffb159a5449dfe1a5497c0016e15bafa92f2c1`. The review record is
 `docs/codex/local-v1-lv1-003-o4-two-operation-terminal-repair-exact-review.md`, digest
 `sha256:2010f5513ff162438e84a513ea489e16941eff270e448d5ba7a94f66afe64582`,
-with `GO_CODE_ONLY` and Critical 0, High 0, Medium 0, Low 0.
-
-The execution candidate must be the clean immediate child of that review record and change exactly
-six paths: `Makefile`, `README.md`, this Markdown record, its JSON contract, the authorization
-validator, and its tests. Runtime parity must match the reviewed twelve-path repair byte for byte.
-The fixed annotated tag `ithildin/lv1-003-o4-attempt019-reviewed` must peel to the exact candidate
-commit and tree.
-
-Before that tag exists, validation fails closed: the effective budget is zero and all 19 authority
-fields are false. After an independent bounded Sol-high exact review records GO and the tag exists,
-only the established five-field maximum live-authority ceiling may be true:
-`producer_code_authorized`, `docker_lifecycle_authorized`, `live_hermes_execution_authorized`,
-`model_provider_access_authorized`, and `o4_evidence_execution_authorized`. The remaining 14
-authority fields stay false. Sol xhigh and Ultra are not required for this gate unless a new
-ambiguous trust-boundary issue appears.
-
-The only authorized live action after the exact tag and a green real gate is one
-central-manager-supervised invocation of `make local-v1-lv1-003-o4-producer-run`, which dispatches
-`uv run python -m scripts.local_v1_lv1_003_o4_producer`. Attempt budget is one, `attempt_consumed`
-is false, and retry, automatic retry, concurrent invocation, and post-attempt retry are false. An
-immediate consumed disposition is mandatory after the command returns or is interrupted. Success
-is not predicted.
-
-The repaired profile exposes only `mission.step.1` and `mission.step.2`; Node-owned logic performs
-the terminal control poll, liveness refresh, Gateway report, and private receipt closure after the
-second governed operation succeeds. This changes no Gateway tool or governed power; tool count
-remains 24. The exact overlay digest is
-`sha256:b0ae7d6bb3623f87fa3269120663dbbaa8bf8554d997c32da160054190f2153a`.
-The gate does not authorize release, promotion, production, or UAT.
+with `GO_CODE_ONLY` and Critical 0, High 0, Medium 0, Low 0. The exact candidate changed exactly six
+paths and preserved twelve-path runtime parity. Historical review and tag existence no longer
+grant live authority.
 
 ## Attempt 018 Consumed Result
 
