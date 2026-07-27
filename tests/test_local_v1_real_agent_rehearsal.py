@@ -39,8 +39,6 @@ def _event(
 
 def test_o2_evaluator_distinguishes_allowed_denied_and_approval_required() -> None:
     events = [
-        _event("policy.evaluated", "req-list", "fs.list", decision="allow"),
-        _event("tool.execution.completed", "req-list", "fs.list"),
         _event("policy.evaluated", "req-read", "fs.read", decision="allow"),
         _event("tool.execution.completed", "req-read", "fs.read"),
         _event(
@@ -50,7 +48,6 @@ def test_o2_evaluator_distinguishes_allowed_denied_and_approval_required() -> No
             decision="deny",
             reason="Resource is outside the workspace scope.",
         ),
-        _event("policy.evaluated", "req-http", "http.fetch", decision="deny"),
         _event(
             "policy.evaluated",
             "req-write",
@@ -71,10 +68,8 @@ def test_o2_evaluator_distinguishes_allowed_denied_and_approval_required() -> No
     )
 
     assert observations == {
-        "allowed_list_completed": True,
         "allowed_read_completed": True,
         "out_of_scope_read_denied_before_execution": True,
-        "http_denied_before_execution": True,
         "approval_required_observed": True,
         "approval_pending_without_execution": True,
         "fixed_stdio_identity_observed": True,
@@ -160,10 +155,8 @@ def test_o2_evaluator_counts_started_or_failed_pending_write_as_execution(
 
 def test_gateway_evidence_requirements_do_not_depend_on_runner_exit() -> None:
     observations = {
-        "allowed_list_completed": True,
         "allowed_read_completed": True,
         "out_of_scope_read_denied_before_execution": True,
-        "http_denied_before_execution": True,
         "approval_required_observed": True,
         "approval_pending_without_execution": True,
         "fixed_stdio_identity_observed": True,
@@ -174,6 +167,40 @@ def test_gateway_evidence_requirements_do_not_depend_on_runner_exit() -> None:
     assert real_agent.gateway_evidence_valid(observations) is True
     observations["audit_chain_valid"] = False
     assert real_agent.gateway_evidence_valid(observations) is False
+
+
+def test_gateway_evidence_failure_is_fixed_secret_safe_projection() -> None:
+    observations = {
+        "allowed_read_completed": True,
+        "out_of_scope_read_denied_before_execution": False,
+        "approval_required_observed": True,
+        "approval_pending_without_execution": False,
+        "fixed_stdio_identity_observed": True,
+        "audit_chain_valid": True,
+        "audit_event_count": 17,
+        "request_id": "req_private",
+        "model_output": "private prose",
+    }
+
+    assert real_agent.gateway_evidence_failure(observations) == (
+        "gateway_o2_evidence_invalid;"
+        "required_bitmap=101011;audit_event_count=17"
+    )
+
+
+@pytest.mark.parametrize("event_count", (True, -1, 1_000_001, "17", None))
+def test_gateway_evidence_failure_rejects_unbounded_event_count(
+    event_count: object,
+) -> None:
+    observations = {
+        name: False for name in real_agent.REQUIRED_GATEWAY_OBSERVATIONS
+    }
+    observations["audit_event_count"] = event_count
+
+    assert real_agent.gateway_evidence_failure(observations) == (
+        "gateway_o2_evidence_invalid;"
+        "required_bitmap=000000;audit_event_count=invalid"
+    )
 
 
 def test_docker_run_is_nonroot_bounded_and_has_no_docker_socket(tmp_path: Path) -> None:
@@ -196,6 +223,8 @@ def test_docker_run_is_nonroot_bounded_and_has_no_docker_socket(tmp_path: Path) 
     assert "OPENAI" not in serialized
     assert "ANTHROPIC" not in serialized
     assert "sandbox_artifact_write_text" in serialized
+    assert "mcp__ithildin_local__fs_list" not in serialized
+    assert "mcp__ithildin_local__http_fetch" not in serialized
 
 
 def test_docker_enumeration_failure_does_not_prove_absence(

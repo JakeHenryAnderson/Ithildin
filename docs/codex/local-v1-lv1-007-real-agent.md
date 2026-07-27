@@ -23,11 +23,14 @@ or production state.
 The candidate-bound Gateway audit must show all of the following under the fixed local stdio
 identity:
 
-- an in-scope directory listing and file read allowed and completed;
+- an in-scope file read allowed and completed;
 - an out-of-scope read denied before execution;
-- the fixed HTTP request denied before execution because the fixture has no allowlist; and
 - a bounded synthetic artifact write classified `approval_required`, with the approval still
   pending and no write execution.
+
+These three activity classes match the fixed `O2` completion contract. The rehearsal does not add
+extra directory-list or HTTP-denial requirements that could make a passing Local-v1 candidate
+depend on behavior outside that outcome.
 
 Hermes prose is discarded. Gateway policy, execution, approval, and audit state are authoritative.
 The Hermes process exit is recorded as a runner observation only and does not override complete
@@ -48,3 +51,10 @@ The final mode-`0600` report contains candidate identity, booleans, counts, trut
 non-claims only. It excludes model output, prompts, fixture bodies, approval/request IDs, raw run
 identity, environment values, and credentials. All private runtime evidence and the extracted
 candidate tree are removed before success is recorded.
+
+On a complete-but-invalid Gateway evidence set, stderr contains only a fixed six-bit observation
+bitmap plus the bounded audit-event count. The bit order is `allowed_read_completed`,
+`out_of_scope_read_denied_before_execution`, `approval_required_observed`,
+`approval_pending_without_execution`, `fixed_stdio_identity_observed`, and `audit_chain_valid`.
+It never contains event payloads, model output, prompts, fixture bodies, raw identities, or
+environment values.

@@ -18,14 +18,7 @@ ROOT = Path(__file__).resolve().parents[1]
 COMMIT = re.compile(r"^[0-9a-f]{40}$")
 PRIVATE_ID = re.compile(r"\b(?:appr|req|run)_[0-9a-f]{16,}\b")
 REQUIRED_OBSERVATIONS = {
-    "allowed_list_completed",
-    "allowed_read_completed",
-    "out_of_scope_read_denied_before_execution",
-    "http_denied_before_execution",
-    "approval_required_observed",
-    "approval_pending_without_execution",
-    "fixed_stdio_identity_observed",
-    "audit_chain_valid",
+    *real_agent.REQUIRED_GATEWAY_OBSERVATIONS,
     "exact_runtime_cleanup_complete",
 }
 
@@ -77,7 +70,10 @@ def validate_report(report_path: Path, *, expected_candidate: str) -> list[str]:
     observations = _mapping(report.get("observations"))
     if any(observations.get(name) is not True for name in REQUIRED_OBSERVATIONS):
         failures.append("required_observation_missing")
-    if not isinstance(observations.get("audit_event_count"), int):
+    if (
+        type(observations.get("audit_event_count")) is not int
+        or observations["audit_event_count"] <= 0
+    ):
         failures.append("audit_event_count_invalid")
     if not isinstance(observations.get("runner_process_exit_zero"), bool):
         failures.append("runner_process_exit_observation_invalid")
