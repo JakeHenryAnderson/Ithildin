@@ -130,7 +130,7 @@
       "id": "E1-O6",
       "milestone_id": "E1-M6",
       "title": "Exact candidate qualification and UAT handoff",
-      "status": "not_started",
+      "status": "in_progress",
       "existing_evidence": [
         "docs/codex/local-v1-candidate-gate.md",
         "docs/codex/local-v1-independent-review.md",
@@ -181,7 +181,7 @@
       "id": "E1-M6",
       "outcome_id": "E1-O6",
       "title": "Exact candidate and UAT handoff checkpoint",
-      "status": "not_started"
+      "status": "in_progress"
     }
   ],
   "progress": {
