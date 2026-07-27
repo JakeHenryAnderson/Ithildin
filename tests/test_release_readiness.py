@@ -7479,6 +7479,26 @@ def test_enterprise_operator_next_action_rejects_authority_ceiling_drift(
     assert report["recommended_next_enterprise_review"] == "blocked"
 
 
+def test_enterprise_operator_next_action_rejects_unpinned_descendant_app(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        enterprise_operator_next_action,
+        "PIS_003_DESCENDANT_APP_SHA256",
+        "0" * 64,
+    )
+
+    report = enterprise_operator_next_action.build_report(Path.cwd())
+
+    assert report["valid"] is False
+    assert report["pis_003_collection_activation_review_recorded"] is False
+    assert report["next_action"] == (
+        "invalid_pis_003_environment_evidence_collection_authority"
+    )
+    assert report["action_commands"] == []
+    assert report["recommended_send_set"] == []
+
+
 def test_enterprise_operator_next_action_rejects_each_false_authority_ceiling(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -12586,9 +12606,9 @@ def test_pis_003_environment_evidence_collection_authority_is_wired() -> None:
     readme = Path("README.md").read_text(encoding="utf-8")
 
     assert report["valid"] is False
-    assert report["failures"] == [
-        enterprise_operator_next_action.PIS_003_DESCENDANT_INVENTORY_FAILURE
-    ]
+    assert report["failures"] == (
+        enterprise_operator_next_action.PIS_003_DESCENDANT_AUTHORITY_FAILURES
+    )
     assert report["authority_record_id"] == "invalid"
     assert report["authority_outcome"] == "invalid"
     assert contract["authority_record_id"] == (
@@ -12610,11 +12630,11 @@ def test_pis_003_environment_evidence_collection_authority_is_wired() -> None:
         "authority_document_hash_matches",
         "authority_contract_hash_matches",
         "contract_valid",
-        "protected_hashes_match",
-        "parent_gate_valid",
         "wiring_valid",
     ):
         assert report[field] is True
+    assert report["protected_hashes_match"] is False
+    assert report["parent_gate_valid"] is False
     assert report["candidate_inventory_exact"] is False
     assert report["candidate_path_count"] > 12
     assert report["target_selected"] is False

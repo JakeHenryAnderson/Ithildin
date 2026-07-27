@@ -1,0 +1,228 @@
+{
+  "schema_version": "1",
+  "track_id": "E1",
+  "title": "Ithildin Enterprise Track E1",
+  "source": {
+    "branch": "origin/codex/lv1-007-candidate-uat",
+    "starting_commit": "0ef2fae9a06da7455a25017e5773caa52e7c8db6",
+    "local_v1_runtime_candidate": "ab4162d8f4b6d3f45a68f33316f4b765a45765db"
+  },
+  "tool_count": 24,
+  "milestone_order": [
+    "E1-M1",
+    "E1-M2",
+    "E1-M3",
+    "E1-M4",
+    "E1-M5",
+    "E1-M6"
+  ],
+  "outcomes": [
+    {
+      "id": "E1-O1",
+      "milestone_id": "E1-M1",
+      "title": "Reproducible single-site deployment",
+      "status": "in_progress",
+      "existing_evidence": [
+        "deploy/docker-compose.yml",
+        "deploy/README.md",
+        "deploy/single-site/compose.yaml",
+        "deploy/single-site/README.md",
+        "apps/api/runtime_candidate_bootstrap.py",
+        "docs/codex/local-v1-lv1-006-operations.md",
+        "scripts/enterprise_e1_single_site.py",
+        "scripts/enterprise_e1_single_site_deployment_check.py",
+        "scripts/local_v1_operations_rehearsal.py",
+        "tests/test_local_v1_operations_rehearsal.py",
+        "tests/test_enterprise_e1_single_site.py"
+      ],
+      "remaining_requirements": [
+        "observed candidate-bound build, start, health, shutdown, and retained-state evidence",
+        "E1-M3 integration with upgrade and recovery rehearsal"
+      ]
+    },
+    {
+      "id": "E1-O2",
+      "milestone_id": "E1-M2",
+      "title": "Versioned policy and Node-configuration distribution",
+      "status": "not_started",
+      "existing_evidence": [
+        "apps/api/src/ithildin_api/node_configuration.py",
+        "apps/node/src/ithildin_node/client.py",
+        "docs/codex/track-b-node-configuration-architecture.md",
+        "docs/codex/track-b-node-configuration-observed-results.md",
+        "docs/codex/track-b-node-manual-rollback-observed-results.md",
+        "tests/test_node_configuration.py"
+      ],
+      "remaining_requirements": [
+        "one E1 bundle contract covering policy and bounded Node configuration",
+        "operator-visible desired, acknowledged, stored, enforced, stale, rejected, and rollback states",
+        "authenticated distribution and observation checkpoint without a new governed tool"
+      ]
+    },
+    {
+      "id": "E1-O3",
+      "milestone_id": "E1-M3",
+      "title": "Safe upgrade, rollback, and recovery",
+      "status": "not_started",
+      "existing_evidence": [
+        "apps/api/src/ithildin_api/database_migration_backup.py",
+        "docs/codex/local-v1-lv1-004-failure-recovery.md",
+        "docs/codex/local-v1-lv1-006-operations.md",
+        "scripts/local_v1_failure_recovery_journey.py",
+        "scripts/local_v1_operations_rehearsal.py",
+        "tests/test_local_v1_failure_recovery.py"
+      ],
+      "remaining_requirements": [
+        "candidate-bound E1 backup and compatibility preflight",
+        "failed-upgrade and rollback rehearsal across Gateway and Command Center",
+        "optional Node continuity and ambiguity handling",
+        "restart recovery with preserved deterministic evidence"
+      ]
+    },
+    {
+      "id": "E1-O4",
+      "milestone_id": "E1-M4",
+      "title": "Authoritative mission and fleet operations cockpit",
+      "status": "not_started",
+      "existing_evidence": [
+        "apps/ui/src/App.tsx",
+        "apps/ui/src/App.test.tsx",
+        "apps/api/src/ithildin_api/missions.py",
+        "apps/api/src/ithildin_api/nodes.py",
+        "docs/codex/command-center-terminology-and-state-contract.md",
+        "docs/codex/command-center-node-governed-run-correlation-implementation-handoff.md"
+      ],
+      "remaining_requirements": [
+        "E1 operator view of missions, fleet, versions, configuration posture, attention, approvals, and evidence",
+        "tested separation of Gateway truth, Node connectivity, runner-reported state, and model-provider state",
+        "accessible operator workflow using only already-governed initiation paths"
+      ]
+    },
+    {
+      "id": "E1-O5",
+      "milestone_id": "E1-M5",
+      "title": "Bounded operational evidence export",
+      "status": "not_started",
+      "existing_evidence": [
+        "docs/codex/signed-audit-exports.md",
+        "docs/codex/agent-run-evidence-export-implementation.md",
+        "docs/codex/enterprise-status-export.md",
+        "scripts/enterprise_status_export.py",
+        "scripts/packet_redaction_scan.py",
+        "tests/test_redaction.py"
+      ],
+      "remaining_requirements": [
+        "deterministic receiver-neutral E1 operations bundle",
+        "deployment, configuration, upgrade, mission, fleet, approval, and audit sections",
+        "local verification and redaction manifest",
+        "explicit whole-host, SIEM, telemetry, notarization, and compliance nonclaims"
+      ]
+    },
+    {
+      "id": "E1-O6",
+      "milestone_id": "E1-M6",
+      "title": "Exact candidate qualification and UAT handoff",
+      "status": "not_started",
+      "existing_evidence": [
+        "docs/codex/local-v1-candidate-gate.md",
+        "docs/codex/local-v1-independent-review.md",
+        "docs/codex/local-v1-human-uat-packet.md",
+        "scripts/local_v1_contract_check.py",
+        "tests/test_local_v1_contract.py"
+      ],
+      "remaining_requirements": [
+        "one frozen E1 candidate and dedicated candidate gate",
+        "one proportional independent E1 review",
+        "concise E1 human UAT packet",
+        "stop before genuine human UAT"
+      ]
+    }
+  ],
+  "milestones": [
+    {
+      "id": "E1-M1",
+      "outcome_id": "E1-O1",
+      "title": "Single-site deployment checkpoint",
+      "status": "in_progress"
+    },
+    {
+      "id": "E1-M2",
+      "outcome_id": "E1-O2",
+      "title": "Policy and Node configuration checkpoint",
+      "status": "not_started"
+    },
+    {
+      "id": "E1-M3",
+      "outcome_id": "E1-O3",
+      "title": "Upgrade and recovery checkpoint",
+      "status": "not_started"
+    },
+    {
+      "id": "E1-M4",
+      "outcome_id": "E1-O4",
+      "title": "Operations cockpit checkpoint",
+      "status": "not_started"
+    },
+    {
+      "id": "E1-M5",
+      "outcome_id": "E1-O5",
+      "title": "Operational evidence export checkpoint",
+      "status": "not_started"
+    },
+    {
+      "id": "E1-M6",
+      "outcome_id": "E1-O6",
+      "title": "Exact candidate and UAT handoff checkpoint",
+      "status": "not_started"
+    }
+  ],
+  "progress": {
+    "outcomes_complete": 0,
+    "outcomes_total": 6,
+    "milestones_complete": 0,
+    "milestones_total": 6
+  },
+  "pis_wait": {
+    "next_action": "await_external_operator_target_and_signed_receipt_inputs_before_separate_collection_action_authority",
+    "external_inputs_present": false,
+    "collection_action_authority": false
+  },
+  "qualification": {
+    "candidate_commit": null,
+    "candidate_gate_complete": false,
+    "independent_review_complete": false,
+    "human_uat_packet_ready": false,
+    "human_uat_complete": false
+  },
+  "authority": {
+    "arbitrary_host_control_allowed": false,
+    "docker_lifecycle_authority_allowed": false,
+    "kubernetes_authority_allowed": false,
+    "production_identity_allowed": false,
+    "runtime_postgres_allowed": false,
+    "hosted_telemetry_allowed": false,
+    "remote_mcp_hosting_allowed": false,
+    "sandbox_orchestration_allowed": false,
+    "siem_delivery_allowed": false,
+    "compliance_automation_allowed": false,
+    "public_security_product_claims_allowed": false,
+    "production_promotion_allowed": false,
+    "enterprise_production_ready": false,
+    "local_v1_release_accepted": false
+  },
+  "nonclaims": [
+    "production identity",
+    "runtime PostgreSQL",
+    "high availability",
+    "hosted operation",
+    "whole-host coverage",
+    "SIEM custody",
+    "hosted telemetry",
+    "external notarization",
+    "compliance automation",
+    "enterprise production readiness",
+    "Local v1 release acceptance",
+    "human UAT completion"
+  ],
+  "next_action": "E1-M1"
+}

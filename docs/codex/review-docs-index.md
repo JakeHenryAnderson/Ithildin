@@ -7,6 +7,8 @@ externally closed.
 ## Start Here
 
 - [Ithildin Local v1.0 Completion Contract](local-v1-completion-contract.md) - active delivery target.
+- [Ithildin Enterprise Track E1 Completion Contract](enterprise-e1-completion-contract.md) -
+  active enterprise implementation contract, reuse audit, fixed milestones, and nonclaims.
 - [Ithildin Local v1.0 Golden Path](local-v1-golden-path.md) - executable `LV1-001`
   install/start/exercise/evidence/stop walkthrough with separate real-agent and synthetic POC legs.
 - [Local v1.0 Release Disposition](local-v1-release-disposition.json) - false/null candidate,

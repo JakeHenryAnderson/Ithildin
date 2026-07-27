@@ -2,21 +2,26 @@
 
 Ithildin is a local-first governed MCP/tool gateway for AI agents.
 
-**Current status:** Local v1.0 fixed-outcome release train. Historical review lineage remains the
-v0.8 roadmap/product-risk consultation after v0.6/v0.7 focused source-review lane closure for the
-v0.1 local-preview runtime boundary; some generated paths retain historical v0.2 names.
+**Current status:** Enterprise Track E1 implementation on an isolated descendant of the frozen
+Local v1 candidate-preparation branch. Historical review lineage remains evidence only.
 
 Active delivery target: **Ithildin Local v1.0**. The authoritative
 [Local v1.0 completion contract](docs/codex/local-v1-completion-contract.md) defines eight fixed,
 operator-visible outcomes and reports progress as an outcome count, not an elastic percentage.
-Enterprise/PIS artifacts remain preserved as deferred lineage and do not block this local release
-train. `O4` and `LV1-003` are now complete through the separately checked, consumed Attempt 021
-disposition. `O5` and `LV1-004` are now complete through the candidate-bound failure-and-recovery
-journey and digest-only disposition. `LV1-005` is the ordered next milestone; release and UAT
-authority remain false. The
+Local v1 remains at `7/8` outcomes with genuine human UAT and release acceptance false. The
 [Local v1.0 release disposition](docs/codex/local-v1-release-disposition.json) starts with all
 evidence and authority false or null; status prose cannot authorize release or UAT. The pivot
 grants no new runtime power, release authority, or UAT completion.
+
+Active enterprise delivery track: **Ithildin Enterprise Track E1**. The
+[Enterprise E1 completion contract](docs/codex/enterprise-e1-completion-contract.md) fixes exactly
+six outcomes and six ordered milestones, records current reusable evidence and gaps, and preserves
+the 24-tool, no-arbitrary-host-control, Gateway-authority, PIS-wait, candidate, and human-UAT
+boundaries. Run `make enterprise-e1-contract-check` for the contract alone or
+`make enterprise-e1-milestone-check` for the inherited boundary checkpoint.
+The first vertical slice is the
+[versioned E1 single-site deployment foundation](deploy/single-site/README.md), validated by
+`make enterprise-e1-single-site-deployment-check`.
 
 Ithildin is a local-preview mediation layer for AI-agent tool use. It is not a sandbox, EDR/MDM
 agent, SIEM, production identity system, hosted MCP platform, compliance audit system, or immutable

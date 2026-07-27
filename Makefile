@@ -1,6 +1,8 @@
 COMPOSE ?= docker compose
 COMPOSE_FILE ?= deploy/docker-compose.yml
 COMPOSE_ENV_FILE ?= $(shell if [ -f .env ]; then echo .env; else echo .env.example; fi)
+E1_COMPOSE_FILE ?= deploy/single-site/compose.yaml
+E1_ENV_FILE ?=
 RECEIPT ?= var/review-packets/v3/enterprise-review-send-receipt-template/enterprise-review-send-receipt-template.json
 NODE_RELEASE_VERSION ?= 0.1.0
 NODE_RELEASE_IMAGE ?= ithildin/node:$(NODE_RELEASE_VERSION)
@@ -22,6 +24,7 @@ NODE_RELEASE_BUNDLE ?= var/node-release-artifact/node-release-$(NODE_RELEASE_VER
 .PHONY: mission-command-control-plane-poc mission-command-control-plane-poc-check mission-command-control-plane-focused-gates
 .PHONY: mission-command-runner-bridge-profile-check mission-command-runner-bridge-implementation-check local-v1-constrained-mission-contract-check local-v1-lv1-003-o4-execution-authorization-check local-v1-lv1-003-o4-producer-static-check local-v1-lv1-003-o4-producer-run local-v1-lv1-003-o4-image-recovery-run local-v1-lv1-003-o4-attempt008-port-recovery-check local-v1-lv1-003-o4-attempt008-port-release-check local-v1-lv1-003-o4-attempt008-port-release-run local-v1-lv1-003-o4-attempt008-node-identity-reconciliation-check local-v1-lv1-003-o4-attempt008-node-identity-reconciliation-run local-v1-lv1-003-o4-attempt008-quarantine-revocation-check local-v1-lv1-003-o4-attempt008-quarantine-revocation-run local-v1-lv1-003-o4-attempt008-two-container-revocation-check local-v1-lv1-003-o4-attempt008-two-container-revocation-run
 .PHONY: local-v1-contract-check local-v1-golden-path-check local-v1-inner-check local-v1-milestone-check local-v1-runtime-trust-check local-v1-test-fast local-v1-typecheck local-v1-hermes-evidence-check local-v1-o2-evidence-check local-v1-real-agent-static-check local-v1-real-agent-run local-v1-real-agent-check local-v1-node-journey local-v1-node-journey-check local-v1-failure-recovery-static-check local-v1-failure-recovery-run local-v1-failure-recovery-check local-v1-operations-static-check local-v1-operations-run local-v1-operations-check local-v1-ui-production-build local-v1-candidate-inventory local-v1-candidate-check local-v1-release-check
+.PHONY: enterprise-e1-contract-check enterprise-e1-milestone-check enterprise-e1-single-site-bootstrap enterprise-e1-single-site-config enterprise-e1-single-site-up enterprise-e1-single-site-health enterprise-e1-single-site-down enterprise-e1-single-site-deployment-check
 
 test:
 	uv run pytest
@@ -56,6 +59,46 @@ mission-command-runner-bridge-authorization-frozen-check:
 
 local-v1-lv1-003-o4-execution-authorization-check:
 	uv run python scripts/local_v1_lv1_003_o4_execution_authorization_check.py
+
+enterprise-e1-contract-check:
+	uv run python scripts/enterprise_e1_contract_check.py
+
+enterprise-e1-single-site-bootstrap:
+	@test -n "$(E1_ENV_FILE)" || (echo "E1_ENV_FILE must be an absolute owner-only environment file" >&2; exit 2)
+	uv run python scripts/enterprise_e1_single_site.py bootstrap --env-file "$(E1_ENV_FILE)"
+
+enterprise-e1-single-site-config:
+	@test -n "$(E1_ENV_FILE)" || (echo "E1_ENV_FILE must be an absolute owner-only environment file" >&2; exit 2)
+	uv run python scripts/enterprise_e1_single_site.py check --env-file "$(E1_ENV_FILE)"
+	$(COMPOSE) --env-file "$(E1_ENV_FILE)" -f "$(E1_COMPOSE_FILE)" config --quiet
+
+enterprise-e1-single-site-up:
+	@test -n "$(E1_ENV_FILE)" || (echo "E1_ENV_FILE must be an absolute owner-only environment file" >&2; exit 2)
+	uv run python scripts/enterprise_e1_single_site.py check --env-file "$(E1_ENV_FILE)"
+	$(COMPOSE) --env-file "$(E1_ENV_FILE)" -f "$(E1_COMPOSE_FILE)" up -d --build --wait
+
+enterprise-e1-single-site-health:
+	@test -n "$(E1_ENV_FILE)" || (echo "E1_ENV_FILE must be an absolute owner-only environment file" >&2; exit 2)
+	uv run python scripts/enterprise_e1_single_site.py probe --env-file "$(E1_ENV_FILE)"
+
+enterprise-e1-single-site-down:
+	@test -n "$(E1_ENV_FILE)" || (echo "E1_ENV_FILE must be an absolute owner-only environment file" >&2; exit 2)
+	uv run python scripts/enterprise_e1_single_site.py shutdown-check --env-file "$(E1_ENV_FILE)"
+	$(COMPOSE) --env-file "$(E1_ENV_FILE)" -f "$(E1_COMPOSE_FILE)" down
+
+enterprise-e1-single-site-deployment-check:
+	uv run python scripts/enterprise_e1_single_site_deployment_check.py
+	uv run pytest tests/test_enterprise_e1_single_site.py -q
+	uv run ruff check scripts/enterprise_e1_single_site.py scripts/enterprise_e1_single_site_deployment_check.py tests/test_enterprise_e1_single_site.py
+	uv run mypy --strict scripts/enterprise_e1_single_site.py scripts/enterprise_e1_single_site_deployment_check.py
+
+enterprise-e1-milestone-check:
+	$(MAKE) enterprise-e1-contract-check
+	$(MAKE) enterprise-e1-single-site-deployment-check
+	$(MAKE) local-v1-contract-check
+	$(MAKE) production-identity-storage-pis-003-sd-pg-001-environment-evidence-collection-authority-descendant-check
+	$(MAKE) tool-surface-invariant-gate
+	$(MAKE) no-new-powers-guardrail
 
 local-v1-lv1-003-o4-producer-static-check:
 	uv run pytest \

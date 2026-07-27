@@ -1,0 +1,102 @@
+name: ithildin-e1-${ITHILDIN_E1_SITE_ID:?ITHILDIN_E1_SITE_ID is required}
+
+services:
+  ithildin-api:
+    image: ithildin/api:${ITHILDIN_E1_VERSION:?ITHILDIN_E1_VERSION is required}
+    build:
+      context: ../..
+      dockerfile: deploy/Dockerfile.api
+      args:
+        ITHILDIN_IMAGE_VERSION: "${ITHILDIN_E1_VERSION:?ITHILDIN_E1_VERSION is required}"
+        ITHILDIN_SOURCE_REVISION: "${ITHILDIN_E1_SOURCE_REVISION:?ITHILDIN_E1_SOURCE_REVISION is required}"
+    user: "${ITHILDIN_CONTAINER_UID:?ITHILDIN_CONTAINER_UID is required}:${ITHILDIN_CONTAINER_GID:?ITHILDIN_CONTAINER_GID is required}"
+    environment:
+      ITHILDIN_ADMIN_TOKEN: "${ITHILDIN_ADMIN_TOKEN:?ITHILDIN_ADMIN_TOKEN is required}"
+      ITHILDIN_ALLOW_DEV_ADMIN_TOKEN: "false"
+      ITHILDIN_STORAGE_BACKEND: "sqlite"
+      ITHILDIN_POSTGRES_DSN: ""
+      ITHILDIN_DB_PATH: /app/var/db/ithildin.sqlite3
+      ITHILDIN_AUDIT_LOG_PATH: /app/var/logs/audit.jsonl
+      ITHILDIN_AUDIT_SIGNING_PRIVATE_KEY_PATH: /app/var/keys/audit-ed25519-private.pem
+      ITHILDIN_AUDIT_SIGNING_PUBLIC_KEY_PATH: /app/var/keys/audit-ed25519-public.pem
+      ITHILDIN_MANIFEST_DIR: /app/tool-manifests
+      ITHILDIN_MANIFEST_LOCK_PATH: /app/tool-manifests.lock.json
+      ITHILDIN_REQUIRE_MANIFEST_LOCK: "true"
+      ITHILDIN_MANIFEST_LOCK_SIGNATURE_PATH: /app/var/signatures/tool-manifests.lock.sig.json
+      ITHILDIN_NODE_CONFIGURATION_SIGNING_PRIVATE_KEY_PATH: /app/var/keys/node-configuration-ed25519-private.pem
+      ITHILDIN_NODE_CONFIGURATION_SIGNING_PUBLIC_KEY_PATH: /app/var/keys/node-configuration-ed25519-public.pem
+      ITHILDIN_POLICY_PATH: /app/policies/default.yaml
+      ITHILDIN_POLICY_TESTS_PATH: /app/policies/tests/default.yaml
+      ITHILDIN_POLICY_ENGINE: "yaml"
+      ITHILDIN_PRINCIPAL_REGISTRY_PATH: /app/principals/local.yaml
+      ITHILDIN_REQUIRE_KNOWN_PRINCIPALS: "true"
+      ITHILDIN_WORKSPACE_ROOT: /app/workspaces
+      ITHILDIN_WORKSPACE_REGISTRY_PATH: /app/workspaces/local.yaml
+      ITHILDIN_REQUIRE_KNOWN_WORKSPACES: "true"
+      ITHILDIN_TRUSTED_HOST_REGISTRY_PATH: /app/trusted-hosts/local.yaml
+      ITHILDIN_RUNTIME_CANDIDATE_INVENTORY_PATH: /app/runtime-candidate-inventory.json
+      ITHILDIN_RUNTIME_CANDIDATE_AUTHORIZATION_PATH: /run/ithildin-authority/api-candidate.json
+      ITHILDIN_HTTP_ALLOWLIST: ""
+      ITHILDIN_OTEL_ENABLED: "false"
+      ITHILDIN_OTEL_CONSOLE_EXPORT: "false"
+      ITHILDIN_OTEL_OTLP_ENDPOINT: ""
+    ports:
+      - "127.0.0.1:${ITHILDIN_E1_API_PORT:?ITHILDIN_E1_API_PORT is required}:8000"
+    volumes:
+      - ../../tool-manifests.lock.json:/app/tool-manifests.lock.json:ro
+      - ../../tool-manifests:/app/tool-manifests:ro
+      - ../../policies:/app/policies:ro
+      - ../../principals:/app/principals:ro
+      - ../../trusted-hosts:/app/trusted-hosts:ro
+      - ../../workspaces/local.yaml:/app/workspaces/local.yaml:ro
+      - ${ITHILDIN_E1_RUNTIME_INVENTORY_PATH:?ITHILDIN_E1_RUNTIME_INVENTORY_PATH is required}:/app/runtime-candidate-inventory.json:ro
+      - ${ITHILDIN_E1_RUNTIME_AUTHORITY_PATH:?ITHILDIN_E1_RUNTIME_AUTHORITY_PATH is required}:/run/ithildin-authority/api-candidate.json:ro
+      - ${ITHILDIN_E1_DATA_ROOT:?ITHILDIN_E1_DATA_ROOT is required}/gateway:/app/var
+      - ${ITHILDIN_E1_DATA_ROOT:?ITHILDIN_E1_DATA_ROOT is required}/workspaces:/app/workspaces
+    read_only: true
+    tmpfs:
+      - /tmp:size=32m,mode=0700,uid=${ITHILDIN_CONTAINER_UID},gid=${ITHILDIN_CONTAINER_GID}
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 256
+    restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/healthz', timeout=2).read()",
+        ]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+
+  ithildin-ui:
+    image: ithildin/ui:${ITHILDIN_E1_VERSION:?ITHILDIN_E1_VERSION is required}
+    build:
+      context: ../..
+      dockerfile: deploy/Dockerfile.ui
+      args:
+        ITHILDIN_IMAGE_VERSION: "${ITHILDIN_E1_VERSION:?ITHILDIN_E1_VERSION is required}"
+        ITHILDIN_SOURCE_REVISION: "${ITHILDIN_E1_SOURCE_REVISION:?ITHILDIN_E1_SOURCE_REVISION is required}"
+        VITE_ITHILDIN_API_BASE_URL: "http://127.0.0.1:${ITHILDIN_E1_API_PORT:?ITHILDIN_E1_API_PORT is required}"
+    ports:
+      - "127.0.0.1:${ITHILDIN_E1_UI_PORT:?ITHILDIN_E1_UI_PORT is required}:8080"
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /var/cache/nginx
+      - /var/run
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 128
+    restart: unless-stopped
+    depends_on:
+      ithildin-api:
+        condition: service_healthy
