@@ -1,52 +1,56 @@
 # Local v1 LV1-003 O4 Execution Authorization Gate
 
 Status:
-`ATTEMPT_020_PREPARED_PENDING_EXACT_CANDIDATE_REVIEW_NO_LIVE_AUTHORITY`
+`ATTEMPT_020_CONSUMED_GATEWAY_RUN_DETAIL_INVALID_CLEANUP_COMPLETE_NO_LIVE_AUTHORITY`
 
-This record prepares `LV1-003-O4-ATTEMPT-020`, preserves immutable consumed Attempts 001-019 and all
-tracked recovery history, and grants no live authority before exact review. Its machine contract is
+This record closes `LV1-003-O4-ATTEMPT-020`, preserves immutable consumed Attempts 001-020 and all
+tracked recovery history, and grants no live authority. Its machine contract is
 `docs/codex/local-v1-lv1-003-o4-execution-authorization.json`.
 
-## Attempt 020 Prepared Boundary
+## Attempt 020 Consumed Result
 
-Attempt 020 is a fresh successor, never a retry, recovery, cleanup, continuation, or reopening of
-Attempts 001-019. It is bound to committed review record
+Attempt `LV1-003-O4-ATTEMPT-020` consumed its single budget on exact reviewed candidate
+`506cc00267bcedbe00f0384b64a3bf11111bd752`, tree
+`6bfb7077a9af05f22095740114b39607b9d715c8`, fixed by annotated tag
+`ithildin/lv1-003-o4-attempt020-reviewed`. Make exited `2`; the producer exited `1`. The outward and
+primary failure were `gateway_run_detail_invalid` at stage `13`. Base and bridge builds completed,
+four image identities were bound, cleanup failures were empty, and recovery was false.
+
+The identity-free Node receipt projection is collection `complete`, reason
+`node_receipt_projection_state_collected`, receipt shape `exact`, mission identity `matched`, claim
+`valid_format`, envelope `valid_digest`, handoff nonce `valid_digest`, next operation
+`completion_recorded`, last closed status `runner_reported_succeeded`, and last closed reason
+`none`. This proves no root cause, repair, safe retry, overall O4 success, or generic absence.
+
+Private run/project identities and raw output remain digest-only. The run and project bindings are
+`sha256:24284f1fb67d0e387be6864009f4be59779ec4e0143762a2efd76ff31e0cb02b` and
+`sha256:c5bd9d9f408d2a0959b157f191c07d50edee16a7e014620c44548574cb674298`.
+The exact manifest, diagnostic, and disposition receipt digests are
+`sha256:7f555ded398766c1e7de482db1612e7950835de754390aad618815367ee0e1b3`,
+`sha256:51645f1ba272968200c8b77a759ae013fa464207e930ee68978c9e217ee90e39`, and
+`sha256:2a10f131d5c4e87270b674cd54a96a9d6a932d8b20e44b6f3ff206bd70afe573`.
+The exact runtime and report roots were absent and the report base was absent point-in-time.
+
+Attempt budget is zero, `attempt_consumed` is true, and the immediate consumed disposition is
+recorded. Retry, automatic retry, concurrent invocation, post-attempt retry, recovery, cleanup, and
+successor-attempt authority are false. All 19 authority fields are false. Tool count remains exactly
+24; new tool, new power, release, promotion, production, and UAT remain false. The producer
+entrypoint refuses before activity. The next action is only a separately reviewed bounded Gateway
+run-detail status or projection diagnosis; this record authorizes no Attempt 021, repair, retry,
+diagnosis execution, or other execution.
+
+## Attempt 020 Historical Authorization Boundary
+
+Attempt 020 was a fresh successor, never a retry, recovery, cleanup, continuation, or reopening of
+Attempts 001-019. It was bound to committed review record
 `cd36de5682d85f850770dedab61a5c11f444d2a5`, tree
 `575b546845a8f7fa1afca089a11bf04aacdbb505`, and the exact reviewed AgentRun provenance repair
 `73fb131f1f89e4b12374dac26a3f8efe231f5c31`, tree
 `d64f5fb43e118c072b099ab2877a34cd287de695`, parent
-`468ae2deaba2c55e05997662aeb20f58f3fa91cd`. The durable review record is
-`docs/codex/local-v1-lv1-003-o4-agent-run-provenance-repair-exact-review.md`, digest
+`468ae2deaba2c55e05997662aeb20f58f3fa91cd`. The durable review record digest is
 `sha256:c20a917fc799c468075c360c4b712e4d2b6964c12e47603930526e661792516b`,
-with `GO` and Critical 0, High 0, Medium 0, Low 0.
-
-The repair changes exactly two paths:
-`scripts/local_v1_lv1_003_o4_producer.py`, digest
-`sha256:4b940650e66e34bd56f56ff933c3364452d1fa7854919f5316fd091e455745af`,
-and `tests/test_local_v1_lv1_003_o4_producer.py`, digest
-`sha256:597ba6c3325a521a9dacc65b5c5019090dd998ac9f2b217b4cec6d6d545c72b4`.
-The execution candidate must be the clean immediate child of the review record and change exactly
-six paths: `Makefile`, `README.md`, this Markdown record, its JSON contract, the authorization
-validator, and its tests. Runtime parity must match the reviewed two-path repair byte for byte.
-The fixed annotated tag `ithildin/lv1-003-o4-attempt020-reviewed` must peel to that exact candidate.
-
-Before the exact annotated tag exists, validation fails closed solely for the missing or invalid
-tag: the effective budget is zero and all 19 authority fields are false. After a separately
-authorized exact review and annotated tag, the attempt budget is exactly one, `attempt_consumed`
-is false, and only the historical five-field ceiling may be true: `producer_code_authorized`,
-`docker_lifecycle_authorized`, `live_hermes_execution_authorized`,
-`model_provider_access_authorized`, and `o4_evidence_execution_authorized`. The remaining 14
-authority fields stay false.
-
-The only authorized live action after the exact tag and a green real gate is one
-central-manager-supervised invocation of `make local-v1-lv1-003-o4-producer-run`, which dispatches
-`uv run python -m scripts.local_v1_lv1_003_o4_producer`. Retry, automatic retry, concurrent
-invocation, post-attempt retry, recovery, and cleanup authority are false. An immediate consumed
-disposition is required after the command returns or is interrupted. Success is not predicted.
-Tool count remains exactly 24; new tool, new power, release, promotion, production, and UAT remain
-false. Independent review of this gate may authorize only creation of the annotated review tag; it
-does not itself execute or authorize the producer, Docker, provider access, private-evidence
-inspection, commit, push, or O5.
+with `GO` and Critical 0, High 0, Medium 0, Low 0. Historical review and tag existence no longer
+grant live authority.
 
 ## Attempt 019 Consumed Result
 
