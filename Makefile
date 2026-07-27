@@ -248,6 +248,8 @@ local-v1-test-fast:
 
 local-v1-typecheck:
 	uv run mypy --strict \
+		apps/api/runtime_candidate_bootstrap.py \
+		apps/api/verified_launch.py \
 		apps/api/src \
 		apps/mcp-server/src \
 		apps/node/src \

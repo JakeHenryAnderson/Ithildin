@@ -150,6 +150,8 @@ def test_candidate_inventory_uses_current_o2_evidence_not_ambient_hermes_runtime
     assert typecheck.count("uv run mypy --strict") == 3
     assert "tests/" not in typecheck
     assert "--exclude" not in typecheck
+    assert "apps/api/runtime_candidate_bootstrap.py" in typecheck
+    assert "apps/api/verified_launch.py" in typecheck
     for legacy_evidence_target in (
         "track-b-node-evidence-check",
         "track-b-node-configuration-evidence-check",
