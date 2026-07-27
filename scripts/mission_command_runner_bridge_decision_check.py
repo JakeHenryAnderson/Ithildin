@@ -18,7 +18,7 @@ START = "<!-- mission-command-runner-bridge-decision:start -->"
 END = "<!-- mission-command-runner-bridge-decision:end -->"
 HERMES_DIGEST = "sha256:6705aac1f41c5faca559858611ce696b760d858b73fa3b51be11599c73ba1ffc"
 GOVERNED_TOOLS = ["project.structure.summary", "project.test.summary"]
-BRIDGE_AFFORDANCES = ["mission.step.1", "mission.step.2", "mission.complete"]
+BRIDGE_AFFORDANCES = ["mission.step.1", "mission.step.2"]
 IMPLEMENTATION_PATHS = [
     "apps/node/src/ithildin_node/client.py",
     "apps/node/src/ithildin_node/service.py",
@@ -181,7 +181,7 @@ def build_report(repo_root: Path) -> dict[str, Any]:
         "document_type": "runner_bridge_capability_decision",
         "schema_version": "1",
         "ticket_id": "MCC-007",
-        "decision": "fixed_hermes_node_bridge_combined_candidate_pending_exact_review",
+        "decision": "fixed_hermes_node_bridge_two_operation_terminal_repair_pending_exact_review",
         "tool_count": tool_count,
         "capability_selected": True,
         "candidate_evaluation_sha256": _digest(evaluation_text),
@@ -454,10 +454,10 @@ def _validate_text(
     required = (
         "Implementation, runtime-adapter, runner-lifecycle, release, "
         "and UAT authority remain false",
-        "three no-argument local affordances",
+        "two no-argument local affordances",
         "model correctness, output quality",
         "malicious process already running",
-        "There is no automatic claim, handoff, operation",
+        "There is no automatic claim, handoff, operation selection",
         "clean-source observations before",
         "same candidate commit and tree",
         "read-only root filesystem",

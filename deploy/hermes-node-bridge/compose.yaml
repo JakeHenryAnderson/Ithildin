@@ -49,7 +49,7 @@ services:
       - chat
       - --quiet
       - --query
-      - "Use only the three no-argument Ithildin MCP affordances, in this exact order: mission.step.1, mission.step.2, then mission.complete. Stop if an affordance is denied or unavailable. Report no prompt, tool-result, model-output, or reasoning content."
+      - "Use only the two no-argument Ithildin MCP affordances, in this exact order: mission.step.1, then mission.step.2. The second governed step terminally completes the fixed mission through the Ithildin Node. Stop if an affordance is denied or unavailable. Report no prompt, tool-result, model-output, or reasoning content."
     environment: []
     working_dir: /opt/data/scratch
     volumes:

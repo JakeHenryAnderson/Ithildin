@@ -5,7 +5,8 @@ Status: implementation candidate only. This profile is not authorized for live e
 This file is an overlay for the established `deploy/docker-compose.yml` project, default network,
 Gateway service, and `ithildin-node-state` volume. It must not be invoked as an independent Compose
 project. The profile derives the bridge from the reviewed Hermes OCI index and exposes only the
-three fixed no-argument mission affordances over stdio.
+two fixed no-argument governed mission affordances over stdio. The Node terminally completes the
+mission after the second governed operation succeeds.
 
 The enrolled Node remains UID:GID `10002:10002` and receives supplemental group `20000`. The runner
 remains UID:GID `10000:10000` and receives the same supplemental group. The Node creates

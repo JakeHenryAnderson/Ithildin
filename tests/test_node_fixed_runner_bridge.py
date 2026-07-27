@@ -361,14 +361,12 @@ def test_fixed_session_runs_only_two_envelope_operations_then_reports_completion
 
     first = session.handle_request(_request(session, "mission.step.1"))
     second = session.handle_request(_request(session, "mission.step.2"))
-    completed = session.handle_request(_request(session, "mission.complete"))
 
     assert first["tool_name"] == "project.structure.summary"
     assert first["next_required_affordance"] == "mission.step.2"
     assert second["tool_name"] == "project.test.summary"
-    assert second["next_required_affordance"] == "mission.complete"
-    assert completed["status"] == "runner_reported_succeeded"
-    assert completed["next_required_affordance"] == "none"
+    assert second["status"] == "runner_reported_succeeded"
+    assert second["next_required_affordance"] == "none"
     assert session.terminal is True
     assert session.receipt.next_operation_index == 4
     assert session.receipt.last_closed_status == "runner_reported_succeeded"
@@ -432,7 +430,7 @@ def test_fixed_session_runs_only_two_envelope_operations_then_reports_completion
         for heartbeat in heartbeats
     )
     with pytest.raises(FixedRunnerBridgeError, match="mission_already_closed"):
-        session.handle_request(_request(session, "mission.complete"))
+        session.handle_request(_request(session, "mission.step.2"))
 
 
 @pytest.mark.parametrize(
@@ -575,46 +573,6 @@ def test_fixed_session_refreshes_heartbeat_before_completion_and_records_rejecti
 ) -> None:
     session, client = _prepared(tmp_path)
     session.handle_request(_request(session, "mission.step.1"))
-    session.handle_request(_request(session, "mission.step.2"))
-    reports_before = sum(
-        path.endswith("/mission-reports")
-        for path, _payload, _headers in client.requests
-    )
-
-    monkeypatch.setattr(
-        client,
-        "heartbeat",
-        lambda *_args, **_kwargs: {
-            "status": "active",
-            "observed_state": "observed_stale",
-            "last_configuration_digest": session.configuration.configuration_digest,
-            "last_mission_id": session.receipt.mission_id,
-        },
-    )
-
-    with pytest.raises(FixedRunnerBridgeError, match="gateway_heartbeat_invalid"):
-        session.handle_request(_request(session, "mission.complete"))
-
-    assert session.receipt.next_operation_index == 3
-    assert session.receipt.last_closed_status == "failed_closed"
-    assert session.receipt.last_closed_reason_code == "gateway_heartbeat_invalid"
-    assert BridgeReceipt.load(session.receipt_path) == session.receipt
-    assert (
-        sum(
-            path.endswith("/mission-reports")
-            for path, _payload, _headers in client.requests
-        )
-        == reports_before
-    )
-
-
-def test_fixed_session_refreshes_again_between_completion_poll_and_report(
-    tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    session, client = _prepared(tmp_path)
-    session.handle_request(_request(session, "mission.step.1"))
-    session.handle_request(_request(session, "mission.step.2"))
     original_heartbeat = client.heartbeat
     completion_heartbeats = 0
 
@@ -637,9 +595,53 @@ def test_fixed_session_refreshes_again_between_completion_poll_and_report(
     )
 
     with pytest.raises(FixedRunnerBridgeError, match="gateway_heartbeat_invalid"):
-        session.handle_request(_request(session, "mission.complete"))
+        session.handle_request(_request(session, "mission.step.2"))
 
     assert completion_heartbeats == 2
+    assert session.receipt.next_operation_index == 3
+    assert session.receipt.last_closed_status == "failed_closed"
+    assert session.receipt.last_closed_reason_code == "gateway_heartbeat_invalid"
+    assert BridgeReceipt.load(session.receipt_path) == session.receipt
+    assert (
+        sum(
+            path.endswith("/mission-reports")
+            for path, _payload, _headers in client.requests
+        )
+        == reports_before
+    )
+
+
+def test_fixed_session_refreshes_again_between_completion_poll_and_report(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    session, client = _prepared(tmp_path)
+    session.handle_request(_request(session, "mission.step.1"))
+    original_heartbeat = client.heartbeat
+    completion_heartbeats = 0
+
+    def heartbeat(*args: object, **kwargs: object) -> JsonObject:
+        nonlocal completion_heartbeats
+        completion_heartbeats += 1
+        if completion_heartbeats == 3:
+            return {
+                "status": "active",
+                "observed_state": "observed_stale",
+                "last_configuration_digest": session.configuration.configuration_digest,
+                "last_mission_id": session.receipt.mission_id,
+            }
+        return original_heartbeat(*args, **kwargs)  # type: ignore[arg-type]
+
+    monkeypatch.setattr(client, "heartbeat", heartbeat)
+    reports_before = sum(
+        path.endswith("/mission-reports")
+        for path, _payload, _headers in client.requests
+    )
+
+    with pytest.raises(FixedRunnerBridgeError, match="gateway_heartbeat_invalid"):
+        session.handle_request(_request(session, "mission.step.2"))
+
+    assert completion_heartbeats == 3
     assert session.receipt.next_operation_index == 3
     assert session.receipt.last_closed_status == "failed_closed"
     assert session.receipt.last_closed_reason_code == "gateway_heartbeat_invalid"
@@ -656,7 +658,7 @@ def test_fixed_session_refreshes_again_between_completion_poll_and_report(
     ("affordance", "gateway_state", "expected_index"),
     [
         ("mission.step.1", "claimed", 1),
-        ("mission.complete", "runner_reported_running", 3),
+        ("mission.step.2", "runner_reported_running", 3),
     ],
 )
 def test_fixed_session_refuses_to_record_unadvanced_gateway_report(
@@ -684,7 +686,6 @@ def test_fixed_session_refuses_to_record_unadvanced_gateway_report(
     else:
         session, client = _prepared(tmp_path)
         session.handle_request(_request(session, "mission.step.1"))
-        session.handle_request(_request(session, "mission.step.2"))
 
     original_report = client.report_mission
 

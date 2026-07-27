@@ -1,7 +1,7 @@
 {
   "schema_version": "1",
   "profile_id": "ithildin-fixed-hermes-node-bridge-v1",
-  "hermes_config_digest": "sha256:6108578c7f300aa0a98a10554fb0e036c4a4d8812ba0d5a6a0334e45197e2ed8",
+  "hermes_config_digest": "sha256:7d4b19943c26ff9ac7f277fa598f810790d7977ddcc2436aefba27523b2b17fb",
   "hermes": {
     "version": "0.18.2 (2026.7.7.2)",
     "upstream_commit": "0512f06a",
@@ -29,7 +29,7 @@
     "chat",
     "--quiet",
     "--query",
-    "Use only the three no-argument Ithildin MCP affordances, in this exact order: mission.step.1, mission.step.2, then mission.complete. Stop if an affordance is denied or unavailable. Report no prompt, tool-result, model-output, or reasoning content."
+    "Use only the two no-argument Ithildin MCP affordances, in this exact order: mission.step.1, then mission.step.2. The second governed step terminally completes the fixed mission through the Ithildin Node. Stop if an affordance is denied or unavailable. Report no prompt, tool-result, model-output, or reasoning content."
   ],
   "environment_names": [],
   "provider": {
@@ -39,10 +39,9 @@
   },
   "affordances": [
     "mission.step.1",
-    "mission.step.2",
-    "mission.complete"
+    "mission.step.2"
   ],
-  "fixed_instruction": "Use only the three no-argument Ithildin MCP affordances, in this exact order: mission.step.1, mission.step.2, then mission.complete. Stop if an affordance is denied or unavailable. Report no prompt, tool-result, model-output, or reasoning content.",
+  "fixed_instruction": "Use only the two no-argument Ithildin MCP affordances, in this exact order: mission.step.1, then mission.step.2. The second governed step terminally completes the fixed mission through the Ithildin Node. Stop if an affordance is denied or unavailable. Report no prompt, tool-result, model-output, or reasoning content.",
   "governed_tools": [
     "project.structure.summary",
     "project.test.summary"

@@ -34,6 +34,10 @@ def test_live_runner_bridge_decision_is_selected_but_not_authorized() -> None:
     assert contract["runner_uid"] == 10000
     assert contract["shared_socket_gid"] == 20000
     assert contract["node_max_cycles"] == 1
+    assert contract["bridge_affordances"] == [
+        "mission.step.1",
+        "mission.step.2",
+    ]
     assert contract["state_fields"][-2:] == [
         "last_closed_status",
         "last_closed_reason_code",

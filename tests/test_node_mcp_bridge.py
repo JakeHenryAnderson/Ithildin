@@ -24,8 +24,13 @@ class RecordingTransport:
 
     def invoke(self, affordance: str) -> JsonObject:
         self.calls.append(affordance)
+        status = (
+            "runner_reported_succeeded"
+            if affordance == "mission.step.2"
+            else "operation_closed"
+        )
         return {
-            "status": "operation_closed",
+            "status": status,
             "mission_id": "mission_" + ("1" * 32),
             "claim_id": "mclaim_" + ("2" * 32),
             "envelope_digest": "sha256:" + ("3" * 64),
@@ -41,7 +46,7 @@ class RecordingTransport:
         self.closed = True
 
 
-def test_mcp_bridge_lists_only_three_no_argument_affordances() -> None:
+def test_mcp_bridge_lists_only_two_no_argument_affordances() -> None:
     adapter = FixedNodeBridgeAdapter(RecordingTransport())
     tools = asyncio.run(adapter.list_tools())
 
@@ -61,6 +66,7 @@ def test_mcp_bridge_lists_only_three_no_argument_affordances() -> None:
         adapter
     ).create_initialization_options()
     assert initialization.instructions == FIXED_MISSION_INSTRUCTIONS
+    assert "second governed step terminally completes" in initialization.instructions
 
 
 def test_mcp_bridge_invokes_closed_transport_and_denies_arguments() -> None:
@@ -69,7 +75,7 @@ def test_mcp_bridge_invokes_closed_transport_and_denies_arguments() -> None:
 
     result = asyncio.run(adapter.call_tool("mission.step.1", {}))
     denied_arguments = asyncio.run(adapter.call_tool("mission.step.2", {"path": "."}))
-    denied_unknown = asyncio.run(adapter.call_tool("shell.run", {}))
+    denied_unknown = asyncio.run(adapter.call_tool("mission.complete", {}))
 
     assert result.isError is False
     assert result.structuredContent is not None

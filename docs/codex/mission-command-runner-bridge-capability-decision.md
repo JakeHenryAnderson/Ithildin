@@ -1,6 +1,6 @@
 # MCC-007 Fixed Hermes Runner-Bridge Capability Decision
 
-Status: `combined_implementation_candidate_pending_exact_review`
+Status: `two_operation_terminal_repair_candidate_pending_exact_review`
 
 Current governed tool count: `24`.
 
@@ -13,15 +13,18 @@ post-review authorization record before any live execution may be prepared.
 
 Select one operator-installed and operator-started Hermes profile for Local-v1 `O4`. It uses the
 reviewed Hermes Agent v0.18.2 OCI index, the repo-owned packaged
-`ithildin_mcp_server.node_bridge`, and exactly three no-argument local affordances:
-`mission.step.1`, `mission.step.2`, and `mission.complete`. The Node resolves the two server-owned
-governed reads from the signed Gateway delivery envelope and polls signed mission control before
-each read and completion. Runner completion remains runner-reported only; it does not establish
-model correctness, output quality, provider completion, or process exit.
+`ithildin_mcp_server.node_bridge`, and exactly two no-argument local affordances:
+`mission.step.1` and `mission.step.2`. The Node resolves the two server-owned governed reads from
+the signed Gateway delivery envelope and polls signed mission control before each read. After the
+second governed operation closes, Node-owned logic polls control again and reports terminal
+success; no additional model-selected bookkeeping affordance is required. Runner completion
+remains runner-reported only; it does not establish model correctness, output quality, provider
+completion, or process exit.
 
 The runner cannot choose a tool, workspace, path, argument, mission, endpoint, image, command,
-environment, provider, model, or prompt. There is no automatic claim, handoff, operation,
-reassignment, finalization, or ambiguity retry. The current governed surface remains 24 tools.
+environment, provider, model, or prompt. There is no automatic claim, handoff, operation selection,
+reassignment, or ambiguity retry. Terminal finalization is deterministically coupled to successful
+closure of the second fixed governed operation. The current governed surface remains 24 tools.
 
 ## Established Compose And Identity Topology
 
@@ -112,7 +115,7 @@ without prior user approval.
   "document_type": "runner_bridge_capability_decision",
   "schema_version": "1",
   "ticket_id": "MCC-007",
-  "decision": "fixed_hermes_node_bridge_combined_candidate_pending_exact_review",
+  "decision": "fixed_hermes_node_bridge_two_operation_terminal_repair_pending_exact_review",
   "tool_count": 24,
   "capability_selected": true,
   "implementation_authorized": false,
@@ -169,8 +172,7 @@ without prior user approval.
   ],
   "bridge_affordances": [
     "mission.step.1",
-    "mission.step.2",
-    "mission.complete"
+    "mission.step.2"
   ],
   "local_protocol": "unix_domain_socket_canonical_json_v1",
   "compose_base": "deploy/docker-compose.yml",

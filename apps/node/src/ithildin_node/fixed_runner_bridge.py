@@ -36,7 +36,7 @@ OPERATION_TIMEOUT_SECONDS = 120
 MISSION_WALL_TIME_SECONDS = 900
 FIXED_RUNNER_ADAPTER = "hermes_fixed_node_bridge"
 FIXED_DEPLOYMENT_TOPOLOGY = "docker_sidecar"
-FIXED_PROFILE_DIGEST = "sha256:90b94d725640768f1a7d665e979bbe11f263a4ff264591a5348d0b5820db3e92"
+FIXED_PROFILE_DIGEST = "sha256:f1fc1ff809c756ba577bf88b7b6cc69a328db4a68b99b3a2532999c003a4ebce"
 FIXED_OPERATIONS = (
     ("mission.step.1", "project.structure.summary"),
     ("mission.step.2", "project.test.summary"),
@@ -223,7 +223,7 @@ class BridgeReceipt:
 
 @dataclass
 class FixedMissionSession:
-    """One prepared mission with exactly two governed operations and one completion."""
+    """One prepared mission with exactly two governed operations."""
 
     client: NodeClient
     state: NodeState
@@ -338,8 +338,6 @@ class FixedMissionSession:
             operation_index = cast(int, document["operation_index"])
             if operation_index in (1, 2):
                 return self._run_step(operation_index)
-            if operation_index == 3:
-                return self._complete()
             raise FixedRunnerBridgeError("operation_index_invalid")
         except FixedRunnerBridgeError as exc:
             if not self.terminal:
@@ -366,7 +364,6 @@ class FixedMissionSession:
         expected_affordance = {
             1: "mission.step.1",
             2: "mission.step.2",
-            3: "mission.complete",
         }.get(self.receipt.next_operation_index)
         if expected_affordance is None or document.get("affordance") != expected_affordance:
             raise FixedRunnerBridgeError("operation_order_conflict")
@@ -427,13 +424,16 @@ class FixedMissionSession:
         self.receipt = self.receipt.advance(
             self.receipt_path, status=f"operation_{operation_index}_closed"
         )
-        return {
+        closed_step: JsonObject = {
             **_closed_status(self, "operation_closed"),
             "affordance": affordance,
             "operation_index": operation_index,
             "tool_name": tool_name,
             "governed_result": cast(JsonObject, result["content"]),
         }
+        if operation_index == len(FIXED_OPERATIONS):
+            return {**closed_step, **self._complete()}
+        return closed_step
 
     def _complete(self) -> JsonObject:
         self._poll_control()
@@ -777,7 +777,7 @@ def _closed_status(session: FixedMissionSession, status: str) -> JsonObject:
         else {
             1: "mission.step.1",
             2: "mission.step.2",
-            3: "mission.complete",
+            3: "none",
             4: "none",
         }[session.receipt.next_operation_index]
     )

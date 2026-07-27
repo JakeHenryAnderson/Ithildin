@@ -41,7 +41,6 @@ mcp_servers:
       include:
         - mission.step.1
         - mission.step.2
-        - mission.complete
       prompts: false
       resources: false
 

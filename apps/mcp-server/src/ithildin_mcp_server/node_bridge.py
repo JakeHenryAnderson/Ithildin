@@ -15,24 +15,20 @@ PROTOCOL_VERSION = "1"
 SOCKET_PATH = "/run/ithildin-node/mission.sock"
 MAX_FRAME_BYTES = 16_384
 OPERATION_TIMEOUT_SECONDS = 120
-FIXED_PROFILE_DIGEST = "sha256:90b94d725640768f1a7d665e979bbe11f263a4ff264591a5348d0b5820db3e92"
-AFFORDANCES = ("mission.step.1", "mission.step.2", "mission.complete")
+FIXED_PROFILE_DIGEST = "sha256:f1fc1ff809c756ba577bf88b7b6cc69a328db4a68b99b3a2532999c003a4ebce"
+AFFORDANCES = ("mission.step.1", "mission.step.2")
 FIXED_MISSION_INSTRUCTIONS = (
-    "Complete the fixed mission by invoking all three no-argument affordances exactly once "
-    "and in order: mission.step.1, mission.step.2, then mission.complete. A final text "
-    "response before mission.complete succeeds does not complete the mission."
+    "Complete the fixed mission by invoking both no-argument affordances exactly once and "
+    "in order: mission.step.1, then mission.step.2. The second governed step terminally "
+    "completes the fixed mission through the Ithildin Node."
 )
 AFFORDANCE_DESCRIPTIONS = {
     "mission.step.1": (
         "Required first governed mission step. After it succeeds, invoke mission.step.2."
     ),
     "mission.step.2": (
-        "Required second governed mission step. After it succeeds, invoke mission.complete; "
-        "do not stop or return a final response."
-    ),
-    "mission.complete": (
-        "Required final mission affordance. The mission remains incomplete until this "
-        "affordance succeeds."
+        "Required second and final governed mission step. Its success terminally completes "
+        "the fixed mission through the Ithildin Node."
     ),
 }
 _HANDOFF_KEYS = {
@@ -120,7 +116,7 @@ class UnixNodeBridgeTransport:
 
 
 class FixedNodeBridgeAdapter:
-    """Expose only the three reviewed no-argument affordances."""
+    """Expose only the two fixed no-argument governed affordances."""
 
     def __init__(self, transport: BridgeTransport) -> None:
         self.transport = transport
