@@ -265,6 +265,113 @@ def test_o2_evaluator_requires_exactly_one_approval_request() -> None:
     assert observations["approval_count"] == 2
 
 
+@pytest.mark.parametrize(
+    "extra_event",
+    (
+        _event(
+            "policy.evaluated",
+            "req-write",
+            real_agent.EXPECTED_WRITE_TOOL,
+            decision="require_approval",
+        ),
+        _event(
+            "approval.created",
+            "req-write",
+            real_agent.EXPECTED_WRITE_TOOL,
+            approval_id="appr_test",
+        ),
+        _event(
+            "approval.created",
+            "req-unexpected",
+            real_agent.EXPECTED_WRITE_TOOL,
+            approval_id="appr_unexpected",
+        ),
+    ),
+)
+def test_o2_evaluator_rejects_duplicate_or_unexpected_approval_events(
+    extra_event: dict[str, object],
+) -> None:
+    events = [
+        _event(
+            "policy.evaluated",
+            "req-write",
+            real_agent.EXPECTED_WRITE_TOOL,
+            decision="require_approval",
+        ),
+        _event(
+            "approval.created",
+            "req-write",
+            real_agent.EXPECTED_WRITE_TOOL,
+            approval_id="appr_test",
+        ),
+        extra_event,
+    ]
+
+    observations = real_agent.evaluate_o2_events(
+        events,
+        approval_storage={"appr_test": ("v2_pending", "2")},
+    )
+
+    assert observations["approval_required_observed"] is False
+    assert observations["approval_v2_pending_storage_observed"] is False
+
+
+def test_o2_evaluator_rejects_mislinked_or_empty_approval_identity() -> None:
+    policy = _event(
+        "policy.evaluated",
+        "req-write",
+        real_agent.EXPECTED_WRITE_TOOL,
+        decision="require_approval",
+    )
+    for request_id, approval_id in (
+        ("req-unexpected", "appr_test"),
+        ("req-write", ""),
+    ):
+        observations = real_agent.evaluate_o2_events(
+            [
+                policy,
+                _event(
+                    "approval.created",
+                    request_id,
+                    real_agent.EXPECTED_WRITE_TOOL,
+                    approval_id=approval_id,
+                ),
+            ],
+            approval_storage={"appr_test": ("v2_pending", "2")},
+        )
+
+        assert observations["approval_required_observed"] is False
+        assert observations["approval_v2_pending_storage_observed"] is False
+
+
+def test_o2_evaluator_rejects_extra_approval_storage_row() -> None:
+    events = [
+        _event(
+            "policy.evaluated",
+            "req-write",
+            real_agent.EXPECTED_WRITE_TOOL,
+            decision="require_approval",
+        ),
+        _event(
+            "approval.created",
+            "req-write",
+            real_agent.EXPECTED_WRITE_TOOL,
+            approval_id="appr_test",
+        ),
+    ]
+
+    observations = real_agent.evaluate_o2_events(
+        events,
+        approval_storage={
+            "appr_test": ("v2_pending", "2"),
+            "appr_unexpected": ("v2_pending", "2"),
+        },
+    )
+
+    assert observations["approval_required_observed"] is True
+    assert observations["approval_v2_pending_storage_observed"] is False
+
+
 def test_gateway_evidence_requirements_do_not_depend_on_runner_exit() -> None:
     observations = {
         "allowed_read_completed": True,

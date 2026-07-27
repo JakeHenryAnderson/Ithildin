@@ -379,11 +379,13 @@ def evaluate_o2_events(
         and event.get("decision") == "deny"
         and "outside the workspace scope" in str(_metadata(event).get("reason", ""))
     }
-    write_requests = _request_ids(
-        policies,
-        tool=EXPECTED_WRITE_TOOL,
-        decision="require_approval",
-    )
+    approval_policy_events = [
+        event for event in policies if event.get("decision") == "require_approval"
+    ]
+    approval_request_pairs = {
+        (str(event.get("request_id", "")), str(event.get("tool_name", "")))
+        for event in approval_policy_events
+    }
     execution_pairs = {
         (str(event.get("request_id", "")), str(event.get("tool_name", "")))
         for event in events
@@ -398,12 +400,25 @@ def evaluate_o2_events(
         (str(event.get("request_id", "")), str(event.get("tool_name", "")))
         for event in completed
     }
-    created_approvals = {
-        str(_metadata(event).get("approval_id", ""))
-        for event in approvals
-        if event.get("tool_name") == EXPECTED_WRITE_TOOL
-        and str(event.get("request_id", "")) in write_requests
-    }
+    approval_request_id = (
+        str(approval_policy_events[0].get("request_id", ""))
+        if len(approval_policy_events) == 1
+        else ""
+    )
+    created_approval_id = (
+        str(_metadata(approvals[0]).get("approval_id", ""))
+        if len(approvals) == 1
+        else ""
+    )
+    exact_approval_evidence = bool(
+        len(approval_policy_events) == 1
+        and len(approvals) == 1
+        and approval_request_id
+        and created_approval_id
+        and approval_policy_events[0].get("tool_name") == EXPECTED_WRITE_TOOL
+        and approvals[0].get("tool_name") == EXPECTED_WRITE_TOOL
+        and str(approvals[0].get("request_id", "")) == approval_request_id
+    )
     governed = [
         event
         for event in events
@@ -432,20 +447,17 @@ def evaluate_o2_events(
             (request_id, "fs.read") not in execution_pairs
             for request_id in denied_read_requests
         ),
-        "approval_required_observed": len(write_requests) == 1
-        and len(created_approvals) == 1,
-        "approval_v2_pending_storage_observed": bool(created_approvals)
+        "approval_required_observed": exact_approval_evidence,
+        "approval_v2_pending_storage_observed": exact_approval_evidence
+        and approval_storage
+        == {created_approval_id: ("v2_pending", "2")},
+        "approval_request_not_executed": bool(approval_request_pairs)
         and all(
-            approval_storage.get(item) == ("v2_pending", "2")
-            for item in created_approvals
-        ),
-        "approval_request_not_executed": bool(write_requests)
-        and all(
-            (request_id, EXPECTED_WRITE_TOOL) not in execution_pairs
-            for request_id in write_requests
+            request_pair not in execution_pairs
+            for request_pair in approval_request_pairs
         ),
         "fixed_stdio_identity_observed": fixed_identity,
-        "approval_count": len(created_approvals),
+        "approval_count": len(approvals),
     }
 
 

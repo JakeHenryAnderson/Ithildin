@@ -63,5 +63,7 @@ bitmap plus the bounded audit-event count. The bit order is `allowed_read_comple
 `fixed_stdio_identity_observed`, and `audit_chain_valid`. The storage observation requires the
 current approval contract version `2` and its exact persisted `v2_pending` status. The independent
 non-execution observation rejects `tool.execution.started`, `tool.execution.completed`, and
-`tool.execution.failed` for the approval-required request. The projection never contains event
+`tool.execution.failed` for the approval-required request. Exact-one evidence requires one
+`require_approval` policy event, one linked `approval.created` event with a nonempty approval ID,
+and exactly that approval in the fresh synthetic database. The projection never contains event
 payloads, model output, prompts, fixture bodies, raw identities, or environment values.
