@@ -1,0 +1,99 @@
+{
+  "schema_version": "1",
+  "record_type": "local_v1_lv1_006_operations_disposition",
+  "record_status": "O1_O7_LV1_006_COMPLETE_NO_RELEASE_OR_UAT_AUTHORITY",
+  "evidence_candidate": {
+    "commit": "0c9fd49c2124b0d642bf07fbfa4a1aaa769dc950",
+    "tree": "cfc4e2998e0928df419f46ed293382521c5bd32d",
+    "parent": "747e060faeec3ba2c3ad299a936c2e31f1ec2138",
+    "milestone_base": "14ec75830ef5472ea942f91f54e6a0a43defd88d",
+    "paths": [
+      "Makefile",
+      "docs/codex/local-v1-lv1-006-operations.md",
+      "scripts/local_v1_contract_check.py",
+      "scripts/local_v1_operations_rehearsal.py",
+      "scripts/local_v1_operations_rehearsal_check.py",
+      "tests/test_local_v1_operations_rehearsal.py"
+    ]
+  },
+  "private_evidence_binding": {
+    "report_sha256": "sha256:06e295d8243d041f17c9afbc98cd42765b35f587423f9718168102d654584d8e",
+    "report_mode": "0600",
+    "report_size_bytes": 1920,
+    "raw_run_identity_recorded": false,
+    "private_runtime_artifacts_retained": false,
+    "checker_result": "valid"
+  },
+  "observations": {
+    "fresh_state_initialized": true,
+    "gateway_health_verified": true,
+    "command_center_http_verified": true,
+    "authenticated_tool_count": 24,
+    "clean_stop_before_backup": true,
+    "backup_manifest_matched": true,
+    "failed_update_failed_closed": true,
+    "restore_manifest_matched": true,
+    "restored_files_owner_only": true,
+    "restored_stack_health_verified": true,
+    "exact_project_cleanup_complete": true,
+    "unique_images_removed": true,
+    "loopback_only": true,
+    "docker_socket_mounted": false,
+    "optional_node_included": false,
+    "model_provider_included": false
+  },
+  "review": {
+    "model_tier": "sol_high",
+    "xhigh_used": false,
+    "initial_candidate": "6c67b6620fb4ec708267b0fcb27a7d301b559f83",
+    "initial_disposition": "NO_GO",
+    "initial_findings": {
+      "critical": 0,
+      "high": 0,
+      "medium": 5,
+      "low": 1
+    },
+    "first_repaired_candidate": "747e060faeec3ba2c3ad299a936c2e31f1ec2138",
+    "first_repaired_disposition": "NO_GO",
+    "first_repaired_findings": {
+      "critical": 0,
+      "high": 0,
+      "medium": 1,
+      "low": 0
+    },
+    "final_candidate": "0c9fd49c2124b0d642bf07fbfa4a1aaa769dc950",
+    "final_disposition": "GO",
+    "final_findings": {
+      "critical": 0,
+      "high": 0,
+      "medium": 0,
+      "low": 0
+    }
+  },
+  "validation": {
+    "focused_tests_passed": 11,
+    "ruff": "passed",
+    "strict_mypy": "passed",
+    "tool_surface_invariant": "passed",
+    "no_new_powers_guardrail": "passed",
+    "agent_workflow_check": "passed"
+  },
+  "authority": {
+    "arbitrary_host_control_authorized": false,
+    "docker_socket_mounted": false,
+    "new_api_authorized": false,
+    "new_governed_power_authorized": false,
+    "new_governed_tool": false,
+    "production_authorized": false,
+    "promotion_allowed": false,
+    "release_allowed": false,
+    "uat_complete": false
+  },
+  "closure": {
+    "o1_complete": true,
+    "o7_complete": true,
+    "lv1_006_complete": true,
+    "active_next_action": "LV1-007"
+  },
+  "tool_count": 24
+}

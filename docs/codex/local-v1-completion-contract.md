@@ -4,10 +4,10 @@ Status: active fixed-scope delivery contract.
 
 - Active delivery target: `Ithildin Local v1.0`
 - Current governed tool count: `24`
-- Release outcomes complete: `4/8`
-- Critical-path milestones complete: `6/8`
-- Latest completed milestone: `LV1-005`
-- Active next action: `LV1-006`
+- Release outcomes complete: `6/8`
+- Critical-path milestones complete: `7/8`
+- Latest completed milestone: `LV1-006`
+- Active next action: `LV1-007`
 - Local-v1 release gate: `blocked`
 - Human UAT: `not_started`
 - Release acceptance: `false`
@@ -40,13 +40,13 @@ integrated outcome.
 
 | ID | Outcome | Status | Done when |
 | --- | --- | --- | --- |
-| `O1` | Fresh local installation | `not_started` | From documented prerequisites, an operator initializes isolated local state, starts Gateway and Command Center, verifies health, and stops cleanly without using undocumented review machinery. |
+| `O1` | Fresh local installation | `complete` | From documented prerequisites, an operator initializes isolated local state, starts Gateway and Command Center, verifies health, and stops cleanly without using undocumented review machinery. |
 | `O2` | Real agent connection | `not_started` | A pinned operator-managed agent uses the existing MCP surface and the operator can distinguish allowed, denied, and approval-required activity. |
 | `O3` | Authenticated Node | `complete` | One optional local Node enrolls with a one-time code, receives Gateway-derived identity and workspace assignment, consumes signed configuration, reports bounded connectivity, and can be revoked. |
 | `O4` | One real constrained mission | `complete` | A server-owned mission reaches an operator-managed runner through the authenticated Node path and performs a governed operation with server-derived identity and workspace boundaries. |
 | `O5` | Failure and recovery scenario | `complete` | One coherent scenario demonstrates restart continuity, replay rejection, partition failure, revocation, stale-configuration rejection, and documented manual rollback. |
 | `O6` | Perceivable Command Center | `complete` | A first-time operator can find the mission, understand what happened and why, inspect approval/evidence, and distinguish Gateway, Node, runner, and model-provider truth with accessible interaction. |
-| `O7` | Local operations | `not_started` | Backup/restore, update/rollback, recovery-required behavior, diagnostics, ports, data ownership, and cleanup are documented and exercised for the supported local topology. |
+| `O7` | Local operations | `complete` | Backup/restore, update/rollback, recovery-required behavior, diagnostics, ports, data ownership, and cleanup are documented and exercised for the supported local topology. |
 | `O8` | Exact-candidate review and human UAT | `not_started` | One frozen candidate passes the dedicated Local-v1 gate and independent high-effort review, then a human operator completes the golden scenario and explicitly records acceptance or findings. |
 
 ## Golden Scenario
@@ -80,7 +80,7 @@ authorized, implemented, and evidenced.
 | `LV1-003` | Real constrained mission seam | `complete` | Make and review the bounded capability decision required before implementing the smallest fixed runner bridge and closing `O4`. |
 | `LV1-004` | Failure and recovery | `complete` | Bind the integrated restart/replay/partition/revocation/stale-configuration/rollback scenario required by `O5`. |
 | `LV1-005` | Command Center comprehension | `complete` | Close the golden-path information architecture, truth-source separation, evidence navigation, and accessibility criteria required by `O6`. |
-| `LV1-006` | Local operations | `not_started` | Close installation hardening, backup/restore, update/rollback, diagnostics, data ownership, and cleanup required by `O1` and `O7`. |
+| `LV1-006` | Local operations | `complete` | Close installation hardening, backup/restore, update/rollback, diagnostics, data ownership, and cleanup required by `O1` and `O7`. |
 | `LV1-007` | Candidate freeze and UAT | `not_started` | Close remaining outcomes, freeze an exact candidate, run the dedicated release gate and independent review, then stop for genuine human UAT and an explicit release decision. |
 
 The exact `LV1-000` candidate
@@ -139,6 +139,16 @@ candidate binding and proportional validation record is
 runtime behavior, governed power, or tool. Automated interaction evidence is not human UAT or an
 accessibility certification. The ordered next milestone is `LV1-006`; all release, production,
 promotion, external-system, and UAT authority remains false.
+
+`LV1-006`, `O1`, and `O7` are complete. Exact evidence candidate
+`0c9fd49c2124b0d642bf07fbfa4a1aaa769dc950` passed the isolated loopback-only install,
+health, clean-stop, stopped-backup, fixed failed-update, fresh-directory restore, recovered-health,
+owner-only-state, and exact-cleanup rehearsal. Its candidate-bound checker passed against the sole
+mode-`0600` safe report. One reused Sol-high reviewer returned final `GO` with zero findings after
+the bounded repair lineage; no xhigh reviewer was used. The durable digest-only binding is
+`docs/codex/local-v1-lv1-006-disposition.md`. The optional Node and model provider were excluded,
+all authority remains false, and the tool count remains 24. The ordered next milestone is
+`LV1-007`; this evidence is not release acceptance, production durability, or human UAT.
 
 Historical `LV1-003` lineage follows.
 `MCC-007` exact reviewed candidate is authorized for code use only. Independent Sol xhigh review of

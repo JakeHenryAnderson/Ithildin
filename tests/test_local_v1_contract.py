@@ -204,6 +204,62 @@ def test_lv1_005_disposition_is_candidate_bound_and_keeps_uat_false() -> None:
     ]
 
 
+def test_lv1_006_disposition_is_candidate_bound_and_keeps_uat_false() -> None:
+    disposition = json.loads(
+        (ROOT / "docs/codex/local-v1-lv1-006-disposition.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    candidate = disposition["evidence_candidate"]
+    evidence = disposition["private_evidence_binding"]
+
+    assert (
+        disposition["record_status"]
+        == "O1_O7_LV1_006_COMPLETE_NO_RELEASE_OR_UAT_AUTHORITY"
+    )
+    assert disposition["tool_count"] == 24
+    assert disposition["closure"] == {
+        "o1_complete": True,
+        "o7_complete": True,
+        "lv1_006_complete": True,
+        "active_next_action": "LV1-007",
+    }
+    assert all(value is False for value in disposition["authority"].values())
+    assert candidate["paths"] == [
+        "Makefile",
+        "docs/codex/local-v1-lv1-006-operations.md",
+        "scripts/local_v1_contract_check.py",
+        "scripts/local_v1_operations_rehearsal.py",
+        "scripts/local_v1_operations_rehearsal_check.py",
+        "tests/test_local_v1_operations_rehearsal.py",
+    ]
+    assert candidate["tree"] == subprocess.run(
+        ["git", "rev-parse", f"{candidate['commit']}^{{tree}}"],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+    assert candidate["parent"] == subprocess.run(
+        ["git", "rev-parse", f"{candidate['commit']}^"],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+    assert evidence["raw_run_identity_recorded"] is False
+    assert evidence["private_runtime_artifacts_retained"] is False
+    assert evidence["report_mode"] == "0600"
+    assert evidence["report_size_bytes"] == 1920
+    assert re.fullmatch(r"sha256:[0-9a-f]{64}", evidence["report_sha256"])
+    assert disposition["review"]["model_tier"] == "sol_high"
+    assert disposition["review"]["xhigh_used"] is False
+    assert disposition["review"]["final_disposition"] == "GO"
+    assert all(
+        count == 0 for count in disposition["review"]["final_findings"].values()
+    )
+
+
 def test_uninitialized_local_v1_release_check_fails_closed() -> None:
     report = local_v1_contract_check.build_report(
         ROOT,

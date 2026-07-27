@@ -59,14 +59,23 @@ def test_golden_path_contract_stage_allows_reviewed_completion_and_future_progre
     )
     future_progress = (
         contract.replace(
-            "Critical-path milestones complete: `6/8`",
             "Critical-path milestones complete: `7/8`",
+            "Critical-path milestones complete: `8/8`",
             1,
         )
-        .replace("Active next action: `LV1-006`", "Active next action: `LV1-007`", 1)
         .replace(
-            "| `LV1-006` | Local operations | `not_started` |",
-            "| `LV1-006` | Local operations | `complete` |",
+            "Latest completed milestone: `LV1-006`",
+            "Latest completed milestone: `LV1-007`",
+            1,
+        )
+        .replace(
+            "Active next action: `LV1-007`",
+            "Active next action: `release_decision`",
+            1,
+        )
+        .replace(
+            "| `LV1-007` | Candidate freeze and UAT | `not_started` |",
+            "| `LV1-007` | Candidate freeze and UAT | `complete` |",
             1,
         )
     )
@@ -80,11 +89,11 @@ def test_golden_path_contract_stage_rejects_stale_completion_status() -> None:
     )
     in_progress = (
         contract.replace(
-            "Critical-path milestones complete: `6/8`",
+            "Critical-path milestones complete: `7/8`",
             "Critical-path milestones complete: `1/8`",
             1,
         )
-        .replace("Active next action: `LV1-006`", "Active next action: `LV1-001`", 1)
+        .replace("Active next action: `LV1-007`", "Active next action: `LV1-001`", 1)
         .replace(
             "| `LV1-001` | Golden local path assembly | `complete` |",
             "| `LV1-001` | Golden local path assembly | `in_progress` |",
@@ -288,7 +297,7 @@ def test_golden_path_target_is_in_milestone_and_exact_candidate_inventory() -> N
 
     assert "$(MAKE) local-v1-golden-path-check" in milestone_body
     assert "$(MAKE) local-v1-golden-path-check" in inventory_body
-    assert len(inventory_targets) == 36
+    assert len(inventory_targets) == 37
     assert inventory_targets == local_v1_contract_check.LOCAL_V1_CANDIDATE_TARGETS
     assert "mission-command-control-plane-poc" not in inventory_targets
     assert "hermes-poc-run" not in inventory_targets

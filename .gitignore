@@ -39,6 +39,7 @@ var/local-v1-lv1-003-o4-reconciliation-receipts/*
 var/local-v1-lv1-003-o4-runtime/*
 var/local-v1-constrained-mission-journey/*
 var/local-v1-failure-recovery/*
+var/local-v1-operations/*
 var/local-v1-node-journey/*
 var/local-v1-node-journey-runtime/*
 var/mission-command-control-plane-poc-*/
