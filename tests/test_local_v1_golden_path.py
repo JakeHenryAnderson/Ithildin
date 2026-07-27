@@ -59,14 +59,14 @@ def test_golden_path_contract_stage_allows_reviewed_completion_and_future_progre
     )
     future_progress = (
         contract.replace(
-            "Critical-path milestones complete: `5/8`",
             "Critical-path milestones complete: `6/8`",
+            "Critical-path milestones complete: `7/8`",
             1,
         )
-        .replace("Active next action: `LV1-005`", "Active next action: `LV1-006`", 1)
+        .replace("Active next action: `LV1-006`", "Active next action: `LV1-007`", 1)
         .replace(
-            "| `LV1-005` | Command Center comprehension | `not_started` |",
-            "| `LV1-005` | Command Center comprehension | `complete` |",
+            "| `LV1-006` | Local operations | `not_started` |",
+            "| `LV1-006` | Local operations | `complete` |",
             1,
         )
     )
@@ -80,11 +80,11 @@ def test_golden_path_contract_stage_rejects_stale_completion_status() -> None:
     )
     in_progress = (
         contract.replace(
-            "Critical-path milestones complete: `5/8`",
+            "Critical-path milestones complete: `6/8`",
             "Critical-path milestones complete: `1/8`",
             1,
         )
-        .replace("Active next action: `LV1-005`", "Active next action: `LV1-001`", 1)
+        .replace("Active next action: `LV1-006`", "Active next action: `LV1-001`", 1)
         .replace(
             "| `LV1-001` | Golden local path assembly | `complete` |",
             "| `LV1-001` | Golden local path assembly | `in_progress` |",

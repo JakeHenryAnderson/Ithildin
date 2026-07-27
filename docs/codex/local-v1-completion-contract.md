@@ -4,10 +4,10 @@ Status: active fixed-scope delivery contract.
 
 - Active delivery target: `Ithildin Local v1.0`
 - Current governed tool count: `24`
-- Release outcomes complete: `3/8`
-- Critical-path milestones complete: `5/8`
-- Latest completed milestone: `LV1-004`
-- Active next action: `LV1-005`
+- Release outcomes complete: `4/8`
+- Critical-path milestones complete: `6/8`
+- Latest completed milestone: `LV1-005`
+- Active next action: `LV1-006`
 - Local-v1 release gate: `blocked`
 - Human UAT: `not_started`
 - Release acceptance: `false`
@@ -45,7 +45,7 @@ integrated outcome.
 | `O3` | Authenticated Node | `complete` | One optional local Node enrolls with a one-time code, receives Gateway-derived identity and workspace assignment, consumes signed configuration, reports bounded connectivity, and can be revoked. |
 | `O4` | One real constrained mission | `complete` | A server-owned mission reaches an operator-managed runner through the authenticated Node path and performs a governed operation with server-derived identity and workspace boundaries. |
 | `O5` | Failure and recovery scenario | `complete` | One coherent scenario demonstrates restart continuity, replay rejection, partition failure, revocation, stale-configuration rejection, and documented manual rollback. |
-| `O6` | Perceivable Command Center | `not_started` | A first-time operator can find the mission, understand what happened and why, inspect approval/evidence, and distinguish Gateway, Node, runner, and model-provider truth with accessible interaction. |
+| `O6` | Perceivable Command Center | `complete` | A first-time operator can find the mission, understand what happened and why, inspect approval/evidence, and distinguish Gateway, Node, runner, and model-provider truth with accessible interaction. |
 | `O7` | Local operations | `not_started` | Backup/restore, update/rollback, recovery-required behavior, diagnostics, ports, data ownership, and cleanup are documented and exercised for the supported local topology. |
 | `O8` | Exact-candidate review and human UAT | `not_started` | One frozen candidate passes the dedicated Local-v1 gate and independent high-effort review, then a human operator completes the golden scenario and explicitly records acceptance or findings. |
 
@@ -79,7 +79,7 @@ authorized, implemented, and evidenced.
 | `LV1-002` | Authenticated Node journey | `complete` | Close the enrollment, signed-configuration, identity, connectivity, and revocation experience required by `O3`. |
 | `LV1-003` | Real constrained mission seam | `complete` | Make and review the bounded capability decision required before implementing the smallest fixed runner bridge and closing `O4`. |
 | `LV1-004` | Failure and recovery | `complete` | Bind the integrated restart/replay/partition/revocation/stale-configuration/rollback scenario required by `O5`. |
-| `LV1-005` | Command Center comprehension | `not_started` | Close the golden-path information architecture, truth-source separation, evidence navigation, and accessibility criteria required by `O6`. |
+| `LV1-005` | Command Center comprehension | `complete` | Close the golden-path information architecture, truth-source separation, evidence navigation, and accessibility criteria required by `O6`. |
 | `LV1-006` | Local operations | `not_started` | Close installation hardening, backup/restore, update/rollback, diagnostics, data ownership, and cleanup required by `O1` and `O7`. |
 | `LV1-007` | Candidate freeze and UAT | `not_started` | Close remaining outcomes, freeze an exact candidate, run the dedicated release gate and independent review, then stop for genuine human UAT and an explicit release decision. |
 
@@ -129,6 +129,16 @@ Sol-high `GO` with zero findings; the final candidate adds only the tested regul
 needed after the first checker invocation exposed a permission-bit classification bug. That first
 run is not claimed as passing evidence. All live execution authority remains false. The ordered
 next milestone is `LV1-005`; no release, promotion, production, or UAT authority is granted.
+
+`LV1-005` and `O6` are complete. Exact implementation candidate
+`6f33c4bb715a23b16e3894c1d22e5fb5c4c5b813` adds a keyboard-accessible first-time-operator path
+from selected mission context through recorded decision and reason, matching approval, evidence
+closeout, and the separate Gateway, Node, runner, and model-provider truth sources. The durable
+candidate binding and proportional validation record is
+`docs/codex/local-v1-lv1-005-disposition.md`. This presentation-only change adds no API, mutation,
+runtime behavior, governed power, or tool. Automated interaction evidence is not human UAT or an
+accessibility certification. The ordered next milestone is `LV1-006`; all release, production,
+promotion, external-system, and UAT authority remains false.
 
 Historical `LV1-003` lineage follows.
 `MCC-007` exact reviewed candidate is authorized for code use only. Independent Sol xhigh review of

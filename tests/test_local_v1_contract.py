@@ -157,6 +157,53 @@ def test_lv1_004_disposition_is_digest_only_and_candidate_bound() -> None:
     )
 
 
+def test_lv1_005_disposition_is_candidate_bound_and_keeps_uat_false() -> None:
+    disposition = json.loads(
+        (ROOT / "docs/codex/local-v1-lv1-005-disposition.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    candidate = disposition["implementation_candidate"]
+
+    assert (
+        disposition["record_status"]
+        == "O6_LV1_005_COMPLETE_NO_RELEASE_OR_UAT_AUTHORITY"
+    )
+    assert disposition["tool_count"] == 24
+    assert disposition["closure"] == {
+        "o6_complete": True,
+        "lv1_005_complete": True,
+        "active_next_action": "LV1-006",
+    }
+    assert all(value is False for value in disposition["authority"].values())
+    assert candidate["paths"] == [
+        "apps/ui/src/App.test.tsx",
+        "apps/ui/src/App.tsx",
+        "apps/ui/src/styles.css",
+    ]
+    assert candidate["tree"] == subprocess.run(
+        ["git", "rev-parse", f"{candidate['commit']}^{{tree}}"],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+    assert candidate["parent"] == subprocess.run(
+        ["git", "rev-parse", f"{candidate['commit']}^"],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+    assert disposition["acceptance_evidence"]["independent_review_performed"] is False
+    assert disposition["operator_journey"]["truth_sources"] == [
+        "gateway",
+        "node",
+        "runner",
+        "model_provider",
+    ]
+
+
 def test_uninitialized_local_v1_release_check_fails_closed() -> None:
     report = local_v1_contract_check.build_report(
         ROOT,
