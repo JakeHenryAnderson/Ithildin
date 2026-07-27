@@ -24,13 +24,16 @@ make local-v1-operations-check \
 ```
 
 The run refuses a dirty candidate, occupied or non-loopback ports, missing Docker Compose, symlinked
-evidence paths, existing copy destinations, and any backup/restore manifest mismatch. It creates a
-unique Compose project and unique image tags, uses a process-memory admin token, mounts no Docker
-socket, and uses only synthetic state below its private ignored run root.
+evidence paths, existing copy destinations, any pre-existing exact project/image target, and any
+backup/restore manifest mismatch. It creates a unique Compose project and unique image tags, builds
+and mounts tracked inputs only from an immutable archive of the recorded Git candidate, uses a
+process-memory admin token, mounts no Docker socket, and uses only synthetic state below its private
+ignored run root.
 
 The first start builds the exact candidate, verifies Gateway health, verifies the authenticated
 24-tool inventory, verifies Command Center HTTP, and stops before backup. The fixed failed update
-changes only the known API container command to exit 23 and must not become healthy. Recovery copies
+changes only the known API container command to exit 23; the exact service must be observed exited
+with code 23 and the endpoint must be unavailable. Recovery copies
 the stopped backup into new state and workspace directories, restarts the original exact images,
 and repeats the health checks. Successful cleanup removes the exact Compose project, unique images,
 private Compose files, token-bearing runtime state, backup, and restored copy before writing one

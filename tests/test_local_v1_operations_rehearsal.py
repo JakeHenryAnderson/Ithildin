@@ -35,6 +35,7 @@ def test_compose_document_is_loopback_only_read_only_and_has_no_docker_socket(
     assert ui["cap_drop"] == ["ALL"]
     assert "/var/run/docker.sock" not in serialized
     assert document["services"].keys() == {"ithildin-api", "ithildin-ui"}
+    assert api["entrypoint"] == ["sh", "-c", 'umask 077; exec "$@"', "--"]
 
 
 def test_snapshot_copy_round_trip_is_digest_exact_and_private(tmp_path: Path) -> None:
@@ -99,3 +100,42 @@ def test_checker_rejects_unconfined_report(tmp_path: Path) -> None:
     )
 
     assert failures == ["report_path_not_confined"]
+
+
+def test_checker_normalizes_documented_relative_report_path(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(operations, "ROOT", tmp_path)
+    monkeypatch.setattr(operations, "EVIDENCE_BASE", tmp_path / "var/local-v1-operations")
+    monkeypatch.setattr(operations_check, "_git_tree", lambda _commit: "b" * 40)
+    monkeypatch.setattr(operations_check, "_git_parent", lambda _commit: "c" * 40)
+    run_id = "20260727T120000Z-" + ("a" * 32)
+    root = operations.EVIDENCE_BASE / run_id
+    root.mkdir(parents=True)
+    report = root / operations.REPORT_NAME
+    report.write_text("{}\n", encoding="utf-8")
+    os.chmod(report, 0o600)
+    monkeypatch.chdir(tmp_path)
+
+    failures = operations_check.validate_report(
+        report.relative_to(tmp_path),
+        expected_candidate="a" * 40,
+    )
+
+    assert "report_filename_invalid" not in failures
+
+
+def test_owner_only_tree_rejects_permissions_and_symlinks(tmp_path: Path) -> None:
+    root = tmp_path / "state"
+    root.mkdir(mode=0o700)
+    private = root / "private"
+    private.write_text("synthetic", encoding="utf-8")
+    os.chmod(private, 0o600)
+    assert operations._tree_is_owner_only(root) is True  # noqa: SLF001
+
+    os.chmod(private, 0o640)
+    assert operations._tree_is_owner_only(root) is False  # noqa: SLF001
+    os.chmod(private, 0o600)
+    root.joinpath("link").symlink_to(private)
+    assert operations._tree_is_owner_only(root) is False  # noqa: SLF001

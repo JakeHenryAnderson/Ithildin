@@ -25,6 +25,7 @@ REQUIRED_OBSERVATIONS = {
     "backup_manifest_matched",
     "failed_update_failed_closed",
     "restore_manifest_matched",
+    "restored_files_owner_only",
     "restored_stack_health_verified",
     "exact_project_cleanup_complete",
     "unique_images_removed",
@@ -48,18 +49,19 @@ def validate_report(report_path: Path, *, expected_candidate: str) -> list[str]:
     failures: list[str] = []
     if not COMMIT.fullmatch(expected_candidate):
         return ["expected_candidate_invalid"]
+    selected_report = Path(os.path.abspath(report_path))
     try:
-        root = operations.confined_run_root(report_path.parent)
+        root = operations.confined_run_root(selected_report.parent)
     except (OSError, ValueError):
         return ["report_path_not_confined"]
-    if report_path != root / operations.REPORT_NAME:
+    if selected_report != root / operations.REPORT_NAME:
         return ["report_filename_invalid"]
     try:
-        entry = os.lstat(report_path)
-        if not stat.S_ISREG(entry.st_mode) or stat.S_IMODE(entry.st_mode) != 0o600:
+        text, entry = _read_report_nofollow(root)
+        if stat.S_IMODE(entry.st_mode) != 0o600:
             failures.append("report_not_private_regular_file")
-        report = json.loads(report_path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError):
+        report = json.loads(text)
+    except (OSError, UnicodeError, ValueError, json.JSONDecodeError):
         return failures + ["report_unreadable"]
     if not isinstance(report, dict):
         return failures + ["report_not_object"]
@@ -112,6 +114,28 @@ def validate_report(report_path: Path, *, expected_candidate: str) -> list[str]:
     if "bearer " in serialized or "synthetic-test-token" in serialized:
         failures.append("report_contains_secret_marker")
     return failures
+
+
+def _read_report_nofollow(root: Path) -> tuple[str, os.stat_result]:
+    nofollow = getattr(os, "O_NOFOLLOW", 0)
+    directory = getattr(os, "O_DIRECTORY", 0)
+    root_descriptor = os.open(root, os.O_RDONLY | nofollow | directory)
+    try:
+        report_descriptor = os.open(
+            operations.REPORT_NAME,
+            os.O_RDONLY | nofollow,
+            dir_fd=root_descriptor,
+        )
+        try:
+            entry = os.fstat(report_descriptor)
+            if not stat.S_ISREG(entry.st_mode):
+                raise ValueError("report is not a regular file")
+            with os.fdopen(os.dup(report_descriptor), encoding="utf-8") as stream:
+                return stream.read(), entry
+        finally:
+            os.close(report_descriptor)
+    finally:
+        os.close(root_descriptor)
 
 
 def _mapping(value: Any) -> dict[str, Any]:

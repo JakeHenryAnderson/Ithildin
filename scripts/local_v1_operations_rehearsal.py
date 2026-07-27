@@ -13,6 +13,7 @@ import socket
 import stat
 import subprocess
 import sys
+import tarfile
 import time
 import urllib.error
 import urllib.request
@@ -22,7 +23,7 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 EVIDENCE_BASE = ROOT / "var/local-v1-operations"
-RUN_ID = re.compile(r"^[0-9]{8}T[0-9]{6}Z-[0-9a-f]{8}$")
+RUN_ID = re.compile(r"^[0-9]{8}T[0-9]{6}Z-[0-9a-f]{32}$")
 COMMIT = re.compile(r"^[0-9a-f]{40}$")
 REPORT_NAME = "local-v1-operations.json"
 COMMAND_TIMEOUT_SECONDS = 900
@@ -50,7 +51,7 @@ def main() -> int:
     parser.add_argument("--ui-port", type=int, default=15173)
     args = parser.parse_args()
 
-    run_id = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ") + f"-{secrets.token_hex(4)}"
+    run_id = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ") + f"-{secrets.token_hex(16)}"
     run_root = confined_run_root(EVIDENCE_BASE / run_id)
     try:
         report = run_rehearsal(
@@ -110,9 +111,11 @@ def run_rehearsal(
 
     run_root.mkdir(parents=True, mode=0o700)
     os.chmod(run_root, 0o700)
-    project = f"ithildin-lv1-ops-{run_id.rsplit('-', 1)[1]}"
-    api_image = f"ithildin/api:lv1-ops-{run_id.rsplit('-', 1)[1]}"
-    ui_image = f"ithildin/ui:lv1-ops-{run_id.rsplit('-', 1)[1]}"
+    suffix = run_id.rsplit("-", 1)[1]
+    project = f"ithildin-lv1-ops-{suffix}"
+    api_image = f"ithildin/api:lv1-ops-{suffix}"
+    ui_image = f"ithildin/ui:lv1-ops-{suffix}"
+    _require_docker_targets_absent(project, api_image, ui_image)
     token = secrets.token_urlsafe(32)
     compose_paths: list[Path] = []
     cleanup_failures: list[str] = []
@@ -121,9 +124,11 @@ def run_rehearsal(
     backup_root = run_root / "backup"
     restored_state = run_root / "restored-state"
     restored_workspaces = run_root / "restored-workspaces"
+    candidate_root = run_root / "candidate"
 
     try:
-        _prepare_state(current_state, current_workspaces)
+        _prepare_candidate(commit, candidate_root, run_root / "candidate.tar")
+        _prepare_state(candidate_root, current_state, current_workspaces)
         current_compose = run_root / "compose-current.json"
         _write_private_json(
             current_compose,
@@ -135,6 +140,7 @@ def run_rehearsal(
                 api_image=api_image,
                 ui_image=ui_image,
                 token=token,
+                source_root=candidate_root,
             ),
         )
         compose_paths.append(current_compose)
@@ -162,6 +168,7 @@ def run_rehearsal(
             api_image=api_image,
             ui_image=ui_image,
             token=token,
+            source_root=candidate_root,
         )
         failed_document["services"]["ithildin-api"]["command"] = [
             "python",
@@ -178,10 +185,20 @@ def run_rehearsal(
             "--force-recreate",
             check=False,
         )
-        if failed_update.returncode == 0 and _url_ready(
+        endpoint_unavailable = not _url_ready(
             f"http://127.0.0.1:{api_port}/healthz",
             headers={},
             timeout_seconds=5,
+        )
+        failed_service = _failed_service_observation(project, failed_compose)
+        if (
+            failed_update.returncode == 0
+            or not endpoint_unavailable
+            or failed_service != {
+                "service": "ithildin-api",
+                "state": "exited",
+                "exit_code": 23,
+            }
         ):
             raise OperationsError("failed_update_did_not_fail_closed")
         _compose(project, failed_compose, "down", "--remove-orphans", check=False)
@@ -205,11 +222,14 @@ def run_rehearsal(
                 api_image=api_image,
                 ui_image=ui_image,
                 token=token,
+                source_root=candidate_root,
             ),
         )
         compose_paths.append(restored_compose)
         _compose(project, restored_compose, "up", "-d")
         _verify_stack(api_port=api_port, ui_port=ui_port, token=token)
+        if not _tree_is_owner_only(restored_state, restored_workspaces):
+            raise OperationsError("restored_file_permissions_unsafe")
         _compose(project, restored_compose, "down", "--remove-orphans")
     finally:
         for compose_path in reversed(compose_paths):
@@ -238,6 +258,7 @@ def run_rehearsal(
         backup_root,
         restored_state,
         restored_workspaces,
+        candidate_root,
     ):
         shutil.rmtree(private_path)
     report = {
@@ -292,15 +313,21 @@ def compose_document(
     api_image: str,
     ui_image: str,
     token: str,
+    source_root: Path = ROOT,
 ) -> dict[str, Any]:
     uid = os.getuid()
     gid = os.getgid()
     return {
         "services": {
             "ithildin-api": {
-                "build": {"context": str(ROOT), "dockerfile": "deploy/Dockerfile.api"},
+                "build": {
+                    "context": str(source_root),
+                    "dockerfile": "deploy/Dockerfile.api",
+                },
                 "image": api_image,
                 "user": f"{uid}:{gid}",
+                "entrypoint": ["sh", "-c", 'umask 077; exec "$@"', "--"],
+                "command": ["python", "apps/api/verified_launch.py"],
                 "environment": {
                     "ITHILDIN_ADMIN_TOKEN": token,
                     "ITHILDIN_ALLOW_DEV_ADMIN_TOKEN": "false",
@@ -324,12 +351,15 @@ def compose_document(
                 },
                 "ports": [f"127.0.0.1:{api_port}:8000"],
                 "volumes": [
-                    f"{ROOT / 'tool-manifests.lock.json'}:/app/tool-manifests.lock.json:ro",
-                    f"{ROOT / 'tool-manifests'}:/app/tool-manifests:ro",
-                    f"{ROOT / 'policies'}:/app/policies:ro",
-                    f"{ROOT / 'principals'}:/app/principals:ro",
-                    f"{ROOT / 'trusted-hosts'}:/app/trusted-hosts:ro",
-                    f"{ROOT / 'scripts'}:/app/scripts:ro",
+                    (
+                        f"{source_root / 'tool-manifests.lock.json'}:"
+                        "/app/tool-manifests.lock.json:ro"
+                    ),
+                    f"{source_root / 'tool-manifests'}:/app/tool-manifests:ro",
+                    f"{source_root / 'policies'}:/app/policies:ro",
+                    f"{source_root / 'principals'}:/app/principals:ro",
+                    f"{source_root / 'trusted-hosts'}:/app/trusted-hosts:ro",
+                    f"{source_root / 'scripts'}:/app/scripts:ro",
                     f"{workspace_root}:/app/workspaces",
                     f"{state_root}:/app/var",
                     (
@@ -361,7 +391,7 @@ def compose_document(
             },
             "ithildin-ui": {
                 "build": {
-                    "context": str(ROOT),
+                    "context": str(source_root),
                     "dockerfile": "deploy/Dockerfile.ui",
                     "args": {
                         "VITE_ITHILDIN_API_BASE_URL": (
@@ -407,7 +437,32 @@ def snapshot_manifest(roots: dict[str, Path]) -> list[dict[str, Any]]:
     return records
 
 
-def _prepare_state(state_root: Path, workspace_root: Path) -> None:
+def _prepare_candidate(commit: str, candidate_root: Path, archive: Path) -> None:
+    _run_command(
+        [
+            "git",
+            "archive",
+            "--format=tar",
+            f"--output={archive}",
+            commit,
+        ],
+        failure="candidate_archive_failed",
+    )
+    candidate_root.mkdir(mode=0o700)
+    try:
+        with tarfile.open(archive, mode="r:") as candidate_archive:
+            candidate_archive.extractall(candidate_root, filter="data")
+    except (OSError, tarfile.TarError) as exc:
+        raise OperationsError("candidate_archive_invalid") from exc
+    finally:
+        archive.unlink(missing_ok=True)
+
+
+def _prepare_state(
+    source_root: Path,
+    state_root: Path,
+    workspace_root: Path,
+) -> None:
     for path in (
         state_root / "db",
         state_root / "logs",
@@ -416,9 +471,9 @@ def _prepare_state(state_root: Path, workspace_root: Path) -> None:
         workspace_root,
     ):
         path.mkdir(parents=True, mode=0o700)
-    shutil.copy2(ROOT / "workspaces/local.yaml", workspace_root / "local.yaml")
+    shutil.copy2(source_root / "workspaces/local.yaml", workspace_root / "local.yaml")
     shutil.copytree(
-        ROOT / "deploy/demo/workspace",
+        source_root / "deploy/demo/workspace",
         workspace_root / "demo",
         copy_function=shutil.copy2,
     )
@@ -462,6 +517,37 @@ def _verify_stack(*, api_port: int, ui_port: int, token: str) -> None:
         timeout_seconds=PROBE_TIMEOUT_SECONDS,
     ):
         raise OperationsError("command_center_not_ready")
+
+
+def _failed_service_observation(
+    project: str,
+    compose_path: Path,
+) -> dict[str, Any]:
+    result = _compose(
+        project,
+        compose_path,
+        "ps",
+        "--all",
+        "--format",
+        "json",
+        "ithildin-api",
+        check=False,
+    )
+    if result.returncode != 0:
+        return {}
+    try:
+        value = json.loads(result.stdout)
+    except json.JSONDecodeError:
+        return {}
+    records = value if isinstance(value, list) else [value]
+    if len(records) != 1 or not isinstance(records[0], dict):
+        return {}
+    record = records[0]
+    return {
+        "service": record.get("Service"),
+        "state": record.get("State"),
+        "exit_code": record.get("ExitCode"),
+    }
 
 
 def _url_ready(
@@ -560,6 +646,50 @@ def _remove_images(*images: str) -> bool:
         ).returncode == 0
         complete = complete and removed.returncode == 0 and not remains
     return complete
+
+
+def _require_docker_targets_absent(project: str, *images: str) -> None:
+    project_resources = _run_command(
+        [
+            "docker",
+            "ps",
+            "--all",
+            "--filter",
+            f"label=com.docker.compose.project={project}",
+            "--format",
+            "{{.ID}}",
+        ],
+        failure="docker_project_preflight_failed",
+    )
+    network = _run_command(
+        ["docker", "network", "inspect", f"{project}_default"],
+        failure="docker_project_preflight_failed",
+        check=False,
+    )
+    image_exists = any(
+        _run_command(
+            ["docker", "image", "inspect", image],
+            failure="image_preflight_failed",
+            check=False,
+        ).returncode
+        == 0
+        for image in images
+    )
+    if project_resources.stdout.strip() or network.returncode == 0 or image_exists:
+        raise OperationsError("docker_target_collision")
+
+
+def _tree_is_owner_only(*roots: Path) -> bool:
+    for root in roots:
+        for path in (root, *root.rglob("*")):
+            entry = os.lstat(path)
+            if stat.S_ISLNK(entry.st_mode):
+                return False
+            if stat.S_IMODE(entry.st_mode) & 0o077:
+                return False
+            if not (stat.S_ISDIR(entry.st_mode) or stat.S_ISREG(entry.st_mode)):
+                return False
+    return True
 
 
 def _require_clean_candidate() -> None:
