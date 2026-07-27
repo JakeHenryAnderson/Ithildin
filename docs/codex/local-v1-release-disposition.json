@@ -1,7 +1,7 @@
 {
   "schema_version": "1",
   "record_type": "ithildin_local_v1_release_disposition",
-  "record_status": "candidate_recorded",
+  "record_status": "reviewed",
   "candidate": {
     "frozen_commit": "ab4162d8f4b6d3f45a68f33316f4b765a45765db",
     "identity_evidence_path": "docs/codex/local-v1-candidate-identity.md",
@@ -17,15 +17,15 @@
     "transcript_sha256": "6da7ac1a34c411475b71132733e6eab9e959ce5a6f6179b3d77a3c9e48b70617"
   },
   "independent_review": {
-    "completed": false,
-    "reviewed_candidate_commit": null,
-    "disposition": null,
-    "record_path": null,
-    "record_sha256": null,
-    "critical_findings": null,
-    "high_findings": null,
-    "medium_findings": null,
-    "low_findings": null
+    "completed": true,
+    "reviewed_candidate_commit": "ab4162d8f4b6d3f45a68f33316f4b765a45765db",
+    "disposition": "GO",
+    "record_path": "docs/codex/local-v1-independent-review.md",
+    "record_sha256": "f07ccac384afd97d1932b3f7a8ffb2e4c88fb9857389e23942a11308c5084777",
+    "critical_findings": 0,
+    "high_findings": 0,
+    "medium_findings": 0,
+    "low_findings": 0
   },
   "human_uat": {
     "completed": false,

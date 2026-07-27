@@ -8,8 +8,8 @@ Status: active fixed-scope delivery contract.
 - Critical-path milestones complete: `7/8`
 - Latest completed milestone: `LV1-006`
 - Active next action: `LV1-007`
-- Local-v1 release gate: `candidate_pending`
-- Human UAT: `not_started`
+- Local-v1 release gate: `candidate_passed`
+- Human UAT: `ready_not_started`
 - Release acceptance: `false`
 
 This is the authoritative product-control surface for Local v1.0. Outcome counts, not percentage
@@ -185,6 +185,15 @@ findings after closing one exact-count Medium; no xhigh reviewer was used. The d
 is `docs/codex/local-v1-lv1-007-o2-disposition.md`. This evidence does not pass the Local-v1
 candidate gate, complete `O8` or `LV1-007`, authorize human UAT, or grant release authority. The
 next action is an exact clean candidate freeze and the dedicated candidate gate.
+
+Exact frozen candidate `ab4162d8f4b6d3f45a68f33316f4b765a45765db` passed the authoritative
+`make local-v1-candidate-check` from a clean worktree. One reused Sol-high reviewer returned final
+`GO` with zero open findings after identifying and closing one Medium gap in shipped API
+launch-boundary typechecking; no xhigh reviewer was used. The candidate gate and cumulative review
+are bound in `docs/codex/local-v1-candidate-gate.md` and
+`docs/codex/local-v1-independent-review.md`. `O8` and `LV1-007` remain in progress, because genuine
+human UAT and explicit human acceptance have not occurred. The UAT handoff is
+`docs/codex/local-v1-human-uat-packet.md`.
 
 Historical `LV1-003` lineage follows.
 `MCC-007` exact reviewed candidate is authorized for code use only. Independent Sol xhigh review of
