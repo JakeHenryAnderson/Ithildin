@@ -150,6 +150,14 @@ the bounded repair lineage; no xhigh reviewer was used. The durable digest-only 
 all authority remains false, and the tool count remains 24. The ordered next milestone is
 `LV1-007`; this evidence is not release acceptance, production durability, or human UAT.
 
+The first bounded `LV1-007` O2 recovery task reached the repository's repeated-live-gate stop
+condition after three exact-candidate rehearsals. The final candidate
+`00473f8a8e7ad16b15733a7476948c78646ea26f` failed closed at
+`gateway_o2_evidence_invalid`; exact cleanup completed and no success report was retained. `O2` and
+`LV1-007` remain `not_started`, no fourth attempt is authorized in that task, and all authority
+remains false. The durable safe disposition is
+`docs/codex/local-v1-lv1-007-o2-repeated-live-gate-disposition.md`.
+
 Historical `LV1-003` lineage follows.
 `MCC-007` exact reviewed candidate is authorized for code use only. Independent Sol xhigh review of
 candidate `da5fd021bddb48ad663aa0a409da036bc854b516` returned `GO` with zero Critical, High, Medium,
