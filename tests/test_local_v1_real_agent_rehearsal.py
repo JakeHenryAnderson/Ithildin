@@ -1,0 +1,169 @@
+from __future__ import annotations
+
+import os
+from pathlib import Path
+
+import pytest
+
+from scripts import local_v1_real_agent_rehearsal as real_agent
+from scripts import local_v1_real_agent_rehearsal_check as real_agent_check
+
+
+def _event(
+    event_type: str,
+    request_id: str,
+    tool_name: str,
+    *,
+    decision: str | None = None,
+    reason: str = "",
+    approval_id: str = "",
+) -> dict[str, object]:
+    metadata: dict[str, object] = {
+        "principal_id": real_agent.EXPECTED_PRINCIPAL,
+        "session_id": real_agent.EXPECTED_SESSION,
+    }
+    if reason:
+        metadata["reason"] = reason
+    if approval_id:
+        metadata["approval_id"] = approval_id
+    event: dict[str, object] = {
+        "event_type": event_type,
+        "request_id": request_id,
+        "tool_name": tool_name,
+        "metadata": metadata,
+    }
+    if decision is not None:
+        event["decision"] = decision
+    return event
+
+
+def test_o2_evaluator_distinguishes_allowed_denied_and_approval_required() -> None:
+    events = [
+        _event("policy.evaluated", "req-list", "fs.list", decision="allow"),
+        _event("tool.execution.completed", "req-list", "fs.list"),
+        _event("policy.evaluated", "req-read", "fs.read", decision="allow"),
+        _event("tool.execution.completed", "req-read", "fs.read"),
+        _event(
+            "policy.evaluated",
+            "req-deny",
+            "fs.read",
+            decision="deny",
+            reason="Resource is outside the workspace scope.",
+        ),
+        _event("policy.evaluated", "req-http", "http.fetch", decision="deny"),
+        _event(
+            "policy.evaluated",
+            "req-write",
+            real_agent.EXPECTED_WRITE_TOOL,
+            decision="require_approval",
+        ),
+        _event(
+            "approval.created",
+            "req-write",
+            real_agent.EXPECTED_WRITE_TOOL,
+            approval_id="appr_test",
+        ),
+    ]
+
+    observations = real_agent.evaluate_o2_events(
+        events,
+        approval_statuses={"appr_test": "pending"},
+    )
+
+    assert observations == {
+        "allowed_list_completed": True,
+        "allowed_read_completed": True,
+        "out_of_scope_read_denied_before_execution": True,
+        "http_denied_before_execution": True,
+        "approval_required_observed": True,
+        "approval_pending_without_execution": True,
+        "fixed_stdio_identity_observed": True,
+        "approval_count": 1,
+    }
+
+
+def test_o2_evaluator_fails_closed_on_execution_or_wrong_identity() -> None:
+    events = [
+        _event(
+            "policy.evaluated",
+            "req-deny",
+            "fs.read",
+            decision="deny",
+            reason="Resource is outside the workspace scope.",
+        ),
+        _event("tool.execution.completed", "req-deny", "fs.read"),
+    ]
+    metadata = events[0]["metadata"]
+    assert isinstance(metadata, dict)
+    metadata["principal_id"] = "agent:wrong"
+
+    observations = real_agent.evaluate_o2_events(events, approval_statuses={})
+
+    assert observations["out_of_scope_read_denied_before_execution"] is False
+    assert observations["fixed_stdio_identity_observed"] is False
+    assert observations["approval_pending_without_execution"] is False
+
+
+def test_docker_run_is_nonroot_bounded_and_has_no_docker_socket(tmp_path: Path) -> None:
+    command = real_agent.docker_run_command(
+        image="ithildin/hermes-local-v1-o2:test",
+        container="ithildin-local-v1-o2-test",
+        candidate_root=tmp_path / "candidate",
+        runtime_root=tmp_path / "runtime",
+    )
+    serialized = " ".join(command)
+
+    assert command[:2] == ["docker", "run"]
+    assert "--user" in command
+    assert f"{os.getuid()}:{os.getgid()}" in command
+    assert "--cap-drop" in command and "ALL" in command
+    assert "no-new-privileges:true" in command
+    assert "/var/run/docker.sock" not in serialized
+    assert "OPENAI" not in serialized
+    assert "ANTHROPIC" not in serialized
+    assert "sandbox_artifact_write_text" in serialized
+
+
+def test_checker_rejects_unconfined_report(tmp_path: Path) -> None:
+    failures = real_agent_check.validate_report(
+        tmp_path / real_agent.REPORT_NAME,
+        expected_candidate="a" * 40,
+    )
+
+    assert failures == ["report_path_not_confined"]
+
+
+def test_checker_uses_same_open_directory_for_report_and_siblings(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(real_agent, "ROOT", tmp_path)
+    monkeypatch.setattr(
+        real_agent,
+        "EVIDENCE_BASE",
+        tmp_path / "var/local-v1-real-agent",
+    )
+    run_id = "20260727T120000Z-" + ("a" * 32)
+    root = real_agent.EVIDENCE_BASE / run_id
+    root.mkdir(parents=True)
+    report = root / real_agent.REPORT_NAME
+    report.write_text("{}\n", encoding="utf-8")
+    os.chmod(report, 0o600)
+    root.joinpath("retained-private-state").write_text("synthetic", encoding="utf-8")
+    replaced = root.with_name(f"{root.name}-replaced")
+    real_listdir = os.listdir
+
+    def swap_before_listdir(path: int | str | bytes | os.PathLike[str]) -> list[str]:
+        if isinstance(path, int):
+            root.rename(replaced)
+            root.mkdir()
+            root.joinpath(real_agent.REPORT_NAME).write_text("{}\n", encoding="utf-8")
+        return real_listdir(path)
+
+    monkeypatch.setattr(os, "listdir", swap_before_listdir)
+
+    _text, _entry, retained_names = (
+        real_agent_check._read_report_and_siblings_nofollow(root)  # noqa: SLF001
+    )
+
+    assert "retained-private-state" in retained_names

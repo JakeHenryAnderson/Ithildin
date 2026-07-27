@@ -40,6 +40,7 @@ LOCAL_V1_CANDIDATE_TARGETS = (
     "resource-limit-check",
     "local-v1-runtime-trust-check",
     "local-v1-operations-static-check",
+    "local-v1-real-agent-static-check",
     "hermes-governance-poc-plan-check",
     "local-v1-hermes-evidence-check",
     "track-b-node-evidence-check",
@@ -292,6 +293,7 @@ def build_report(
             "$(MAKE) local-v1-golden-path-check",
             "$(MAKE) local-v1-failure-recovery-static-check",
             "$(MAKE) local-v1-operations-static-check",
+            "$(MAKE) local-v1-real-agent-static-check",
             "$(MAKE) agent-workflow-check",
             "tests/test_docs_site.py",
             "$(MAKE) docs-site",
@@ -323,6 +325,11 @@ def build_report(
             "tests/test_local_v1_operations_rehearsal.py",
             "scripts/local_v1_operations_rehearsal.py",
             "scripts/local_v1_operations_rehearsal_check.py",
+        ),
+        "local-v1-real-agent-static-check": (
+            "tests/test_local_v1_real_agent_rehearsal.py",
+            "scripts/local_v1_real_agent_rehearsal.py",
+            "scripts/local_v1_real_agent_rehearsal_check.py",
         ),
         "local-v1-ui-production-build": (
             "npm run build --prefix apps/ui",

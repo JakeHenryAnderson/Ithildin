@@ -297,7 +297,7 @@ def test_golden_path_target_is_in_milestone_and_exact_candidate_inventory() -> N
 
     assert "$(MAKE) local-v1-golden-path-check" in milestone_body
     assert "$(MAKE) local-v1-golden-path-check" in inventory_body
-    assert len(inventory_targets) == 37
+    assert len(inventory_targets) == 38
     assert inventory_targets == local_v1_contract_check.LOCAL_V1_CANDIDATE_TARGETS
     assert "mission-command-control-plane-poc" not in inventory_targets
     assert "hermes-poc-run" not in inventory_targets
