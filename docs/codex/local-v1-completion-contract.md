@@ -4,10 +4,10 @@ Status: active fixed-scope delivery contract.
 
 - Active delivery target: `Ithildin Local v1.0`
 - Current governed tool count: `24`
-- Release outcomes complete: `2/8`
-- Critical-path milestones complete: `4/8`
-- Latest completed milestone: `LV1-003`
-- Active next action: `LV1-004`
+- Release outcomes complete: `3/8`
+- Critical-path milestones complete: `5/8`
+- Latest completed milestone: `LV1-004`
+- Active next action: `LV1-005`
 - Local-v1 release gate: `blocked`
 - Human UAT: `not_started`
 - Release acceptance: `false`
@@ -44,7 +44,7 @@ integrated outcome.
 | `O2` | Real agent connection | `not_started` | A pinned operator-managed agent uses the existing MCP surface and the operator can distinguish allowed, denied, and approval-required activity. |
 | `O3` | Authenticated Node | `complete` | One optional local Node enrolls with a one-time code, receives Gateway-derived identity and workspace assignment, consumes signed configuration, reports bounded connectivity, and can be revoked. |
 | `O4` | One real constrained mission | `complete` | A server-owned mission reaches an operator-managed runner through the authenticated Node path and performs a governed operation with server-derived identity and workspace boundaries. |
-| `O5` | Failure and recovery scenario | `not_started` | One coherent scenario demonstrates restart continuity, replay rejection, partition failure, revocation, stale-configuration rejection, and documented manual rollback. |
+| `O5` | Failure and recovery scenario | `complete` | One coherent scenario demonstrates restart continuity, replay rejection, partition failure, revocation, stale-configuration rejection, and documented manual rollback. |
 | `O6` | Perceivable Command Center | `not_started` | A first-time operator can find the mission, understand what happened and why, inspect approval/evidence, and distinguish Gateway, Node, runner, and model-provider truth with accessible interaction. |
 | `O7` | Local operations | `not_started` | Backup/restore, update/rollback, recovery-required behavior, diagnostics, ports, data ownership, and cleanup are documented and exercised for the supported local topology. |
 | `O8` | Exact-candidate review and human UAT | `not_started` | One frozen candidate passes the dedicated Local-v1 gate and independent high-effort review, then a human operator completes the golden scenario and explicitly records acceptance or findings. |
@@ -78,7 +78,7 @@ authorized, implemented, and evidenced.
 | `LV1-001` | Golden local path assembly | `complete` | Assemble a reproducible operator-facing install/start/exercise/evidence/stop path from existing Gateway, UI, real Hermes MCP, and synthetic authenticated Node/Mission Command parts while preserving their truth separation. |
 | `LV1-002` | Authenticated Node journey | `complete` | Close the enrollment, signed-configuration, identity, connectivity, and revocation experience required by `O3`. |
 | `LV1-003` | Real constrained mission seam | `complete` | Make and review the bounded capability decision required before implementing the smallest fixed runner bridge and closing `O4`. |
-| `LV1-004` | Failure and recovery | `not_started` | Bind the integrated restart/replay/partition/revocation/stale-configuration/rollback scenario required by `O5`. |
+| `LV1-004` | Failure and recovery | `complete` | Bind the integrated restart/replay/partition/revocation/stale-configuration/rollback scenario required by `O5`. |
 | `LV1-005` | Command Center comprehension | `not_started` | Close the golden-path information architecture, truth-source separation, evidence navigation, and accessibility criteria required by `O6`. |
 | `LV1-006` | Local operations | `not_started` | Close installation hardening, backup/restore, update/rollback, diagnostics, data ownership, and cleanup required by `O1` and `O7`. |
 | `LV1-007` | Candidate freeze and UAT | `not_started` | Close remaining outcomes, freeze an exact candidate, run the dedicated release gate and independent review, then stop for genuine human UAT and an explicit release decision. |
@@ -118,8 +118,17 @@ integrated mission evidence bound by
 `docs/codex/local-v1-lv1-003-o4-attempt-021-disposition.md`. Gateway lifecycle truth is
 `runner_reported_succeeded`; runner state remains `runner_reported_only`; model-provider state is
 unknown. This closes only O4/LV1-003 and grants no release, production, UAT, or successor authority.
-The ordered next action is `LV1-004`, but it is paused and not started at the user-directed O4
-boundary. O5 is not authorized.
+`LV1-004` and `O5` are complete. Exact evidence candidate
+`b77d53562229026e932ec554fda5caca84c9642e` passed the integrated isolated loopback journey and
+its no-follow, candidate-bound checker. The digest-only evidence binding is
+`docs/codex/local-v1-lv1-004-disposition.md`. Restart continuity, replay rejection, partition
+failure, revocation, stale-configuration rejection, and manual rollback all passed.
+Configuration remains `stored_not_enforced`; runner state remains `runner_reported_only`; model-
+provider state remains unknown. The earlier reviewed trust-boundary candidate received independent
+Sol-high `GO` with zero findings; the final candidate adds only the tested regular-file probe repair
+needed after the first checker invocation exposed a permission-bit classification bug. That first
+run is not claimed as passing evidence. All live execution authority remains false. The ordered
+next milestone is `LV1-005`; no release, promotion, production, or UAT authority is granted.
 
 Historical `LV1-003` lineage follows.
 `MCC-007` exact reviewed candidate is authorized for code use only. Independent Sol xhigh review of

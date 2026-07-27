@@ -1,6 +1,6 @@
 # Local v1 LV1-004 Failure and Recovery Journey
 
-Status: implementation lane active; no O5 completion, release, or UAT claim.
+Status: complete through the separate digest-only disposition; no release or UAT claim.
 
 Current governed tool count: `24`.
 
@@ -46,24 +46,27 @@ Run static checks while implementing:
 make local-v1-failure-recovery-static-check
 ```
 
-The live-local evidence command requires a clean committed candidate:
+The live-local evidence command requires a clean committed candidate and one explicitly selected
+ignored root:
 
 ```sh
+LOCAL_V1_FAILURE_RECOVERY_EVIDENCE=<explicit-private-root> \
 make local-v1-failure-recovery-run
 ```
 
-The command prints the explicit ignored evidence root and checker invocation. Validate only that
-selected root against the explicit candidate:
+Select the ignored evidence root explicitly before running so the checker never needs to discover
+or print a private run identity:
 
 ```sh
-LOCAL_V1_FAILURE_RECOVERY_EVIDENCE=<printed-root> \
+LOCAL_V1_FAILURE_RECOVERY_EVIDENCE=<same-explicit-private-root> \
 LOCAL_V1_FAILURE_RECOVERY_CANDIDATE=<exact-commit> \
 make local-v1-failure-recovery-check
 ```
 
 The checker never searches for a latest run and never starts a service. A passing check is
-candidate-bound evidence only. Closing O5/LV1-004 still requires a separate durable disposition
-that binds the selected safe report and keeps release, promotion, production, and UAT false.
+candidate-bound evidence only. The separate
+`docs/codex/local-v1-lv1-004-disposition.md` binds the selected safe report and closes only
+O5/LV1-004 while keeping release, promotion, production, and UAT false.
 
 ## Authority Limits
 

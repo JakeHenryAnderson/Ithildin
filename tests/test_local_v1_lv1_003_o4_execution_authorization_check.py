@@ -5080,9 +5080,12 @@ def test_make_wiring_is_non_live_and_not_a_release_dependency() -> None:
     release_header = next(
         line for line in makefile.splitlines() if line.startswith("release-check:")
     )
+    milestone = gate._target_body(makefile, "local-v1-milestone-check")  # noqa: SLF001
 
     assert gate.AUTHORIZATION_TARGET not in release_header
     assert gate.PRODUCER_STATIC_TARGET not in release_header
+    assert gate.AUTHORIZATION_TARGET not in milestone
+    assert gate.PRODUCER_STATIC_TARGET not in milestone
     assert "local-v1-lv1-003-o4-live" not in makefile
     assert "docker compose" not in gate._target_body(  # noqa: SLF001
         makefile,

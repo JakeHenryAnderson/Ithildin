@@ -1,0 +1,87 @@
+{
+  "schema_version": "1",
+  "record_type": "local_v1_lv1_004_failure_recovery_disposition",
+  "record_status": "O5_LV1_004_COMPLETE_NO_LIVE_AUTHORITY",
+  "evidence_candidate": {
+    "commit": "b77d53562229026e932ec554fda5caca84c9642e",
+    "tree": "e514658e31300989ae339639f89f1fcd4b63bd57",
+    "parent": "7bba43480d05b62a5577f1b32ee4f2efac187b3e",
+    "clean_at_start_and_finish": true,
+    "finished_at_utc": "2026-07-27T12:18:07.550739+00:00"
+  },
+  "review_lineage": {
+    "reviewed_candidate_commit": "e2120f858ab35d19dac2dfa8ca83f0b555f7e147",
+    "reviewed_candidate_tree": "aa8531adcd8969c192b0bcc178d74bbdb227f5c1",
+    "disposition": "GO",
+    "critical_findings": 0,
+    "high_findings": 0,
+    "medium_findings": 0,
+    "low_findings": 0,
+    "final_candidate_independently_reviewed": false,
+    "post_review_delta_paths": [
+      "scripts/local_v1_failure_recovery_check.py",
+      "tests/test_local_v1_failure_recovery.py"
+    ],
+    "post_review_delta": "correct regular-file probe and add direct positive regression"
+  },
+  "execution": {
+    "first_unvalidated_run_claimed": false,
+    "first_unvalidated_run_reason": "checker_regular_file_probe_permission_bits_bug",
+    "fresh_final_candidate_run_exit_code": 0,
+    "checker_exit_code": 0,
+    "checker_output_sha256": "sha256:f67b7fdfb5df69fc2633e58925f1a6f28e08f8664d50fe48b3d8430a7377d477"
+  },
+  "private_evidence_binding": {
+    "private_run_identity_digest": "sha256:beb40d60b328e5089e643b7d83e94f91321a70a46fc235df1b60a096b90a9ed3",
+    "raw_run_identity_recorded": false,
+    "raw_node_or_mission_identity_recorded": false,
+    "private_evidence_file_count": 39,
+    "private_evidence_manifest_digest": "sha256:5d13053933698231982ebdc36f896039a49ca35a5a4816849f4bb11a096c71b7",
+    "report_json": {
+      "mode": "0600",
+      "size": 2012,
+      "sha256": "sha256:f1ab6cde44a7b0ea94faf05c79f8b3e00880152843073ee967a44d4d75cec7d7"
+    },
+    "report_markdown": {
+      "mode": "0600",
+      "size": 1042,
+      "sha256": "sha256:331c53f30c1f3d97a5568824165647db28c287ebb3287c48f7f63c0f02e50c15"
+    },
+    "identity_digests": {
+      "node": "sha256:f2968e339d2f1c38cb70049e45a42ccb55a0d884b510f8a566ccecd45fe2edd7",
+      "mission": "sha256:a61a9f728a69b5230abbfe9e18cd658cd3f43540378aa8d9a01e8e72c9e44bc6"
+    }
+  },
+  "observations": {
+    "restart_continuity": "passed",
+    "replay_rejection": "passed",
+    "partition_failure": "passed",
+    "revocation": "passed",
+    "stale_configuration_rejection": "passed",
+    "manual_rollback": "passed",
+    "rollback_generation": 3,
+    "rollback_configuration_digest": "sha256:7efd986100308de7ea3d9475a52be00793846de697c1c913c24d329602b0d4e1",
+    "configuration_enforcement": "stored_not_enforced",
+    "gateway_truth_authoritative": true,
+    "runner_state_authority": "runner_reported_only",
+    "model_provider_state": "unknown"
+  },
+  "authority": {
+    "arbitrary_host_control_authorized": false,
+    "docker_lifecycle_authorized": false,
+    "model_provider_access_authorized": false,
+    "new_governed_power_authorized": false,
+    "new_governed_tool": false,
+    "production_authorized": false,
+    "promotion_allowed": false,
+    "release_allowed": false,
+    "runner_launch_authorized": false,
+    "uat_complete": false
+  },
+  "closure": {
+    "o5_complete": true,
+    "lv1_004_complete": true,
+    "active_next_action": "LV1-005"
+  },
+  "tool_count": 24
+}

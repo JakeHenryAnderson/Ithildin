@@ -384,5 +384,6 @@ checker reports malformed/stale evidence.
 
 The live runtime seam `LV1-003` is complete through the separate exact Attempt 021 disposition.
 Leg A and Leg B above remain deliberately historical and separate; they are not rewritten as the
-integrated run. The next ordered milestone is `LV1-004`, but it is paused and not started at the
-user-directed O4 boundary. O5 authority, release, and UAT remain false.
+integrated run. The separate candidate-bound failure-and-recovery journey closes `O5` and
+`LV1-004`; it does not rewrite this walkthrough or grant it runtime authority. The next ordered
+milestone is `LV1-005`. Release and UAT remain false.

@@ -105,8 +105,9 @@ REQUIRED_CONTRACT_PHRASES = (
     "runner_reported_succeeded",
     "runner_reported_only",
     "model-provider state is",
-    "paused and not started at the user-directed O4 boundary",
-    "O5 is not authorized",
+    "`LV1-004` and `O5` are complete",
+    "docs/codex/local-v1-lv1-004-disposition.md",
+    "All live execution authority remains false",
     "production PostgreSQL",
     "enterprise tenancy",
     "multi-user RBAC",
@@ -288,6 +289,7 @@ def build_report(
         "local-v1-milestone-check": (
             "$(MAKE) local-v1-inner-check",
             "$(MAKE) local-v1-golden-path-check",
+            "$(MAKE) local-v1-failure-recovery-static-check",
             "$(MAKE) agent-workflow-check",
             "tests/test_docs_site.py",
             "$(MAKE) docs-site",
@@ -327,6 +329,16 @@ def build_report(
         for phrase in phrases:
             if phrase not in body:
                 failures.append(f"{target} is missing: {phrase}")
+    milestone_body = _target_body(makefile, "local-v1-milestone-check")
+    for historical_target in (
+        "local-v1-lv1-003-o4-execution-authorization-check",
+        "local-v1-lv1-003-o4-producer-static-check",
+    ):
+        if f"$(MAKE) {historical_target}" in milestone_body:
+            failures.append(
+                "local-v1-milestone-check reopens a consumed LV1-003 gate: "
+                f"{historical_target}"
+            )
 
     failures.extend(validate_candidate_inventory(makefile))
     return _build_status(

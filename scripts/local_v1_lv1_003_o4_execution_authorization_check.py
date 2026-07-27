@@ -14508,8 +14508,10 @@ def _validate_wiring(repo_root: Path, failures: list[str]) -> None:
         if body.strip() != expected_body.strip():
             failures.append(f"O4 execution Make target body is not exact: {target}")
         milestone = _target_body(makefile, "local-v1-milestone-check")
-        if milestone.count(f"\t$(MAKE) {target}") != 1:
-            failures.append(f"O4 execution target is not in Local-v1 milestone once: {target}")
+        if milestone.count(f"\t$(MAKE) {target}") != 0:
+            failures.append(
+                f"consumed O4 execution target remains in Local-v1 milestone: {target}"
+            )
         release_header = next(
             (line for line in makefile.splitlines() if line.startswith("release-check:")),
             "",

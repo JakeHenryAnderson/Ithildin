@@ -74,7 +74,10 @@ local-v1-failure-recovery-static-check:
 
 # LIVE-LOCAL, clean-candidate, isolated loopback evidence journey. No Docker or provider.
 local-v1-failure-recovery-run:
-	uv run --offline --frozen python -m scripts.local_v1_failure_recovery_journey
+	@test -n "$(LOCAL_V1_FAILURE_RECOVERY_EVIDENCE)" || \
+		(echo "LOCAL_V1_FAILURE_RECOVERY_EVIDENCE is required" >&2; exit 2)
+	uv run --offline --frozen python -m scripts.local_v1_failure_recovery_journey \
+		--evidence-root "$(LOCAL_V1_FAILURE_RECOVERY_EVIDENCE)"
 
 # Evidence-only checker. The selected root and expected candidate must be explicit.
 local-v1-failure-recovery-check:
@@ -190,8 +193,7 @@ local-v1-milestone-check:
 	$(MAKE) local-v1-golden-path-check
 	$(MAKE) mission-command-runner-bridge-decision-check
 	$(MAKE) mission-command-runner-bridge-authorization-frozen-check
-	$(MAKE) local-v1-lv1-003-o4-execution-authorization-check
-	$(MAKE) local-v1-lv1-003-o4-producer-static-check
+	$(MAKE) local-v1-failure-recovery-static-check
 	$(MAKE) mission-command-runner-bridge-profile-check
 	$(MAKE) local-v1-constrained-mission-contract-check
 	$(MAKE) agent-workflow-check

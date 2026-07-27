@@ -125,8 +125,9 @@ REQUIRED_PHRASES = (
     "local-v1-lv1-003-o4-attempt-021-disposition.md",
     "closes `O4` and `LV1-003`",
     "walkthrough itself does not prove",
-    "paused and not started at the user-directed O4 boundary",
-    "O5 authority, release, and UAT remain false",
+    "separate candidate-bound failure-and-recovery journey closes `O5`",
+    "next ordered milestone is `LV1-005`",
+    "Release and UAT remain false",
 )
 
 ORDERED_COMMANDS = (

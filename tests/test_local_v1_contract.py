@@ -87,21 +87,74 @@ def test_live_local_v1_contract_is_internally_consistent_at_any_lifecycle_stage(
         assert report["release_accepted"] is True
 
 
-def test_contract_rejects_stale_o4_incomplete_or_live_authority_wording() -> None:
+def test_contract_rejects_stale_o5_incomplete_or_live_authority_wording() -> None:
     contract = (ROOT / local_v1_contract_check.CONTRACT_REL).read_text(encoding="utf-8")
     stale = contract.replace(
-        "| `O4` | One real constrained mission | `complete` |",
-        "| `O4` | One real constrained mission | `not_started` |",
+        "| `O5` | Failure and recovery scenario | `complete` |",
+        "| `O5` | Failure and recovery scenario | `not_started` |",
         1,
     ).replace(
-        "O5 is not authorized.",
-        "O5 live authority is authorized.",
+        "All live execution authority remains false.",
+        "Live execution authority is authorized.",
         1,
     )
 
     failures, _, _ = local_v1_contract_check.validate_contract_text(stale)
 
     assert failures
+
+
+def test_lv1_004_disposition_is_digest_only_and_candidate_bound() -> None:
+    disposition_path = ROOT / "docs/codex/local-v1-lv1-004-disposition.json"
+    markdown_path = ROOT / "docs/codex/local-v1-lv1-004-disposition.md"
+    disposition = json.loads(disposition_path.read_text(encoding="utf-8"))
+    candidate = disposition["evidence_candidate"]
+    evidence = disposition["private_evidence_binding"]
+    observations = disposition["observations"]
+
+    assert disposition["record_status"] == "O5_LV1_004_COMPLETE_NO_LIVE_AUTHORITY"
+    assert disposition["tool_count"] == 24
+    assert disposition["closure"] == {
+        "o5_complete": True,
+        "lv1_004_complete": True,
+        "active_next_action": "LV1-005",
+    }
+    assert all(value is False for value in disposition["authority"].values())
+    assert candidate["tree"] == subprocess.run(
+        ["git", "rev-parse", f"{candidate['commit']}^{{tree}}"],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+    assert candidate["parent"] == subprocess.run(
+        ["git", "rev-parse", f"{candidate['commit']}^"],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+    assert evidence["raw_run_identity_recorded"] is False
+    assert evidence["raw_node_or_mission_identity_recorded"] is False
+    assert evidence["private_evidence_file_count"] == 39
+    assert observations["configuration_enforcement"] == "stored_not_enforced"
+    assert observations["runner_state_authority"] == "runner_reported_only"
+    assert observations["model_provider_state"] == "unknown"
+    serialized = json.dumps(disposition, sort_keys=True) + markdown_path.read_text(
+        encoding="utf-8"
+    )
+    assert re.search(r"\b(?:node|mission|mclaim|run)_[0-9a-f]{32}\b", serialized) is None
+    assert all(
+        re.fullmatch(r"sha256:[0-9a-f]{64}", digest)
+        for digest in (
+            evidence["private_run_identity_digest"],
+            evidence["private_evidence_manifest_digest"],
+            evidence["report_json"]["sha256"],
+            evidence["report_markdown"]["sha256"],
+            evidence["identity_digests"]["node"],
+            evidence["identity_digests"]["mission"],
+        )
+    )
 
 
 def test_uninitialized_local_v1_release_check_fails_closed() -> None:
