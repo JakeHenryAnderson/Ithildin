@@ -86,20 +86,22 @@
       "id": "E1-O4",
       "milestone_id": "E1-M4",
       "title": "Authoritative mission and fleet operations cockpit",
-      "status": "in_progress",
+      "status": "complete",
       "existing_evidence": [
         "apps/ui/src/App.tsx",
         "apps/ui/src/App.test.tsx",
+        "apps/ui/package-lock.json",
         "apps/api/src/ithildin_api/missions.py",
         "apps/api/src/ithildin_api/nodes.py",
         "docs/codex/command-center-terminology-and-state-contract.md",
-        "docs/codex/command-center-node-governed-run-correlation-implementation-handoff.md"
+        "docs/codex/command-center-node-governed-run-correlation-implementation-handoff.md",
+        "docs/codex/enterprise-e1-cockpit-contract.json",
+        "docs/codex/enterprise-e1-cockpit-contract.md",
+        "docs/codex/enterprise-e1-m4-observed-results.md",
+        "scripts/enterprise_e1_cockpit_check.py",
+        "tests/test_enterprise_e1_cockpit.py"
       ],
-      "remaining_requirements": [
-        "E1 operator view of missions, fleet, versions, configuration posture, attention, approvals, and evidence",
-        "tested separation of Gateway truth, Node connectivity, runner-reported state, and model-provider state",
-        "accessible operator workflow using only already-governed initiation paths"
-      ]
+      "remaining_requirements": []
     },
     {
       "id": "E1-O5",
@@ -164,7 +166,7 @@
       "id": "E1-M4",
       "outcome_id": "E1-O4",
       "title": "Operations cockpit checkpoint",
-      "status": "in_progress"
+      "status": "complete"
     },
     {
       "id": "E1-M5",
@@ -180,9 +182,9 @@
     }
   ],
   "progress": {
-    "outcomes_complete": 3,
+    "outcomes_complete": 4,
     "outcomes_total": 6,
-    "milestones_complete": 3,
+    "milestones_complete": 4,
     "milestones_total": 6
   },
   "pis_wait": {
@@ -227,5 +229,5 @@
     "Local v1 release acceptance",
     "human UAT completion"
   ],
-  "next_action": "E1-M4"
+  "next_action": "E1-M5"
 }

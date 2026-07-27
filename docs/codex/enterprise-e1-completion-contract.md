@@ -1,6 +1,6 @@
 # Ithildin Enterprise Track E1 Completion Contract
 
-Status: active implementation contract. Outcomes complete: `3/6`. Milestones complete: `3/6`.
+Status: active implementation contract. Outcomes complete: `4/6`. Milestones complete: `4/6`.
 
 The machine-readable authority is
 [`enterprise-e1-completion-contract.json`](enterprise-e1-completion-contract.json). Validate it
@@ -24,8 +24,8 @@ descendant branch and does not change Local v1 candidate, review, UAT, or releas
 | `E1-M1` | `E1-O1` - Reproducible single-site deployment | `complete` |
 | `E1-M2` | `E1-O2` - Versioned policy and Node-configuration distribution | `complete` |
 | `E1-M3` | `E1-O3` - Safe upgrade, rollback, and recovery | `complete` |
-| `E1-M4` | `E1-O4` - Authoritative mission and fleet operations cockpit | `in_progress` |
-| `E1-M5` | `E1-O5` - Bounded operational evidence export | `not_started` |
+| `E1-M4` | `E1-O4` - Authoritative mission and fleet operations cockpit | `complete` |
+| `E1-M5` | `E1-O5` - Bounded operational evidence export | `in_progress` |
 | `E1-M6` | `E1-O6` - Exact candidate qualification and UAT handoff | `not_started` |
 
 Milestones advance in this order. A later outcome may reuse or inspect existing behavior, but it
@@ -73,11 +73,14 @@ binds two independently valid live-local legs to exact commit
 
 Reuse Command Center mission, fleet, configuration cohort, version cohort, approvals, attention,
 run correlation, evidence, and terminology work. Prior Command Center UAT artifacts remain
-lineage, not E1 qualification. The E1 checkpoint must prove accessible operator flow and preserve
-the distinction between Gateway truth, Node connectivity, runner-reported state, and unknown
-model-provider state. Command Center remains a presentation and initiation surface over existing
-Gateway-governed workflows.
-This is the active `E1-M4` checkpoint.
+lineage, not E1 qualification.
+[`enterprise-e1-cockpit-contract.md`](enterprise-e1-cockpit-contract.md) binds seven operator
+surfaces, four distinct truth sources, existing governed initiation paths, and accessible
+interaction requirements without giving Command Center execution authority.
+[`enterprise-e1-m4-observed-results.md`](enterprise-e1-m4-observed-results.md) records the exact
+contract, TypeScript, 66-interaction-test, production-build, dependency-audit, and boundary-gate
+results against commit `c73e1e73eb2f7c92f9cc0d470fb26f23dffcbaf5`. Fresh human accessibility
+and operator-flow acceptance remains false. E1-O4 and E1-M4 are complete.
 
 ### E1-O5 - Bounded operational evidence export
 
@@ -87,6 +90,7 @@ deterministic, receiver-neutral, locally verifiable, redacted, and cover deploym
 configuration, upgrade/rollback, mission, fleet, approvals, and audit evidence without claiming
 whole-host coverage, SIEM custody, hosted telemetry, external notarization, or compliance
 automation.
+This is the active `E1-M5` checkpoint.
 
 ### E1-O6 - Exact candidate qualification and UAT handoff
 
