@@ -90,7 +90,15 @@ def build_report(repo_root: Path) -> dict[str, Any]:
     doc_path = DOC_REL.as_posix()
     if CONTRACT_REL.name not in doc:
         failures.append("E1 completion document does not link the machine contract")
-    if "Outcomes complete: `0/6`" not in doc or "Milestones complete: `0/6`" not in doc:
+    progress = contract.get("progress") if isinstance(contract, dict) else None
+    outcome_count = progress.get("outcomes_complete") if isinstance(progress, dict) else "invalid"
+    milestone_count = (
+        progress.get("milestones_complete") if isinstance(progress, dict) else "invalid"
+    )
+    if (
+        f"Outcomes complete: `{outcome_count}/6`" not in doc
+        or f"Milestones complete: `{milestone_count}/6`" not in doc
+    ):
         failures.append("E1 completion document does not use current count-based progress")
     if "%" in doc:
         failures.append("E1 completion document contains percentage-based progress")

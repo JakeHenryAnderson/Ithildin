@@ -21,7 +21,7 @@
       "id": "E1-O1",
       "milestone_id": "E1-M1",
       "title": "Reproducible single-site deployment",
-      "status": "in_progress",
+      "status": "complete",
       "existing_evidence": [
         "deploy/docker-compose.yml",
         "deploy/README.md",
@@ -31,20 +31,20 @@
         "docs/codex/local-v1-lv1-006-operations.md",
         "scripts/enterprise_e1_single_site.py",
         "scripts/enterprise_e1_single_site_deployment_check.py",
+        "scripts/enterprise_e1_single_site_rehearsal.py",
         "scripts/local_v1_operations_rehearsal.py",
         "tests/test_local_v1_operations_rehearsal.py",
-        "tests/test_enterprise_e1_single_site.py"
+        "tests/test_enterprise_e1_single_site.py",
+        "tests/test_enterprise_e1_single_site_rehearsal.py",
+        "docs/codex/enterprise-e1-m1-observed-results.md"
       ],
-      "remaining_requirements": [
-        "observed candidate-bound build, start, health, shutdown, and retained-state evidence",
-        "E1-M3 integration with upgrade and recovery rehearsal"
-      ]
+      "remaining_requirements": []
     },
     {
       "id": "E1-O2",
       "milestone_id": "E1-M2",
       "title": "Versioned policy and Node-configuration distribution",
-      "status": "not_started",
+      "status": "in_progress",
       "existing_evidence": [
         "apps/api/src/ithildin_api/node_configuration.py",
         "apps/node/src/ithildin_node/client.py",
@@ -143,13 +143,13 @@
       "id": "E1-M1",
       "outcome_id": "E1-O1",
       "title": "Single-site deployment checkpoint",
-      "status": "in_progress"
+      "status": "complete"
     },
     {
       "id": "E1-M2",
       "outcome_id": "E1-O2",
       "title": "Policy and Node configuration checkpoint",
-      "status": "not_started"
+      "status": "in_progress"
     },
     {
       "id": "E1-M3",
@@ -177,9 +177,9 @@
     }
   ],
   "progress": {
-    "outcomes_complete": 0,
+    "outcomes_complete": 1,
     "outcomes_total": 6,
-    "milestones_complete": 0,
+    "milestones_complete": 1,
     "milestones_total": 6
   },
   "pis_wait": {
@@ -224,5 +224,5 @@
     "Local v1 release acceptance",
     "human UAT completion"
   ],
-  "next_action": "E1-M1"
+  "next_action": "E1-M2"
 }

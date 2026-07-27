@@ -1,6 +1,6 @@
 # Ithildin Enterprise Track E1 Completion Contract
 
-Status: active implementation contract. Outcomes complete: `0/6`. Milestones complete: `0/6`.
+Status: active implementation contract. Outcomes complete: `1/6`. Milestones complete: `1/6`.
 
 The machine-readable authority is
 [`enterprise-e1-completion-contract.json`](enterprise-e1-completion-contract.json). Validate it
@@ -21,8 +21,8 @@ descendant branch and does not change Local v1 candidate, review, UAT, or releas
 
 | Milestone | Outcome | Current state |
 | --- | --- | --- |
-| `E1-M1` | `E1-O1` - Reproducible single-site deployment | `in_progress` |
-| `E1-M2` | `E1-O2` - Versioned policy and Node-configuration distribution | `not_started` |
+| `E1-M1` | `E1-O1` - Reproducible single-site deployment | `complete` |
+| `E1-M2` | `E1-O2` - Versioned policy and Node-configuration distribution | `in_progress` |
 | `E1-M3` | `E1-O3` - Safe upgrade, rollback, and recovery | `not_started` |
 | `E1-M4` | `E1-O4` - Authoritative mission and fleet operations cockpit | `not_started` |
 | `E1-M5` | `E1-O5` - Bounded operational evidence export | `not_started` |
@@ -36,12 +36,16 @@ does not become complete before the preceding checkpoint is complete.
 ### E1-O1 - Reproducible single-site deployment
 
 Reuse `deploy/docker-compose.yml`, `deploy/README.md`, the stdlib runtime-candidate bootstrap, and
-the Local v1 operations rehearsal. The first E1 slice adds
+the Local v1 operations rehearsal. E1 adds
 [`deploy/single-site/`](../../deploy/single-site/README.md): a versioned API/UI profile,
-owner-only closed environment and state bootstrap, loopback health probe, fixed shutdown path, and
-static deployment checkpoint. E1-O1 remains in progress until one candidate-bound observed build,
-start, health, shutdown, and retained-state evidence run is recorded; E1-M3 will then reuse it for
-upgrade and recovery.
+owner-only closed environment and state bootstrap, authenticated loopback health/status probe,
+fixed shutdown path, static deployment checkpoint, and isolated observed rehearsal.
+[`enterprise-e1-m1-observed-results.md`](enterprise-e1-m1-observed-results.md) binds the passing
+build, start, 24-tool health, shutdown, retained-state observation, and cleanup receipt to exact
+source commit `1300f2d046f0f255c6a1a5206f0a9d318f36d24a`. The runtime posture remained explicitly
+`unreviewed_local`; this is deployment-candidate provenance, not E1 candidate qualification.
+E1-O1 and E1-M1 are complete. E1-M3 will reuse the substrate for its separate upgrade and recovery
+outcome.
 
 ### E1-O2 - Versioned policy and Node-configuration distribution
 
@@ -49,7 +53,8 @@ Reuse the existing signed per-Node configuration generations, server-derived Nod
 binding, private local storage, acknowledgment, offline enforcement, staleness rejection, trust
 rotation, and manual rollback-as-fresh-generation behavior. E1 still needs one checked bundle and
 operator-state contract that keeps desired, acknowledged, stored, enforced, stale, rejected, and
-rollback states distinct. No new governed tool or arbitrary host control is required.
+rollback states distinct. No new governed tool or arbitrary host control is required. This is the
+active `E1-M2` checkpoint.
 
 ### E1-O3 - Safe upgrade, rollback, and recovery
 
