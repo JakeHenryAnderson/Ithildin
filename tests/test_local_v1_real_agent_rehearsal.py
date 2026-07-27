@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -209,6 +210,7 @@ def test_docker_run_is_nonroot_bounded_and_has_no_docker_socket(tmp_path: Path) 
         container="ithildin-local-v1-o2-test",
         candidate_root=tmp_path / "candidate",
         runtime_root=tmp_path / "runtime",
+        query=real_agent.FIXED_TURNS[0][1],
     )
     serialized = " ".join(command)
 
@@ -222,9 +224,87 @@ def test_docker_run_is_nonroot_bounded_and_has_no_docker_socket(tmp_path: Path) 
     assert "/var/run/docker.sock" not in serialized
     assert "OPENAI" not in serialized
     assert "ANTHROPIC" not in serialized
-    assert "sandbox_artifact_write_text" in serialized
+    assert "mcp__ithildin_local__fs_read" in serialized
     assert "mcp__ithildin_local__fs_list" not in serialized
     assert "mcp__ithildin_local__http_fetch" not in serialized
+
+
+def test_fixed_turns_are_single_purpose_and_closed(tmp_path: Path) -> None:
+    assert tuple(name for name, _query in real_agent.FIXED_TURNS) == (
+        "allowed-read",
+        "denied-read",
+        "approval-write",
+    )
+    expected_tools = (
+        "mcp__ithildin_local__fs_read",
+        "mcp__ithildin_local__fs_read",
+        "mcp__ithildin_local__sandbox_artifact_write_text",
+    )
+
+    for index, ((turn_name, query), expected_tool) in enumerate(
+        zip(real_agent.FIXED_TURNS, expected_tools, strict=True)
+    ):
+        command = real_agent.docker_run_command(
+            image="ithildin/hermes-local-v1-o2:test",
+            container=f"ithildin-local-v1-o2-test-{turn_name}",
+            candidate_root=tmp_path / "candidate",
+            runtime_root=tmp_path / "runtime",
+            query=query,
+        )
+        serialized = " ".join(command)
+
+        assert command[-1] == query
+        assert serialized.count("mcp__ithildin_local__") == 1
+        assert expected_tool in serialized
+        assert all(
+            other_query not in serialized
+            for other_index, (_other_name, other_query) in enumerate(
+                real_agent.FIXED_TURNS
+            )
+            if other_index != index
+        )
+
+
+def test_fixed_turns_continue_after_nonzero_runner_exit(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    commands: list[list[str]] = []
+    returncodes = iter((1, 2, 0))
+
+    def run_command(
+        command: list[str],
+        *,
+        failure: str,
+        check: bool = True,
+        timeout: int = real_agent.COMMAND_TIMEOUT_SECONDS,
+    ) -> subprocess.CompletedProcess[str]:
+        del failure, check, timeout
+        commands.append(command)
+        return subprocess.CompletedProcess(command, next(returncodes))
+
+    monkeypatch.setattr(real_agent, "_run_command", run_command)
+    containers = tuple(
+        f"ithildin-local-v1-o2-test-{turn_name}"
+        for turn_name, _query in real_agent.FIXED_TURNS
+    )
+
+    result = real_agent._run_fixed_turns(  # noqa: SLF001
+        image="ithildin/hermes-local-v1-o2:test",
+        containers=containers,
+        candidate_root=tmp_path / "candidate",
+        runtime_root=tmp_path / "runtime",
+    )
+
+    assert result == {
+        "allowed-read": False,
+        "denied-read": False,
+        "approval-write": True,
+    }
+    assert len(commands) == 3
+    assert [command[command.index("--name") + 1] for command in commands] == list(
+        containers
+    )
 
 
 def test_docker_enumeration_failure_does_not_prove_absence(

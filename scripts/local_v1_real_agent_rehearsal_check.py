@@ -77,6 +77,18 @@ def validate_report(report_path: Path, *, expected_candidate: str) -> list[str]:
         failures.append("audit_event_count_invalid")
     if not isinstance(observations.get("runner_process_exit_zero"), bool):
         failures.append("runner_process_exit_observation_invalid")
+    runner_turn_exit_zero = _mapping(observations.get("runner_turn_exit_zero"))
+    expected_turns = {turn_name for turn_name, _query in real_agent.FIXED_TURNS}
+    if (
+        set(runner_turn_exit_zero) != expected_turns
+        or any(
+            not isinstance(runner_turn_exit_zero.get(turn_name), bool)
+            for turn_name in expected_turns
+        )
+        or observations.get("runner_process_exit_zero")
+        != all(runner_turn_exit_zero.values())
+    ):
+        failures.append("runner_turn_exit_observation_invalid")
     if observations.get("approval_count") != 1:
         failures.append("approval_count_invalid")
     topology = _mapping(report.get("topology"))
@@ -113,7 +125,7 @@ def validate_report(report_path: Path, *, expected_candidate: str) -> list[str]:
         PRIVATE_ID.search(serialized)
         or "bearer " in lowered
         or "synthetic-test-token" in lowered
-        or real_agent.FIXED_QUERY in serialized
+        or any(query in serialized for _turn_name, query in real_agent.FIXED_TURNS)
     ):
         failures.append("report_contains_private_or_prompt_content")
     return failures

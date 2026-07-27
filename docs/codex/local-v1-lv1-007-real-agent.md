@@ -2,9 +2,9 @@
 
 Status: bounded exact-candidate O2 rehearsal; no release or UAT authority.
 
-This rehearsal closes only the missing current-candidate evidence for `O2`. It runs the already
-pinned operator-managed Hermes image against an immutable archive of one clean Git candidate and
-the existing local stdio MCP surface.
+This rehearsal closes only the missing current-candidate evidence for `O2`. It runs three fixed,
+single-purpose turns from the already pinned operator-managed Hermes image against an immutable
+archive of one clean Git candidate and the existing local stdio MCP surface.
 
 ```sh
 make local-v1-real-agent-static-check
@@ -38,13 +38,17 @@ Gateway evidence. Ollama availability is a model-provider dependency observation
 
 ## Boundaries
 
-The harness builds from `git archive` of the recorded candidate, starts one uniquely named
-candidate-specific container, mounts only its private synthetic evidence directory plus the tracked
-read-only Hermes configuration, and removes that exact container and image. The operator harness
-sets the pinned runner's home explicitly and supplies a private home tmpfs so the host-matching
-nonroot UID can read the tracked configuration without writing runner state into the image or host.
-It never mounts the Docker socket into Ithildin or Hermes. It grants no generic container control,
-API change, new governed tool, new power, production authority, release acceptance, or UAT
+The harness builds one image from `git archive` of the recorded candidate, then starts three
+uniquely named candidate-specific containers in the fixed allowed-read, denied-read, and
+approval-write order. Each turn mounts only the same private synthetic Gateway evidence directory
+plus the tracked read-only Hermes configuration. A nonzero runner exit does not suppress later
+turns, and runner exits remain observations rather than Gateway truth. The operator harness sets
+the pinned runner's home explicitly and supplies a fresh private home tmpfs for every turn so the
+host-matching nonroot UID can read the tracked configuration without writing runner state into the
+image or host. It removes all three exact containers and the exact image.
+
+The harness never mounts the Docker socket into Ithildin or Hermes. It grants no generic container
+control, API change, new governed tool, new power, production authority, release acceptance, or UAT
 completion.
 
 The final mode-`0600` report contains candidate identity, booleans, counts, truth-source labels, and
