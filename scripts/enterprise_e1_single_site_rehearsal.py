@@ -13,6 +13,7 @@ import socket
 import stat
 import subprocess
 import sys
+import tempfile
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -105,38 +106,46 @@ def run_rehearsal(
     project = f"ithildin-e1-{site_id}"
     api_image = f"ithildin/api:{version}"
     ui_image = f"ithildin/ui:{version}"
-    data_root = run_root / "state"
-    inventory_path = run_root / "unreviewed-runtime-candidate.json"
-    authority_path = run_root / "unavailable-runtime-authority.json"
-    env_path = run_root / "rehearsal.env"
+    runtime_directory = tempfile.TemporaryDirectory(prefix=f"ithildin-e1-{suffix}-")
+    runtime_root = Path(runtime_directory.name)
+    data_root = runtime_root / "state"
+    inventory_path = runtime_root / "unreviewed-runtime-candidate.json"
+    authority_path = runtime_root / "unavailable-runtime-authority.json"
+    env_path = runtime_root / "rehearsal.env"
     token = secrets.token_urlsafe(32)
     cleanup_failures: list[str] = []
 
-    _write_mode(inventory_path, b"{}\n", 0o400)
-    _write_mode(authority_path, b"{}\n", 0o400)
-    environment = {
-        "ITHILDIN_E1_SITE_ID": site_id,
-        "ITHILDIN_E1_VERSION": version,
-        "ITHILDIN_E1_SOURCE_REVISION": commit,
-        "ITHILDIN_E1_API_PORT": str(api_port),
-        "ITHILDIN_E1_UI_PORT": str(ui_port),
-        "ITHILDIN_E1_DATA_ROOT": str(data_root),
-        "ITHILDIN_E1_RUNTIME_INVENTORY_PATH": str(inventory_path),
-        "ITHILDIN_E1_RUNTIME_AUTHORITY_PATH": str(authority_path),
-        "ITHILDIN_E1_EXPECTED_RUNTIME_POSTURE": "unreviewed_local",
-        "ITHILDIN_ADMIN_TOKEN": token,
-        "ITHILDIN_CONTAINER_UID": str(os.getuid()),
-        "ITHILDIN_CONTAINER_GID": str(os.getgid()),
-    }
-    _write_mode(
-        env_path,
-        ("\n".join(f"{key}={value}" for key, value in environment.items()) + "\n").encode(),
-        0o600,
-    )
-    config = enterprise_e1_single_site.validate_environment(environment, ROOT)
-    enterprise_e1_single_site.bootstrap_state(config)
-    shutil.copyfile(ROOT / "workspaces/local.yaml", data_root / "workspaces/local.yaml")
-    os.chmod(data_root / "workspaces/local.yaml", 0o400)
+    try:
+        _write_mode(inventory_path, b"{}\n", 0o400)
+        _write_mode(authority_path, b"{}\n", 0o400)
+        environment = {
+            "ITHILDIN_E1_SITE_ID": site_id,
+            "ITHILDIN_E1_VERSION": version,
+            "ITHILDIN_E1_SOURCE_REVISION": commit,
+            "ITHILDIN_E1_API_PORT": str(api_port),
+            "ITHILDIN_E1_UI_PORT": str(ui_port),
+            "ITHILDIN_E1_DATA_ROOT": str(data_root),
+            "ITHILDIN_E1_RUNTIME_INVENTORY_PATH": str(inventory_path),
+            "ITHILDIN_E1_RUNTIME_AUTHORITY_PATH": str(authority_path),
+            "ITHILDIN_E1_EXPECTED_RUNTIME_POSTURE": "unreviewed_local",
+            "ITHILDIN_ADMIN_TOKEN": token,
+            "ITHILDIN_CONTAINER_UID": str(os.getuid()),
+            "ITHILDIN_CONTAINER_GID": str(os.getgid()),
+        }
+        _write_mode(
+            env_path,
+            (
+                "\n".join(f"{key}={value}" for key, value in environment.items()) + "\n"
+            ).encode(),
+            0o600,
+        )
+        config = enterprise_e1_single_site.validate_environment(environment, ROOT)
+        enterprise_e1_single_site.bootstrap_state(config)
+        shutil.copyfile(ROOT / "workspaces/local.yaml", data_root / "workspaces/local.yaml")
+        os.chmod(data_root / "workspaces/local.yaml", 0o400)
+    except Exception:
+        runtime_directory.cleanup()
+        raise
 
     observations: dict[str, Any] = {}
     image_labels: dict[str, dict[str, str]] = {}
@@ -159,6 +168,7 @@ def run_rehearsal(
             if _run(["docker", "image", "rm", image], check=False).returncode != 0:
                 cleanup_failures.append("image_cleanup_failed")
         token = ""
+        runtime_directory.cleanup()
 
     if cleanup_failures:
         raise RehearsalError(sorted(set(cleanup_failures))[0])
@@ -209,9 +219,6 @@ def run_rehearsal(
         ],
     }
     validate_report(report)
-    for path in (env_path, inventory_path, authority_path):
-        path.unlink(missing_ok=True)
-    shutil.rmtree(data_root)
     _write_mode(
         run_root / REPORT_NAME,
         (json.dumps(report, indent=2, sort_keys=True) + "\n").encode(),
