@@ -9,6 +9,8 @@ externally closed.
 - [Ithildin Local v1.0 Completion Contract](local-v1-completion-contract.md) - active delivery target.
 - [Ithildin Enterprise Track E1 Completion Contract](enterprise-e1-completion-contract.md) -
   active enterprise implementation contract, reuse audit, fixed milestones, and nonclaims.
+- [Enterprise E2 Production Identity Preparation](enterprise-e2-production-identity-preparation.md) -
+  isolated planning overlay on the standing PIS architecture and synthetic scale-fixture lane.
 - [Enterprise E1-M1 Single-Site Deployment Observed Results](enterprise-e1-m1-observed-results.md) -
   exact build, start, authenticated health, shutdown, state, and cleanup receipt disposition.
 - [Enterprise E1 Policy and Node-Configuration State Contract](enterprise-e1-configuration-state-contract.md) -

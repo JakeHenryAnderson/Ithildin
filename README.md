@@ -23,6 +23,12 @@ The first vertical slice is the
 [versioned E1 single-site deployment foundation](deploy/single-site/README.md), validated by
 `make enterprise-e1-single-site-deployment-check`.
 
+Parallel enterprise preparation is isolated in the
+[Enterprise E2 production identity preparation](docs/codex/enterprise-e2-production-identity-preparation.md)
+lane. It reconciles future identity work to the standing PIS architecture and supplies a
+synthetic test-only scale fixture; it does not change E1, authorize production identity, or route
+around the PIS external-input wait. Run `make enterprise-e2-preparation-check`.
+
 Ithildin is a local-preview mediation layer for AI-agent tool use. It is not a sandbox, EDR/MDM
 agent, SIEM, production identity system, hosted MCP platform, compliance audit system, or immutable
 evidence store. It assumes the local host, local admin, trusted tool manifests, and local policy

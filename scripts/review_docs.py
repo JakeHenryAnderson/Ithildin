@@ -298,6 +298,8 @@ REVIEW_DOCS = [
     "docs/codex/v1.0-progress-assessment.md",
     "docs/codex/local-v1-completion-contract.md",
     "docs/codex/enterprise-e1-completion-contract.md",
+    "docs/codex/enterprise-e2-production-identity-preparation.md",
+    "docs/codex/enterprise-e2-scale-fixture.md",
     "docs/codex/local-v1-golden-path.md",
     "docs/codex/local-v1-release-disposition.json",
     "docs/codex/technical-mvp-ticket-map.md",

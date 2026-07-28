@@ -1,0 +1,111 @@
+{
+  "schema_version": "1",
+  "track_id": "E2-PREP",
+  "title": "Ithildin Enterprise E2 Production Identity Preparation",
+  "status": "preparation_complete_implementation_not_authorized",
+  "base": {
+    "e1_handoff_commit": "9df7a04cec197fd4953de692793a32e69c107b49",
+    "e1_candidate_commit": "02e39d57a6d38a14d959bb88a32da79fe34e4e13",
+    "e1_candidate_tree": "9850b6cbd40742d67388527de802961ddef306bd",
+    "e1_next_action": "stop_for_human_uat",
+    "e1_human_uat_complete": false
+  },
+  "tool_count": 24,
+  "standing_authority": {
+    "identity_storage_architecture": "docs/codex/production-identity-storage-architecture.md",
+    "identity_threat_model": "docs/codex/production-identity-storage-pis-001-threat-model-and-dependency-decision.md",
+    "current_pis_authority": "docs/codex/production-identity-storage-pis-003-sd-pg-001-environment-evidence-collection-authority.json",
+    "pis_next_action": "await_external_operator_target_and_signed_receipt_inputs_before_separate_collection_action_authority",
+    "external_target_selection_proposal_permission": true,
+    "external_environment_receipt_collection_proposal_permission": true,
+    "operational_collection_action_effective": false
+  },
+  "identity_reconciliation": {
+    "standing_architecture_reused": true,
+    "competing_identity_architecture_created": false,
+    "future_entry_gate": "PIS-004",
+    "provider_selected": false,
+    "dependency_selected_or_added": false,
+    "live_identity_endpoint_selected": false,
+    "work_packages": [
+      {
+        "id": "E2-ID-001",
+        "title": "Provider-neutral identity-domain and authority contract",
+        "status": "proposal_only",
+        "implementation_gate_required": true
+      },
+      {
+        "id": "E2-ID-002",
+        "title": "Server-owned preauthentication and opaque-session state",
+        "status": "proposal_only",
+        "implementation_gate_required": true
+      },
+      {
+        "id": "E2-ID-003",
+        "title": "Fixture-backed OIDC adapter and provider conformance",
+        "status": "proposal_only",
+        "implementation_gate_required": true
+      },
+      {
+        "id": "E2-ID-004",
+        "title": "Organization and workspace membership authorization",
+        "status": "proposal_only",
+        "implementation_gate_required": true
+      },
+      {
+        "id": "E2-ID-005",
+        "title": "Command Center sign-in, revocation, and break-glass UX",
+        "status": "proposal_only",
+        "implementation_gate_required": true
+      }
+    ]
+  },
+  "scale_fixture": {
+    "schema_version": "ithildin.enterprise-e2.scale-fixture.v1",
+    "fixture_id": "single_org_medium_synthetic",
+    "canonical_sha256": "59222ee08c0c14f60e2dac1a63c491b2bb757de67f39e2e9e1203e2b162d9acd",
+    "single_organization_only": true,
+    "counts": {
+      "workspaces": 8,
+      "missions": 96,
+      "nodes": 64,
+      "configuration_cohorts": 8,
+      "version_cohorts": 4,
+      "approvals": 48,
+      "evidence": 144,
+      "attention": 24
+    },
+    "runtime_import_allowed": false,
+    "supported_scale_claim_allowed": false,
+    "performance_certification_allowed": false
+  },
+  "authority": {
+    "runtime_behavior_changes_allowed": false,
+    "public_api_changes_allowed": false,
+    "schema_or_migration_changes_allowed": false,
+    "dependency_changes_allowed": false,
+    "production_identity_allowed": false,
+    "enterprise_rbac_allowed": false,
+    "remote_admin_allowed": false,
+    "runtime_postgres_allowed": false,
+    "external_identity_connection_allowed": false,
+    "credential_or_signing_key_custody_allowed": false,
+    "new_governed_tool_allowed": false,
+    "release_allowed": false,
+    "production_promotion_allowed": false,
+    "e1_human_uat_complete": false,
+    "e2_human_uat_complete": false
+  },
+  "nonclaims": [
+    "production identity",
+    "enterprise RBAC",
+    "remote administration",
+    "runtime PostgreSQL",
+    "supported scale",
+    "performance certification",
+    "human UAT completion",
+    "enterprise production readiness",
+    "Local v1 release acceptance"
+  ],
+  "next_action": "continue_e1_human_uat_and_existing_pis_external_input_wait_before_separate_e2_entry_decision"
+}
