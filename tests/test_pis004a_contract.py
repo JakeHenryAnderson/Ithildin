@@ -21,7 +21,7 @@ def test_live_pis004a_entry_contract_is_valid_and_bounded() -> None:
 
     assert report["valid"] is True, report["failures"]
     assert report["decision_id"] == "PIS-004A"
-    assert report["status"] == "implementation_authorized"
+    assert report["status"] == "candidate_implemented_review_required"
     assert report["tool_count"] == 24
     assert report["pis003_next_action"] == pis004a_check.PIS_WAIT_ACTION
     assert report["e1_human_uat_complete"] is False

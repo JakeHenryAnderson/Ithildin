@@ -2,7 +2,7 @@
   "schema_version": "1",
   "decision_id": "PIS-004A",
   "title": "Local Identity, Session, And Organization/Workspace Authorization Foundation",
-  "status": "implementation_authorized",
+  "status": "candidate_implemented_review_required",
   "base": {
     "source_branch": "origin/codex/enterprise-e2-production-identity-prep",
     "source_commit": "e86f5a19e4e067d73141246f78304597e6cc28a0",
@@ -257,7 +257,7 @@
   },
   "candidate_procedure": {
     "focused_command": "make production-identity-storage-pis-004a-check",
-    "independent_review_template": "git worktree add --detach /tmp/ithildin-pis004a-review <candidate_commit> && make production-identity-storage-pis-004a-check",
+    "independent_review_template": "git worktree add --detach /tmp/ithildin-pis004a-review <candidate_commit> && cd /tmp/ithildin-pis004a-review && make production-identity-storage-pis-004a-check",
     "candidate_must_be_clean": true,
     "independent_review_required": true,
     "human_uat_required_for_e2_id_005": true,
@@ -276,5 +276,5 @@
     "release acceptance",
     "enterprise-production readiness"
   ],
-  "next_action": "implement_and_validate_pis_004a_local_default_off_candidate_then_stop_for_independent_review"
+  "next_action": "reproduce_exact_candidate_in_clean_detached_worktree_then_record_independent_review_before_any_e2_id_005_entry"
 }

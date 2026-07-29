@@ -23,8 +23,8 @@ PIS_WAIT_ACTION = (
     "collection_action_authority"
 )
 NEXT_ACTION = (
-    "implement_and_validate_pis_004a_local_default_off_candidate_then_stop_for_"
-    "independent_review"
+    "reproduce_exact_candidate_in_clean_detached_worktree_then_record_independent_"
+    "review_before_any_e2_id_005_entry"
 )
 IMPLEMENTATION_STATUSES = {
     "implementation_authorized",
@@ -322,7 +322,8 @@ def validate_contract(contract: dict[str, Any]) -> list[str]:
         "focused_command": "make production-identity-storage-pis-004a-check",
         "independent_review_template": (
             "git worktree add --detach /tmp/ithildin-pis004a-review "
-            "<candidate_commit> && make production-identity-storage-pis-004a-check"
+            "<candidate_commit> && cd /tmp/ithildin-pis004a-review && "
+            "make production-identity-storage-pis-004a-check"
         ),
         "candidate_must_be_clean": True,
         "independent_review_required": True,
@@ -595,7 +596,7 @@ def _validate_repository(
 
     doc = _read(root / DOC_REL, failures)
     for phrase in (
-        "Status: bounded implementation authorized; implementation in progress.",
+        "Status: candidate implemented; independent review required.",
         "Current governed tool count: exactly `24`.",
         PIS_WAIT_ACTION,
         "E1 contract still records `human_uat_complete: false`",

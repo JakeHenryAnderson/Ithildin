@@ -14,6 +14,9 @@ externally closed.
 - [PIS-004A Local Identity, Session, And Authorization Foundation](production-identity-storage-pis-004a-local-identity-foundation.md) -
   bounded local/default-off implementation contract, exact dependency and migration ceiling,
   negative-test inventory, rollback, candidate procedure, and explicit production nonclaims.
+- [E2-ID-005 Command Center Identity UX Next-Ticket Contract](production-identity-storage-pis-004a-e2-id-005-next-ticket.md) -
+  blocked future entry and acceptance boundary; no sign-in, identity UI, credential, release, or
+  production authority while E1 human UAT remains incomplete.
 - [Enterprise E1-M1 Single-Site Deployment Observed Results](enterprise-e1-m1-observed-results.md) -
   exact build, start, authenticated health, shutdown, state, and cleanup receipt disposition.
 - [Enterprise E1 Policy and Node-Configuration State Contract](enterprise-e1-configuration-state-contract.md) -

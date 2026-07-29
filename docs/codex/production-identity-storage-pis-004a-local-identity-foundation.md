@@ -1,6 +1,6 @@
 # PIS-004A Local Identity, Session, And Authorization Foundation
 
-Status: bounded implementation authorized; implementation in progress.
+Status: candidate implemented; independent review required.
 
 Decision ID: `PIS-004A`.
 
@@ -63,6 +63,12 @@ configuration, general-purpose HTTP client, or production identity mode in this 
 Any later API integration must be additive, disabled by default, and local-preview/loopback only.
 The current local bearer-admin behavior remains the compatibility baseline.
 
+The candidate adds no API route, browser import, cookie, feature-enabled configuration, effect
+consumer, or governed tool. Identity/session/authorization modules remain unreferenced by the
+existing application service, and authorization snapshots explicitly carry
+`effect_authority: false`. Schema-5 activation creates only local authority tables and does not
+enable a sign-in path. Existing API and local bearer-admin behavior remain the runtime default.
+
 ## Authlib dependency and provenance gate
 
 The fresh 2026-07-29 gate approves Authlib only as a fixture adapter dependency:
@@ -81,6 +87,20 @@ The dependency may not own sessions, identity mappings, memberships, roles, or a
 may not perform discovery, JWK retrieval, authorization redirects, callback HTTP, dynamic
 registration, token persistence, or any other network activity. There is no hand-rolled fallback:
 dependency removal disables the fixture adapter.
+
+The implemented seam retains the Authorization Code with PKCE profile selected by PIS-001; it does
+not switch to an OIDC hybrid or implicit flow. Captured discovery and public-JWK bytes become
+immutable adapter configuration. The synthetic callback code is bound by a configured,
+domain-separated digest, and the captured authorization-request challenge is checked against the
+protected server-side verifier. Code and ID-token replay digests are committed atomically while the
+organization/provider configuration is rechecked under the same SQLite writer transaction. Only
+the public fixture JWK and pre-signed synthetic tokens are stored in the repository; the ephemeral
+fixture private key was discarded.
+
+The adapter has no route, HTTP transport, high-level Authlib client, framework session, or runtime
+consumer. Its assertion has no effect authority. A future live Authorization Code exchange must
+perform its own separately authorized token-endpoint and code/verifier validation; this fixture
+seam is not evidence that such an exchange exists.
 
 ## Persistence, migration, and rollback
 
@@ -124,14 +144,16 @@ make production-identity-storage-pis-004a-check
 ```
 
 A clean candidate and passing automated checks are not independent review, human UAT, release
-acceptance, or production promotion.
+acceptance, or production promotion. The next action is
+`reproduce_exact_candidate_in_clean_detached_worktree_then_record_independent_review_before_any_e2_id_005_entry`.
 
 ## E2-ID-005 stop line
 
 The authoritative E1 contract still records `human_uat_complete: false`. PIS-004A therefore does
 not implement Command Center sign-in, revocation, break-glass, or other identity UI. A bounded
-next-ticket and acceptance contract will consume eventual E1 findings. It may not treat a future
-human PASS as production identity, release, or credential authority.
+[E2-ID-005 next-ticket and acceptance contract](production-identity-storage-pis-004a-e2-id-005-next-ticket.md)
+records the blocked future boundary and will consume eventual E1 findings. It may not treat a
+future human PASS as production identity, release, or credential authority.
 
 ## Explicit nonclaims
 
