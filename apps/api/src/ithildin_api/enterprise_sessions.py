@@ -624,7 +624,10 @@ class EnterpriseSessionStore:
             self._require_matching_authority(connection, authority)
             provider = connection.execute(
                 """
-                SELECT pc.enabled, o.enabled, b.principal_id
+                SELECT pc.enabled AS provider_enabled,
+                       pc.generation AS provider_generation,
+                       o.enabled AS organization_enabled,
+                       b.principal_id
                 FROM identity_provider_configurations AS pc
                 JOIN identity_organizations AS o
                   ON o.organization_id = pc.organization_id
@@ -646,26 +649,29 @@ class EnterpriseSessionStore:
             ).fetchone()
             if (
                 provider is None
-                or not bool(provider[0])
-                or not bool(provider[1])
-                or str(provider[2]) != authority.principal_id
+                or not bool(provider["provider_enabled"])
+                or not bool(provider["organization_enabled"])
+                or str(provider["principal_id"]) != authority.principal_id
             ):
                 raise SessionAuthenticationError("OIDC assertion identity authority is unavailable")
             connection.execute(
                 """
                 INSERT INTO identity_authentication_grants (
                     authentication_grant_id, assertion_audit_id,
-                    organization_id, principal_id, identity_generation,
+                    organization_id, provider_configuration_id,
+                    provider_configuration_generation, principal_id, identity_generation,
                     membership_generation, authentication_method,
                     authentication_time, created_at, expires_at,
                     status, consumed_at
-                ) VALUES (?, ?, ?, ?, ?, ?, 'oidc_fixture', ?, ?, ?,
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'oidc_fixture', ?, ?, ?,
                           'active', NULL)
                 """,
                 (
                     authentication_grant_id,
                     assertion_audit_id,
                     organization_id,
+                    provider_configuration_id,
+                    int(provider["provider_generation"]),
                     authority.principal_id,
                     authority.identity_generation,
                     authority.membership_generation,
@@ -695,9 +701,11 @@ class EnterpriseSessionStore:
             self._require_active_digest_generation(connection)
             grant = connection.execute(
                 """
-                SELECT organization_id, principal_id, identity_generation,
-                       membership_generation, authentication_method,
-                       authentication_time, expires_at, status
+                SELECT organization_id, provider_configuration_id,
+                       provider_configuration_generation, principal_id,
+                       identity_generation, membership_generation,
+                       authentication_method, authentication_time,
+                       expires_at, status
                 FROM identity_authentication_grants
                 WHERE authentication_grant_id = ?
                 """,
@@ -705,13 +713,13 @@ class EnterpriseSessionStore:
             ).fetchone()
             if (
                 grant is None
-                or str(grant[7]) != "active"
-                or str(grant[4]) != AuthenticationMethod.OIDC_FIXTURE.value
-                or now >= _parse_datetime(str(grant[6]))
+                or str(grant["status"]) != "active"
+                or str(grant["authentication_method"]) != AuthenticationMethod.OIDC_FIXTURE.value
+                or now >= _parse_datetime(str(grant["expires_at"]))
             ):
                 raise SessionAuthenticationError("authentication grant did not authenticate")
-            organization_id = str(grant[0])
-            principal_id = str(grant[1])
+            organization_id = str(grant["organization_id"])
+            principal_id = str(grant["principal_id"])
             authority = self._organization_authority_from_connection(
                 connection,
                 principal_id=principal_id,
@@ -722,9 +730,42 @@ class EnterpriseSessionStore:
             if authority.principal_type is not EnterprisePrincipalType.HUMAN:
                 raise SessionAuthenticationError("interactive sessions require a human principal")
             if authority.identity_generation != int(
-                grant[2]
-            ) or authority.membership_generation != int(grant[3]):
+                grant["identity_generation"]
+            ) or authority.membership_generation != int(grant["membership_generation"]):
                 raise SessionAuthenticationError("authentication grant authority is stale")
+            provider = connection.execute(
+                """
+                SELECT pc.enabled AS provider_enabled,
+                       pc.generation AS provider_generation,
+                       o.enabled AS organization_enabled,
+                       b.principal_id
+                FROM identity_provider_configurations AS pc
+                JOIN identity_organizations AS o
+                  ON o.organization_id = pc.organization_id
+                JOIN identity_bindings AS b
+                  ON b.organization_id = pc.organization_id
+                 AND b.provider_configuration_id = pc.provider_configuration_id
+                WHERE pc.organization_id = ?
+                  AND pc.provider_configuration_id = ?
+                  AND b.principal_id = ?
+                """,
+                (
+                    organization_id,
+                    str(grant["provider_configuration_id"]),
+                    principal_id,
+                ),
+            ).fetchone()
+            if (
+                provider is None
+                or not bool(provider["provider_enabled"])
+                or not bool(provider["organization_enabled"])
+                or str(provider["principal_id"]) != principal_id
+                or int(provider["provider_generation"])
+                != int(grant["provider_configuration_generation"])
+            ):
+                raise SessionAuthenticationError(
+                    "authentication grant provider configuration is stale"
+                )
             consumed = connection.execute(
                 """
                 UPDATE identity_authentication_grants
@@ -761,7 +802,7 @@ class EnterpriseSessionStore:
                 csrf_token=csrf_token,
                 digest_key_generation=generation,
                 authentication_method=AuthenticationMethod.OIDC_FIXTURE,
-                recent_auth_at=_parse_datetime(str(grant[5])),
+                recent_auth_at=_parse_datetime(str(grant["authentication_time"])),
                 created_at=now,
                 idle_expires_at=idle_expires_at,
                 absolute_expires_at=absolute_expires_at,
@@ -775,7 +816,7 @@ class EnterpriseSessionStore:
             identity_generation=authority.identity_generation,
             membership_generation=authority.membership_generation,
             authentication_method=AuthenticationMethod.OIDC_FIXTURE,
-            recent_auth_at=_parse_datetime(str(grant[5])),
+            recent_auth_at=_parse_datetime(str(grant["authentication_time"])),
             absolute_expires_at=absolute_expires_at,
         )
         return SessionClientMaterial(

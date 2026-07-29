@@ -18,9 +18,7 @@ from ithildin_api.enterprise_authorization import (
     EnterpriseAction,
     EnterpriseApprovalRequestStore,
     EnterpriseAuthorizationEngine,
-    EnterpriseAuthorizationError,
     EnterpriseAuthorizationPolicy,
-    ServerOwnedApprovalOperation,
     ServerOwnedResourceScope,
 )
 from ithildin_api.enterprise_identity import (
@@ -141,17 +139,25 @@ def make_fixture(
             """
             INSERT INTO identity_authentication_grants (
                 authentication_grant_id, assertion_audit_id,
-                organization_id, principal_id, identity_generation,
+                organization_id, provider_configuration_id,
+                provider_configuration_generation, principal_id, identity_generation,
                 membership_generation, authentication_method,
                 authentication_time, created_at, expires_at,
                 status, consumed_at
-            ) VALUES (?, ?, ?, ?, ?, ?, 'oidc_fixture', ?, ?, ?,
+            ) VALUES (?, ?, ?, ?, (
+                SELECT generation
+                FROM identity_provider_configurations
+                WHERE organization_id = ? AND provider_configuration_id = ?
+            ), ?, ?, ?, 'oidc_fixture', ?, ?, ?,
                       'active', NULL)
             """,
             (
                 authentication_grant_id,
                 "oaud_" + uuid4().hex,
                 organization.organization_id,
+                provider.provider_configuration_id,
+                organization.organization_id,
+                provider.provider_configuration_id,
                 identity.principal_id,
                 authority.identity_generation,
                 authority.membership_generation,
@@ -225,12 +231,14 @@ def approval_request(
             organization_id=fixture.organization_id,
         )
     )
-    operation = {
-        ApprovalClass.STANDARD: ServerOwnedApprovalOperation.STANDARD_CHANGE,
-        ApprovalClass.TRUSTED_HOST_PLACEMENT: (ServerOwnedApprovalOperation.TRUSTED_HOST_PLACEMENT),
-        ApprovalClass.HIGH_RISK: ServerOwnedApprovalOperation.HIGH_RISK_CHANGE,
+    request_method = {
+        ApprovalClass.STANDARD: fixture.engine.request_standard_change_approval,
+        ApprovalClass.TRUSTED_HOST_PLACEMENT: (
+            fixture.engine.request_trusted_host_placement_approval
+        ),
+        ApprovalClass.HIGH_RISK: fixture.engine.request_high_risk_change_approval,
     }[approval_class]
-    return fixture.engine.request_approval(
+    return request_method(
         session.handle,
         allowed_origin=ORIGIN,
         csrf_token=session.csrf_token,
@@ -238,7 +246,6 @@ def approval_request(
             organization_id=fixture.organization_id,
             workspace_id=workspace_id,
         ),
-        operation=operation,
     )
 
 
@@ -291,21 +298,36 @@ def issue_session_for_principal(
     )
     authentication_grant_id = "agrant_" + uuid4().hex
     with sqlite3.connect(fixture.db_path) as connection:
+        provider = connection.execute(
+            """
+            SELECT b.provider_configuration_id, pc.generation
+            FROM identity_bindings AS b
+            JOIN identity_provider_configurations AS pc
+              ON pc.organization_id = b.organization_id
+             AND pc.provider_configuration_id = b.provider_configuration_id
+            WHERE b.organization_id = ? AND b.principal_id = ?
+            """,
+            (organization_id, principal_id),
+        ).fetchone()
+        assert provider is not None
         connection.execute(
             """
             INSERT INTO identity_authentication_grants (
                 authentication_grant_id, assertion_audit_id,
-                organization_id, principal_id, identity_generation,
+                organization_id, provider_configuration_id,
+                provider_configuration_generation, principal_id, identity_generation,
                 membership_generation, authentication_method,
                 authentication_time, created_at, expires_at,
                 status, consumed_at
-            ) VALUES (?, ?, ?, ?, ?, ?, 'oidc_fixture', ?, ?, ?,
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'oidc_fixture', ?, ?, ?,
                       'active', NULL)
             """,
             (
                 authentication_grant_id,
                 "oaud_" + uuid4().hex,
                 organization_id,
+                str(provider[0]),
+                int(provider[1]),
                 principal_id,
                 authority.identity_generation,
                 authority.membership_generation,
@@ -589,7 +611,7 @@ def test_unknown_and_cross_organization_approval_ids_are_indistinguishable(
         principal_id=other_identity.principal_id,
         organization_id=other_organization.organization_id,
     )
-    other_request = fixture.engine.request_approval(
+    other_request = fixture.engine.request_high_risk_change_approval(
         other_session.handle,
         allowed_origin=ORIGIN,
         csrf_token=other_session.csrf_token,
@@ -597,7 +619,6 @@ def test_unknown_and_cross_organization_approval_ids_are_indistinguishable(
             organization_id=other_organization.organization_id,
             workspace_id="outside",
         ),
-        operation=ServerOwnedApprovalOperation.HIGH_RISK_CHANGE,
     )
 
     failures: list[str] = []
@@ -620,29 +641,25 @@ def test_unknown_and_cross_organization_approval_ids_are_indistinguishable(
     assert len(set(failures)) == 1
 
 
-def test_self_approval_policy_is_explicit_per_approval_class(tmp_path: Path) -> None:
+def test_self_approval_is_denied_for_every_approval_class(tmp_path: Path) -> None:
     fixture = make_fixture(tmp_path)
     separate_requester = provision_other_human(
         fixture,
         subject="subject-Aa-002",
     )
 
-    standard_self = evaluate_approval(
-        fixture,
-        approval_request(
+    for approval_class in ApprovalClass:
+        self_decision = evaluate_approval(
             fixture,
-            requester_principal_id=fixture.principal_id,
-            approval_class=ApprovalClass.STANDARD,
-        ),
-    )
-    high_risk_self = evaluate_approval(
-        fixture,
-        approval_request(
-            fixture,
-            requester_principal_id=fixture.principal_id,
-            approval_class=ApprovalClass.HIGH_RISK,
-        ),
-    )
+            approval_request(
+                fixture,
+                requester_principal_id=fixture.principal_id,
+                approval_class=approval_class,
+            ),
+        )
+        assert not self_decision.allowed
+        assert self_decision.reason_code == "self_approval_forbidden"
+
     high_risk_separate = evaluate_approval(
         fixture,
         approval_request(
@@ -652,9 +669,6 @@ def test_self_approval_policy_is_explicit_per_approval_class(tmp_path: Path) -> 
         ),
     )
 
-    assert standard_self.allowed
-    assert not high_risk_self.allowed
-    assert high_risk_self.reason_code == "self_approval_forbidden"
     assert high_risk_separate.allowed
 
 
@@ -992,6 +1006,16 @@ def test_caller_authority_injection_and_unsafe_policy_shapes_are_rejected(
             policy_generation=1,
             recent_authentication_methods=frozenset({AuthenticationMethod.LOCAL_RECOVERY}),
         )
+    with pytest.raises(ValidationError, match="all approval classes"):
+        EnterpriseAuthorizationPolicy(
+            policy_generation=1,
+            self_approval_denied_for=frozenset(
+                {
+                    ApprovalClass.TRUSTED_HOST_PLACEMENT,
+                    ApprovalClass.HIGH_RISK,
+                }
+            ),
+        )
     assert EnterpriseAuthorizationPolicy(
         policy_generation=1,
         recent_authentication_maximum_age=timedelta(minutes=10),
@@ -1007,14 +1031,15 @@ def test_caller_authority_injection_and_unsafe_policy_shapes_are_rejected(
             )
     fixture = make_fixture(tmp_path)
     assert not hasattr(fixture.approvals, "create_pending")
-    with pytest.raises(EnterpriseAuthorizationError, match="server-owned"):
-        fixture.engine.request_approval(
-            fixture.session.handle,
-            allowed_origin=ORIGIN,
-            csrf_token=fixture.session.csrf_token,
-            scope=scope(fixture, "alpha"),
-            operation="high_risk",  # type: ignore[arg-type]
-        )
+    assert not hasattr(fixture.engine, "request_approval")
+    high_risk_request = fixture.engine.request_high_risk_change_approval(
+        fixture.session.handle,
+        allowed_origin=ORIGIN,
+        csrf_token=fixture.session.csrf_token,
+        scope=scope(fixture, "alpha"),
+    )
+    assert high_risk_request.approval_class is ApprovalClass.HIGH_RISK
+    assert high_risk_request.effect_authority is False
 
 
 def test_invalid_policy_provider_fails_closed(tmp_path: Path) -> None:

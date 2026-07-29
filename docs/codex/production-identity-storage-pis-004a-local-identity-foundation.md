@@ -74,11 +74,13 @@ The review-repair candidate also closes the independent review findings without 
 authority. Disabling an organization membership atomically disables every child workspace
 membership; re-enabling the organization membership does not restore those roles, so each workspace
 grant requires explicit reassignment. Approval request creation derives its requester from a
-validated mutation session and maps a closed server-owned operation to its approval class. Approval
-execution rechecks the requester's current human identity plus exact identity and membership
-generations. Recent authentication is mandatory for approval, membership management, and
-destructive actions, is capped at ten minutes, and local recovery cannot be configured as a strong
-recent-auth method.
+validated mutation session and uses a named server-owned entry point that fixes the approval class;
+there is no caller-supplied operation or approval-class argument. Self-approval is denied for every
+class. Approval execution rechecks the requester's current human identity plus exact identity and
+membership generations. These approval snapshots have `effect_authority: false`; they do not bind
+or authorize an operation payload or effect consumer. Recent authentication is mandatory for
+approval, membership management, and destructive actions, is capped at ten minutes, and local
+recovery cannot be configured as a strong recent-auth method.
 
 ## Authlib dependency and provenance gate
 
@@ -124,7 +126,7 @@ approvable under schema 6. Older writers must fail closed.
 
 The read-only Attempt-008 Node identity projector retains its exact schema-4 profile and adds a
 separate schema-6 compatibility profile. Schema 6 is bound to the domain-separated fingerprint
-`sha256:98df31b25b379ebaf477744456111e89b6cfed290a108a0bcad1915194a1a7b4`.
+`sha256:ca52764e2c4544446f0a1379abc60ec6d74a9320222509974d1cb35c1c955114`.
 The profile compares complete normalized table and index DDL against a freshly generated expected
 schema, rejects unexpected `identity_*` objects and foreign-key failures, and rechecks metadata
 after installing its read-only authorizer. Same-column removal of primary-key, foreign-key,
@@ -145,12 +147,15 @@ operator decision. No external system or production data is in scope.
 The schema structurally omits OIDC authorization codes, access tokens, ID tokens, refresh tokens,
 raw claims, and raw session handles. Session issuance consumes a short-lived, atomic one-use grant
 record produced only after fixture OIDC validation and exact identity resolution; raw
-principal/organization/authentication-method issuance is not exposed. Digest-key generations have
-persisted `active`, `retained`, or `retired` state; retirement revokes affected sessions and active
-preauthentication records, and another process cannot restore a retired generation. Audit output
-uses a closed outcome/reason vocabulary and is limited to random local references, coarse reason
-codes, generations, and timestamps. It must not contain raw subjects, claims, customer names,
-credentials, handles, CSRF values, or tokens.
+principal/organization/authentication-method issuance is not exposed. Each grant binds the exact
+provider-configuration ID and generation observed during validation. Session issuance atomically
+rechecks that the provider remains enabled, belongs to the same organization, retains the same
+generation, and still binds the same principal before consuming the grant. Digest-key generations
+have persisted `active`, `retained`, or `retired` state; retirement revokes affected sessions and
+active preauthentication records, and another process cannot restore a retired generation. Audit
+output uses a closed outcome/reason vocabulary and is limited to random local references, coarse
+reason codes, generations, and timestamps. It must not contain raw subjects, claims, customer
+names, credentials, handles, CSRF values, or tokens.
 
 ## Test and candidate procedure
 
@@ -158,8 +163,9 @@ The focused gate owns the exact negative inventory in the JSON contract. It must
 spoofing, exact-issuer and redirect confusion, subject remapping, session/audit-ID confusion,
 expiry, rotation/replay, family revocation, generation drift, preauthentication replay,
 origin/CSRF failure, missing key generations, cross-scope access, non-human approval, self-approval,
-listing/bulk isolation, OIDC algorithm/key/claim/time/replay failures, malformed input, attempted
-network use, and sensitive audit fields.
+approval-classification downgrade, provider-configuration drift between assertion validation and
+session issuance, listing/bulk isolation, OIDC algorithm/key/claim/time/replay failures, malformed
+input, attempted network use, and sensitive audit fields.
 
 After focused and broader checks pass, a separate reviewer should reproduce the candidate from a
 clean detached worktree:

@@ -157,17 +157,25 @@ def create_authentication_grant(
             """
             INSERT INTO identity_authentication_grants (
                 authentication_grant_id, assertion_audit_id,
-                organization_id, principal_id, identity_generation,
+                organization_id, provider_configuration_id,
+                provider_configuration_generation, principal_id, identity_generation,
                 membership_generation, authentication_method,
                 authentication_time, created_at, expires_at,
                 status, consumed_at
-            ) VALUES (?, ?, ?, ?, ?, ?, 'oidc_fixture', ?, ?, ?,
+            ) VALUES (?, ?, ?, ?, (
+                SELECT generation
+                FROM identity_provider_configurations
+                WHERE organization_id = ? AND provider_configuration_id = ?
+            ), ?, ?, ?, 'oidc_fixture', ?, ?, ?,
                       'active', NULL)
             """,
             (
                 grant_id,
                 "oaud_" + uuid4().hex,
                 fixture.organization_id,
+                fixture.provider_configuration_id,
+                fixture.organization_id,
+                fixture.provider_configuration_id,
                 authority.principal_id,
                 authority.identity_generation,
                 authority.membership_generation,
@@ -420,6 +428,34 @@ def test_authentication_grant_is_atomic_one_use_and_generation_bound(
     )
     with pytest.raises(SessionAuthenticationError, match="authority is stale"):
         stale.sessions.issue_session(stale_grant_id)
+
+    disabled_provider = make_fixture(tmp_path / "disabled-provider")
+    disabled_provider_grant_id = create_authentication_grant(disabled_provider)
+    with sqlite3.connect(disabled_provider.db_path) as connection:
+        connection.execute(
+            """
+            UPDATE identity_provider_configurations
+            SET enabled = 0
+            WHERE provider_configuration_id = ?
+            """,
+            (disabled_provider.provider_configuration_id,),
+        )
+    with pytest.raises(SessionAuthenticationError, match="provider configuration is stale"):
+        disabled_provider.sessions.issue_session(disabled_provider_grant_id)
+
+    changed_provider = make_fixture(tmp_path / "changed-provider")
+    changed_provider_grant_id = create_authentication_grant(changed_provider)
+    with sqlite3.connect(changed_provider.db_path) as connection:
+        connection.execute(
+            """
+            UPDATE identity_provider_configurations
+            SET generation = generation + 1
+            WHERE provider_configuration_id = ?
+            """,
+            (changed_provider.provider_configuration_id,),
+        )
+    with pytest.raises(SessionAuthenticationError, match="provider configuration is stale"):
+        changed_provider.sessions.issue_session(changed_provider_grant_id)
 
 
 @pytest.mark.parametrize(

@@ -23,7 +23,7 @@ SOURCE_COMMIT = "e86f5a19e4e067d73141246f78304597e6cc28a0"
 SOURCE_TREE = "6dbbcf0bef3320dfdfa4142f2d30b798b01511d0"
 BRANCH = "codex/enterprise-e2-pis004a-review-repair"
 PIS004A_SCHEMA_FINGERPRINT = (
-    "sha256:98df31b25b379ebaf477744456111e89b6cfed290a108a0bcad1915194a1a7b4"
+    "sha256:ca52764e2c4544446f0a1379abc60ec6d74a9320222509974d1cb35c1c955114"
 )
 PIS_WAIT_ACTION = (
     "await_external_operator_target_and_signed_receipt_inputs_before_separate_"
@@ -169,6 +169,7 @@ EXPECTED_NEGATIVE_INVENTORY = [
     "organization_membership_reenable_authority_resurrection",
     "queued_approval_requester_authority_drift",
     "authentication_grant_replay_and_generation_drift",
+    "authentication_grant_provider_configuration_drift",
     "digest_key_generation_retirement_resurrection",
     "recent_authentication_policy_floor_and_ceiling",
     "preauthentication_replay",
@@ -177,6 +178,7 @@ EXPECTED_NEGATIVE_INVENTORY = [
     "cross_organization_and_workspace_access",
     "node_or_service_human_approval",
     "separation_of_duty_and_self_approval",
+    "approval_classification_downgrade",
     "cross_workspace_list_and_bulk_enumeration",
     "oidc_state_nonce_pkce_redirect_and_issuer_mismatch",
     "oidc_algorithm_kid_audience_exp_iat_nbf_skew_and_replay",
@@ -516,8 +518,12 @@ def _validate_safety_contract(value: object, failures: list[str]) -> None:
         "digest_key_generation_fail_closed",
         "digest_key_retirement_monotonic",
         "authentication_grant_atomic_one_use_required",
+        "authentication_grant_provider_generation_revalidation_required",
         "organization_disable_revokes_workspace_memberships",
         "approval_requester_generation_revalidation_required",
+        "approval_classification_server_owned",
+        "self_approval_denied_for_all_classes",
+        "approval_request_effect_authority",
         "safe_audit_vocabulary_closed",
         "strong_recent_auth_policy_required",
         "recent_authentication_maximum_age_seconds",
@@ -545,8 +551,11 @@ def _validate_safety_contract(value: object, failures: list[str]) -> None:
         "digest_key_generation_fail_closed",
         "digest_key_retirement_monotonic",
         "authentication_grant_atomic_one_use_required",
+        "authentication_grant_provider_generation_revalidation_required",
         "organization_disable_revokes_workspace_memberships",
         "approval_requester_generation_revalidation_required",
+        "approval_classification_server_owned",
+        "self_approval_denied_for_all_classes",
         "safe_audit_vocabulary_closed",
         "strong_recent_auth_policy_required",
         "authorization_server_state_only",
@@ -557,6 +566,7 @@ def _validate_safety_contract(value: object, failures: list[str]) -> None:
         failures.append("PIS-004A safety contract recent-auth ceiling is invalid")
     required_false = (
         "session_audit_id_authenticates",
+        "approval_request_effect_authority",
         "human_approval_by_node_or_service_allowed",
         "cross_organization_or_workspace_access_allowed",
         "cross_workspace_listing_or_bulk_enumeration_allowed",

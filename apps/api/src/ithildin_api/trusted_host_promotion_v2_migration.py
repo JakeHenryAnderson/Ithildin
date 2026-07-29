@@ -323,6 +323,8 @@ PIS004A_TABLE_COLUMNS = {
         "authentication_grant_id",
         "assertion_audit_id",
         "organization_id",
+        "provider_configuration_id",
+        "provider_configuration_generation",
         "principal_id",
         "identity_generation",
         "membership_generation",
@@ -1443,6 +1445,8 @@ def _create_pis004a_repair_tables(connection: sqlite3.Connection) -> None:
             authentication_grant_id TEXT PRIMARY KEY,
             assertion_audit_id TEXT NOT NULL UNIQUE,
             organization_id TEXT NOT NULL,
+            provider_configuration_id TEXT NOT NULL,
+            provider_configuration_generation INTEGER NOT NULL,
             principal_id TEXT NOT NULL,
             identity_generation INTEGER NOT NULL,
             membership_generation INTEGER NOT NULL,
@@ -1452,6 +1456,11 @@ def _create_pis004a_repair_tables(connection: sqlite3.Connection) -> None:
             expires_at TEXT NOT NULL,
             status TEXT NOT NULL,
             consumed_at TEXT,
+            FOREIGN KEY (organization_id, provider_configuration_id)
+                REFERENCES identity_provider_configurations(
+                    organization_id,
+                    provider_configuration_id
+                ),
             FOREIGN KEY (organization_id, principal_id)
                 REFERENCES identity_organization_memberships(
                     organization_id,
@@ -1463,6 +1472,7 @@ def _create_pis004a_repair_tables(connection: sqlite3.Connection) -> None:
             CHECK (length(assertion_audit_id) = 37
                 AND substr(assertion_audit_id, 1, 5) = 'oaud_'
                 AND substr(assertion_audit_id, 6) NOT GLOB '*[^0-9a-f]*'),
+            CHECK (provider_configuration_generation >= 1),
             CHECK (identity_generation >= 1),
             CHECK (membership_generation >= 1),
             CHECK (authentication_method = 'oidc_fixture'),

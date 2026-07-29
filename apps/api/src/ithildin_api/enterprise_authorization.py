@@ -71,6 +71,9 @@ class ApprovalClass(StrEnum):
     HIGH_RISK = "high_risk"
 
 
+_REQUIRED_SELF_APPROVAL_DENIAL_CLASSES = frozenset(ApprovalClass)
+
+
 class AuthorizationReasonCode(StrEnum):
     AUTHORIZED = "authorized"
     MUTATION_ORIGIN_AND_CSRF_REQUIRED = "mutation_origin_and_csrf_required"
@@ -84,19 +87,6 @@ class AuthorizationReasonCode(StrEnum):
     AUTHORITY_GENERATION_MISMATCH = "authority_generation_mismatch"
     ROLE_NOT_AUTHORIZED = "role_not_authorized"
     RECENT_HUMAN_AUTHENTICATION_REQUIRED = "recent_human_authentication_required"
-
-
-class ServerOwnedApprovalOperation(StrEnum):
-    STANDARD_CHANGE = "standard_change"
-    TRUSTED_HOST_PLACEMENT = "trusted_host_placement"
-    HIGH_RISK_CHANGE = "high_risk_change"
-
-
-_APPROVAL_CLASS_BY_OPERATION = {
-    ServerOwnedApprovalOperation.STANDARD_CHANGE: ApprovalClass.STANDARD,
-    ServerOwnedApprovalOperation.TRUSTED_HOST_PLACEMENT: (ApprovalClass.TRUSTED_HOST_PLACEMENT),
-    ServerOwnedApprovalOperation.HIGH_RISK_CHANGE: ApprovalClass.HIGH_RISK,
-}
 
 
 class _FrozenModel(BaseModel):
@@ -116,12 +106,7 @@ class EnterpriseAuthorizationPolicy(_FrozenModel):
             EnterpriseAction.DESTRUCTIVE,
         }
     )
-    self_approval_denied_for: frozenset[ApprovalClass] = frozenset(
-        {
-            ApprovalClass.TRUSTED_HOST_PLACEMENT,
-            ApprovalClass.HIGH_RISK,
-        }
-    )
+    self_approval_denied_for: frozenset[ApprovalClass] = _REQUIRED_SELF_APPROVAL_DENIAL_CLASSES
     maximum_bulk_items: int = Field(default=100, ge=1, le=1000)
 
     @model_validator(mode="after")
@@ -139,6 +124,8 @@ class EnterpriseAuthorizationPolicy(_FrozenModel):
                 "approval, membership management, and destructive actions "
                 "must require recent authentication"
             )
+        if not _REQUIRED_SELF_APPROVAL_DENIAL_CLASSES <= self.self_approval_denied_for:
+            raise ValueError("all approval classes must forbid self-approval")
         return self
 
 
@@ -157,6 +144,7 @@ class ApprovalRequestRecord(_FrozenModel):
     approval_class: ApprovalClass
     request_generation: int = Field(ge=1)
     created_at: datetime
+    effect_authority: Literal[False] = False
 
     @property
     def scope(self) -> ServerOwnedResourceScope:
@@ -577,17 +565,63 @@ class EnterpriseAuthorizationEngine:
             )
         return decision
 
-    def request_approval(
+    def request_standard_change_approval(
         self,
         session_handle: str,
         *,
         allowed_origin: str,
         csrf_token: str,
         scope: ServerOwnedResourceScope,
-        operation: ServerOwnedApprovalOperation,
     ) -> ApprovalRequestRecord:
-        if not isinstance(operation, ServerOwnedApprovalOperation):
-            raise EnterpriseAuthorizationError("approval operation is not server-owned")
+        return self._request_approval(
+            session_handle,
+            allowed_origin=allowed_origin,
+            csrf_token=csrf_token,
+            scope=scope,
+            approval_class=ApprovalClass.STANDARD,
+        )
+
+    def request_trusted_host_placement_approval(
+        self,
+        session_handle: str,
+        *,
+        allowed_origin: str,
+        csrf_token: str,
+        scope: ServerOwnedResourceScope,
+    ) -> ApprovalRequestRecord:
+        return self._request_approval(
+            session_handle,
+            allowed_origin=allowed_origin,
+            csrf_token=csrf_token,
+            scope=scope,
+            approval_class=ApprovalClass.TRUSTED_HOST_PLACEMENT,
+        )
+
+    def request_high_risk_change_approval(
+        self,
+        session_handle: str,
+        *,
+        allowed_origin: str,
+        csrf_token: str,
+        scope: ServerOwnedResourceScope,
+    ) -> ApprovalRequestRecord:
+        return self._request_approval(
+            session_handle,
+            allowed_origin=allowed_origin,
+            csrf_token=csrf_token,
+            scope=scope,
+            approval_class=ApprovalClass.HIGH_RISK,
+        )
+
+    def _request_approval(
+        self,
+        session_handle: str,
+        *,
+        allowed_origin: str,
+        csrf_token: str,
+        scope: ServerOwnedResourceScope,
+        approval_class: ApprovalClass,
+    ) -> ApprovalRequestRecord:
         policy = self._current_policy()
         session = self._sessions.validate_mutation(
             session_handle,
@@ -617,7 +651,7 @@ class EnterpriseAuthorizationEngine:
         return self._approval_requests._create_pending(
             scope=scope,
             requester=requester,
-            approval_class=_APPROVAL_CLASS_BY_OPERATION[operation],
+            approval_class=approval_class,
         )
 
     def authorize_bulk_read(

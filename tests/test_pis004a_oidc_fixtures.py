@@ -286,6 +286,37 @@ def test_valid_fixture_binds_identity_code_and_replay_state_without_secrets(
         assert forbidden not in audit
 
 
+def test_oidc_grant_rejects_provider_disable_and_reenable_generation_drift(
+    tmp_path: Path,
+) -> None:
+    fixture = make_fixture(tmp_path)
+    assertion = fixture.validate()
+
+    with sqlite3.connect(fixture.db_path) as connection:
+        connection.execute(
+            """
+            UPDATE identity_provider_configurations
+            SET enabled = 0, generation = generation + 1
+            WHERE provider_configuration_id = ?
+            """,
+            (fixture.provider_configuration_id,),
+        )
+    with pytest.raises(SessionAuthenticationError, match="provider configuration is stale"):
+        fixture.sessions.issue_session(assertion.authentication_grant_id)
+
+    with sqlite3.connect(fixture.db_path) as connection:
+        connection.execute(
+            """
+            UPDATE identity_provider_configurations
+            SET enabled = 1
+            WHERE provider_configuration_id = ?
+            """,
+            (fixture.provider_configuration_id,),
+        )
+    with pytest.raises(SessionAuthenticationError, match="provider configuration is stale"):
+        fixture.sessions.issue_session(assertion.authentication_grant_id)
+
+
 def test_token_or_authorization_code_replay_is_denied_across_transactions(
     tmp_path: Path,
 ) -> None:

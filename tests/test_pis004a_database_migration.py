@@ -74,6 +74,10 @@ def test_schema_six_creates_exact_repaired_pis004a_tables_without_token_columns(
     } <= all_columns["identity_approval_requests"]
     assert "identity_session_digest_key_generations" in tables
     assert "identity_authentication_grants" in tables
+    assert {
+        "provider_configuration_id",
+        "provider_configuration_generation",
+    } <= all_columns["identity_authentication_grants"]
 
 
 def test_v4_upgrade_creates_private_restore_only_pre_v6_backup(tmp_path: Path) -> None:

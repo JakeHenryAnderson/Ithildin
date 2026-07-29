@@ -220,3 +220,33 @@ def test_contract_rejects_weakened_recent_authentication_ceiling() -> None:
     failures = pis004a_check.validate_contract(contract)
 
     assert "PIS-004A safety contract recent-auth ceiling is invalid" in failures
+
+
+@pytest.mark.parametrize(
+    "control",
+    [
+        "authentication_grant_provider_generation_revalidation_required",
+        "approval_classification_server_owned",
+        "self_approval_denied_for_all_classes",
+    ],
+)
+def test_contract_rejects_weakened_enterprise_authority_controls(control: str) -> None:
+    contract = copy.deepcopy(_live_contract())
+    safety = contract["safety_contract"]
+    assert isinstance(safety, dict)
+    safety[control] = False
+
+    failures = pis004a_check.validate_contract(contract)
+
+    assert "PIS-004A safety contract weakens a required control" in failures
+
+
+def test_contract_rejects_approval_effect_authority() -> None:
+    contract = copy.deepcopy(_live_contract())
+    safety = contract["safety_contract"]
+    assert isinstance(safety, dict)
+    safety["approval_request_effect_authority"] = True
+
+    failures = pis004a_check.validate_contract(contract)
+
+    assert "PIS-004A safety contract permits forbidden authority" in failures
