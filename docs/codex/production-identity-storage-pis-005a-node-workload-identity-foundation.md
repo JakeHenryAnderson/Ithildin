@@ -1,6 +1,6 @@
 # PIS-005A Local Node Workload Identity Foundation
 
-Status: bounded implementation authorized and in progress.
+Status: exact implementation candidate frozen; independent review pending.
 
 Decision ID: `PIS-005A`.
 

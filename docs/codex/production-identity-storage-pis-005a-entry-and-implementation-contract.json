@@ -2,7 +2,7 @@
   "schema_version": "1",
   "decision_id": "PIS-005A",
   "title": "Local Node Workload Identity And Application-Key Cross-Binding Foundation",
-  "status": "authorized_implementation_in_progress",
+  "status": "candidate_independent_review_pending",
   "base": {
     "source_branch": "origin/codex/enterprise-e2-pis004a-review-repair",
     "source_commit": "e8e6a75ca3d76a233243f5e890091f3c95731da9",
@@ -397,5 +397,5 @@
     "release acceptance",
     "production promotion"
   ],
-  "next_action": "implement_and_independently_review_local_fixture_only_pis_005a_then_stop_before_e2_node_005"
+  "next_action": "independently_review_exact_pushed_pis_005a_candidate_then_stop_before_e2_node_005"
 }

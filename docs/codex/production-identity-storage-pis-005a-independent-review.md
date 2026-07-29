@@ -8,7 +8,7 @@ Reviewed exact tree: pending.
 
 Review method: independent read-only Codex review in a clean detached worktree.
 
-Candidate freeze complete: `false`.
+Candidate freeze complete: `true`.
 
 Clean detached worktree verified: `false`.
 
@@ -40,8 +40,7 @@ Current governed tool count: exactly `24`.
 
 ## Pending Review Procedure
 
-The implementation candidate has not yet been frozen or reviewed. After the candidate is committed
-and pushed, the reviewer must fetch
+The exact implementation candidate is frozen and awaits independent review. The reviewer must fetch
 `origin/codex/enterprise-e2-pis005a-node-identity`, check out the exact candidate commit in a clean
 detached worktree, verify that the fetched remote identity, detached `HEAD`, and exact tree match,
 and run:
