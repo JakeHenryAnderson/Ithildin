@@ -5,6 +5,7 @@ import sqlite3
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from typing import cast
 from uuid import uuid4
 
 import pytest
@@ -1009,7 +1010,7 @@ def test_invalid_policy_provider_fails_closed(tmp_path: Path) -> None:
         sessions=fixture.sessions,
         identities=fixture.identities,
         approval_requests=fixture.approvals,
-        policy_provider=lambda: object(),  # type: ignore[return-value]
+        policy_provider=lambda: cast(EnterpriseAuthorizationPolicy, object()),
         clock=fixture.clock,
     )
 
