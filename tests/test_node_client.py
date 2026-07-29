@@ -301,6 +301,71 @@ def test_client_enrollment_state_is_exclusive_private_and_reloadable(tmp_path: P
         NodeState.load(link_path)
 
 
+def test_client_rejects_noncanonical_configuration_trust_from_gateway_and_disk(
+    tmp_path: Path,
+) -> None:
+    gateway_client = RecordingNodeClient()
+    gateway_alias = _noncanonical_public_key_variants(
+        gateway_client.configuration_public_key
+    )[0]
+    gateway_client.configuration_public_key = gateway_alias
+    with pytest.raises(NodeClientError, match="Gateway configuration trust is invalid"):
+        gateway_client.enroll(
+            enrollment_code="one-time-code",
+            node_version="0.1.0",
+            runner_adapter="hermes",
+            deployment_topology="docker_sidecar",
+        )
+
+    disk_client = RecordingNodeClient()
+    state = disk_client.enroll(
+        enrollment_code="one-time-code",
+        node_version="0.1.0",
+        runner_adapter="hermes",
+        deployment_topology="docker_sidecar",
+    )
+    disk_alias = _noncanonical_public_key_variants(
+        state.gateway_configuration_public_key
+    )[0]
+    aliased_state = replace(
+        state,
+        gateway_configuration_key_id=sha256_digest(disk_alias),
+        gateway_configuration_public_key=disk_alias,
+    )
+    state_path = tmp_path / "node" / "state.json"
+    aliased_state.write_new(state_path)
+
+    with pytest.raises(NodeClientError, match="Gateway configuration trust is invalid"):
+        NodeState.load(state_path)
+
+    staged_alias = _noncanonical_public_key_variants(
+        disk_client.next_configuration_signer.trust.public_key
+    )[0]
+    aliased_pending_state = replace(
+        state,
+        pending_configuration_key_id=sha256_digest(staged_alias),
+        pending_configuration_public_key=staged_alias,
+        pending_trust_transition_id="nct_" + ("a" * 32),
+        pending_trust_transition_digest="sha256:" + ("b" * 64),
+        pending_trust_expires_at="2026-07-16T13:00:00+00:00",
+    )
+    pending_path = tmp_path / "node" / "pending-state.json"
+    aliased_pending_state.write_new(pending_path)
+    with pytest.raises(NodeClientError, match="Gateway configuration trust is invalid"):
+        NodeState.load(pending_path)
+
+    aliased_previous_state = replace(
+        state,
+        previous_configuration_key_id=sha256_digest(staged_alias),
+        previous_configuration_public_key=staged_alias,
+        previous_trust_expires_at="2026-07-16T13:00:00+00:00",
+    )
+    previous_path = tmp_path / "node" / "previous-state.json"
+    aliased_previous_state.write_new(previous_path)
+    with pytest.raises(NodeClientError, match="Gateway configuration trust is invalid"):
+        NodeState.load(previous_path)
+
+
 def test_client_heartbeat_signature_binds_path_timestamp_nonce_and_body() -> None:
     client = RecordingNodeClient()
     state = client.enroll(
@@ -717,3 +782,13 @@ def _identity_rotation_activated_response(
         "evidence_status": "complete",
         "active_identity_key_id": key_id,
     }
+
+
+def _noncanonical_public_key_variants(canonical_public_key: str) -> list[str]:
+    alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
+    final_index = alphabet.index(canonical_public_key[-2])
+    variants = [
+        canonical_public_key[:-2] + alphabet[(final_index & 0b111100) | pad_bits] + "="
+        for pad_bits in range(4)
+    ]
+    return [variant for variant in variants if variant != canonical_public_key]

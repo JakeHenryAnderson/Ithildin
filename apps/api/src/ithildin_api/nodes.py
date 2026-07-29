@@ -433,6 +433,7 @@ class NodeStore:
                 column="current_public_key",
                 definition="TEXT",
             )
+            _require_canonical_stored_public_keys(connection)
             connection.commit()
 
     def issue_enrollment_code(
@@ -982,6 +983,12 @@ class NodeStore:
         current_key_id = node_identity_key_id(node.public_key)
         if current_key_id != rotation.current_key_id:
             raise NodeConflictError("Node identity key changed")
+        if _decode_public_key_material(
+            payload.next_public_key
+        ) == _decode_public_key_material(
+            node.public_key
+        ):
+            raise NodeConflictError("identity-key rotation must change the key")
         next_key_id = node_identity_key_id(payload.next_public_key)
         if next_key_id == current_key_id:
             raise NodeConflictError("identity-key rotation must change the key")
@@ -1156,8 +1163,9 @@ def canonical_signature_message(
 
 
 def node_identity_key_id(public_key: str) -> str:
-    _decode_public_key(public_key)
-    return sha256_digest(public_key)
+    decoded = _decode_public_key(public_key)
+    canonical_public_key = base64.b64encode(decoded).decode("ascii")
+    return sha256_digest(canonical_public_key)
 
 
 def _report_identity_evidence_is_usable(
@@ -1283,6 +1291,13 @@ def _safe_label(value: str) -> str:
 
 
 def _decode_public_key(value: str) -> bytes:
+    decoded = _decode_public_key_material(value)
+    if base64.b64encode(decoded).decode("ascii") != value:
+        raise ValueError("invalid Ed25519 public key")
+    return decoded
+
+
+def _decode_public_key_material(value: str) -> bytes:
     try:
         decoded = base64.b64decode(value, validate=True)
     except (binascii.Error, ValueError) as exc:
@@ -1333,6 +1348,35 @@ def _observed_state(
         if age <= timedelta(seconds=stale_after_seconds)
         else "stale"
     )
+
+
+def _require_canonical_stored_public_keys(connection: sqlite3.Connection) -> None:
+    for authority_bearing_query in (
+        "SELECT public_key FROM nodes WHERE public_key IS NOT NULL",
+        (
+            "SELECT current_public_key FROM node_identity_key_rotations "
+            "WHERE status = 'pending' AND current_public_key IS NOT NULL"
+        ),
+        (
+            "SELECT current_public_key FROM node_identity_key_rotations "
+            "WHERE status = 'activated' AND evidence_status = 'pending' "
+            "AND current_public_key IS NOT NULL"
+        ),
+        (
+            "SELECT next_public_key FROM node_identity_key_rotations "
+            "WHERE status = 'activated' AND evidence_status = 'pending' "
+            "AND next_public_key IS NOT NULL"
+        ),
+    ):
+        rows = connection.execute(authority_bearing_query).fetchall()
+        for row in rows:
+            try:
+                _decode_public_key(str(row[0]))
+            except ValueError as exc:
+                raise NodeConflictError(
+                    "stored Node identity key is non-canonical; explicit offline "
+                    "reconciliation is required and no rewrite occurred"
+                ) from exc
 
 
 def _ensure_column(

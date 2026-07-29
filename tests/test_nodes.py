@@ -77,6 +77,240 @@ def test_expired_or_unknown_enrollment_code_fails_closed(tmp_path: Path) -> None
         store.enroll(_enrollment("x" * 48, public_key), now=now)
 
 
+def test_node_identity_rejects_noncanonical_base64_without_changing_canonical_ids(
+    tmp_path: Path,
+) -> None:
+    store = NodeStore(tmp_path / "ithildin.sqlite3")
+    store.initialize()
+    issued = store.issue_enrollment_code(
+        EnrollmentCodeIssuePayload(workspace_id="default", display_name="Node"),
+        expires_in_seconds=600,
+    )
+    store.mark_enrollment_code_evidence_complete(issued.code_id)
+    private_key, canonical_public_key = _keypair()
+    variants = _noncanonical_public_key_variants(canonical_public_key)
+
+    legacy_public_key = "AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8="
+    legacy_key_id = "sha256:c13217bb5694185919fa9b0bb7d18759c8dd4006aa0de169d29e9480d38f7bcd"
+    assert base64.b64decode(legacy_public_key, validate=True) == bytes(range(32))
+    assert node_identity_key_id(legacy_public_key) == legacy_key_id
+    assert node_identity_key_id(canonical_public_key) == sha256_digest(canonical_public_key)
+    assert variants
+    for variant in variants:
+        assert base64.b64decode(variant, validate=True) == base64.b64decode(
+            canonical_public_key,
+            validate=True,
+        )
+        with pytest.raises(ValidationError, match="invalid Ed25519 public key"):
+            _enrollment(issued.enrollment_code, variant)
+        with pytest.raises(ValidationError, match="invalid Ed25519 public key"):
+            NodeIdentityRotationActivationPayload(
+                protocol_version="1",
+                rotation_id="nkr_" + ("a" * 32),
+                challenge="c" * 40,
+                next_public_key=variant,
+                next_key_proof=base64.b64encode(private_key.sign(b"same-key")).decode(),
+            )
+        with pytest.raises(ValueError, match="invalid Ed25519 public key"):
+            node_identity_key_id(variant)
+
+
+def test_identity_rotation_store_rejects_noncanonical_alias_of_current_key(
+    tmp_path: Path,
+) -> None:
+    store = NodeStore(tmp_path / "ithildin.sqlite3")
+    store.initialize()
+    now = datetime(2026, 7, 16, 12, 0, tzinfo=UTC)
+    issued = store.issue_enrollment_code(
+        EnrollmentCodeIssuePayload(workspace_id="default", display_name="Node"),
+        expires_in_seconds=600,
+        now=now,
+    )
+    store.mark_enrollment_code_evidence_complete(issued.code_id)
+    current_private, current_public = _keypair()
+    node = store.enroll(_enrollment(issued.enrollment_code, current_public), now=now)
+    node = store.mark_node_evidence_complete(node.node_id)
+    challenge = store.issue_identity_rotation_challenge(node.node_id, now=now)
+    rotation = store.mark_identity_rotation_challenge_evidence_complete(
+        challenge.record.rotation_id
+    )
+    aliased_public_key = _noncanonical_public_key_variants(current_public)[0]
+    payload = NodeIdentityRotationActivationPayload.model_construct(
+        protocol_version="1",
+        rotation_id=rotation.rotation_id,
+        challenge=challenge.challenge,
+        next_public_key=aliased_public_key,
+        next_key_proof=base64.b64encode(current_private.sign(b"same-key")).decode(),
+    )
+
+    with pytest.raises(
+        NodeConflictError,
+        match="identity-key rotation must change the key",
+    ):
+        store.activate_identity_rotation(node.node_id, payload, now=now)
+
+
+def test_node_store_fails_closed_on_persisted_noncanonical_public_key(
+    tmp_path: Path,
+) -> None:
+    db_path = tmp_path / "ithildin.sqlite3"
+    store = NodeStore(db_path)
+    store.initialize()
+    issued = store.issue_enrollment_code(
+        EnrollmentCodeIssuePayload(workspace_id="default", display_name="Node"),
+        expires_in_seconds=600,
+    )
+    store.mark_enrollment_code_evidence_complete(issued.code_id)
+    _, canonical_public_key = _keypair()
+    record = store.enroll(_enrollment(issued.enrollment_code, canonical_public_key))
+    noncanonical_public_key = _noncanonical_public_key_variants(canonical_public_key)[0]
+    with sqlite3.connect(db_path) as connection:
+        connection.execute(
+            """
+            INSERT INTO node_identity_key_rotations (
+                rotation_id, node_id, principal_id, workspace_id, current_key_id,
+                current_public_key, challenge_digest, created_at, expires_at, status,
+                evidence_status, next_public_key, next_key_id, activated_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'expired', 'complete', ?, ?, NULL)
+            """,
+            (
+                "nkr_" + ("f" * 32),
+                record.node_id,
+                record.principal_id,
+                record.workspace_id,
+                node_identity_key_id(canonical_public_key),
+                noncanonical_public_key,
+                sha256_digest("historical challenge"),
+                datetime(2026, 7, 16, tzinfo=UTC).isoformat(),
+                datetime(2026, 7, 16, tzinfo=UTC).isoformat(),
+                noncanonical_public_key,
+                "sha256:" + ("f" * 64),
+            ),
+        )
+        connection.commit()
+
+    # Historical terminal transition material is evidence, not current authority.
+    NodeStore(db_path).initialize()
+    with sqlite3.connect(db_path) as connection:
+        connection.execute(
+            "UPDATE nodes SET public_key = ? WHERE node_id = ?",
+            (noncanonical_public_key, record.node_id),
+        )
+        connection.commit()
+
+    with pytest.raises(
+        NodeConflictError,
+        match=(
+            "stored Node identity key is non-canonical; explicit offline "
+            "reconciliation is required and no rewrite occurred"
+        ),
+    ):
+        NodeStore(db_path).initialize()
+    with sqlite3.connect(db_path) as connection:
+        persisted_public_key = connection.execute(
+            "SELECT public_key FROM nodes WHERE node_id = ?",
+            (record.node_id,),
+        ).fetchone()
+    assert persisted_public_key is not None
+    assert persisted_public_key[0] == noncanonical_public_key
+
+
+@pytest.mark.parametrize(
+    ("status", "evidence_status", "authority_column"),
+    [
+        ("pending", "complete", "current_public_key"),
+        ("activated", "pending", "current_public_key"),
+        ("activated", "pending", "next_public_key"),
+    ],
+)
+def test_node_store_checks_recoverable_rotation_key_material(
+    tmp_path: Path,
+    status: str,
+    evidence_status: str,
+    authority_column: str,
+) -> None:
+    db_path = tmp_path / "ithildin.sqlite3"
+    store = NodeStore(db_path)
+    store.initialize()
+    issued = store.issue_enrollment_code(
+        EnrollmentCodeIssuePayload(workspace_id="default", display_name="Node"),
+        expires_in_seconds=600,
+    )
+    store.mark_enrollment_code_evidence_complete(issued.code_id)
+    _, current_public_key = _keypair()
+    record = store.enroll(_enrollment(issued.enrollment_code, current_public_key))
+    record = store.mark_node_evidence_complete(record.node_id)
+    _, next_public_key = _keypair()
+    current_stored_key = current_public_key
+    next_stored_key: str | None = next_public_key if status == "activated" else None
+    if authority_column == "current_public_key":
+        current_stored_key = _noncanonical_public_key_variants(current_public_key)[0]
+    else:
+        next_stored_key = _noncanonical_public_key_variants(next_public_key)[0]
+
+    with sqlite3.connect(db_path) as connection:
+        if status == "activated":
+            connection.execute(
+                "UPDATE nodes SET public_key = ?, evidence_status = 'pending' "
+                "WHERE node_id = ?",
+                (next_public_key, record.node_id),
+            )
+        connection.execute(
+            """
+            INSERT INTO node_identity_key_rotations (
+                rotation_id, node_id, principal_id, workspace_id, current_key_id,
+                current_public_key, challenge_digest, created_at, expires_at, status,
+                evidence_status, next_public_key, next_key_id, activated_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                "nkr_" + ("e" * 32),
+                record.node_id,
+                record.principal_id,
+                record.workspace_id,
+                node_identity_key_id(current_public_key),
+                current_stored_key,
+                sha256_digest("recoverable challenge"),
+                datetime(2026, 7, 16, tzinfo=UTC).isoformat(),
+                datetime(2026, 7, 16, 1, tzinfo=UTC).isoformat(),
+                status,
+                evidence_status,
+                next_stored_key,
+                (
+                    node_identity_key_id(next_public_key)
+                    if next_stored_key is not None
+                    else None
+                ),
+                (
+                    datetime(2026, 7, 16, tzinfo=UTC).isoformat()
+                    if status == "activated"
+                    else None
+                ),
+            ),
+        )
+        connection.commit()
+
+    with pytest.raises(
+        NodeConflictError,
+        match="stored Node identity key is non-canonical",
+    ):
+        NodeStore(db_path).initialize()
+    with sqlite3.connect(db_path) as connection:
+        persisted_keys = connection.execute(
+            "SELECT current_public_key, next_public_key "
+            "FROM node_identity_key_rotations WHERE rotation_id = ?",
+            ("nkr_" + ("e" * 32),),
+        ).fetchone()
+    assert persisted_keys is not None
+    expected = (
+        current_stored_key
+        if authority_column == "current_public_key"
+        else next_stored_key
+    )
+    observed_index = 0 if authority_column == "current_public_key" else 1
+    assert persisted_keys[observed_index] == expected
+
+
 def test_incomplete_audit_evidence_blocks_node_transitions(tmp_path: Path) -> None:
     store = NodeStore(tmp_path / "ithildin.sqlite3")
     store.initialize()
@@ -481,6 +715,16 @@ def _keypair() -> tuple[Ed25519PrivateKey, str]:
         format=serialization.PublicFormat.Raw,
     )
     return private_key, base64.b64encode(public_bytes).decode()
+
+
+def _noncanonical_public_key_variants(canonical_public_key: str) -> list[str]:
+    alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
+    final_index = alphabet.index(canonical_public_key[-2])
+    variants = [
+        canonical_public_key[:-2] + alphabet[(final_index & 0b111100) | pad_bits] + "="
+        for pad_bits in range(4)
+    ]
+    return [variant for variant in variants if variant != canonical_public_key]
 
 
 def _enrollment(code: str, public_key: str) -> NodeEnrollmentPayload:

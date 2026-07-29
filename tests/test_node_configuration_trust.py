@@ -10,6 +10,7 @@ from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from ithildin_api.node_configuration import (
     NodeConfigurationSigner,
+    NodeConfigurationTrust,
     generate_node_configuration_signing_keypair,
 )
 from ithildin_api.node_configuration_trust import (
@@ -18,11 +19,13 @@ from ithildin_api.node_configuration_trust import (
     NodeConfigurationTrustTransitionConflictError,
     NodeConfigurationTrustTransitionStore,
     NodeConfigurationTrustTransitionVerificationError,
+    configuration_trust_from_public_key,
     transition_next_trust,
     verify_configuration_trust_transition,
 )
 from ithildin_api.nodes import EnrollmentCodeIssuePayload, NodeEnrollmentPayload, NodeStore
 from ithildin_schemas import JsonObject, sha256_digest
+from pydantic import ValidationError
 
 
 def test_immutable_trust_transition_assignment_verification_and_acknowledgment(
@@ -151,6 +154,102 @@ def test_trust_transition_rejects_conflicts_tamper_wrong_target_and_expiry(
         )
 
 
+def test_configuration_trust_rejects_aliases_and_store_compares_key_material(
+    tmp_path: Path,
+) -> None:
+    canonical_public_key = "AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8="
+    canonical_key_id = "sha256:c13217bb5694185919fa9b0bb7d18759c8dd4006aa0de169d29e9480d38f7bcd"
+    assert configuration_trust_from_public_key(canonical_public_key).key_id == canonical_key_id
+    for alias in _noncanonical_public_key_variants(canonical_public_key):
+        assert base64.b64decode(alias, validate=True) == bytes(range(32))
+        with pytest.raises(
+            NodeConfigurationTrustTransitionVerificationError,
+            match="configuration trust public key is invalid",
+        ):
+            configuration_trust_from_public_key(alias)
+        with pytest.raises(
+            ValidationError,
+            match="configuration trust public key is invalid",
+        ):
+            NodeConfigurationTrustTransitionAssignmentPayload(
+                expected_current_key_id=canonical_key_id,
+                next_public_key=alias,
+            )
+
+    _, transition_store, current_signer, next_signer, node_id = _stores(tmp_path)
+    current_alias = _noncanonical_public_key_variants(
+        current_signer.trust.public_key
+    )[0]
+    aliased_same_key_payload = (
+        NodeConfigurationTrustTransitionAssignmentPayload.model_construct(
+            expected_current_key_id=current_signer.trust.key_id,
+            next_public_key=current_alias,
+            validity_seconds=86_400,
+        )
+    )
+    with pytest.raises(
+        NodeConfigurationTrustTransitionConflictError,
+        match="next configuration signing key must differ from current",
+    ):
+        transition_store.assign(
+            node_id=node_id,
+            payload=aliased_same_key_payload,
+            signer=current_signer,
+        )
+
+    next_alias = _noncanonical_public_key_variants(next_signer.trust.public_key)[0]
+    with pytest.raises(
+        ValidationError,
+        match="configuration trust public key is invalid",
+    ):
+        NodeConfigurationTrustTransitionAssignmentPayload(
+            expected_current_key_id=current_signer.trust.key_id,
+            next_public_key=next_alias,
+        )
+
+    record = transition_store.assign(
+        node_id=node_id,
+        payload=_assignment(current_signer, next_signer),
+        signer=current_signer,
+    )
+    aliased_bundle = json.loads(json.dumps(record.bundle))
+    aliased_transition = aliased_bundle["transition"]
+    assert isinstance(aliased_transition, dict)
+    aliased_next_trust = aliased_transition["next_trust"]
+    assert isinstance(aliased_next_trust, dict)
+    aliased_next_trust["public_key"] = next_alias
+    aliased_next_trust["key_id"] = sha256_digest(next_alias)
+    aliased_bundle["transition_digest"] = sha256_digest(aliased_transition)
+    aliased_bundle = _resign(aliased_bundle, current_signer)
+    with pytest.raises(
+        NodeConfigurationTrustTransitionVerificationError,
+        match="configuration trust public key is invalid",
+    ):
+        verify_configuration_trust_transition(
+            aliased_bundle,
+            current_trust=current_signer.trust,
+            node_id=node_id,
+            principal_id=f"agent:node.{node_id}",
+            workspace_id="default",
+        )
+
+    aliased_current_trust = NodeConfigurationTrust(
+        key_id=sha256_digest(current_alias),
+        public_key=current_alias,
+    )
+    with pytest.raises(
+        NodeConfigurationTrustTransitionVerificationError,
+        match="configuration trust public key is invalid",
+    ):
+        verify_configuration_trust_transition(
+            record.bundle,
+            current_trust=aliased_current_trust,
+            node_id=node_id,
+            principal_id=f"agent:node.{node_id}",
+            workspace_id="default",
+        )
+
+
 def _stores(
     tmp_path: Path,
 ) -> tuple[
@@ -240,3 +339,13 @@ def _resign(bundle: JsonObject, signer: NodeConfigurationSigner) -> JsonObject:
             "signature": base64.b64encode(signature).decode(),
         },
     }
+
+
+def _noncanonical_public_key_variants(canonical_public_key: str) -> list[str]:
+    alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
+    final_index = alphabet.index(canonical_public_key[-2])
+    variants = [
+        canonical_public_key[:-2] + alphabet[(final_index & 0b111100) | pad_bits] + "="
+        for pad_bits in range(4)
+    ]
+    return [variant for variant in variants if variant != canonical_public_key]

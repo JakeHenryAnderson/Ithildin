@@ -18,10 +18,7 @@ from pathlib import Path
 from typing import Literal, cast
 
 from cryptography.hazmat.primitives import serialization
-from cryptography.hazmat.primitives.asymmetric.ed25519 import (
-    Ed25519PrivateKey,
-    Ed25519PublicKey,
-)
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from ithildin_api.node_configuration import (
     CONFIGURATION_ACK_STATUS,
     NodeConfigurationTrust,
@@ -32,6 +29,7 @@ from ithildin_api.node_configuration import (
 from ithildin_api.node_configuration_trust import (
     TRUST_TRANSITION_ACK_STATUS,
     NodeConfigurationTrustTransitionVerificationError,
+    configuration_trust_from_public_key,
     transition_next_trust,
     verify_configuration_trust_transition,
 )
@@ -518,6 +516,10 @@ class NodeClient:
         trust = response.get("configuration_trust")
         if not isinstance(trust, dict):
             raise NodeClientError("Gateway enrollment response is incomplete")
+        gateway_trust = _trust(
+            _required_string(trust, "key_id"),
+            _required_string(trust, "public_key"),
+        )
         return NodeState(
             api_url=self.api_url,
             node_id=_required_string(response, "node_id"),
@@ -526,10 +528,8 @@ class NodeClient:
             private_key=private_key_text,
             public_key=public_key_text,
             enrolled_at=_required_string(response, "enrolled_at"),
-            gateway_configuration_key_id=_required_string(trust, "key_id"),
-            gateway_configuration_public_key=_required_string(
-                trust, "public_key"
-            ),
+            gateway_configuration_key_id=gateway_trust.key_id,
+            gateway_configuration_public_key=gateway_trust.public_key,
             gateway_manifest_lock_digest=_required_string(
                 response, "manifest_lock_digest"
             ),
@@ -1151,18 +1151,16 @@ def _configuration_trust(state: NodeState) -> NodeConfigurationTrust:
 
 def _trust(key_id: str, public_key_text: str) -> NodeConfigurationTrust:
     try:
-        public_key = base64.b64decode(public_key_text, validate=True)
-        if len(public_key) != 32:
-            raise ValueError
-        Ed25519PublicKey.from_public_bytes(public_key)
-    except (binascii.Error, ValueError) as exc:
+        trust = configuration_trust_from_public_key(public_key_text)
+    except NodeConfigurationTrustTransitionVerificationError as exc:
         raise NodeClientError("Gateway configuration trust is invalid") from exc
-    if sha256_digest(public_key_text) != key_id:
+    if trust.key_id != key_id:
         raise NodeClientError("Gateway configuration trust key ID is invalid")
-    return NodeConfigurationTrust(key_id=key_id, public_key=public_key_text)
+    return trust
 
 
 def _validate_optional_trust_state(state: NodeState) -> None:
+    active_trust = _configuration_trust(state)
     pending = (
         state.pending_configuration_key_id,
         state.pending_configuration_public_key,
@@ -1173,8 +1171,8 @@ def _validate_optional_trust_state(state: NodeState) -> None:
     if any(value is not None for value in pending):
         if any(value is None for value in pending):
             raise NodeClientError("Node pending configuration trust state is incomplete")
-        _trust(cast(str, pending[0]), cast(str, pending[1]))
-        if pending[0] == state.gateway_configuration_key_id:
+        pending_trust = _trust(cast(str, pending[0]), cast(str, pending[1]))
+        if _trust_key_material(pending_trust) == _trust_key_material(active_trust):
             raise NodeClientError("Node pending configuration trust matches active trust")
         if not re.fullmatch(r"nct_[0-9a-f]{32}", cast(str, pending[2])):
             raise NodeClientError("Node pending trust transition ID is invalid")
@@ -1189,10 +1187,14 @@ def _validate_optional_trust_state(state: NodeState) -> None:
     if any(value is not None for value in previous):
         if any(value is None for value in previous):
             raise NodeClientError("Node previous configuration trust state is incomplete")
-        _trust(cast(str, previous[0]), cast(str, previous[1]))
-        if previous[0] == state.gateway_configuration_key_id:
+        previous_trust = _trust(cast(str, previous[0]), cast(str, previous[1]))
+        if _trust_key_material(previous_trust) == _trust_key_material(active_trust):
             raise NodeClientError("Node previous configuration trust matches active trust")
         _parse_aware_datetime(cast(str, previous[2]), "previous trust expiry")
+
+
+def _trust_key_material(trust: NodeConfigurationTrust) -> bytes:
+    return base64.b64decode(trust.public_key, validate=True)
 
 
 def _validate_optional_identity_rotation_state(state: NodeState) -> None:

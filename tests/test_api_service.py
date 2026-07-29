@@ -5863,6 +5863,24 @@ def test_node_identity_key_rotation_api_retires_old_key_and_reports_posture(
             headers=admin_headers,
             json={"workspace_id": "default", "display_name": "Rotating Node"},
         )
+        alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
+        final_index = alphabet.index(current_public[-2])
+        aliased_current_public = (
+            current_public[:-2] + alphabet[(final_index & 0b111100) | 1] + "="
+        )
+        aliased_enrollment = client.post(
+            "/nodes/enroll",
+            json={
+                "enrollment_code": issued.json()["enrollment_code"],
+                "public_key": aliased_current_public,
+                "protocol_version": "1",
+                "node_version": "0.1.0",
+                "runner_adapter": "hermes",
+                "deployment_topology": "docker_sidecar",
+            },
+        )
+        assert aliased_enrollment.status_code == 400
+        assert aliased_enrollment.json()["detail"] == "invalid Node enrollment request"
         enrollment = client.post(
             "/nodes/enroll",
             json={
@@ -5913,6 +5931,60 @@ def test_node_identity_key_rotation_api_retires_old_key_and_reports_posture(
             rotation=rotation, next_key_id=next_key_id
         )
         activation_path = f"/nodes/{node_id}/identity-key-rotation/activations"
+        aliased_activation_payload: JsonObject = {
+            "protocol_version": "1",
+            "rotation_id": rotation.rotation_id,
+            "challenge": challenge_document["challenge"],
+            "next_public_key": aliased_current_public,
+            "next_key_proof": base64.b64encode(current_private.sign(b"alias")).decode(),
+        }
+        aliased_activation = client.post(
+            activation_path,
+            headers=_signed_node_headers(
+                current_private,
+                node_id=node_id,
+                path=activation_path,
+                payload=aliased_activation_payload,
+                nonce="a0" * 16,
+            ),
+            json=aliased_activation_payload,
+        )
+        assert aliased_activation.status_code == 400
+        assert (
+            aliased_activation.json()["detail"]
+            == "invalid Node identity-key rotation activation request"
+        )
+
+        same_key_proof = canonical_identity_rotation_proof_message(
+            rotation=rotation,
+            next_key_id=node_identity_key_id(current_public),
+        )
+        same_key_activation_payload: JsonObject = {
+            "protocol_version": "1",
+            "rotation_id": rotation.rotation_id,
+            "challenge": challenge_document["challenge"],
+            "next_public_key": current_public,
+            "next_key_proof": base64.b64encode(
+                current_private.sign(same_key_proof)
+            ).decode(),
+        }
+        same_key_activation = client.post(
+            activation_path,
+            headers=_signed_node_headers(
+                current_private,
+                node_id=node_id,
+                path=activation_path,
+                payload=same_key_activation_payload,
+                nonce="af" * 16,
+            ),
+            json=same_key_activation_payload,
+        )
+        assert same_key_activation.status_code == 409
+        assert (
+            same_key_activation.json()["detail"]
+            == "identity-key rotation must change the key"
+        )
+
         activation_payload: JsonObject = {
             "protocol_version": "1",
             "rotation_id": rotation.rotation_id,
@@ -10253,7 +10325,45 @@ def test_node_configuration_trust_transition_api_is_targeted_signed_and_audited(
         )
         node_id = enrollment.json()["node_id"]
         current_key_id = enrollment.json()["configuration_trust"]["key_id"]
+        current_configuration_public_key = enrollment.json()["configuration_trust"][
+            "public_key"
+        ]
         path = f"/nodes/{node_id}/configuration-trust-transitions"
+        alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
+        final_index = alphabet.index(current_configuration_public_key[-2])
+        aliased_current_configuration_public_key = (
+            current_configuration_public_key[:-2]
+            + alphabet[(final_index & 0b111100) | 1]
+            + "="
+        )
+        aliased = client.post(
+            path,
+            headers=admin_headers,
+            json={
+                "expected_current_key_id": current_key_id,
+                "next_public_key": aliased_current_configuration_public_key,
+                "validity_seconds": 3600,
+            },
+        )
+        assert aliased.status_code == 400
+        assert (
+            aliased.json()["detail"]
+            == "invalid Node configuration trust transition assignment"
+        )
+        same_key = client.post(
+            path,
+            headers=admin_headers,
+            json={
+                "expected_current_key_id": current_key_id,
+                "next_public_key": current_configuration_public_key,
+                "validity_seconds": 3600,
+            },
+        )
+        assert same_key.status_code == 409
+        assert (
+            same_key.json()["detail"]
+            == "next configuration signing key must differ from current"
+        )
         assigned = client.post(
             path,
             headers=admin_headers,

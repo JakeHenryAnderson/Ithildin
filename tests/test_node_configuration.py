@@ -18,6 +18,7 @@ from ithildin_api.node_configuration import (
     NodeConfigurationSigner,
     NodeConfigurationSigningError,
     NodeConfigurationStore,
+    NodeConfigurationTrust,
     NodeConfigurationVerificationError,
     generate_node_configuration_signing_keypair,
     verify_configuration_bundle,
@@ -163,6 +164,35 @@ def test_configuration_verification_rejects_target_tamper_expiry_and_manifest_dr
         now=now,
     )
     configuration_store.mark_assignment_evidence_complete(node_id, 1)
+
+    alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
+    final_index = alphabet.index(signer.trust.public_key[-2])
+    aliased_public_key = (
+        signer.trust.public_key[:-2]
+        + alphabet[(final_index & 0b111100) | 1]
+        + "="
+    )
+    assert base64.b64decode(aliased_public_key, validate=True) == base64.b64decode(
+        signer.trust.public_key,
+        validate=True,
+    )
+    with pytest.raises(
+        NodeConfigurationVerificationError,
+        match="configuration trust is invalid",
+    ):
+        verify_configuration_bundle(
+            record.bundle,
+            trust=NodeConfigurationTrust(
+                key_id=sha256_digest(aliased_public_key),
+                public_key=aliased_public_key,
+            ),
+            node_id=node_id,
+            principal_id=f"agent:node.{node_id}",
+            workspace_id="default",
+            minimum_generation=1,
+            expected_manifest_lock_digest="sha256:" + ("5" * 64),
+            now=now,
+        )
 
     for overrides, reason in (
         ({"node_id": "node_" + ("f" * 32)}, "invalid configuration signature"),

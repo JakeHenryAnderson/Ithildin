@@ -648,6 +648,7 @@ def verify_configuration_bundle(
     expected_manifest_lock_digest: str | None = None,
     now: datetime | None = None,
 ) -> JsonObject:
+    public_key = _verified_configuration_trust_public_key(trust)
     try:
         signature = _object(bundle.get("signature"), "signature")
         if signature.get("algorithm") != CONFIGURATION_ALGORITHM:
@@ -658,9 +659,6 @@ def verify_configuration_bundle(
             _string(signature.get("signature"), "signature.signature"), validate=True
         )
         unsigned = {key: value for key, value in bundle.items() if key != "signature"}
-        public_key = Ed25519PublicKey.from_public_bytes(
-            base64.b64decode(trust.public_key, validate=True)
-        )
         public_key.verify(signature_bytes, _signature_message(unsigned))
     except NodeConfigurationVerificationError:
         raise
@@ -746,6 +744,25 @@ def _trust(public_key: Ed25519PublicKey) -> NodeConfigurationTrust:
     raw = _public_key_raw(public_key)
     encoded = base64.b64encode(raw).decode("ascii")
     return NodeConfigurationTrust(key_id=sha256_digest(encoded), public_key=encoded)
+
+
+def _verified_configuration_trust_public_key(
+    trust: NodeConfigurationTrust,
+) -> Ed25519PublicKey:
+    try:
+        raw = base64.b64decode(trust.public_key, validate=True)
+        if len(raw) != 32:
+            raise ValueError
+        if base64.b64encode(raw).decode("ascii") != trust.public_key:
+            raise ValueError
+        public_key = Ed25519PublicKey.from_public_bytes(raw)
+    except (binascii.Error, TypeError, ValueError) as exc:
+        raise NodeConfigurationVerificationError(
+            "configuration trust is invalid"
+        ) from exc
+    if sha256_digest(trust.public_key) != trust.key_id:
+        raise NodeConfigurationVerificationError("configuration trust is invalid")
+    return public_key
 
 
 def _load_private_key(path: Path) -> Ed25519PrivateKey:

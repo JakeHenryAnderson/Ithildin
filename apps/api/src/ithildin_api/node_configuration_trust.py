@@ -17,7 +17,7 @@ from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 from ithildin_schemas import JsonObject, canonical_json, sha256_digest
 from ithildin_schemas.models import SHA256_PATTERN, StrictBaseModel
-from pydantic import Field
+from pydantic import Field, field_validator
 
 from ithildin_api.node_configuration import NodeConfigurationSigner, NodeConfigurationTrust
 
@@ -50,6 +50,15 @@ class NodeConfigurationTrustTransitionAssignmentPayload(StrictBaseModel):
     expected_current_key_id: str = Field(pattern=SHA256_PATTERN)
     next_public_key: str = Field(min_length=1, max_length=256)
     validity_seconds: int = Field(default=86_400, ge=600, le=604_800)
+
+    @field_validator("next_public_key")
+    @classmethod
+    def _canonical_next_public_key(cls, value: str) -> str:
+        try:
+            configuration_trust_from_public_key(value)
+        except NodeConfigurationTrustTransitionVerificationError as exc:
+            raise ValueError("configuration trust public key is invalid") from exc
+        return value
 
 
 class NodeConfigurationTrustTransitionRequestPayload(StrictBaseModel):
@@ -145,11 +154,24 @@ class NodeConfigurationTrustTransitionStore:
         now: datetime | None = None,
     ) -> NodeConfigurationTrustTransitionRecord:
         effective_now = now or datetime.now(UTC)
-        next_trust = configuration_trust_from_public_key(payload.next_public_key)
+        canonical_current_trust = configuration_trust_from_public_key(
+            signer.trust.public_key
+        )
+        if canonical_current_trust != signer.trust:
+            raise NodeConfigurationTrustTransitionVerificationError(
+                "Gateway configuration signing trust is invalid"
+            )
         if signer.trust.key_id != payload.expected_current_key_id:
             raise NodeConfigurationTrustTransitionConflictError(
                 "Gateway configuration signing key changed"
             )
+        next_key_material = _configuration_public_key_material(payload.next_public_key)
+        current_key_material = _configuration_public_key_material(signer.trust.public_key)
+        if next_key_material == current_key_material:
+            raise NodeConfigurationTrustTransitionConflictError(
+                "next configuration signing key must differ from current"
+            )
+        next_trust = configuration_trust_from_public_key(payload.next_public_key)
         if next_trust.key_id == signer.trust.key_id:
             raise NodeConfigurationTrustTransitionConflictError(
                 "next configuration signing key must differ from current"
@@ -377,16 +399,25 @@ class NodeConfigurationTrustTransitionStore:
 
 
 def configuration_trust_from_public_key(public_key: str) -> NodeConfigurationTrust:
+    raw = _configuration_public_key_material(public_key)
+    if base64.b64encode(raw).decode("ascii") != public_key:
+        raise NodeConfigurationTrustTransitionVerificationError(
+            "configuration trust public key is invalid"
+        )
+    return NodeConfigurationTrust(key_id=sha256_digest(public_key), public_key=public_key)
+
+
+def _configuration_public_key_material(public_key: str) -> bytes:
     try:
         raw = base64.b64decode(public_key, validate=True)
         if len(raw) != 32:
             raise ValueError
         Ed25519PublicKey.from_public_bytes(raw)
-    except (binascii.Error, ValueError) as exc:
+    except (binascii.Error, TypeError, ValueError) as exc:
         raise NodeConfigurationTrustTransitionVerificationError(
             "configuration trust public key is invalid"
         ) from exc
-    return NodeConfigurationTrust(key_id=sha256_digest(public_key), public_key=public_key)
+    return raw
 
 
 def verify_configuration_trust_transition(
@@ -398,6 +429,13 @@ def verify_configuration_trust_transition(
     workspace_id: str,
     now: datetime | None = None,
 ) -> JsonObject:
+    canonical_current_trust = configuration_trust_from_public_key(
+        current_trust.public_key
+    )
+    if canonical_current_trust != current_trust:
+        raise NodeConfigurationTrustTransitionVerificationError(
+            "current configuration trust is invalid"
+        )
     expected_envelope_keys = {
         "signature_type",
         "format_version",
