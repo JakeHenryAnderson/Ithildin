@@ -1,0 +1,18 @@
+{
+  "authorization_endpoint": "https://identity.example.test/tenant-a/authorize",
+  "code_challenge_methods_supported": [
+    "S256"
+  ],
+  "id_token_signing_alg_values_supported": [
+    "RS256"
+  ],
+  "issuer": "https://identity.example.test/tenant-a",
+  "jwks_uri": "https://identity.example.test/tenant-a/jwks",
+  "response_types_supported": [
+    "code"
+  ],
+  "subject_types_supported": [
+    "public"
+  ],
+  "token_endpoint": "https://identity.example.test/tenant-a/token"
+}

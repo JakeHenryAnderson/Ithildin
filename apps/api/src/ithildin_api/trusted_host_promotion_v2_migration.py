@@ -305,7 +305,7 @@ PIS004A_TABLE_COLUMNS = {
     "identity_oidc_replays": (
         "organization_id",
         "provider_configuration_id",
-        "token_digest",
+        "credential_digest",
         "first_seen_at",
         "expires_at",
     ),
@@ -1622,18 +1622,22 @@ def _create_pis004a_tables(connection: sqlite3.Connection) -> None:
         CREATE TABLE identity_oidc_replays (
             organization_id TEXT NOT NULL,
             provider_configuration_id TEXT NOT NULL,
-            token_digest TEXT NOT NULL,
+            credential_digest TEXT NOT NULL,
             first_seen_at TEXT NOT NULL,
             expires_at TEXT NOT NULL,
-            PRIMARY KEY (organization_id, provider_configuration_id, token_digest),
+            PRIMARY KEY (
+                organization_id,
+                provider_configuration_id,
+                credential_digest
+            ),
             FOREIGN KEY (organization_id, provider_configuration_id)
                 REFERENCES identity_provider_configurations(
                     organization_id,
                     provider_configuration_id
                 ),
-            CHECK (length(token_digest) = 71
-                AND substr(token_digest, 1, 7) = 'sha256:'
-                AND substr(token_digest, 8) NOT GLOB '*[^0-9a-f]*'),
+            CHECK (length(credential_digest) = 71
+                AND substr(credential_digest, 1, 7) = 'sha256:'
+                AND substr(credential_digest, 8) NOT GLOB '*[^0-9a-f]*'),
             CHECK (expires_at > first_seen_at)
         )
         """

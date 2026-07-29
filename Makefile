@@ -2798,6 +2798,7 @@ mcp-inspector-recipes:
 
 .PHONY: production-identity-storage-pis-004a-check
 production-identity-storage-pis-004a-check:
+	uv lock --check
 	uv run python scripts/production_identity_storage_pis_004a_check.py
 	uv run pytest \
 		tests/test_pis004a_contract.py \
@@ -2805,12 +2806,14 @@ production-identity-storage-pis-004a-check:
 		tests/test_pis004a_identity.py \
 		tests/test_pis004a_sessions.py \
 		tests/test_pis004a_authorization.py \
+		tests/test_pis004a_oidc_fixtures.py \
 		-q
 	uv run ruff check \
 		apps/api/src/ithildin_api/database_migration_backup.py \
 		apps/api/src/ithildin_api/enterprise_authorization.py \
 		apps/api/src/ithildin_api/enterprise_identity.py \
 		apps/api/src/ithildin_api/enterprise_sessions.py \
+		apps/api/src/ithildin_api/oidc_fixture_conformance.py \
 		apps/api/src/ithildin_api/trusted_host_promotion_v2_migration.py \
 		scripts/production_identity_storage_pis_004a_check.py \
 		scripts/enterprise_e2_preparation_check.py \
@@ -2818,12 +2821,14 @@ production-identity-storage-pis-004a-check:
 		tests/test_pis004a_database_migration.py \
 		tests/test_pis004a_identity.py \
 		tests/test_pis004a_sessions.py \
-		tests/test_pis004a_authorization.py
+		tests/test_pis004a_authorization.py \
+		tests/test_pis004a_oidc_fixtures.py
 	uv run mypy --strict \
 		apps/api/src/ithildin_api/database_migration_backup.py \
 		apps/api/src/ithildin_api/enterprise_authorization.py \
 		apps/api/src/ithildin_api/enterprise_identity.py \
 		apps/api/src/ithildin_api/enterprise_sessions.py \
+		apps/api/src/ithildin_api/oidc_fixture_conformance.py \
 		apps/api/src/ithildin_api/trusted_host_promotion_v2_migration.py \
 		scripts/production_identity_storage_pis_004a_check.py \
 		scripts/enterprise_e2_preparation_check.py

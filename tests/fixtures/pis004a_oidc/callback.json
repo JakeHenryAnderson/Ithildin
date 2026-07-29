@@ -1,0 +1,7 @@
+{
+  "authorization_code": "synthetic-authorization-code-never-persisted",
+  "fixture_note": "transaction_handle, state, and PKCE challenge are generated per test and are never fixture authority",
+  "origin": "http://127.0.0.1:5173",
+  "redirect_uri": "http://127.0.0.1:5173/identity/callback",
+  "response_issuer": "https://identity.example.test/tenant-a"
+}

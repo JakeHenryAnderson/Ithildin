@@ -6,6 +6,7 @@ import argparse
 import hashlib
 import json
 import subprocess
+import tomllib
 from pathlib import Path
 from typing import Any
 
@@ -585,6 +586,7 @@ def _validate_repository(
         "3834a18a5b8169dd66b3d96d79d6e69d252ebae17a1a9453f93f8686db1edc77"
     ) or _tool_count(root) != 24:
         failures.append("PIS-004A changed the exact 24-tool manifest lock")
+    _validate_dependency_lock(root, failures)
 
     changed = _changed_paths(root)
     unexpected = sorted(changed - set(EXPECTED_ALLOWED_PATHS))
@@ -616,6 +618,175 @@ def _validate_repository(
     standing = contract.get("standing_authority")
     if not isinstance(standing, dict) or standing.get("pis003_next_action") != PIS_WAIT_ACTION:
         failures.append("PIS-004A repository contract changed the standing PIS route")
+
+
+def _validate_dependency_lock(root: Path, failures: list[str]) -> None:
+    try:
+        pyproject = tomllib.loads((root / "pyproject.toml").read_text(encoding="utf-8"))
+        lock = tomllib.loads((root / "uv.lock").read_text(encoding="utf-8"))
+        source_pyproject = tomllib.loads(
+            _git_output(root, "show", f"{SOURCE_COMMIT}:pyproject.toml")
+        )
+        source_lock = tomllib.loads(
+            _git_output(root, "show", f"{SOURCE_COMMIT}:uv.lock")
+        )
+    except (OSError, UnicodeError, tomllib.TOMLDecodeError) as exc:
+        failures.append(f"PIS-004A dependency files cannot be loaded: {exc}")
+        return
+
+    expected_direct = {
+        "authlib==1.7.2",
+        "joserfc==1.7.4",
+    }
+    current_direct = set(pyproject.get("project", {}).get("dependencies", []))
+    source_direct = set(source_pyproject.get("project", {}).get("dependencies", []))
+    if (
+        current_direct - source_direct != expected_direct
+        or source_direct - current_direct
+    ):
+        failures.append("PIS-004A pyproject dependency delta is not exact")
+
+    current_packages = _packages_by_name(lock)
+    source_packages = _packages_by_name(source_lock)
+    if (
+        set(current_packages) - set(source_packages) != {"authlib", "joserfc"}
+        or set(source_packages) - set(current_packages)
+    ):
+        failures.append("PIS-004A locked package delta is not exactly Authlib and JOSERFC")
+        return
+    for name, source_package in source_packages.items():
+        if name == "ithildin":
+            continue
+        if current_packages.get(name) != source_package:
+            failures.append(f"PIS-004A changed inherited locked package: {name}")
+
+    authlib = current_packages.get("authlib", {})
+    joserfc = current_packages.get("joserfc", {})
+    if (
+        authlib.get("version") != "1.7.2"
+        or authlib.get("source") != {"registry": "https://pypi.org/simple"}
+        or _package_hashes(authlib)
+        != {
+            "sha256:2cea25fefcd4e7173bdf1372c0afc265c8034b23a8cd5dcb6a9164b826c64231",
+            "sha256:3e1faedc9d87e7d56a164eca3ccb6ace0d61b94abe83e92242f8dc8bba9b4a9f",
+        }
+        or _dependency_names(authlib) != {"cryptography", "joserfc"}
+        or joserfc.get("version") != "1.7.4"
+        or joserfc.get("source") != {"registry": "https://pypi.org/simple"}
+        or _package_hashes(joserfc)
+        != {
+            "sha256:b3bc561672ae541b17a9237053b48a03dacddd92d68047b3ecdfb4b5714a88ed",
+            "sha256:32d46c2cd5e3203c13e87a6c61333cab310b1ba80cd54b4c4f386a848a122463",
+        }
+        or _dependency_names(joserfc) != {"cryptography"}
+    ):
+        failures.append("PIS-004A locked dependency provenance is not exact")
+
+    current_root = current_packages.get("ithildin")
+    source_root = source_packages.get("ithildin")
+    if not isinstance(current_root, dict) or not isinstance(source_root, dict):
+        failures.append("PIS-004A root lock package is unavailable")
+        return
+    normalized_root = json.loads(json.dumps(current_root))
+    dependencies = normalized_root.get("dependencies")
+    metadata = normalized_root.get("metadata")
+    if not isinstance(dependencies, list) or not isinstance(metadata, dict):
+        failures.append("PIS-004A root lock package is malformed")
+        return
+    source_dependencies = source_root.get("dependencies")
+    if (
+        not isinstance(source_dependencies, list)
+        or {
+            str(item["name"])
+            for item in dependencies
+            if isinstance(item, dict) and isinstance(item.get("name"), str)
+        }
+        - {
+            str(item["name"])
+            for item in source_dependencies
+            if isinstance(item, dict) and isinstance(item.get("name"), str)
+        }
+        != {"authlib", "joserfc"}
+    ):
+        failures.append("PIS-004A root dependency linkage is not exact")
+    normalized_root["dependencies"] = [
+        item
+        for item in dependencies
+        if not isinstance(item, dict) or item.get("name") not in {"authlib", "joserfc"}
+    ]
+    requires_dist = metadata.get("requires-dist")
+    if not isinstance(requires_dist, list):
+        failures.append("PIS-004A root lock metadata is malformed")
+        return
+    source_metadata = source_root.get("metadata")
+    source_requires_dist = (
+        source_metadata.get("requires-dist")
+        if isinstance(source_metadata, dict)
+        else None
+    )
+    if (
+        not isinstance(source_requires_dist, list)
+        or {
+            (str(item["name"]), str(item.get("specifier", "")))
+            for item in requires_dist
+            if isinstance(item, dict) and isinstance(item.get("name"), str)
+        }
+        - {
+            (str(item["name"]), str(item.get("specifier", "")))
+            for item in source_requires_dist
+            if isinstance(item, dict) and isinstance(item.get("name"), str)
+        }
+        != {("authlib", "==1.7.2"), ("joserfc", "==1.7.4")}
+    ):
+        failures.append("PIS-004A root dependency metadata is not exact")
+    metadata["requires-dist"] = [
+        item
+        for item in requires_dist
+        if not isinstance(item, dict) or item.get("name") not in {"authlib", "joserfc"}
+    ]
+    if normalized_root != source_root:
+        failures.append("PIS-004A root lock delta exceeds the exact dependency pins")
+
+
+def _packages_by_name(lock: dict[str, Any]) -> dict[str, dict[str, Any]]:
+    packages = lock.get("package")
+    if not isinstance(packages, list):
+        return {}
+    result: dict[str, dict[str, Any]] = {}
+    for package in packages:
+        if not isinstance(package, dict) or not isinstance(package.get("name"), str):
+            return {}
+        name = str(package["name"])
+        if name in result:
+            return {}
+        result[name] = package
+    return result
+
+
+def _dependency_names(package: dict[str, Any]) -> set[str]:
+    dependencies = package.get("dependencies")
+    if not isinstance(dependencies, list):
+        return set()
+    return {
+        str(item["name"])
+        for item in dependencies
+        if isinstance(item, dict) and isinstance(item.get("name"), str)
+    }
+
+
+def _package_hashes(package: dict[str, Any]) -> set[str]:
+    hashes: set[str] = set()
+    sdist = package.get("sdist")
+    if isinstance(sdist, dict) and isinstance(sdist.get("hash"), str):
+        hashes.add(str(sdist["hash"]))
+    wheels = package.get("wheels")
+    if isinstance(wheels, list):
+        hashes.update(
+            str(item["hash"])
+            for item in wheels
+            if isinstance(item, dict) and isinstance(item.get("hash"), str)
+        )
+    return hashes
 
 
 def _require_keys(

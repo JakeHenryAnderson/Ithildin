@@ -15,9 +15,10 @@ from datetime import UTC, datetime, timedelta
 from enum import StrEnum
 from pathlib import Path
 from typing import cast
-from urllib.parse import urlsplit
+from urllib.parse import SplitResult, urlsplit
 from uuid import uuid4
 
+from authlib.oauth2.rfc7636 import create_s256_code_challenge  # type: ignore[import-untyped]
 from cryptography.exceptions import InvalidTag
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from ithildin_schemas import JsonObject
@@ -420,6 +421,10 @@ class EnterpriseSessionStore:
         configured_redirect_uri: str,
         allowed_origin: str,
     ) -> ConsumedPreauthentication:
+        if _OPAQUE_SECRET_PATTERN.fullmatch(state) is None:
+            raise PreauthenticationError(
+                "preauthentication state did not authenticate"
+            )
         now = _require_aware_utc(self._clock())
         failure: PreauthenticationError | None = None
         consumed: ConsumedPreauthentication | None = None
@@ -547,6 +552,10 @@ class EnterpriseSessionStore:
         *,
         nonce: str,
     ) -> None:
+        if _OPAQUE_SECRET_PATTERN.fullmatch(nonce) is None:
+            raise PreauthenticationError(
+                "preauthentication nonce did not authenticate"
+            )
         expected = self._key_ring.digest(
             transaction.digest_key_generation,
             purpose="preauthentication-nonce",
@@ -777,6 +786,10 @@ class EnterpriseSessionStore:
                         failure = SessionMutationRejectedError(
                             "session-bound CSRF credential is required"
                         )
+                    elif _OPAQUE_SECRET_PATTERN.fullmatch(csrf_token) is None:
+                        failure = SessionMutationRejectedError(
+                            "session-bound CSRF credential did not authenticate"
+                        )
                     else:
                         generation = int(row["digest_key_generation"])
                         expected_csrf = self._key_ring.digest(
@@ -954,6 +967,8 @@ class EnterpriseSessionStore:
             "identity_preauthentication_transactions",
         }:
             raise SessionConfigurationError("opaque lookup table is invalid")
+        if _OPAQUE_SECRET_PATTERN.fullmatch(handle) is None:
+            return None
         matches: list[tuple[sqlite3.Row, int]] = []
         for generation in self._key_ring.generations:
             digest = self._key_ring.digest(
@@ -1181,8 +1196,7 @@ class _ImmediateTransaction:
 
 
 def _pkce_challenge(verifier: str) -> str:
-    digest = hashlib.sha256(verifier.encode("ascii")).digest()
-    return base64.urlsafe_b64encode(digest).rstrip(b"=").decode("ascii")
+    return str(create_s256_code_challenge(verifier))
 
 
 def _preauthentication_aad(
@@ -1225,12 +1239,9 @@ def _redacted_envelope(envelope: str) -> str:
 
 
 def _validate_origin(value: str) -> None:
-    parsed = urlsplit(value)
+    parsed = _split_url(value, label="allowed origin")
     if (
-        value != value.strip()
-        or len(value) > 2048
-        or not parsed.netloc
-        or parsed.username is not None
+        parsed.username is not None
         or parsed.password is not None
         or parsed.path
         or parsed.query
@@ -1242,12 +1253,9 @@ def _validate_origin(value: str) -> None:
 
 
 def _validate_redirect_uri(value: str) -> None:
-    parsed = urlsplit(value)
+    parsed = _split_url(value, label="configured redirect URI")
     if (
-        value != value.strip()
-        or len(value) > 2048
-        or not parsed.netloc
-        or parsed.username is not None
+        parsed.username is not None
         or parsed.password is not None
         or parsed.fragment
         or parsed.scheme not in {"http", "https"}
@@ -1257,13 +1265,51 @@ def _validate_redirect_uri(value: str) -> None:
 
 
 def _redirect_origin(value: str) -> str:
-    parsed = urlsplit(value)
+    parsed = _split_url(value, label="configured redirect URI")
     host = parsed.hostname
     if host is None:
-        raise SessionConfigurationError("configured redirect URI has no host")
+        raise SessionConfigurationError("configured redirect URI is malformed")
     rendered_host = f"[{host}]" if ":" in host else host
     port = f":{parsed.port}" if parsed.port is not None else ""
     return f"{parsed.scheme}://{rendered_host}{port}"
+
+
+def _split_url(value: str, *, label: str) -> SplitResult:
+    if (
+        not value
+        or value != value.strip()
+        or len(value) > 2048
+        or any(
+            ord(character) < 0x20
+            or ord(character) == 0x7F
+            or character.isspace()
+            for character in value
+        )
+        or not _is_valid_utf8(value)
+        or "\\" in value
+    ):
+        raise SessionConfigurationError(f"{label} is malformed")
+    try:
+        parsed = urlsplit(value)
+        parsed_port = parsed.port
+    except ValueError as exc:
+        raise SessionConfigurationError(f"{label} is malformed") from exc
+    if (
+        not parsed.netloc
+        or parsed.hostname is None
+        or parsed.netloc.endswith(":")
+        or (parsed_port is not None and not 1 <= parsed_port <= 65535)
+    ):
+        raise SessionConfigurationError(f"{label} is malformed")
+    return parsed
+
+
+def _is_valid_utf8(value: str) -> bool:
+    try:
+        value.encode("utf-8")
+    except UnicodeEncodeError:
+        return False
+    return True
 
 
 def _parse_datetime(value: str) -> datetime:
