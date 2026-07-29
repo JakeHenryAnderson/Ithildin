@@ -2804,9 +2804,11 @@ production-identity-storage-pis-004a-check:
 		tests/test_pis004a_database_migration.py \
 		tests/test_pis004a_identity.py \
 		tests/test_pis004a_sessions.py \
+		tests/test_pis004a_authorization.py \
 		-q
 	uv run ruff check \
 		apps/api/src/ithildin_api/database_migration_backup.py \
+		apps/api/src/ithildin_api/enterprise_authorization.py \
 		apps/api/src/ithildin_api/enterprise_identity.py \
 		apps/api/src/ithildin_api/enterprise_sessions.py \
 		apps/api/src/ithildin_api/trusted_host_promotion_v2_migration.py \
@@ -2815,9 +2817,11 @@ production-identity-storage-pis-004a-check:
 		tests/test_pis004a_contract.py \
 		tests/test_pis004a_database_migration.py \
 		tests/test_pis004a_identity.py \
-		tests/test_pis004a_sessions.py
+		tests/test_pis004a_sessions.py \
+		tests/test_pis004a_authorization.py
 	uv run mypy --strict \
 		apps/api/src/ithildin_api/database_migration_backup.py \
+		apps/api/src/ithildin_api/enterprise_authorization.py \
 		apps/api/src/ithildin_api/enterprise_identity.py \
 		apps/api/src/ithildin_api/enterprise_sessions.py \
 		apps/api/src/ithildin_api/trusted_host_promotion_v2_migration.py \

@@ -246,6 +246,17 @@ PIS004A_TABLE_COLUMNS = {
         "created_at",
         "updated_at",
     ),
+    "identity_approval_requests": (
+        "approval_request_id",
+        "organization_id",
+        "workspace_id",
+        "requester_principal_id",
+        "approval_class",
+        "request_generation",
+        "status",
+        "created_at",
+        "updated_at",
+    ),
     "identity_session_families": (
         "family_id",
         "organization_id",
@@ -304,6 +315,7 @@ PIS004A_INDEX_NAMES = (
     "identity_bindings_principal_idx",
     "identity_organization_memberships_principal_idx",
     "identity_workspace_memberships_principal_idx",
+    "identity_approval_requests_scope_status_idx",
     "identity_sessions_family_status_idx",
     "identity_sessions_idle_expiry_idx",
     "identity_preauthentication_expiry_idx",
@@ -1412,6 +1424,50 @@ def _create_pis004a_tables(connection: sqlite3.Connection) -> None:
             organization_id,
             enabled,
             workspace_id
+        )
+        """
+    )
+    connection.execute(
+        """
+        CREATE TABLE identity_approval_requests (
+            approval_request_id TEXT PRIMARY KEY,
+            organization_id TEXT NOT NULL,
+            workspace_id TEXT NOT NULL,
+            requester_principal_id TEXT NOT NULL,
+            approval_class TEXT NOT NULL,
+            request_generation INTEGER NOT NULL,
+            status TEXT NOT NULL,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            FOREIGN KEY (organization_id, workspace_id)
+                REFERENCES identity_workspaces(organization_id, workspace_id),
+            FOREIGN KEY (organization_id, requester_principal_id)
+                REFERENCES identity_organization_memberships(
+                    organization_id,
+                    principal_id
+                ),
+            CHECK (length(approval_request_id) = 36
+                AND substr(approval_request_id, 1, 4) = 'apr_'
+                AND substr(approval_request_id, 5) NOT GLOB '*[^0-9a-f]*'),
+            CHECK (approval_class IN (
+                'standard',
+                'trusted_host_placement',
+                'high_risk'
+            )),
+            CHECK (request_generation >= 1),
+            CHECK (status IN ('pending', 'approved', 'denied', 'cancelled')),
+            CHECK (updated_at >= created_at)
+        )
+        """
+    )
+    connection.execute(
+        """
+        CREATE INDEX identity_approval_requests_scope_status_idx
+        ON identity_approval_requests(
+            organization_id,
+            workspace_id,
+            status,
+            created_at
         )
         """
     )

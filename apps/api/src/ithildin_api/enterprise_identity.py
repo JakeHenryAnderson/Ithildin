@@ -847,6 +847,8 @@ def _parse_roles[RoleT: StrEnum](
         raise EnterpriseIdentityError("stored membership roles are invalid") from exc
     if not isinstance(values, list) or not all(isinstance(value, str) for value in values):
         raise EnterpriseIdentityError("stored membership roles are invalid")
+    if values != sorted(set(values)):
+        raise EnterpriseIdentityError("stored membership roles are not canonical")
     try:
         return tuple(role_type(value) for value in values)
     except ValueError as exc:
