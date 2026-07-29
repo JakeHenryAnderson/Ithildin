@@ -28,9 +28,10 @@ MISSION_TABLES = (
     "mission_report_receipts",
     "mission_report_nonces",
 )
+PIS004A_TABLES = tuple(migration.PIS004A_TABLE_COLUMNS)
 
 
-def test_schema_four_creates_closed_mission_tables(tmp_path: Path) -> None:
+def test_schema_five_preserves_closed_mission_tables(tmp_path: Path) -> None:
     db_path = tmp_path / "ithildin.sqlite3"
 
     initialize_database(db_path)
@@ -47,8 +48,8 @@ def test_schema_four_creates_closed_mission_tables(tmp_path: Path) -> None:
         transition_sql = _table_sql(connection, "mission_transition_attempts")
         evidence_sql = _table_sql(connection, "mission_audit_evidence_bindings")
         report_sql = _table_sql(connection, "mission_report_receipts")
-    assert metadata["schema_version"] == "4"
-    assert metadata["minimum_writer_version"] == "4"
+    assert metadata["schema_version"] == "5"
+    assert metadata["minimum_writer_version"] == "5"
     assert set(MISSION_TABLES) <= tables
     assert "requester_identity_generation" in mission_sql
     assert "synthetic_read_review_v1" in mission_sql
@@ -60,7 +61,7 @@ def test_schema_four_creates_closed_mission_tables(tmp_path: Path) -> None:
     assert "failure_reason_code" in report_sql
 
 
-def test_schema_four_rejects_semantically_invalid_report_receipts(tmp_path: Path) -> None:
+def test_schema_five_rejects_semantically_invalid_report_receipts(tmp_path: Path) -> None:
     db_path = tmp_path / "ithildin.sqlite3"
     initialize_database(db_path)
 
@@ -160,7 +161,7 @@ def test_interrupted_v3_upgrade_rolls_back_and_reuses_exact_backup(
     assert receipt_path.read_bytes() == original_receipt
 
 
-def test_v3_writer_refuses_v4_and_restore_only_copy_remains_v3(tmp_path: Path) -> None:
+def test_v3_writer_refuses_v5_and_restore_only_copy_remains_v3(tmp_path: Path) -> None:
     db_path = tmp_path / "ithildin.sqlite3"
     _make_v3_database(db_path)
     initialize_database(db_path)
@@ -322,6 +323,8 @@ def test_missing_mission_foreign_key_is_rejected(tmp_path: Path) -> None:
 def _make_v3_database(db_path: Path) -> None:
     initialize_database(db_path)
     with sqlite3.connect(db_path) as connection:
+        for table in reversed(PIS004A_TABLES):
+            connection.execute(f"DROP TABLE {table}")
         for table in reversed(MISSION_TABLES):
             connection.execute(f"DROP TABLE {table}")
         connection.execute(

@@ -8,10 +8,11 @@ from pathlib import Path
 from ithildin_api.database_migration_backup import (
     DatabaseBackupError,
     ensure_pre_v4_backup,
+    ensure_pre_v5_backup,
 )
 
-DATABASE_SCHEMA_VERSION = "4"
-MINIMUM_WRITER_VERSION = "4"
+DATABASE_SCHEMA_VERSION = "5"
+MINIMUM_WRITER_VERSION = "5"
 APPROVAL_CONTRACT_VERSION = "2"
 PROMOTION_AUTHORITY_SCHEMA_VERSION = "1"
 
@@ -187,6 +188,128 @@ MISSION_TABLE_COLUMNS = {
     ),
 }
 
+PIS004A_TABLE_COLUMNS = {
+    "identity_organizations": (
+        "organization_id",
+        "enabled",
+        "created_at",
+        "updated_at",
+    ),
+    "identity_provider_configurations": (
+        "provider_configuration_id",
+        "organization_id",
+        "exact_issuer",
+        "enabled",
+        "generation",
+        "created_at",
+        "updated_at",
+    ),
+    "identity_principals": (
+        "principal_id",
+        "principal_type",
+        "enabled",
+        "identity_generation",
+        "created_at",
+        "updated_at",
+    ),
+    "identity_bindings": (
+        "organization_id",
+        "provider_configuration_id",
+        "exact_issuer",
+        "subject",
+        "principal_id",
+        "created_at",
+    ),
+    "identity_organization_memberships": (
+        "organization_id",
+        "principal_id",
+        "enabled",
+        "membership_generation",
+        "roles_json",
+        "created_at",
+        "updated_at",
+    ),
+    "identity_workspaces": (
+        "organization_id",
+        "workspace_id",
+        "enabled",
+        "generation",
+        "created_at",
+        "updated_at",
+    ),
+    "identity_workspace_memberships": (
+        "organization_id",
+        "workspace_id",
+        "principal_id",
+        "enabled",
+        "roles_json",
+        "created_at",
+        "updated_at",
+    ),
+    "identity_session_families": (
+        "family_id",
+        "organization_id",
+        "principal_id",
+        "identity_generation",
+        "membership_generation",
+        "created_at",
+        "revoked_at",
+        "revocation_reason",
+    ),
+    "identity_sessions": (
+        "session_id",
+        "family_id",
+        "handle_digest",
+        "digest_key_generation",
+        "session_audit_id",
+        "csrf_digest",
+        "authentication_method",
+        "recent_auth_at",
+        "created_at",
+        "last_seen_at",
+        "idle_expires_at",
+        "absolute_expires_at",
+        "status",
+        "rotated_to_session_id",
+        "revoked_at",
+    ),
+    "identity_preauthentication_transactions": (
+        "transaction_id",
+        "handle_digest",
+        "digest_key_generation",
+        "transaction_audit_id",
+        "organization_id",
+        "provider_configuration_id",
+        "exact_issuer",
+        "configured_redirect_uri",
+        "allowed_origin",
+        "state_digest",
+        "nonce_digest",
+        "pkce_verifier",
+        "created_at",
+        "expires_at",
+        "status",
+        "consumed_at",
+    ),
+    "identity_oidc_replays": (
+        "organization_id",
+        "provider_configuration_id",
+        "token_digest",
+        "first_seen_at",
+        "expires_at",
+    ),
+}
+
+PIS004A_INDEX_NAMES = (
+    "identity_bindings_principal_idx",
+    "identity_organization_memberships_principal_idx",
+    "identity_workspace_memberships_principal_idx",
+    "identity_sessions_family_status_idx",
+    "identity_sessions_idle_expiry_idx",
+    "identity_preauthentication_expiry_idx",
+    "identity_oidc_replays_expiry_idx",
+)
+
 TRUSTED_HOST_PROMOTION_TOOL = "trusted_host.promotion.stage"
 
 LEGACY_APPROVAL_STATUSES = (
@@ -255,7 +378,14 @@ def initialize_or_migrate_database(db_path: Path) -> None:
         minimum_writer = _metadata_value(connection, "minimum_writer_version")
         _validate_version_metadata(current=current, minimum_writer=minimum_writer)
         had_user_tables = _has_user_tables(connection)
-        if current != DATABASE_SCHEMA_VERSION and (current is not None or had_user_tables):
+        if current == "4":
+            ensure_pre_v5_backup(
+                locked_source=connection,
+                db_path=db_path,
+                source_schema_version=current,
+                source_minimum_writer_version=minimum_writer,
+            )
+        elif current != DATABASE_SCHEMA_VERSION and (current is not None or had_user_tables):
             ensure_pre_v4_backup(
                 locked_source=connection,
                 db_path=db_path,
@@ -267,16 +397,24 @@ def initialize_or_migrate_database(db_path: Path) -> None:
         if current == DATABASE_SCHEMA_VERSION:
             _verify_v2_schema(connection)
             _verify_mission_schema(connection)
+            _verify_pis004a_schema(connection)
+        elif current == "4":
+            _verify_v2_schema(connection)
+            _verify_mission_schema(connection)
+            _migrate_v4_to_v5(connection)
         elif current == "3":
             _verify_v2_schema(connection)
             _migrate_v3_to_v4(connection)
+            _migrate_v4_to_v5(connection)
         elif current == "2":
             _verify_v2_schema(connection, require_placement_states=False)
             _migrate_v2_to_v3(connection)
             _migrate_v3_to_v4(connection)
+            _migrate_v4_to_v5(connection)
         elif current in {None, "0", "1"}:
             _migrate_tables(connection)
             _migrate_v3_to_v4(connection)
+            _migrate_v4_to_v5(connection)
         else:  # pragma: no cover - guarded above, retained as a fail-closed fence
             raise DatabaseMigrationError(f"unsupported database schema version: {current}")
 
@@ -284,6 +422,7 @@ def initialize_or_migrate_database(db_path: Path) -> None:
         _set_metadata(connection, "minimum_writer_version", MINIMUM_WRITER_VERSION)
         _verify_v2_schema(connection)
         _verify_mission_schema(connection)
+        _verify_pis004a_schema(connection)
         connection.execute("COMMIT")
     except (DatabaseBackupError, DatabaseMigrationError, sqlite3.DatabaseError):
         if connection.in_transaction:
@@ -305,6 +444,7 @@ def verify_database_v2(db_path: Path) -> None:
                 raise DatabaseMigrationError("coordinated database migration has not completed")
             _verify_v2_schema(connection)
             _verify_mission_schema(connection)
+            _verify_pis004a_schema(connection)
     except sqlite3.DatabaseError as exc:
         raise DatabaseMigrationError("database v2 schema verification failed") from exc
 
@@ -471,6 +611,17 @@ def _migrate_v3_to_v4(connection: sqlite3.Connection) -> None:
             "database v3 contains unexpected Mission Command tables: " + ", ".join(existing)
         )
     _create_mission_tables(connection)
+
+
+def _migrate_v4_to_v5(connection: sqlite3.Connection) -> None:
+    """Add the local-only PIS-004A identity and session authority tables."""
+
+    existing = [table for table in PIS004A_TABLE_COLUMNS if _table_exists(connection, table)]
+    if existing:
+        raise DatabaseMigrationError(
+            "database v4 contains unexpected PIS-004A tables: " + ", ".join(existing)
+        )
+    _create_pis004a_tables(connection)
 
 
 def _create_v2_tables(connection: sqlite3.Connection) -> None:
@@ -1093,6 +1244,395 @@ def _create_mission_tables(connection: sqlite3.Connection) -> None:
         "CREATE INDEX mission_report_nonces_accepted_idx "
         "ON mission_report_nonces(accepted_at)"
     )
+
+
+def _create_pis004a_tables(connection: sqlite3.Connection) -> None:
+    connection.execute(
+        """
+        CREATE TABLE identity_organizations (
+            organization_id TEXT PRIMARY KEY,
+            enabled INTEGER NOT NULL,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            CHECK (length(organization_id) = 36 AND substr(organization_id, 1, 4) = 'org_'
+                AND substr(organization_id, 5) NOT GLOB '*[^0-9a-f]*'),
+            CHECK (enabled IN (0, 1)),
+            CHECK (updated_at >= created_at)
+        )
+        """
+    )
+    connection.execute(
+        """
+        CREATE TABLE identity_provider_configurations (
+            provider_configuration_id TEXT PRIMARY KEY,
+            organization_id TEXT NOT NULL,
+            exact_issuer TEXT NOT NULL,
+            enabled INTEGER NOT NULL,
+            generation INTEGER NOT NULL,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            FOREIGN KEY (organization_id)
+                REFERENCES identity_organizations(organization_id),
+            CHECK (length(provider_configuration_id) = 37
+                AND substr(provider_configuration_id, 1, 5) = 'idpc_'
+                AND substr(provider_configuration_id, 6) NOT GLOB '*[^0-9a-f]*'),
+            CHECK (length(exact_issuer) BETWEEN 9 AND 2048),
+            CHECK (enabled IN (0, 1)),
+            CHECK (generation >= 1),
+            CHECK (updated_at >= created_at),
+            UNIQUE (organization_id, provider_configuration_id),
+            UNIQUE (organization_id, provider_configuration_id, exact_issuer)
+        )
+        """
+    )
+    connection.execute(
+        """
+        CREATE TABLE identity_principals (
+            principal_id TEXT PRIMARY KEY,
+            principal_type TEXT NOT NULL,
+            enabled INTEGER NOT NULL,
+            identity_generation INTEGER NOT NULL,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            CHECK (length(principal_id) = 36 AND substr(principal_id, 1, 4) = 'prn_'
+                AND substr(principal_id, 5) NOT GLOB '*[^0-9a-f]*'),
+            CHECK (principal_type IN ('human', 'node', 'service')),
+            CHECK (enabled IN (0, 1)),
+            CHECK (identity_generation >= 1),
+            CHECK (updated_at >= created_at)
+        )
+        """
+    )
+    connection.execute(
+        """
+        CREATE TABLE identity_bindings (
+            organization_id TEXT NOT NULL,
+            provider_configuration_id TEXT NOT NULL,
+            exact_issuer TEXT NOT NULL,
+            subject TEXT NOT NULL,
+            principal_id TEXT NOT NULL UNIQUE,
+            created_at TEXT NOT NULL,
+            PRIMARY KEY (
+                organization_id,
+                provider_configuration_id,
+                exact_issuer,
+                subject
+            ),
+            FOREIGN KEY (organization_id, provider_configuration_id, exact_issuer)
+                REFERENCES identity_provider_configurations(
+                    organization_id,
+                    provider_configuration_id,
+                    exact_issuer
+                ),
+            FOREIGN KEY (principal_id) REFERENCES identity_principals(principal_id),
+            CHECK (length(subject) BETWEEN 1 AND 512)
+        )
+        """
+    )
+    connection.execute(
+        """
+        CREATE INDEX identity_bindings_principal_idx
+        ON identity_bindings(principal_id, organization_id)
+        """
+    )
+    connection.execute(
+        """
+        CREATE TABLE identity_organization_memberships (
+            organization_id TEXT NOT NULL,
+            principal_id TEXT NOT NULL,
+            enabled INTEGER NOT NULL,
+            membership_generation INTEGER NOT NULL,
+            roles_json TEXT NOT NULL,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            PRIMARY KEY (organization_id, principal_id),
+            FOREIGN KEY (organization_id)
+                REFERENCES identity_organizations(organization_id),
+            FOREIGN KEY (principal_id) REFERENCES identity_principals(principal_id),
+            CHECK (enabled IN (0, 1)),
+            CHECK (membership_generation >= 1),
+            CHECK (json_valid(roles_json) AND json_type(roles_json) = 'array'
+                AND json_array_length(roles_json) >= 1),
+            CHECK (updated_at >= created_at)
+        )
+        """
+    )
+    connection.execute(
+        """
+        CREATE INDEX identity_organization_memberships_principal_idx
+        ON identity_organization_memberships(principal_id, organization_id, enabled)
+        """
+    )
+    connection.execute(
+        """
+        CREATE TABLE identity_workspaces (
+            organization_id TEXT NOT NULL,
+            workspace_id TEXT NOT NULL,
+            enabled INTEGER NOT NULL,
+            generation INTEGER NOT NULL,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            PRIMARY KEY (organization_id, workspace_id),
+            FOREIGN KEY (organization_id)
+                REFERENCES identity_organizations(organization_id),
+            CHECK (length(workspace_id) BETWEEN 1 AND 128),
+            CHECK (enabled IN (0, 1)),
+            CHECK (generation >= 1),
+            CHECK (updated_at >= created_at)
+        )
+        """
+    )
+    connection.execute(
+        """
+        CREATE TABLE identity_workspace_memberships (
+            organization_id TEXT NOT NULL,
+            workspace_id TEXT NOT NULL,
+            principal_id TEXT NOT NULL,
+            enabled INTEGER NOT NULL,
+            roles_json TEXT NOT NULL,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            PRIMARY KEY (organization_id, workspace_id, principal_id),
+            FOREIGN KEY (organization_id, workspace_id)
+                REFERENCES identity_workspaces(organization_id, workspace_id),
+            FOREIGN KEY (organization_id, principal_id)
+                REFERENCES identity_organization_memberships(organization_id, principal_id),
+            CHECK (enabled IN (0, 1)),
+            CHECK (json_valid(roles_json) AND json_type(roles_json) = 'array'
+                AND json_array_length(roles_json) >= 1),
+            CHECK (updated_at >= created_at)
+        )
+        """
+    )
+    connection.execute(
+        """
+        CREATE INDEX identity_workspace_memberships_principal_idx
+        ON identity_workspace_memberships(
+            principal_id,
+            organization_id,
+            enabled,
+            workspace_id
+        )
+        """
+    )
+    connection.execute(
+        """
+        CREATE TABLE identity_session_families (
+            family_id TEXT PRIMARY KEY,
+            organization_id TEXT NOT NULL,
+            principal_id TEXT NOT NULL,
+            identity_generation INTEGER NOT NULL,
+            membership_generation INTEGER NOT NULL,
+            created_at TEXT NOT NULL,
+            revoked_at TEXT,
+            revocation_reason TEXT,
+            FOREIGN KEY (organization_id, principal_id)
+                REFERENCES identity_organization_memberships(organization_id, principal_id),
+            CHECK (length(family_id) = 37 AND substr(family_id, 1, 5) = 'sfam_'
+                AND substr(family_id, 6) NOT GLOB '*[^0-9a-f]*'),
+            CHECK (identity_generation >= 1),
+            CHECK (membership_generation >= 1),
+            CHECK ((revoked_at IS NULL AND revocation_reason IS NULL)
+                OR (revoked_at IS NOT NULL AND revocation_reason IS NOT NULL
+                    AND length(revocation_reason) BETWEEN 1 AND 64))
+        )
+        """
+    )
+    connection.execute(
+        """
+        CREATE TABLE identity_sessions (
+            session_id TEXT PRIMARY KEY,
+            family_id TEXT NOT NULL,
+            handle_digest TEXT NOT NULL UNIQUE,
+            digest_key_generation INTEGER NOT NULL,
+            session_audit_id TEXT NOT NULL UNIQUE,
+            csrf_digest TEXT NOT NULL,
+            authentication_method TEXT NOT NULL,
+            recent_auth_at TEXT NOT NULL,
+            created_at TEXT NOT NULL,
+            last_seen_at TEXT NOT NULL,
+            idle_expires_at TEXT NOT NULL,
+            absolute_expires_at TEXT NOT NULL,
+            status TEXT NOT NULL,
+            rotated_to_session_id TEXT,
+            revoked_at TEXT,
+            FOREIGN KEY (family_id) REFERENCES identity_session_families(family_id),
+            FOREIGN KEY (rotated_to_session_id) REFERENCES identity_sessions(session_id),
+            CHECK (length(session_id) = 37 AND substr(session_id, 1, 5) = 'sess_'
+                AND substr(session_id, 6) NOT GLOB '*[^0-9a-f]*'),
+            CHECK (length(handle_digest) = 76
+                AND substr(handle_digest, 1, 12) = 'hmac-sha256:'
+                AND substr(handle_digest, 13) NOT GLOB '*[^0-9a-f]*'),
+            CHECK (digest_key_generation >= 1),
+            CHECK (length(session_audit_id) = 37
+                AND substr(session_audit_id, 1, 5) = 'saud_'
+                AND substr(session_audit_id, 6) NOT GLOB '*[^0-9a-f]*'),
+            CHECK (length(csrf_digest) = 76
+                AND substr(csrf_digest, 1, 12) = 'hmac-sha256:'
+                AND substr(csrf_digest, 13) NOT GLOB '*[^0-9a-f]*'),
+            CHECK (authentication_method IN ('oidc_fixture', 'local_recovery')),
+            CHECK (last_seen_at >= created_at),
+            CHECK (idle_expires_at > created_at),
+            CHECK (absolute_expires_at >= idle_expires_at),
+            CHECK (status IN ('active', 'rotated', 'revoked', 'expired')),
+            CHECK (
+                (status = 'active' AND rotated_to_session_id IS NULL AND revoked_at IS NULL) OR
+                (status = 'rotated' AND rotated_to_session_id IS NOT NULL
+                    AND revoked_at IS NULL) OR
+                (status IN ('revoked', 'expired') AND rotated_to_session_id IS NULL
+                    AND revoked_at IS NOT NULL)
+            )
+        )
+        """
+    )
+    connection.execute(
+        """
+        CREATE INDEX identity_sessions_family_status_idx
+        ON identity_sessions(family_id, status, created_at DESC)
+        """
+    )
+    connection.execute(
+        """
+        CREATE INDEX identity_sessions_idle_expiry_idx
+        ON identity_sessions(status, idle_expires_at)
+        """
+    )
+    connection.execute(
+        """
+        CREATE TABLE identity_preauthentication_transactions (
+            transaction_id TEXT PRIMARY KEY,
+            handle_digest TEXT NOT NULL UNIQUE,
+            digest_key_generation INTEGER NOT NULL,
+            transaction_audit_id TEXT NOT NULL UNIQUE,
+            organization_id TEXT NOT NULL,
+            provider_configuration_id TEXT NOT NULL,
+            exact_issuer TEXT NOT NULL,
+            configured_redirect_uri TEXT NOT NULL,
+            allowed_origin TEXT NOT NULL,
+            state_digest TEXT NOT NULL,
+            nonce_digest TEXT NOT NULL,
+            pkce_verifier TEXT NOT NULL,
+            created_at TEXT NOT NULL,
+            expires_at TEXT NOT NULL,
+            status TEXT NOT NULL,
+            consumed_at TEXT,
+            FOREIGN KEY (organization_id, provider_configuration_id, exact_issuer)
+                REFERENCES identity_provider_configurations(
+                    organization_id,
+                    provider_configuration_id,
+                    exact_issuer
+                ),
+            CHECK (length(transaction_id) = 37
+                AND substr(transaction_id, 1, 5) = 'patx_'
+                AND substr(transaction_id, 6) NOT GLOB '*[^0-9a-f]*'),
+            CHECK (length(handle_digest) = 76
+                AND substr(handle_digest, 1, 12) = 'hmac-sha256:'
+                AND substr(handle_digest, 13) NOT GLOB '*[^0-9a-f]*'),
+            CHECK (digest_key_generation >= 1),
+            CHECK (length(transaction_audit_id) = 37
+                AND substr(transaction_audit_id, 1, 5) = 'paud_'
+                AND substr(transaction_audit_id, 6) NOT GLOB '*[^0-9a-f]*'),
+            CHECK (length(configured_redirect_uri) BETWEEN 12 AND 2048),
+            CHECK (length(allowed_origin) BETWEEN 8 AND 2048),
+            CHECK (length(state_digest) = 76
+                AND substr(state_digest, 1, 12) = 'hmac-sha256:'
+                AND substr(state_digest, 13) NOT GLOB '*[^0-9a-f]*'),
+            CHECK (length(nonce_digest) = 76
+                AND substr(nonce_digest, 1, 12) = 'hmac-sha256:'
+                AND substr(nonce_digest, 13) NOT GLOB '*[^0-9a-f]*'),
+            CHECK (length(pkce_verifier) BETWEEN 43 AND 128),
+            CHECK (expires_at > created_at),
+            CHECK (status IN ('active', 'consumed', 'revoked')),
+            CHECK ((status = 'active' AND consumed_at IS NULL)
+                OR (status IN ('consumed', 'revoked') AND consumed_at IS NOT NULL))
+        )
+        """
+    )
+    connection.execute(
+        """
+        CREATE INDEX identity_preauthentication_expiry_idx
+        ON identity_preauthentication_transactions(status, expires_at)
+        """
+    )
+    connection.execute(
+        """
+        CREATE TABLE identity_oidc_replays (
+            organization_id TEXT NOT NULL,
+            provider_configuration_id TEXT NOT NULL,
+            token_digest TEXT NOT NULL,
+            first_seen_at TEXT NOT NULL,
+            expires_at TEXT NOT NULL,
+            PRIMARY KEY (organization_id, provider_configuration_id, token_digest),
+            FOREIGN KEY (organization_id, provider_configuration_id)
+                REFERENCES identity_provider_configurations(
+                    organization_id,
+                    provider_configuration_id
+                ),
+            CHECK (length(token_digest) = 71
+                AND substr(token_digest, 1, 7) = 'sha256:'
+                AND substr(token_digest, 8) NOT GLOB '*[^0-9a-f]*'),
+            CHECK (expires_at > first_seen_at)
+        )
+        """
+    )
+    connection.execute(
+        """
+        CREATE INDEX identity_oidc_replays_expiry_idx
+        ON identity_oidc_replays(expires_at)
+        """
+    )
+
+
+def _verify_pis004a_schema(connection: sqlite3.Connection) -> None:
+    expected_connection = sqlite3.connect(":memory:")
+    try:
+        expected_connection.execute("PRAGMA foreign_keys = ON")
+        _create_pis004a_tables(expected_connection)
+        for table, expected_columns in PIS004A_TABLE_COLUMNS.items():
+            if not _table_exists(connection, table):
+                raise DatabaseMigrationError(f"PIS-004A table is missing: {table}")
+            columns = tuple(
+                str(row[1])
+                for row in connection.execute(f"PRAGMA table_info({table})").fetchall()
+            )
+            if columns != expected_columns:
+                raise DatabaseMigrationError(f"PIS-004A table is incomplete: {table}")
+            if _schema_sql(connection, object_type="table", name=table) != _schema_sql(
+                expected_connection,
+                object_type="table",
+                name=table,
+            ):
+                raise DatabaseMigrationError(f"PIS-004A table schema differs: {table}")
+        for index_name in PIS004A_INDEX_NAMES:
+            if _schema_sql(connection, object_type="index", name=index_name) != _schema_sql(
+                expected_connection,
+                object_type="index",
+                name=index_name,
+            ):
+                raise DatabaseMigrationError(f"PIS-004A index differs: {index_name}")
+        unexpected_objects = connection.execute(
+            f"""
+            SELECT type, name FROM sqlite_master
+            WHERE tbl_name IN ({_sql_values(tuple(PIS004A_TABLE_COLUMNS))})
+              AND sql IS NOT NULL
+              AND NOT (
+                  type = 'table'
+                  AND name IN ({_sql_values(tuple(PIS004A_TABLE_COLUMNS))})
+              )
+              AND NOT (
+                  type = 'index'
+                  AND name IN ({_sql_values(PIS004A_INDEX_NAMES)})
+              )
+            ORDER BY type, name
+            """
+        ).fetchall()
+        if unexpected_objects:
+            raise DatabaseMigrationError("PIS-004A schema has unexpected objects")
+    finally:
+        expected_connection.close()
+    foreign_key_failures = connection.execute("PRAGMA foreign_key_check").fetchall()
+    if foreign_key_failures:
+        raise DatabaseMigrationError("PIS-004A foreign-key verification failed")
 
 
 def _verify_mission_schema(connection: sqlite3.Connection) -> None:

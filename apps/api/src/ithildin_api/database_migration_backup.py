@@ -1,4 +1,4 @@
-"""Fail-closed pre-v4 SQLite backup receipt creation and verification."""
+"""Fail-closed coordinated SQLite backup receipt creation and verification."""
 
 from __future__ import annotations
 
@@ -16,6 +16,7 @@ from ithildin_schemas import JsonObject, canonical_json
 
 BACKUP_RECEIPT_VERSION = "1"
 TARGET_SCHEMA_VERSION = "4"
+PIS004A_TARGET_SCHEMA_VERSION = "5"
 
 
 class DatabaseBackupError(RuntimeError):
@@ -32,11 +33,56 @@ def ensure_pre_v4_backup(
 ) -> JsonObject:
     """Create or verify one consistent backup while another connection holds a write lock."""
 
+    return _ensure_pre_migration_backup(
+        locked_source=locked_source,
+        db_path=db_path,
+        source_schema_version=source_schema_version,
+        source_minimum_writer_version=source_minimum_writer_version,
+        supported_source_versions={"unversioned", "0", "1", "2", "3"},
+        target_schema_version=TARGET_SCHEMA_VERSION,
+        paths=pre_v4_backup_paths(db_path),
+        now=now,
+    )
+
+
+def ensure_pre_v5_backup(
+    *,
+    locked_source: sqlite3.Connection,
+    db_path: Path,
+    source_schema_version: str,
+    source_minimum_writer_version: str | None,
+    now: datetime | None = None,
+) -> JsonObject:
+    """Create or verify the restore-only backup for the local PIS-004A migration."""
+
+    return _ensure_pre_migration_backup(
+        locked_source=locked_source,
+        db_path=db_path,
+        source_schema_version=source_schema_version,
+        source_minimum_writer_version=source_minimum_writer_version,
+        supported_source_versions={"4"},
+        target_schema_version=PIS004A_TARGET_SCHEMA_VERSION,
+        paths=pre_v5_backup_paths(db_path),
+        now=now,
+    )
+
+
+def _ensure_pre_migration_backup(
+    *,
+    locked_source: sqlite3.Connection,
+    db_path: Path,
+    source_schema_version: str,
+    source_minimum_writer_version: str | None,
+    supported_source_versions: set[str],
+    target_schema_version: str,
+    paths: tuple[Path, Path],
+    now: datetime | None,
+) -> JsonObject:
     if not locked_source.in_transaction:
         raise DatabaseBackupError("pre-migration backup requires a locked source transaction")
-    if source_schema_version not in {"unversioned", "0", "1", "2", "3"}:
+    if source_schema_version not in supported_source_versions:
         raise DatabaseBackupError("pre-migration backup source version is unsupported")
-    backup_path, receipt_path = pre_v4_backup_paths(db_path)
+    backup_path, receipt_path = paths
     source_logical_digest = _logical_digest(db_path)
     if receipt_path.exists() or backup_path.exists():
         return _verify_existing_backup(
@@ -46,6 +92,7 @@ def ensure_pre_v4_backup(
             source_schema_version=source_schema_version,
             source_minimum_writer_version=source_minimum_writer_version,
             source_logical_digest=source_logical_digest,
+            target_schema_version=target_schema_version,
             now=now,
         )
 
@@ -61,6 +108,7 @@ def ensure_pre_v4_backup(
             source_schema_version=source_schema_version,
             source_minimum_writer_version=source_minimum_writer_version,
             source_logical_digest=source_logical_digest,
+            target_schema_version=target_schema_version,
             now=now,
         )
         _write_receipt(receipt_path, receipt)
@@ -76,6 +124,12 @@ def pre_v4_backup_paths(db_path: Path) -> tuple[Path, Path]:
     return backup_path, receipt_path
 
 
+def pre_v5_backup_paths(db_path: Path) -> tuple[Path, Path]:
+    backup_path = db_path.with_name(f"{db_path.name}.pre-v5.sqlite3")
+    receipt_path = db_path.with_name(f"{db_path.name}.pre-v5-receipt.json")
+    return backup_path, receipt_path
+
+
 def _verify_existing_backup(
     *,
     db_path: Path,
@@ -84,6 +138,7 @@ def _verify_existing_backup(
     source_schema_version: str,
     source_minimum_writer_version: str | None,
     source_logical_digest: str,
+    target_schema_version: str,
     now: datetime | None,
 ) -> JsonObject:
     if not backup_path.is_file():
@@ -99,6 +154,7 @@ def _verify_existing_backup(
             source_schema_version=source_schema_version,
             source_minimum_writer_version=source_minimum_writer_version,
             source_logical_digest=source_logical_digest,
+            target_schema_version=target_schema_version,
         )
         return receipt
     receipt = _build_receipt(
@@ -106,6 +162,7 @@ def _verify_existing_backup(
         source_schema_version=source_schema_version,
         source_minimum_writer_version=source_minimum_writer_version,
         source_logical_digest=source_logical_digest,
+        target_schema_version=target_schema_version,
         now=now,
     )
     _write_receipt(receipt_path, receipt)
@@ -134,11 +191,12 @@ def _build_receipt(
     source_schema_version: str,
     source_minimum_writer_version: str | None,
     source_logical_digest: str,
+    target_schema_version: str,
     now: datetime | None,
 ) -> JsonObject:
     return {
         "receipt_version": BACKUP_RECEIPT_VERSION,
-        "migration_target_schema_version": TARGET_SCHEMA_VERSION,
+        "migration_target_schema_version": target_schema_version,
         "source_schema_version": source_schema_version,
         "source_minimum_writer_version": source_minimum_writer_version,
         "source_logical_sha256": source_logical_digest,
@@ -156,10 +214,11 @@ def _validate_receipt(
     source_schema_version: str,
     source_minimum_writer_version: str | None,
     source_logical_digest: str,
+    target_schema_version: str,
 ) -> None:
     expected = {
         "receipt_version": BACKUP_RECEIPT_VERSION,
-        "migration_target_schema_version": TARGET_SCHEMA_VERSION,
+        "migration_target_schema_version": target_schema_version,
         "source_schema_version": source_schema_version,
         "source_minimum_writer_version": source_minimum_writer_version,
         "source_logical_sha256": source_logical_digest,

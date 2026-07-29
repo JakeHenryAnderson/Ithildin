@@ -142,6 +142,9 @@ EXPECTED_ALLOWED_PATHS = [
     "tests/test_pis004a_identity.py",
     "tests/test_pis004a_oidc_fixtures.py",
     "tests/test_pis004a_sessions.py",
+    "tests/test_api_service.py",
+    "tests/test_mission_database_migration.py",
+    "tests/test_trusted_host_promotion_v2_migration.py",
     "uv.lock",
 ]
 EXPECTED_NEGATIVE_INVENTORY = [
