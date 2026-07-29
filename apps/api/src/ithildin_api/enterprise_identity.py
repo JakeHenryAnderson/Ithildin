@@ -157,6 +157,15 @@ class MembershipAuthorityState(_FrozenModel):
         }
 
 
+class OrganizationAuthorityState(_FrozenModel):
+    principal_id: str
+    principal_type: EnterprisePrincipalType
+    organization_id: str
+    identity_generation: int
+    membership_generation: int
+    organization_roles: tuple[OrganizationRole, ...]
+
+
 class WorkspaceMembershipReference(_FrozenModel):
     organization_id: str
     workspace_id: str
@@ -627,6 +636,40 @@ class EnterpriseIdentityStore:
             membership_generation=int(row[5]),
             organization_roles=_parse_roles(str(row[6]), OrganizationRole),
             workspace_roles=_parse_roles(str(row[9]), WorkspaceRole),
+        )
+
+    def current_organization_authority(
+        self,
+        principal_id: str,
+        organization_id: str,
+    ) -> OrganizationAuthorityState:
+        with closing(self._connection()) as connection, connection:
+            row = connection.execute(
+                """
+                SELECT p.principal_type, p.enabled, p.identity_generation,
+                       o.enabled, om.enabled, om.membership_generation,
+                       om.roles_json
+                FROM identity_principals AS p
+                JOIN identity_organization_memberships AS om
+                  ON om.principal_id = p.principal_id
+                 AND om.organization_id = ?
+                JOIN identity_organizations AS o
+                  ON o.organization_id = om.organization_id
+                WHERE p.principal_id = ?
+                """,
+                (organization_id, principal_id),
+            ).fetchone()
+        if row is None:
+            raise EnterpriseIdentityNotFoundError("organization authority not found")
+        if any(not bool(row[index]) for index in (1, 3, 4)):
+            raise EnterpriseIdentityDisabledError("organization authority is disabled")
+        return OrganizationAuthorityState(
+            principal_id=principal_id,
+            principal_type=EnterprisePrincipalType(str(row[0])),
+            organization_id=organization_id,
+            identity_generation=int(row[2]),
+            membership_generation=int(row[5]),
+            organization_roles=_parse_roles(str(row[6]), OrganizationRole),
         )
 
     def list_workspace_memberships(

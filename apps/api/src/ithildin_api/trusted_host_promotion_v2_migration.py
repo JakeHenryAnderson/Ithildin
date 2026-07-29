@@ -285,7 +285,7 @@ PIS004A_TABLE_COLUMNS = {
         "allowed_origin",
         "state_digest",
         "nonce_digest",
-        "pkce_verifier",
+        "pkce_verifier_envelope",
         "created_at",
         "expires_at",
         "status",
@@ -1511,7 +1511,7 @@ def _create_pis004a_tables(connection: sqlite3.Connection) -> None:
             allowed_origin TEXT NOT NULL,
             state_digest TEXT NOT NULL,
             nonce_digest TEXT NOT NULL,
-            pkce_verifier TEXT NOT NULL,
+            pkce_verifier_envelope TEXT NOT NULL,
             created_at TEXT NOT NULL,
             expires_at TEXT NOT NULL,
             status TEXT NOT NULL,
@@ -1540,11 +1540,18 @@ def _create_pis004a_tables(connection: sqlite3.Connection) -> None:
             CHECK (length(nonce_digest) = 76
                 AND substr(nonce_digest, 1, 12) = 'hmac-sha256:'
                 AND substr(nonce_digest, 13) NOT GLOB '*[^0-9a-f]*'),
-            CHECK (length(pkce_verifier) BETWEEN 43 AND 128),
             CHECK (expires_at > created_at),
             CHECK (status IN ('active', 'consumed', 'revoked')),
             CHECK ((status = 'active' AND consumed_at IS NULL)
-                OR (status IN ('consumed', 'revoked') AND consumed_at IS NOT NULL))
+                OR (status IN ('consumed', 'revoked') AND consumed_at IS NOT NULL)),
+            CHECK (
+                (status = 'active'
+                    AND length(pkce_verifier_envelope) BETWEEN 80 AND 1024
+                    AND substr(pkce_verifier_envelope, 1, 13) = 'aes256gcm:v1:')
+                OR (status IN ('consumed', 'revoked')
+                    AND length(pkce_verifier_envelope) = 73
+                    AND substr(pkce_verifier_envelope, 1, 9) = 'redacted:')
+            )
         )
         """
     )
