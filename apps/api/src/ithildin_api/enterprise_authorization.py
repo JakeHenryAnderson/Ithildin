@@ -62,6 +62,7 @@ _REQUIRED_RECENT_AUTHENTICATION_ACTIONS = frozenset(
     }
 )
 _STRONG_RECENT_AUTHENTICATION_METHODS = frozenset({AuthenticationMethod.OIDC_FIXTURE})
+_MAXIMUM_RECENT_AUTHENTICATION_AGE = timedelta(minutes=10)
 
 
 class ApprovalClass(StrEnum):
@@ -104,7 +105,7 @@ class _FrozenModel(BaseModel):
 
 class EnterpriseAuthorizationPolicy(_FrozenModel):
     policy_generation: int = Field(ge=1)
-    recent_authentication_maximum_age: timedelta = timedelta(minutes=10)
+    recent_authentication_maximum_age: timedelta = _MAXIMUM_RECENT_AUTHENTICATION_AGE
     recent_authentication_methods: frozenset[AuthenticationMethod] = frozenset(
         {AuthenticationMethod.OIDC_FIXTURE}
     )
@@ -127,6 +128,8 @@ class EnterpriseAuthorizationPolicy(_FrozenModel):
     def validate_policy(self) -> EnterpriseAuthorizationPolicy:
         if self.recent_authentication_maximum_age <= timedelta(0):
             raise ValueError("recent-auth maximum age must be positive")
+        if self.recent_authentication_maximum_age > _MAXIMUM_RECENT_AUTHENTICATION_AGE:
+            raise ValueError("recent-auth maximum age exceeds the ten-minute ceiling")
         if not self.recent_authentication_methods:
             raise ValueError("recent-auth method set must not be empty")
         if not self.recent_authentication_methods <= (_STRONG_RECENT_AUTHENTICATION_METHODS):

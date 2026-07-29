@@ -992,6 +992,19 @@ def test_caller_authority_injection_and_unsafe_policy_shapes_are_rejected(
             policy_generation=1,
             recent_authentication_methods=frozenset({AuthenticationMethod.LOCAL_RECOVERY}),
         )
+    assert EnterpriseAuthorizationPolicy(
+        policy_generation=1,
+        recent_authentication_maximum_age=timedelta(minutes=10),
+    ).recent_authentication_maximum_age == timedelta(minutes=10)
+    for excessive_age in (
+        timedelta(minutes=10, microseconds=1),
+        timedelta(days=365),
+    ):
+        with pytest.raises(ValidationError, match="ten-minute ceiling"):
+            EnterpriseAuthorizationPolicy(
+                policy_generation=1,
+                recent_authentication_maximum_age=excessive_age,
+            )
     fixture = make_fixture(tmp_path)
     assert not hasattr(fixture.approvals, "create_pending")
     with pytest.raises(EnterpriseAuthorizationError, match="server-owned"):

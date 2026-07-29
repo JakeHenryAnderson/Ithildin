@@ -170,6 +170,7 @@ EXPECTED_NEGATIVE_INVENTORY = [
     "queued_approval_requester_authority_drift",
     "authentication_grant_replay_and_generation_drift",
     "digest_key_generation_retirement_resurrection",
+    "recent_authentication_policy_floor_and_ceiling",
     "preauthentication_replay",
     "origin_and_csrf_mismatch",
     "digest_key_generation_unavailable",
@@ -519,6 +520,7 @@ def _validate_safety_contract(value: object, failures: list[str]) -> None:
         "approval_requester_generation_revalidation_required",
         "safe_audit_vocabulary_closed",
         "strong_recent_auth_policy_required",
+        "recent_authentication_maximum_age_seconds",
         "authorization_server_state_only",
         "human_approval_by_node_or_service_allowed",
         "cross_organization_or_workspace_access_allowed",
@@ -551,6 +553,8 @@ def _validate_safety_contract(value: object, failures: list[str]) -> None:
     )
     if any(value.get(key) is not True for key in required_true):
         failures.append("PIS-004A safety contract weakens a required control")
+    if value.get("recent_authentication_maximum_age_seconds") != 600:
+        failures.append("PIS-004A safety contract recent-auth ceiling is invalid")
     required_false = (
         "session_audit_id_authenticates",
         "human_approval_by_node_or_service_allowed",

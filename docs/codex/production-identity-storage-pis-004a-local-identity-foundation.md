@@ -77,7 +77,8 @@ grant requires explicit reassignment. Approval request creation derives its requ
 validated mutation session and maps a closed server-owned operation to its approval class. Approval
 execution rechecks the requester's current human identity plus exact identity and membership
 generations. Recent authentication is mandatory for approval, membership management, and
-destructive actions, and local recovery cannot be configured as a strong recent-auth method.
+destructive actions, is capped at ten minutes, and local recovery cannot be configured as a strong
+recent-auth method.
 
 ## Authlib dependency and provenance gate
 

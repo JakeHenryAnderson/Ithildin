@@ -209,3 +209,14 @@ def test_contract_rejects_token_persistence_or_session_audit_authentication() ->
 
     assert "PIS-004A persistence permits forbidden material: raw_id_token_persisted" in failures
     assert "PIS-004A safety contract permits forbidden authority" in failures
+
+
+def test_contract_rejects_weakened_recent_authentication_ceiling() -> None:
+    contract = copy.deepcopy(_live_contract())
+    safety = contract["safety_contract"]
+    assert isinstance(safety, dict)
+    safety["recent_authentication_maximum_age_seconds"] = 601
+
+    failures = pis004a_check.validate_contract(contract)
+
+    assert "PIS-004A safety contract recent-auth ceiling is invalid" in failures
