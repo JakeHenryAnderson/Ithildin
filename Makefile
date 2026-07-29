@@ -2796,6 +2796,18 @@ local-prompt-triage:
 mcp-inspector-recipes:
 	uv run python scripts/mcp_inspector_recipes.py
 
+.PHONY: production-identity-storage-pis-004a-check
+production-identity-storage-pis-004a-check:
+	uv run python scripts/production_identity_storage_pis_004a_check.py
+	uv run pytest tests/test_pis004a_contract.py -q
+	uv run ruff check \
+		scripts/production_identity_storage_pis_004a_check.py \
+		scripts/enterprise_e2_preparation_check.py \
+		tests/test_pis004a_contract.py
+	uv run mypy --strict \
+		scripts/production_identity_storage_pis_004a_check.py \
+		scripts/enterprise_e2_preparation_check.py
+
 docs-site:
 	uv run python scripts/build_docs_site.py
 

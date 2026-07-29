@@ -29,6 +29,14 @@ lane. It reconciles future identity work to the standing PIS architecture and su
 synthetic test-only scale fixture; it does not change E1, authorize production identity, or route
 around the PIS external-input wait. Run `make enterprise-e2-preparation-check`.
 
+The separately authorized
+[PIS-004A local identity, session, and authorization foundation](docs/codex/production-identity-storage-pis-004a-local-identity-foundation.md)
+implements only a local/default-off provider-neutral domain, opaque-session store,
+organization/workspace authorization, and zero-network OIDC fixture seam. It preserves exactly
+24 governed tools, the PIS-003 external-input wait, and existing local-admin behavior. It is not
+production identity, remote administration, E1 human-UAT completion, release, or promotion. Run
+`make production-identity-storage-pis-004a-check`.
+
 Ithildin is a local-preview mediation layer for AI-agent tool use. It is not a sandbox, EDR/MDM
 agent, SIEM, production identity system, hosted MCP platform, compliance audit system, or immutable
 evidence store. It assumes the local host, local admin, trusted tool manifests, and local policy

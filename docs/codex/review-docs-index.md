@@ -11,6 +11,9 @@ externally closed.
   active enterprise implementation contract, reuse audit, fixed milestones, and nonclaims.
 - [Enterprise E2 Production Identity Preparation](enterprise-e2-production-identity-preparation.md) -
   isolated planning overlay on the standing PIS architecture and synthetic scale-fixture lane.
+- [PIS-004A Local Identity, Session, And Authorization Foundation](production-identity-storage-pis-004a-local-identity-foundation.md) -
+  bounded local/default-off implementation contract, exact dependency and migration ceiling,
+  negative-test inventory, rollback, candidate procedure, and explicit production nonclaims.
 - [Enterprise E1-M1 Single-Site Deployment Observed Results](enterprise-e1-m1-observed-results.md) -
   exact build, start, authenticated health, shutdown, state, and cleanup receipt disposition.
 - [Enterprise E1 Policy and Node-Configuration State Contract](enterprise-e1-configuration-state-contract.md) -

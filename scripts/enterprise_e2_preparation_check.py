@@ -22,6 +22,10 @@ SCALE_DOC_REL = Path("docs/codex/enterprise-e2-scale-fixture.md")
 BASE_COMMIT = "9df7a04cec197fd4953de692793a32e69c107b49"
 E1_CANDIDATE = "02e39d57a6d38a14d959bb88a32da79fe34e4e13"
 E1_CANDIDATE_TREE = "9850b6cbd40742d67388527de802961ddef306bd"
+PREPARATION_BRANCH = "codex/enterprise-e2-production-identity-prep"
+PIS004A_BRANCH = "codex/enterprise-e2-pis004a-local-identity"
+PIS004A_SOURCE_COMMIT = "e86f5a19e4e067d73141246f78304597e6cc28a0"
+PIS004A_SOURCE_TREE = "6dbbcf0bef3320dfdfa4142f2d30b798b01511d0"
 PIS_WAIT_ACTION = (
     "await_external_operator_target_and_signed_receipt_inputs_before_separate_"
     "collection_action_authority"
@@ -273,10 +277,15 @@ def _validate_repository(
         failures.append("E2 base commit is unavailable")
     elif not _git_ok(root, "merge-base", "--is-ancestor", BASE_COMMIT, "HEAD"):
         failures.append("E2 base commit is not an ancestor of HEAD")
-    if _git_one(root, "branch", "--show-current") != (
-        "codex/enterprise-e2-production-identity-prep"
-    ):
+    current_branch = _git_one(root, "branch", "--show-current")
+    if current_branch not in {PREPARATION_BRANCH, PIS004A_BRANCH}:
         failures.append("E2 preparation is not on its isolated branch")
+    elif current_branch == PIS004A_BRANCH and (
+        not _git_ok(root, "merge-base", "--is-ancestor", PIS004A_SOURCE_COMMIT, "HEAD")
+        or _git_one(root, "rev-parse", f"{PIS004A_SOURCE_COMMIT}^{{tree}}")
+        != PIS004A_SOURCE_TREE
+    ):
+        failures.append("E2 preparation descendant does not preserve its exact source")
 
     for relative, expected_hash in PROTECTED_E1_HASHES.items():
         path = root / relative
@@ -364,9 +373,17 @@ def _validate_repository(
         if target not in makefile:
             failures.append(f"Makefile is missing E2 target: {target}")
 
-    unexpected = sorted(_changed_paths(root) - ALLOWED_CHANGED_PATHS)
-    if unexpected:
-        failures.append("E2 preparation changed paths outside its lane: " + ", ".join(unexpected))
+    if current_branch == PREPARATION_BRANCH:
+        unexpected = sorted(_changed_paths(root) - ALLOWED_CHANGED_PATHS)
+        if unexpected:
+            failures.append(
+                "E2 preparation changed paths outside its lane: " + ", ".join(unexpected)
+            )
+    elif current_branch == PIS004A_BRANCH and not (
+        root
+        / "docs/codex/production-identity-storage-pis-004a-entry-and-implementation-contract.json"
+    ).is_file():
+        failures.append("E2 preparation descendant is missing its separate entry decision")
     if contract.get("authority") != EXPECTED_AUTHORITY:
         failures.append("E2 repository validation observed an expanded authority contract")
 
