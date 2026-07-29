@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import sqlite3
 from pathlib import Path
 
@@ -409,7 +410,7 @@ def initialize_or_migrate_database(db_path: Path) -> None:
         if current == DATABASE_SCHEMA_VERSION:
             _verify_v2_schema(connection)
             _verify_mission_schema(connection)
-            _verify_pis004a_schema(connection)
+            verify_pis004a_schema(connection)
         elif current == "4":
             _verify_v2_schema(connection)
             _verify_mission_schema(connection)
@@ -434,7 +435,7 @@ def initialize_or_migrate_database(db_path: Path) -> None:
         _set_metadata(connection, "minimum_writer_version", MINIMUM_WRITER_VERSION)
         _verify_v2_schema(connection)
         _verify_mission_schema(connection)
-        _verify_pis004a_schema(connection)
+        verify_pis004a_schema(connection)
         connection.execute("COMMIT")
     except (DatabaseBackupError, DatabaseMigrationError, sqlite3.DatabaseError):
         if connection.in_transaction:
@@ -456,7 +457,7 @@ def verify_database_v2(db_path: Path) -> None:
                 raise DatabaseMigrationError("coordinated database migration has not completed")
             _verify_v2_schema(connection)
             _verify_mission_schema(connection)
-            _verify_pis004a_schema(connection)
+            verify_pis004a_schema(connection)
     except sqlite3.DatabaseError as exc:
         raise DatabaseMigrationError("database v2 schema verification failed") from exc
 
@@ -1650,7 +1651,39 @@ def _create_pis004a_tables(connection: sqlite3.Connection) -> None:
     )
 
 
-def _verify_pis004a_schema(connection: sqlite3.Connection) -> None:
+def expected_pis004a_schema_fingerprint() -> str:
+    """Return the domain-separated digest of the exact schema-5 identity objects."""
+
+    expected_connection = sqlite3.connect(":memory:")
+    try:
+        expected_connection.execute("PRAGMA foreign_keys = ON")
+        _create_pis004a_tables(expected_connection)
+        objects = [
+            ("table", table, _schema_sql(expected_connection, object_type="table", name=table))
+            for table in PIS004A_TABLE_COLUMNS
+        ]
+        objects.extend(
+            (
+                "index",
+                index_name,
+                _schema_sql(expected_connection, object_type="index", name=index_name),
+            )
+            for index_name in PIS004A_INDEX_NAMES
+        )
+    finally:
+        expected_connection.close()
+    payload = "\n".join(
+        f"{object_type}\t{name}\t{schema_sql}"
+        for object_type, name, schema_sql in objects
+    ).encode("utf-8")
+    return "sha256:" + hashlib.sha256(
+        b"ITHILDIN-PIS004A-SCHEMA-V1\x00" + payload
+    ).hexdigest()
+
+
+def verify_pis004a_schema(connection: sqlite3.Connection) -> None:
+    """Fail closed unless schema-5 identity tables and indexes match exactly."""
+
     expected_connection = sqlite3.connect(":memory:")
     try:
         expected_connection.execute("PRAGMA foreign_keys = ON")
@@ -1680,8 +1713,11 @@ def _verify_pis004a_schema(connection: sqlite3.Connection) -> None:
         unexpected_objects = connection.execute(
             f"""
             SELECT type, name FROM sqlite_master
-            WHERE tbl_name IN ({_sql_values(tuple(PIS004A_TABLE_COLUMNS))})
-              AND sql IS NOT NULL
+            WHERE sql IS NOT NULL
+              AND (
+                  lower(name) GLOB 'identity_*'
+                  OR lower(tbl_name) GLOB 'identity_*'
+              )
               AND NOT (
                   type = 'table'
                   AND name IN ({_sql_values(tuple(PIS004A_TABLE_COLUMNS))})

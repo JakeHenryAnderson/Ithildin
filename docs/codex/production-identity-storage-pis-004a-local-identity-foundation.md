@@ -109,6 +109,15 @@ version `4` to `5`, create a private pre-v5 backup before upgrading an existing 
 and set minimum writer `5` after activation. Migration is atomic and verified against exact table
 and index definitions. Older writers must fail closed.
 
+The read-only Attempt-008 Node identity projector retains its exact schema-4 profile and adds a
+separate schema-5 compatibility profile. Schema 5 is bound to the domain-separated fingerprint
+`sha256:39c49742d0bb0aec44cc238f4d122028a2bdcc9bd5c20d4c67b250c52c119bdd`.
+The profile compares complete normalized table and index DDL against a freshly generated expected
+schema, rejects unexpected `identity_*` objects and foreign-key failures, and rechecks metadata
+after installing its read-only authorizer. Same-column removal of primary-key, foreign-key,
+unique, not-null, or check constraints therefore fails closed. The projector cannot read the new
+identity tables and grants no revocation, cleanup, execution, UAT, or release authority.
+
 Rollback is restore-only:
 
 1. keep or return the feature to disabled;

@@ -122,6 +122,7 @@
   "persistence": {
     "backend": "local_sqlite_only",
     "coordinated_schema_target": "5",
+    "schema_fingerprint": "sha256:39c49742d0bb0aec44cc238f4d122028a2bdcc9bd5c20d4c67b250c52c119bdd",
     "migration_mode": "atomic_offline_local_startup",
     "minimum_writer_after_activation": "5",
     "pre_migration_backup_required": true,
@@ -199,6 +200,7 @@
     "pyproject.toml",
     "scripts/build_docs_site.py",
     "scripts/enterprise_e2_preparation_check.py",
+    "scripts/local_v1_lv1_003_o4_attempt008_node_identity_reconciliation.py",
     "scripts/production_identity_storage_pis_004a_check.py",
     "scripts/review_docs.py",
     "tests/fixtures/pis004a_oidc/callback.json",
@@ -234,6 +236,7 @@
       "idle_and_absolute_expiry",
       "rotation_replay_and_family_revocation",
       "identity_and_membership_generation_drift",
+      "schema_five_exact_ddl_and_constraint_drift",
       "preauthentication_replay",
       "origin_and_csrf_mismatch",
       "digest_key_generation_unavailable",

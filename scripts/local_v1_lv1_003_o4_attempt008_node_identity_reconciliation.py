@@ -21,6 +21,11 @@ from datetime import datetime
 from pathlib import Path
 from typing import Final, cast
 
+from ithildin_api.trusted_host_promotion_v2_migration import (
+    DatabaseMigrationError,
+    expected_pis004a_schema_fingerprint,
+    verify_pis004a_schema,
+)
 from ithildin_schemas import JsonObject, JsonValue, canonical_json
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -36,6 +41,11 @@ EXPECTED_DESCRIPTOR_DIGEST = (
 )
 EXPECTED_SCHEMA_VERSION = "4"
 EXPECTED_MINIMUM_WRITER_VERSION = "4"
+PIS004A_SCHEMA_VERSION = "5"
+PIS004A_MINIMUM_WRITER_VERSION = "5"
+EXPECTED_PIS004A_SCHEMA_FINGERPRINT = (
+    "sha256:39c49742d0bb0aec44cc238f4d122028a2bdcc9bd5c20d4c67b250c52c119bdd"
+)
 MAX_DATABASE_BYTES = 128 * 1024 * 1024
 GIT_EXECUTABLE = "/usr/bin/git"
 
@@ -747,7 +757,7 @@ def _parse_timestamp(value: object) -> datetime | None:
     return parsed
 
 
-def _validate_schema_shape(connection: sqlite3.Connection) -> None:
+def _validate_schema_shape(connection: sqlite3.Connection) -> dict[str, str]:
     for table, expected_columns in _EXPECTED_TABLE_COLUMNS.items():
         table_rows = connection.execute(
             "SELECT type, ncol FROM pragma_table_list(?) "
@@ -769,6 +779,34 @@ def _validate_schema_shape(connection: sqlite3.Connection) -> None:
             raise ReconciliationError(
                 "identity_unresolved_reconciliation_required"
             )
+    rows = connection.execute(
+        "SELECT key, value FROM app_metadata "
+        "WHERE key IN ('schema_version', 'minimum_writer_version')"
+    ).fetchall()
+    versions = {str(row[0]): str(row[1]) for row in rows}
+    v4 = {
+        "schema_version": EXPECTED_SCHEMA_VERSION,
+        "minimum_writer_version": EXPECTED_MINIMUM_WRITER_VERSION,
+    }
+    v5 = {
+        "schema_version": PIS004A_SCHEMA_VERSION,
+        "minimum_writer_version": PIS004A_MINIMUM_WRITER_VERSION,
+    }
+    if len(rows) != 2 or versions not in (v4, v5):
+        raise ReconciliationError("identity_unresolved_reconciliation_required")
+    if versions == v5:
+        if (
+            expected_pis004a_schema_fingerprint()
+            != EXPECTED_PIS004A_SCHEMA_FINGERPRINT
+        ):
+            raise ReconciliationError("identity_unresolved_reconciliation_required")
+        try:
+            verify_pis004a_schema(connection)
+        except (DatabaseMigrationError, sqlite3.DatabaseError) as exc:
+            raise ReconciliationError(
+                "identity_unresolved_reconciliation_required"
+            ) from exc
+    return versions
 
 
 def project_identity(snapshot: bytes | bytearray) -> JsonObject:
@@ -781,17 +819,14 @@ def project_identity(snapshot: bytes | bytearray) -> JsonObject:
         integrity = connection.execute("PRAGMA integrity_check").fetchall()
         if integrity != [("ok",)]:
             raise ReconciliationError("identity_unresolved_reconciliation_required")
-        _validate_schema_shape(connection)
+        expected_versions = _validate_schema_shape(connection)
         connection.row_factory = sqlite3.Row
         connection.set_authorizer(_projection_authorizer)
         versions = connection.execute(
             "SELECT key, value FROM app_metadata "
             "WHERE key IN ('schema_version', 'minimum_writer_version')"
         ).fetchall()
-        if {str(row["key"]): str(row["value"]) for row in versions} != {
-            "schema_version": EXPECTED_SCHEMA_VERSION,
-            "minimum_writer_version": EXPECTED_MINIMUM_WRITER_VERSION,
-        }:
+        if {str(row["key"]): str(row["value"]) for row in versions} != expected_versions:
             raise ReconciliationError("identity_unresolved_reconciliation_required")
         if _single_row(
             connection, "SELECT count(*) AS count FROM node_enrollment_codes"

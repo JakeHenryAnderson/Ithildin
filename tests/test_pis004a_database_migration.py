@@ -16,7 +16,17 @@ from ithildin_api.database_migration_backup import (
     DatabaseBackupError,
     pre_v5_backup_paths,
 )
+from ithildin_api.node_configuration import NodeConfigurationStore
+from ithildin_api.node_configuration_trust import (
+    NodeConfigurationTrustTransitionStore,
+)
+from ithildin_api.nodes import NodeStore
 from ithildin_api.trusted_host_promotion_v2_migration import DatabaseMigrationError
+from ithildin_audit_core import AuditWriter
+
+from scripts import (
+    local_v1_lv1_003_o4_attempt008_node_identity_reconciliation as node_reconciliation,
+)
 
 V4_SOURCE_COMMIT = "e86f5a19e4e067d73141246f78304597e6cc28a0"
 PIS004A_TABLES = tuple(migration.PIS004A_TABLE_COLUMNS)
@@ -158,6 +168,122 @@ def test_tampered_pis004a_table_or_index_fails_closed(tmp_path: Path) -> None:
         initialize_database(db_path)
 
 
+def test_attempt008_projection_binds_exact_schema_five_fingerprint(
+    tmp_path: Path,
+) -> None:
+    db_path = tmp_path / "ithildin.sqlite3"
+    initialize_database(db_path)
+    _initialize_attempt008_projection_schema(db_path, tmp_path / "audit.jsonl")
+
+    assert (
+        migration.expected_pis004a_schema_fingerprint()
+        == node_reconciliation.EXPECTED_PIS004A_SCHEMA_FINGERPRINT
+    )
+    with sqlite3.connect(db_path) as connection:
+        assert node_reconciliation._validate_schema_shape(connection) == {  # noqa: SLF001
+            "schema_version": "5",
+            "minimum_writer_version": "5",
+        }
+
+
+@pytest.mark.parametrize(
+    "mutation",
+    [
+        "DROP INDEX identity_sessions_idle_expiry_idx",
+        "CREATE TABLE identity_unexpected (value TEXT)",
+        "CREATE TABLE IDENTITY_UNEXPECTED (value TEXT)",
+        "ALTER TABLE identity_sessions ADD COLUMN unexpected TEXT",
+        (
+            "DROP INDEX identity_oidc_replays_expiry_idx; "
+            "CREATE INDEX identity_oidc_replays_expiry_idx "
+            "ON identity_oidc_replays(first_seen_at)"
+        ),
+    ],
+)
+def test_attempt008_projection_rejects_schema_five_object_drift(
+    tmp_path: Path,
+    mutation: str,
+) -> None:
+    db_path = tmp_path / "ithildin.sqlite3"
+    initialize_database(db_path)
+    _initialize_attempt008_projection_schema(db_path, tmp_path / "audit.jsonl")
+
+    with sqlite3.connect(db_path) as connection:
+        connection.executescript(mutation)
+        _assert_attempt008_schema_rejected(connection)
+
+
+@pytest.mark.parametrize(
+    "weakened_schema",
+    [
+        """
+        DROP TABLE identity_organizations;
+        CREATE TABLE identity_organizations (
+            organization_id TEXT PRIMARY KEY,
+            enabled INTEGER NOT NULL,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL
+        );
+        """,
+        """
+        DROP TABLE identity_provider_configurations;
+        CREATE TABLE identity_provider_configurations (
+            provider_configuration_id TEXT PRIMARY KEY,
+            organization_id TEXT NOT NULL,
+            exact_issuer TEXT NOT NULL,
+            enabled INTEGER NOT NULL,
+            generation INTEGER NOT NULL,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            CHECK (length(provider_configuration_id) = 37
+                AND substr(provider_configuration_id, 1, 5) = 'idpc_'
+                AND substr(provider_configuration_id, 6) NOT GLOB '*[^0-9a-f]*'),
+            CHECK (length(exact_issuer) BETWEEN 9 AND 2048),
+            CHECK (enabled IN (0, 1)),
+            CHECK (generation >= 1),
+            CHECK (updated_at >= created_at),
+            UNIQUE (organization_id, provider_configuration_id),
+            UNIQUE (organization_id, provider_configuration_id, exact_issuer)
+        );
+        """,
+        """
+        DROP TABLE identity_provider_configurations;
+        CREATE TABLE identity_provider_configurations (
+            provider_configuration_id TEXT PRIMARY KEY,
+            organization_id TEXT NOT NULL,
+            exact_issuer TEXT NOT NULL,
+            enabled INTEGER NOT NULL,
+            generation INTEGER NOT NULL,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            FOREIGN KEY (organization_id)
+                REFERENCES identity_organizations(organization_id),
+            CHECK (length(provider_configuration_id) = 37
+                AND substr(provider_configuration_id, 1, 5) = 'idpc_'
+                AND substr(provider_configuration_id, 6) NOT GLOB '*[^0-9a-f]*'),
+            CHECK (length(exact_issuer) BETWEEN 9 AND 2048),
+            CHECK (enabled IN (0, 1)),
+            CHECK (generation >= 1),
+            CHECK (updated_at >= created_at)
+        );
+        """,
+    ],
+    ids=["check_removed", "foreign_key_removed", "unique_removed"],
+)
+def test_attempt008_projection_rejects_same_column_constraint_drift(
+    tmp_path: Path,
+    weakened_schema: str,
+) -> None:
+    db_path = tmp_path / "ithildin.sqlite3"
+    initialize_database(db_path)
+    _initialize_attempt008_projection_schema(db_path, tmp_path / "audit.jsonl")
+
+    with sqlite3.connect(db_path) as connection:
+        connection.execute("PRAGMA foreign_keys = OFF")
+        connection.executescript(weakened_schema)
+        _assert_attempt008_schema_rejected(connection)
+
+
 def test_pre_v5_receipt_tamper_blocks_retry(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -191,6 +317,24 @@ def _make_v4_database(db_path: Path) -> None:
             "WHERE key IN ('schema_version', 'minimum_writer_version')"
         )
         connection.commit()
+
+
+def _initialize_attempt008_projection_schema(
+    db_path: Path,
+    audit_path: Path,
+) -> None:
+    NodeStore(db_path).initialize()
+    NodeConfigurationStore(db_path).initialize()
+    NodeConfigurationTrustTransitionStore(db_path).initialize()
+    AuditWriter(db_path, audit_path).initialize()
+
+
+def _assert_attempt008_schema_rejected(connection: sqlite3.Connection) -> None:
+    with pytest.raises(
+        node_reconciliation.ReconciliationError,
+        match="identity_unresolved_reconciliation_required",
+    ):
+        node_reconciliation._validate_schema_shape(connection)  # noqa: SLF001
 
 
 def _load_v4_migration(tmp_path: Path) -> ModuleType:

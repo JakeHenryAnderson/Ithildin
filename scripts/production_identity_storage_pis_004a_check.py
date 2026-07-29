@@ -10,6 +10,10 @@ import tomllib
 from pathlib import Path
 from typing import Any
 
+from ithildin_api.trusted_host_promotion_v2_migration import (
+    expected_pis004a_schema_fingerprint,
+)
+
 ROOT = Path(__file__).resolve().parents[1]
 CONTRACT_REL = Path(
     "docs/codex/production-identity-storage-pis-004a-entry-and-implementation-contract.json"
@@ -18,6 +22,9 @@ DOC_REL = Path("docs/codex/production-identity-storage-pis-004a-local-identity-f
 SOURCE_COMMIT = "e86f5a19e4e067d73141246f78304597e6cc28a0"
 SOURCE_TREE = "6dbbcf0bef3320dfdfa4142f2d30b798b01511d0"
 BRANCH = "codex/enterprise-e2-pis004a-local-identity"
+PIS004A_SCHEMA_FINGERPRINT = (
+    "sha256:39c49742d0bb0aec44cc238f4d122028a2bdcc9bd5c20d4c67b250c52c119bdd"
+)
 PIS_WAIT_ACTION = (
     "await_external_operator_target_and_signed_receipt_inputs_before_separate_"
     "collection_action_authority"
@@ -131,6 +138,7 @@ EXPECTED_ALLOWED_PATHS = [
     "pyproject.toml",
     "scripts/build_docs_site.py",
     "scripts/enterprise_e2_preparation_check.py",
+    "scripts/local_v1_lv1_003_o4_attempt008_node_identity_reconciliation.py",
     "scripts/production_identity_storage_pis_004a_check.py",
     "scripts/review_docs.py",
     "tests/fixtures/pis004a_oidc/callback.json",
@@ -156,6 +164,7 @@ EXPECTED_NEGATIVE_INVENTORY = [
     "idle_and_absolute_expiry",
     "rotation_replay_and_family_revocation",
     "identity_and_membership_generation_drift",
+    "schema_five_exact_ddl_and_constraint_drift",
     "preauthentication_replay",
     "origin_and_csrf_mismatch",
     "digest_key_generation_unavailable",
@@ -209,6 +218,7 @@ def build_report(root: Path) -> dict[str, Any]:
         "source_tree": SOURCE_TREE,
         "branch": _git_one(root, "branch", "--show-current"),
         "tool_count": _tool_count(root),
+        "schema_fingerprint": PIS004A_SCHEMA_FINGERPRINT,
         "pis003_next_action": PIS_WAIT_ACTION,
         "e1_human_uat_complete": False,
         "live_idp_allowed": False,
@@ -451,6 +461,7 @@ def _validate_persistence(value: object, failures: list[str]) -> None:
     if not isinstance(value, dict) or set(value) != {
         "backend",
         "coordinated_schema_target",
+        "schema_fingerprint",
         "migration_mode",
         "minimum_writer_after_activation",
         "pre_migration_backup_required",
@@ -469,6 +480,7 @@ def _validate_persistence(value: object, failures: list[str]) -> None:
     if (
         value.get("backend") != "local_sqlite_only"
         or value.get("coordinated_schema_target") != "5"
+        or value.get("schema_fingerprint") != PIS004A_SCHEMA_FINGERPRINT
         or value.get("minimum_writer_after_activation") != "5"
         or value.get("pre_migration_backup_required") is not True
         or value.get("session_lookup_digest") != "keyed_hmac_sha256"
@@ -544,6 +556,8 @@ def _validate_repository(
     contract: dict[str, Any],
     failures: list[str],
 ) -> None:
+    if expected_pis004a_schema_fingerprint() != PIS004A_SCHEMA_FINGERPRINT:
+        failures.append("PIS-004A schema fingerprint does not match the exact migration DDL")
     if _git_one(root, "branch", "--show-current") != BRANCH:
         failures.append("PIS-004A is not on its exact isolated branch")
     if not _git_ok(root, "cat-file", "-e", f"{SOURCE_COMMIT}^{{commit}}"):
@@ -889,6 +903,7 @@ def render_report(report: dict[str, Any]) -> str:
         f"source_tree: {report['source_tree']}",
         f"branch: {report['branch']}",
         f"tool_count: {report['tool_count']}",
+        f"schema_fingerprint: {report['schema_fingerprint']}",
         f"pis003_next_action: {report['pis003_next_action']}",
         "e1_human_uat_complete: false",
         "live_idp_allowed: false",

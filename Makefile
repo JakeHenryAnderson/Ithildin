@@ -2817,6 +2817,7 @@ production-identity-storage-pis-004a-check:
 		apps/api/src/ithildin_api/trusted_host_promotion_v2_migration.py \
 		scripts/production_identity_storage_pis_004a_check.py \
 		scripts/enterprise_e2_preparation_check.py \
+		scripts/local_v1_lv1_003_o4_attempt008_node_identity_reconciliation.py \
 		tests/test_pis004a_contract.py \
 		tests/test_pis004a_database_migration.py \
 		tests/test_pis004a_identity.py \
@@ -2831,7 +2832,8 @@ production-identity-storage-pis-004a-check:
 		apps/api/src/ithildin_api/oidc_fixture_conformance.py \
 		apps/api/src/ithildin_api/trusted_host_promotion_v2_migration.py \
 		scripts/production_identity_storage_pis_004a_check.py \
-		scripts/enterprise_e2_preparation_check.py
+		scripts/enterprise_e2_preparation_check.py \
+		scripts/local_v1_lv1_003_o4_attempt008_node_identity_reconciliation.py
 
 docs-site:
 	uv run python scripts/build_docs_site.py
