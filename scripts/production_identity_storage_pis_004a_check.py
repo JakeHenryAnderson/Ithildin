@@ -331,6 +331,7 @@ def validate_contract(contract: dict[str, Any]) -> list[str]:
     elif candidate != {
         "focused_command": "make production-identity-storage-pis-004a-check",
         "independent_review_template": (
+            f"git fetch origin refs/heads/{BRANCH}:refs/remotes/origin/{BRANCH} && "
             "git worktree add --detach /tmp/ithildin-pis004a-review "
             "<candidate_commit> && cd /tmp/ithildin-pis004a-review && "
             "make production-identity-storage-pis-004a-check"
@@ -558,8 +559,26 @@ def _validate_repository(
 ) -> None:
     if expected_pis004a_schema_fingerprint() != PIS004A_SCHEMA_FINGERPRINT:
         failures.append("PIS-004A schema fingerprint does not match the exact migration DDL")
-    if _git_one(root, "branch", "--show-current") != BRANCH:
-        failures.append("PIS-004A is not on its exact isolated branch")
+    current_branch = _git_one(root, "branch", "--show-current")
+    head_name = _git_one(root, "rev-parse", "--abbrev-ref", "HEAD")
+    failures.extend(
+        _candidate_checkout_failures(
+            current_branch=current_branch,
+            head_name=head_name,
+            head_oid=_git_one(root, "rev-parse", "HEAD"),
+            authorized_candidate_oid=_git_one(
+                root,
+                "rev-parse",
+                f"refs/remotes/origin/{BRANCH}^{{commit}}",
+            ),
+            porcelain=_git_output_or_none(
+                root,
+                "status",
+                "--porcelain=v1",
+                "--untracked-files=all",
+            ),
+        )
+    )
     if not _git_ok(root, "cat-file", "-e", f"{SOURCE_COMMIT}^{{commit}}"):
         failures.append("PIS-004A source commit is unavailable")
     elif _git_one(root, "rev-parse", f"{SOURCE_COMMIT}^{{tree}}") != SOURCE_TREE:
@@ -633,6 +652,36 @@ def _validate_repository(
     standing = contract.get("standing_authority")
     if not isinstance(standing, dict) or standing.get("pis003_next_action") != PIS_WAIT_ACTION:
         failures.append("PIS-004A repository contract changed the standing PIS route")
+
+
+def _candidate_checkout_failures(
+    *,
+    current_branch: str,
+    head_name: str,
+    head_oid: str,
+    authorized_candidate_oid: str,
+    porcelain: str | None,
+) -> list[str]:
+    if current_branch == BRANCH:
+        return []
+    if current_branch != "" or head_name != "HEAD":
+        return ["PIS-004A is not on its exact isolated branch or detached for review"]
+    checkout_failures: list[str] = []
+    if (
+        authorized_candidate_oid == ""
+        or head_oid == ""
+        or head_oid != authorized_candidate_oid
+    ):
+        checkout_failures.append(
+            "PIS-004A detached review does not match the fetched authorized branch tip"
+        )
+    if porcelain is None:
+        checkout_failures.append(
+            "PIS-004A detached review cleanliness could not be verified"
+        )
+    elif porcelain.strip():
+        checkout_failures.append("PIS-004A detached review worktree is not clean")
+    return checkout_failures
 
 
 def _validate_dependency_lock(root: Path, failures: list[str]) -> None:
@@ -891,6 +940,17 @@ def _git_output(root: Path, *args: str) -> str:
         text=True,
     )
     return result.stdout if result.returncode == 0 else ""
+
+
+def _git_output_or_none(root: Path, *args: str) -> str | None:
+    result = subprocess.run(
+        ["git", *args],
+        cwd=root,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    return result.stdout if result.returncode == 0 else None
 
 
 def render_report(report: dict[str, Any]) -> str:

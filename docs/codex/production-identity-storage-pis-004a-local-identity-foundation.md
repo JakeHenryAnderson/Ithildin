@@ -147,10 +147,15 @@ After focused and broader checks pass, a separate reviewer should reproduce the 
 clean detached worktree:
 
 ```sh
+git fetch origin refs/heads/codex/enterprise-e2-pis004a-local-identity:refs/remotes/origin/codex/enterprise-e2-pis004a-local-identity
 git worktree add --detach /tmp/ithildin-pis004a-review <candidate_commit>
 cd /tmp/ithildin-pis004a-review
 make production-identity-storage-pis-004a-check
 ```
+
+The gate accepts the exact authorized implementation branch or a clean detached `HEAD` that equals
+the freshly fetched authorized remote branch tip. A different detached commit, any dirty detached
+state, and every other named branch fail closed.
 
 A clean candidate and passing automated checks are not independent review, human UAT, release
 acceptance, or production promotion. The next action is

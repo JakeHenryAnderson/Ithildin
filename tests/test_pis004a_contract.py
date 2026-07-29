@@ -3,6 +3,8 @@ from __future__ import annotations
 import copy
 from typing import Any
 
+import pytest
+
 from scripts import production_identity_storage_pis_004a_check as pis004a_check
 
 
@@ -27,6 +29,104 @@ def test_live_pis004a_entry_contract_is_valid_and_bounded() -> None:
     assert report["e1_human_uat_complete"] is False
     assert report["live_idp_allowed"] is False
     assert report["runtime_postgres_allowed"] is False
+
+
+@pytest.mark.parametrize(
+    (
+        "current_branch",
+        "head_name",
+        "head_oid",
+        "authorized_candidate_oid",
+        "porcelain",
+    ),
+    [
+        (pis004a_check.BRANCH, pis004a_check.BRANCH, "branch", "", " M allowed.py"),
+        ("", "HEAD", "a" * 40, "a" * 40, ""),
+    ],
+)
+def test_candidate_checkout_accepts_exact_branch_or_detached_review(
+    current_branch: str,
+    head_name: str,
+    head_oid: str,
+    authorized_candidate_oid: str,
+    porcelain: str | None,
+) -> None:
+    assert pis004a_check._candidate_checkout_failures(  # noqa: SLF001
+        current_branch=current_branch,
+        head_name=head_name,
+        head_oid=head_oid,
+        authorized_candidate_oid=authorized_candidate_oid,
+        porcelain=porcelain,
+    ) == []
+
+
+@pytest.mark.parametrize(
+    (
+        "current_branch",
+        "head_name",
+        "head_oid",
+        "authorized_candidate_oid",
+        "porcelain",
+        "expected_failure",
+    ),
+    [
+        (
+            "main",
+            "main",
+            "a" * 40,
+            "a" * 40,
+            "",
+            "PIS-004A is not on its exact isolated branch or detached for review",
+        ),
+        (
+            "",
+            "HEAD",
+            "a" * 40,
+            "b" * 40,
+            "",
+            "PIS-004A detached review does not match the fetched authorized branch tip",
+        ),
+        (
+            "",
+            "HEAD",
+            "a" * 40,
+            "",
+            "",
+            "PIS-004A detached review does not match the fetched authorized branch tip",
+        ),
+        (
+            "",
+            "HEAD",
+            "a" * 40,
+            "a" * 40,
+            "?? untracked",
+            "PIS-004A detached review worktree is not clean",
+        ),
+        (
+            "",
+            "HEAD",
+            "a" * 40,
+            "a" * 40,
+            None,
+            "PIS-004A detached review cleanliness could not be verified",
+        ),
+    ],
+)
+def test_candidate_checkout_rejects_every_other_checkout(
+    current_branch: str,
+    head_name: str,
+    head_oid: str,
+    authorized_candidate_oid: str,
+    porcelain: str | None,
+    expected_failure: str,
+) -> None:
+    assert expected_failure in pis004a_check._candidate_checkout_failures(  # noqa: SLF001
+        current_branch=current_branch,
+        head_name=head_name,
+        head_oid=head_oid,
+        authorized_candidate_oid=authorized_candidate_oid,
+        porcelain=porcelain,
+    )
 
 
 def test_contract_rejects_production_authority_and_pis_route_drift() -> None:

@@ -260,7 +260,7 @@
   },
   "candidate_procedure": {
     "focused_command": "make production-identity-storage-pis-004a-check",
-    "independent_review_template": "git worktree add --detach /tmp/ithildin-pis004a-review <candidate_commit> && cd /tmp/ithildin-pis004a-review && make production-identity-storage-pis-004a-check",
+    "independent_review_template": "git fetch origin refs/heads/codex/enterprise-e2-pis004a-local-identity:refs/remotes/origin/codex/enterprise-e2-pis004a-local-identity && git worktree add --detach /tmp/ithildin-pis004a-review <candidate_commit> && cd /tmp/ithildin-pis004a-review && make production-identity-storage-pis-004a-check",
     "candidate_must_be_clean": true,
     "independent_review_required": true,
     "human_uat_required_for_e2_id_005": true,
