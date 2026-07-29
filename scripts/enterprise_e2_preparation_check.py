@@ -26,6 +26,9 @@ PREPARATION_BRANCH = "codex/enterprise-e2-production-identity-prep"
 PIS004A_BRANCH = "codex/enterprise-e2-pis004a-review-repair"
 PIS004A_SOURCE_COMMIT = "e86f5a19e4e067d73141246f78304597e6cc28a0"
 PIS004A_SOURCE_TREE = "6dbbcf0bef3320dfdfa4142f2d30b798b01511d0"
+PIS005A_BRANCH = "codex/enterprise-e2-pis005a-node-identity"
+PIS005A_SOURCE_COMMIT = "83db1196213b0e4e7de5d97ab0fb37b934ca4ab7"
+PIS005A_SOURCE_TREE = "86731324feec59596146a1149cdde69f47dd58d0"
 PIS_WAIT_ACTION = (
     "await_external_operator_target_and_signed_receipt_inputs_before_separate_"
     "collection_action_authority"
@@ -270,13 +273,18 @@ def _validate_repository(
     elif not _git_ok(root, "merge-base", "--is-ancestor", BASE_COMMIT, "HEAD"):
         failures.append("E2 base commit is not an ancestor of HEAD")
     current_branch = _git_one(root, "branch", "--show-current")
-    if current_branch not in {PREPARATION_BRANCH, PIS004A_BRANCH}:
+    if current_branch not in {PREPARATION_BRANCH, PIS004A_BRANCH, PIS005A_BRANCH}:
         failures.append("E2 preparation is not on its isolated branch")
     elif current_branch == PIS004A_BRANCH and (
         not _git_ok(root, "merge-base", "--is-ancestor", PIS004A_SOURCE_COMMIT, "HEAD")
         or _git_one(root, "rev-parse", f"{PIS004A_SOURCE_COMMIT}^{{tree}}") != PIS004A_SOURCE_TREE
     ):
         failures.append("E2 preparation descendant does not preserve its exact source")
+    elif current_branch == PIS005A_BRANCH and (
+        not _git_ok(root, "merge-base", "--is-ancestor", PIS005A_SOURCE_COMMIT, "HEAD")
+        or _git_one(root, "rev-parse", f"{PIS005A_SOURCE_COMMIT}^{{tree}}") != PIS005A_SOURCE_TREE
+    ):
+        failures.append("E2 preparation PIS-005A descendant does not preserve its exact source")
 
     for relative, expected_hash in PROTECTED_E1_HASHES.items():
         path = root / relative
@@ -369,7 +377,7 @@ def _validate_repository(
                 "E2 preparation changed paths outside its lane: " + ", ".join(unexpected)
             )
     elif (
-        current_branch == PIS004A_BRANCH
+        current_branch in {PIS004A_BRANCH, PIS005A_BRANCH}
         and not (
             root
             / "docs/codex/"
@@ -377,6 +385,12 @@ def _validate_repository(
         ).is_file()
     ):
         failures.append("E2 preparation descendant is missing its separate entry decision")
+    if current_branch == PIS005A_BRANCH and not (
+        root
+        / "docs/codex/"
+        "production-identity-storage-pis-005a-entry-and-implementation-contract.json"
+    ).is_file():
+        failures.append("E2 preparation PIS-005A descendant is missing its separate entry decision")
     if contract.get("authority") != EXPECTED_AUTHORITY:
         failures.append("E2 repository validation observed an expanded authority contract")
 

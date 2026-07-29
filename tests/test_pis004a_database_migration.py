@@ -14,7 +14,7 @@ import pytest
 from ithildin_api.database import initialize_database
 from ithildin_api.database_migration_backup import (
     DatabaseBackupError,
-    pre_v6_backup_paths,
+    pre_v7_backup_paths,
 )
 from ithildin_api.node_configuration import NodeConfigurationStore
 from ithildin_api.node_configuration_trust import (
@@ -31,9 +31,10 @@ from scripts import (
 V4_SOURCE_COMMIT = "e86f5a19e4e067d73141246f78304597e6cc28a0"
 V5_SOURCE_COMMIT = "0c40e553a75ca8c94640c2d34a110f3ce05bb792"
 PIS004A_TABLES = tuple(migration.PIS004A_TABLE_COLUMNS)
+PIS005A_TABLES = tuple(migration.PIS005A_TABLE_COLUMNS)
 
 
-def test_schema_six_creates_exact_repaired_pis004a_tables_without_token_columns(
+def test_schema_seven_preserves_exact_repaired_pis004a_tables_without_token_columns(
     tmp_path: Path,
 ) -> None:
     db_path = tmp_path / "ithildin.sqlite3"
@@ -52,8 +53,8 @@ def test_schema_six_creates_exact_repaired_pis004a_tables_without_token_columns(
             }
             for table in PIS004A_TABLES
         }
-    assert metadata["schema_version"] == "6"
-    assert metadata["minimum_writer_version"] == "6"
+    assert metadata["schema_version"] == "7"
+    assert metadata["minimum_writer_version"] == "7"
     assert set(PIS004A_TABLES) <= tables
     forbidden = {
         "authorization_code",
@@ -80,19 +81,19 @@ def test_schema_six_creates_exact_repaired_pis004a_tables_without_token_columns(
     } <= all_columns["identity_authentication_grants"]
 
 
-def test_v4_upgrade_creates_private_restore_only_pre_v6_backup(tmp_path: Path) -> None:
+def test_v4_upgrade_creates_private_restore_only_pre_v7_backup(tmp_path: Path) -> None:
     db_path = tmp_path / "ithildin.sqlite3"
     _make_v4_database(db_path)
 
     initialize_database(db_path)
 
-    backup_path, receipt_path = pre_v6_backup_paths(db_path)
+    backup_path, receipt_path = pre_v7_backup_paths(db_path)
     receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
     assert stat.S_IMODE(backup_path.stat().st_mode) == 0o600
     assert stat.S_IMODE(receipt_path.stat().st_mode) == 0o600
     assert receipt["source_schema_version"] == "4"
     assert receipt["source_minimum_writer_version"] == "4"
-    assert receipt["migration_target_schema_version"] == "6"
+    assert receipt["migration_target_schema_version"] == "7"
     assert receipt["downgrade_posture"] == "restore_only"
     assert receipt["backup_filename"] == backup_path.name
     assert str(tmp_path) not in receipt_path.read_text(encoding="utf-8")
@@ -131,7 +132,7 @@ def test_interrupted_v4_upgrade_rolls_back_and_reuses_exact_backup(
         }
     assert metadata["schema_version"] == "4"
     assert not (set(PIS004A_TABLES) & tables)
-    backup_path, receipt_path = pre_v6_backup_paths(db_path)
+    backup_path, receipt_path = pre_v7_backup_paths(db_path)
     original_backup = backup_path.read_bytes()
     original_receipt = receipt_path.read_bytes()
 
@@ -142,11 +143,11 @@ def test_interrupted_v4_upgrade_rolls_back_and_reuses_exact_backup(
     assert receipt_path.read_bytes() == original_receipt
 
 
-def test_v4_writer_refuses_schema_six_and_backup_remains_v4(tmp_path: Path) -> None:
+def test_v4_writer_refuses_schema_seven_and_backup_remains_v4(tmp_path: Path) -> None:
     db_path = tmp_path / "ithildin.sqlite3"
     _make_v4_database(db_path)
     initialize_database(db_path)
-    backup_path, _ = pre_v6_backup_paths(db_path)
+    backup_path, _ = pre_v7_backup_paths(db_path)
     frozen_v4 = _load_v4_migration(tmp_path)
 
     with pytest.raises(frozen_v4.DatabaseMigrationError, match="newer than this writer"):
@@ -248,10 +249,10 @@ def test_rejected_schema_five_upgrade_cancels_unbound_pending_approvals(
 
     initialize_database(db_path)
 
-    backup_path, receipt_path = pre_v6_backup_paths(db_path)
+    backup_path, receipt_path = pre_v7_backup_paths(db_path)
     receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
     assert receipt["source_schema_version"] == "5"
-    assert receipt["migration_target_schema_version"] == "6"
+    assert receipt["migration_target_schema_version"] == "7"
     with sqlite3.connect(backup_path) as connection:
         backup_metadata = dict(connection.execute("SELECT key, value FROM app_metadata"))
     assert backup_metadata["schema_version"] == "5"
@@ -266,7 +267,7 @@ def test_rejected_schema_five_upgrade_cancels_unbound_pending_approvals(
             """,
             (approval_request_id,),
         ).fetchone()
-    assert metadata["schema_version"] == "6"
+    assert metadata["schema_version"] == "7"
     assert migrated_request == ("cancelled", None, None)
 
 
@@ -284,7 +285,7 @@ def test_tampered_pis004a_table_or_index_fails_closed(tmp_path: Path) -> None:
         initialize_database(db_path)
 
 
-def test_attempt008_projection_binds_exact_schema_six_fingerprint(
+def test_attempt008_projection_binds_exact_schema_seven_fingerprints(
     tmp_path: Path,
 ) -> None:
     db_path = tmp_path / "ithildin.sqlite3"
@@ -295,10 +296,14 @@ def test_attempt008_projection_binds_exact_schema_six_fingerprint(
         migration.expected_pis004a_schema_fingerprint()
         == node_reconciliation.EXPECTED_PIS004A_SCHEMA_FINGERPRINT
     )
+    assert (
+        migration.expected_pis005a_schema_fingerprint()
+        == node_reconciliation.EXPECTED_PIS005A_SCHEMA_FINGERPRINT
+    )
     with sqlite3.connect(db_path) as connection:
         assert node_reconciliation._validate_schema_shape(connection) == {  # noqa: SLF001
-            "schema_version": "6",
-            "minimum_writer_version": "6",
+            "schema_version": "7",
+            "minimum_writer_version": "7",
         }
 
 
@@ -316,7 +321,7 @@ def test_attempt008_projection_binds_exact_schema_six_fingerprint(
         ),
     ],
 )
-def test_attempt008_projection_rejects_schema_six_object_drift(
+def test_attempt008_projection_rejects_schema_seven_object_drift(
     tmp_path: Path,
     mutation: str,
 ) -> None:
@@ -400,7 +405,7 @@ def test_attempt008_projection_rejects_same_column_constraint_drift(
         _assert_attempt008_schema_rejected(connection)
 
 
-def test_pre_v6_receipt_tamper_blocks_retry(
+def test_pre_v7_receipt_tamper_blocks_retry(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -408,14 +413,14 @@ def test_pre_v6_receipt_tamper_blocks_retry(
     _make_v4_database(db_path)
 
     def interrupt(_: sqlite3.Connection) -> None:
-        raise sqlite3.OperationalError("stop after pre-v6 backup")
+        raise sqlite3.OperationalError("stop after pre-v7 backup")
 
     monkeypatch.setattr(migration, "_create_pis004a_tables", interrupt)
-    with pytest.raises(sqlite3.OperationalError, match="stop after pre-v6 backup"):
+    with pytest.raises(sqlite3.OperationalError, match="stop after pre-v7 backup"):
         initialize_database(db_path)
-    _, receipt_path = pre_v6_backup_paths(db_path)
+    _, receipt_path = pre_v7_backup_paths(db_path)
     receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
-    receipt["migration_target_schema_version"] = "7"
+    receipt["migration_target_schema_version"] = "6"
     receipt_path.write_text(json.dumps(receipt), encoding="utf-8")
     receipt_path.chmod(0o600)
 
@@ -426,6 +431,8 @@ def test_pre_v6_receipt_tamper_blocks_retry(
 def _make_v4_database(db_path: Path) -> None:
     initialize_database(db_path)
     with sqlite3.connect(db_path) as connection:
+        for table in reversed(PIS005A_TABLES):
+            connection.execute(f"DROP TABLE {table}")
         for table in reversed(PIS004A_TABLES):
             connection.execute(f"DROP TABLE {table}")
         connection.execute(

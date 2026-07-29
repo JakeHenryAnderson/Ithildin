@@ -37,6 +37,14 @@ organization/workspace authorization, and zero-network OIDC fixture seam. It pre
 production identity, remote administration, E1 human-UAT completion, release, or promotion. Run
 `make production-identity-storage-pis-004a-check`.
 
+The separately bounded
+[PIS-005A local Node workload identity foundation](docs/codex/production-identity-storage-pis-005a-node-workload-identity-foundation.md)
+adds only default-off, synthetic fixture conformance for one-use enrollment, certificate and
+application-key cross-binding, revocation, replay rejection, and an additive local SQLite schema.
+It adds no route, listener, live mTLS, certificate issuance, private-key custody, remote transport,
+runtime PostgreSQL, production identity, governed tool, effect authority, release, or promotion.
+Run `make production-identity-storage-pis-005a-check`.
+
 Ithildin is a local-preview mediation layer for AI-agent tool use. It is not a sandbox, EDR/MDM
 agent, SIEM, production identity system, hosted MCP platform, compliance audit system, or immutable
 evidence store. It assumes the local host, local admin, trusted tool manifests, and local policy

@@ -29,9 +29,10 @@ MISSION_TABLES = (
     "mission_report_nonces",
 )
 PIS004A_TABLES = tuple(migration.PIS004A_TABLE_COLUMNS)
+PIS005A_TABLES = tuple(migration.PIS005A_TABLE_COLUMNS)
 
 
-def test_schema_six_preserves_closed_mission_tables(tmp_path: Path) -> None:
+def test_schema_seven_preserves_closed_mission_tables(tmp_path: Path) -> None:
     db_path = tmp_path / "ithildin.sqlite3"
 
     initialize_database(db_path)
@@ -46,8 +47,8 @@ def test_schema_six_preserves_closed_mission_tables(tmp_path: Path) -> None:
         transition_sql = _table_sql(connection, "mission_transition_attempts")
         evidence_sql = _table_sql(connection, "mission_audit_evidence_bindings")
         report_sql = _table_sql(connection, "mission_report_receipts")
-    assert metadata["schema_version"] == "6"
-    assert metadata["minimum_writer_version"] == "6"
+    assert metadata["schema_version"] == "7"
+    assert metadata["minimum_writer_version"] == "7"
     assert set(MISSION_TABLES) <= tables
     assert "requester_identity_generation" in mission_sql
     assert "synthetic_read_review_v1" in mission_sql
@@ -59,7 +60,7 @@ def test_schema_six_preserves_closed_mission_tables(tmp_path: Path) -> None:
     assert "failure_reason_code" in report_sql
 
 
-def test_schema_six_rejects_semantically_invalid_report_receipts(tmp_path: Path) -> None:
+def test_schema_seven_rejects_semantically_invalid_report_receipts(tmp_path: Path) -> None:
     db_path = tmp_path / "ithildin.sqlite3"
     initialize_database(db_path)
 
@@ -316,6 +317,8 @@ def test_missing_mission_foreign_key_is_rejected(tmp_path: Path) -> None:
 def _make_v3_database(db_path: Path) -> None:
     initialize_database(db_path)
     with sqlite3.connect(db_path) as connection:
+        for table in reversed(PIS005A_TABLES):
+            connection.execute(f"DROP TABLE {table}")
         for table in reversed(PIS004A_TABLES):
             connection.execute(f"DROP TABLE {table}")
         for table in reversed(MISSION_TABLES):

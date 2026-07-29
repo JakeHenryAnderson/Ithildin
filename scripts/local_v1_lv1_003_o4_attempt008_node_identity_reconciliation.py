@@ -24,7 +24,9 @@ from typing import Final, cast
 from ithildin_api.trusted_host_promotion_v2_migration import (
     DatabaseMigrationError,
     expected_pis004a_schema_fingerprint,
+    expected_pis005a_schema_fingerprint,
     verify_pis004a_schema,
+    verify_pis005a_schema,
 )
 from ithildin_schemas import JsonObject, JsonValue, canonical_json
 
@@ -43,8 +45,21 @@ EXPECTED_SCHEMA_VERSION = "4"
 EXPECTED_MINIMUM_WRITER_VERSION = "4"
 PIS004A_SCHEMA_VERSION = "6"
 PIS004A_MINIMUM_WRITER_VERSION = "6"
+PIS005A_SCHEMA_VERSION = "7"
+PIS005A_MINIMUM_WRITER_VERSION = "7"
 EXPECTED_PIS004A_SCHEMA_FINGERPRINT = (
     "sha256:ca52764e2c4544446f0a1379abc60ec6d74a9320222509974d1cb35c1c955114"
+)
+EXPECTED_PIS005A_SCHEMA_FINGERPRINT = (
+    "sha256:5b804d92cd45385b5f21cd4a31b7c641ef35a6d5f4ea5ac0339ebdfebe67b9c5"
+)
+PIS005A_TABLES: Final[tuple[str, ...]] = (
+    "node_workload_enrollment_digest_key_generations",
+    "node_workload_deployments",
+    "node_workload_enrollment_transactions",
+    "node_workload_public_keys",
+    "node_workload_identities",
+    "node_workload_request_nonces",
 )
 MAX_DATABASE_BYTES = 128 * 1024 * 1024
 GIT_EXECUTABLE = "/usr/bin/git"
@@ -672,6 +687,7 @@ _ALLOWED_COLUMNS: Final[dict[str, frozenset[str]]] = {
     "mission_claims": frozenset({"node_id"}),
     "mission_report_receipts": frozenset({"node_id"}),
     "mission_report_nonces": frozenset({"node_id"}),
+    **{table: frozenset() for table in PIS005A_TABLES},
 }
 
 
@@ -744,20 +760,39 @@ def _validate_schema_shape(connection: sqlite3.Connection) -> dict[str, str]:
         "schema_version": EXPECTED_SCHEMA_VERSION,
         "minimum_writer_version": EXPECTED_MINIMUM_WRITER_VERSION,
     }
-    v5 = {
+    v6 = {
         "schema_version": PIS004A_SCHEMA_VERSION,
         "minimum_writer_version": PIS004A_MINIMUM_WRITER_VERSION,
     }
-    if len(rows) != 2 or versions not in (v4, v5):
+    v7 = {
+        "schema_version": PIS005A_SCHEMA_VERSION,
+        "minimum_writer_version": PIS005A_MINIMUM_WRITER_VERSION,
+    }
+    if len(rows) != 2 or versions not in (v4, v6, v7):
         raise ReconciliationError("identity_unresolved_reconciliation_required")
-    if versions == v5:
+    if versions in (v6, v7):
         if expected_pis004a_schema_fingerprint() != EXPECTED_PIS004A_SCHEMA_FINGERPRINT:
             raise ReconciliationError("identity_unresolved_reconciliation_required")
         try:
             verify_pis004a_schema(connection)
         except (DatabaseMigrationError, sqlite3.DatabaseError) as exc:
             raise ReconciliationError("identity_unresolved_reconciliation_required") from exc
+    if versions == v7:
+        if expected_pis005a_schema_fingerprint() != EXPECTED_PIS005A_SCHEMA_FINGERPRINT:
+            raise ReconciliationError("identity_unresolved_reconciliation_required")
+        try:
+            verify_pis005a_schema(connection)
+            _require_empty_pis005a_tables(connection)
+        except (DatabaseMigrationError, sqlite3.DatabaseError) as exc:
+            raise ReconciliationError("identity_unresolved_reconciliation_required") from exc
     return versions
+
+
+def _require_empty_pis005a_tables(connection: sqlite3.Connection) -> None:
+    for table in PIS005A_TABLES:
+        row = connection.execute(f"SELECT count(*) FROM {table}").fetchone()
+        if row != (0,):
+            raise ReconciliationError("identity_unresolved_reconciliation_required")
 
 
 def project_identity(snapshot: bytes | bytearray) -> JsonObject:
@@ -779,6 +814,8 @@ def project_identity(snapshot: bytes | bytearray) -> JsonObject:
         ).fetchall()
         if {str(row["key"]): str(row["value"]) for row in versions} != expected_versions:
             raise ReconciliationError("identity_unresolved_reconciliation_required")
+        if expected_versions["schema_version"] == PIS005A_SCHEMA_VERSION:
+            _require_empty_pis005a_tables(connection)
         if (
             _single_row(connection, "SELECT count(*) AS count FROM node_enrollment_codes")["count"]
             != 1

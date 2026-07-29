@@ -5707,7 +5707,7 @@ def test_database_initialization_is_idempotent(tmp_path: Path) -> None:
             """
         ).fetchall()
 
-    assert rows == [("minimum_writer_version", "6"), ("schema_version", "6")]
+    assert rows == [("minimum_writer_version", "7"), ("schema_version", "7")]
 
 
 @pytest.mark.parametrize(

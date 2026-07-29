@@ -23,6 +23,9 @@ REVIEW_RECORD_REL = Path("docs/codex/production-identity-storage-pis-004a-indepe
 SOURCE_COMMIT = "e86f5a19e4e067d73141246f78304597e6cc28a0"
 SOURCE_TREE = "6dbbcf0bef3320dfdfa4142f2d30b798b01511d0"
 BRANCH = "codex/enterprise-e2-pis004a-review-repair"
+PIS005A_SUCCESSOR_BRANCH = "codex/enterprise-e2-pis005a-node-identity"
+PIS005A_SUCCESSOR_BASE_COMMIT = "83db1196213b0e4e7de5d97ab0fb37b934ca4ab7"
+PIS005A_SUCCESSOR_BASE_TREE = "86731324feec59596146a1149cdde69f47dd58d0"
 REVIEWED_CANDIDATE_COMMIT = "ff358753c50037c2bc936b761f249cf5c9115749"
 REVIEWED_CANDIDATE_TREE = "0fff4fe145ca0b2b9db8fa874396486bba5eb6c7"
 REVIEWED_CANDIDATE_PARENT = "68b96608fd3c0014f93d0c89d52c75e1e251b1f9"
@@ -621,24 +624,41 @@ def _validate_repository(
         failures.append("PIS-004A schema fingerprint does not match the exact migration DDL")
     current_branch = _git_one(root, "branch", "--show-current")
     head_name = _git_one(root, "rev-parse", "--abbrev-ref", "HEAD")
-    failures.extend(
-        _candidate_checkout_failures(
-            current_branch=current_branch,
-            head_name=head_name,
-            head_oid=_git_one(root, "rev-parse", "HEAD"),
-            authorized_candidate_oid=_git_one(
+    pis005a_successor = current_branch == PIS005A_SUCCESSOR_BRANCH
+    if pis005a_successor:
+        if (
+            _git_one(root, "rev-parse", f"{PIS005A_SUCCESSOR_BASE_COMMIT}^{{tree}}")
+            != PIS005A_SUCCESSOR_BASE_TREE
+            or not _git_ok(
                 root,
-                "rev-parse",
-                f"refs/remotes/origin/{BRANCH}^{{commit}}",
-            ),
-            porcelain=_git_output_or_none(
-                root,
-                "status",
-                "--porcelain=v1",
-                "--untracked-files=all",
-            ),
+                "merge-base",
+                "--is-ancestor",
+                PIS005A_SUCCESSOR_BASE_COMMIT,
+                "HEAD",
+            )
+            or _git_one(root, "rev-parse", f"refs/remotes/origin/{BRANCH}^{{commit}}")
+            != "e8e6a75ca3d76a233243f5e890091f3c95731da9"
+        ):
+            failures.append("PIS-004A exact PIS-005A successor identity is invalid")
+    else:
+        failures.extend(
+            _candidate_checkout_failures(
+                current_branch=current_branch,
+                head_name=head_name,
+                head_oid=_git_one(root, "rev-parse", "HEAD"),
+                authorized_candidate_oid=_git_one(
+                    root,
+                    "rev-parse",
+                    f"refs/remotes/origin/{BRANCH}^{{commit}}",
+                ),
+                porcelain=_git_output_or_none(
+                    root,
+                    "status",
+                    "--porcelain=v1",
+                    "--untracked-files=all",
+                ),
+            )
         )
-    )
     if not _git_ok(root, "cat-file", "-e", f"{SOURCE_COMMIT}^{{commit}}"):
         failures.append("PIS-004A source commit is unavailable")
     elif _git_one(root, "rev-parse", f"{SOURCE_COMMIT}^{{tree}}") != SOURCE_TREE:
@@ -655,7 +675,14 @@ def _validate_repository(
         or not _git_ok(root, "merge-base", "--is-ancestor", REVIEWED_CANDIDATE_COMMIT, "HEAD")
     ):
         failures.append("PIS-004A reviewed implementation candidate identity changed")
-    post_review_paths = _post_review_changed_paths(root)
+    post_review_paths = (
+        _post_review_changed_paths_at(
+            root,
+            "e8e6a75ca3d76a233243f5e890091f3c95731da9",
+        )
+        if pis005a_successor
+        else _post_review_changed_paths(root)
+    )
     if post_review_paths != EXPECTED_POST_REVIEW_PATHS:
         unexpected_post_review = sorted(post_review_paths - EXPECTED_POST_REVIEW_PATHS)
         missing_post_review = sorted(EXPECTED_POST_REVIEW_PATHS - post_review_paths)
@@ -707,10 +734,13 @@ def _validate_repository(
         failures.append("PIS-004A changed the exact 24-tool manifest lock")
     _validate_dependency_lock(root, failures)
 
-    changed = _changed_paths(root)
-    unexpected = sorted(changed - set(EXPECTED_ALLOWED_PATHS))
-    if unexpected:
-        failures.append("PIS-004A changed paths outside its exact lane: " + ", ".join(unexpected))
+    if not pis005a_successor:
+        changed = _changed_paths(root)
+        unexpected = sorted(changed - set(EXPECTED_ALLOWED_PATHS))
+        if unexpected:
+            failures.append(
+                "PIS-004A changed paths outside its exact lane: " + ", ".join(unexpected)
+            )
 
     doc = _read(root / DOC_REL, failures)
     for phrase in (
@@ -969,6 +999,19 @@ def _post_review_changed_paths(root: Path) -> set[str]:
     ):
         paths.update(line for line in _git_output(root, *args).splitlines() if line)
     return paths
+
+
+def _post_review_changed_paths_at(root: Path, revision: str) -> set[str]:
+    return {
+        line
+        for line in _git_output(
+            root,
+            "diff",
+            "--name-only",
+            f"{REVIEWED_CANDIDATE_COMMIT}..{revision}",
+        ).splitlines()
+        if line
+    }
 
 
 def _tool_count(root: Path) -> int:

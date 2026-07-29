@@ -9,11 +9,11 @@ from pathlib import Path
 from ithildin_api.database_migration_backup import (
     DatabaseBackupError,
     ensure_pre_v4_backup,
-    ensure_pre_v6_backup,
+    ensure_pre_v7_backup,
 )
 
-DATABASE_SCHEMA_VERSION = "6"
-MINIMUM_WRITER_VERSION = "6"
+DATABASE_SCHEMA_VERSION = "7"
+MINIMUM_WRITER_VERSION = "7"
 APPROVAL_CONTRACT_VERSION = "2"
 PROMOTION_AUTHORITY_SCHEMA_VERSION = "1"
 
@@ -386,6 +386,103 @@ PIS004A_V5_SCHEMA_FINGERPRINT = (
     "sha256:39c49742d0bb0aec44cc238f4d122028a2bdcc9bd5c20d4c67b250c52c119bdd"
 )
 
+PIS005A_TABLE_COLUMNS = {
+    "node_workload_enrollment_digest_key_generations": (
+        "digest_key_generation",
+        "status",
+        "first_seen_at",
+        "activated_at",
+        "retired_at",
+    ),
+    "node_workload_deployments": (
+        "deployment_id",
+        "organization_id",
+        "workspace_id",
+        "certificate_trust_anchor_fingerprint",
+        "deployment_generation",
+        "status",
+        "created_at",
+        "updated_at",
+        "revoked_at",
+    ),
+    "node_workload_enrollment_transactions": (
+        "enrollment_transaction_id",
+        "enrollment_digest",
+        "digest_key_generation",
+        "deployment_id",
+        "organization_id",
+        "workspace_id",
+        "deployment_generation",
+        "node_id",
+        "principal_id",
+        "replaces_node_id",
+        "status",
+        "created_at",
+        "expires_at",
+        "terminal_at",
+    ),
+    "node_workload_public_keys": (
+        "key_fingerprint",
+        "node_id",
+        "enrollment_transaction_id",
+        "key_role",
+        "key_generation",
+        "canonical_public_key",
+        "status",
+        "created_at",
+        "retired_at",
+    ),
+    "node_workload_identities": (
+        "node_id",
+        "principal_id",
+        "deployment_id",
+        "organization_id",
+        "workspace_id",
+        "enrollment_transaction_id",
+        "deployment_generation",
+        "identity_generation",
+        "certificate_generation",
+        "application_key_generation",
+        "configuration_generation",
+        "certificate_fingerprint",
+        "certificate_trust_anchor_fingerprint",
+        "certificate_key_fingerprint",
+        "certificate_not_before_epoch_seconds",
+        "certificate_not_after_epoch_seconds",
+        "application_key_fingerprint",
+        "application_key_id",
+        "status",
+        "created_at",
+        "updated_at",
+        "revoked_at",
+        "revocation_reason_code",
+        "replacement_node_id",
+    ),
+    "node_workload_request_nonces": (
+        "node_id",
+        "nonce_digest",
+        "deployment_generation",
+        "identity_generation",
+        "certificate_generation",
+        "application_key_generation",
+        "configuration_generation",
+        "request_digest",
+        "request_timestamp",
+        "accepted_at",
+        "expires_at",
+    ),
+}
+
+PIS005A_INDEX_NAMES = (
+    "node_workload_enrollment_digest_key_generations_one_active_idx",
+    "node_workload_deployments_scope_status_idx",
+    "node_workload_enrollment_transactions_status_expiry_idx",
+    "node_workload_enrollment_transactions_one_pending_replacement_idx",
+    "node_workload_public_keys_node_status_idx",
+    "node_workload_identities_scope_status_idx",
+    "node_workload_request_nonces_expiry_idx",
+)
+
 TRUSTED_HOST_PROMOTION_TOOL = "trusted_host.promotion.stage"
 
 LEGACY_APPROVAL_STATUSES = (
@@ -454,8 +551,8 @@ def initialize_or_migrate_database(db_path: Path) -> None:
         minimum_writer = _metadata_value(connection, "minimum_writer_version")
         _validate_version_metadata(current=current, minimum_writer=minimum_writer)
         had_user_tables = _has_user_tables(connection)
-        if current in {"4", "5"}:
-            ensure_pre_v6_backup(
+        if current in {"4", "5", "6"}:
+            ensure_pre_v7_backup(
                 locked_source=connection,
                 db_path=db_path,
                 source_schema_version=current,
@@ -474,26 +571,37 @@ def initialize_or_migrate_database(db_path: Path) -> None:
             _verify_v2_schema(connection)
             _verify_mission_schema(connection)
             verify_pis004a_schema(connection)
+            verify_pis005a_schema(connection)
+        elif current == "6":
+            _verify_v2_schema(connection)
+            _verify_mission_schema(connection)
+            verify_pis004a_schema(connection)
+            _migrate_v6_to_v7(connection)
         elif current == "5":
             _verify_pis004a_v5_schema(connection)
             _migrate_v5_to_v6(connection)
+            _migrate_v6_to_v7(connection)
         elif current == "4":
             _verify_v2_schema(connection)
             _verify_mission_schema(connection)
             _migrate_v4_to_v6(connection)
+            _migrate_v6_to_v7(connection)
         elif current == "3":
             _verify_v2_schema(connection)
             _migrate_v3_to_v4(connection)
             _migrate_v4_to_v6(connection)
+            _migrate_v6_to_v7(connection)
         elif current == "2":
             _verify_v2_schema(connection, require_placement_states=False)
             _migrate_v2_to_v3(connection)
             _migrate_v3_to_v4(connection)
             _migrate_v4_to_v6(connection)
+            _migrate_v6_to_v7(connection)
         elif current in {None, "0", "1"}:
             _migrate_tables(connection)
             _migrate_v3_to_v4(connection)
             _migrate_v4_to_v6(connection)
+            _migrate_v6_to_v7(connection)
         else:  # pragma: no cover - guarded above, retained as a fail-closed fence
             raise DatabaseMigrationError(f"unsupported database schema version: {current}")
 
@@ -502,6 +610,7 @@ def initialize_or_migrate_database(db_path: Path) -> None:
         _verify_v2_schema(connection)
         _verify_mission_schema(connection)
         verify_pis004a_schema(connection)
+        verify_pis005a_schema(connection)
         connection.execute("COMMIT")
     except (DatabaseBackupError, DatabaseMigrationError, sqlite3.DatabaseError):
         if connection.in_transaction:
@@ -524,6 +633,7 @@ def verify_database_v2(db_path: Path) -> None:
             _verify_v2_schema(connection)
             _verify_mission_schema(connection)
             verify_pis004a_schema(connection)
+            verify_pis005a_schema(connection)
     except sqlite3.DatabaseError as exc:
         raise DatabaseMigrationError("database v2 schema verification failed") from exc
 
@@ -728,6 +838,25 @@ def _migrate_v5_to_v6(connection: sqlite3.Connection) -> None:
     )
     connection.execute("DROP TABLE identity_approval_requests_v5")
     _create_pis004a_repair_tables(connection)
+
+
+def _migrate_v6_to_v7(connection: sqlite3.Connection) -> None:
+    """Add the local-only PIS-005A Node workload-identity foundation."""
+
+    existing = connection.execute(
+        """
+        SELECT type, name FROM sqlite_master
+        WHERE sql IS NOT NULL
+          AND (
+              lower(name) GLOB 'node_workload_*'
+              OR lower(tbl_name) GLOB 'node_workload_*'
+          )
+        ORDER BY type, name
+        """
+    ).fetchall()
+    if existing:
+        raise DatabaseMigrationError("database v6 contains unexpected PIS-005A objects")
+    _create_pis005a_tables(connection)
 
 
 def _create_v2_tables(connection: sqlite3.Connection) -> None:
@@ -1843,6 +1972,406 @@ def _create_pis004a_tables(connection: sqlite3.Connection) -> None:
     _create_pis004a_repair_tables(connection)
 
 
+def _create_pis005a_tables(connection: sqlite3.Connection) -> None:
+    connection.execute(
+        """
+        CREATE TABLE node_workload_enrollment_digest_key_generations (
+            digest_key_generation INTEGER PRIMARY KEY,
+            status TEXT NOT NULL,
+            first_seen_at TEXT NOT NULL,
+            activated_at TEXT,
+            retired_at TEXT,
+            CHECK (digest_key_generation >= 1),
+            CHECK (status IN ('active', 'retained', 'retired')),
+            CHECK (
+                (status IN ('active', 'retained')
+                    AND activated_at IS NOT NULL AND retired_at IS NULL)
+                OR (status = 'retired' AND retired_at IS NOT NULL)
+            ),
+            CHECK (activated_at IS NULL OR activated_at >= first_seen_at),
+            CHECK (retired_at IS NULL OR retired_at >= first_seen_at)
+        )
+        """
+    )
+    connection.execute(
+        """
+        CREATE UNIQUE INDEX
+            node_workload_enrollment_digest_key_generations_one_active_idx
+        ON node_workload_enrollment_digest_key_generations(status)
+        WHERE status = 'active'
+        """
+    )
+    connection.execute(
+        """
+        CREATE TABLE node_workload_deployments (
+            deployment_id TEXT PRIMARY KEY,
+            organization_id TEXT NOT NULL,
+            workspace_id TEXT NOT NULL,
+            certificate_trust_anchor_fingerprint TEXT NOT NULL,
+            deployment_generation INTEGER NOT NULL,
+            status TEXT NOT NULL,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            revoked_at TEXT,
+            FOREIGN KEY (organization_id, workspace_id)
+                REFERENCES identity_workspaces(organization_id, workspace_id),
+            CHECK (length(deployment_id) = 37
+                AND substr(deployment_id, 1, 5) = 'ndep_'
+                AND substr(deployment_id, 6) NOT GLOB '*[^0-9a-f]*'),
+            CHECK (length(certificate_trust_anchor_fingerprint) = 71
+                AND substr(certificate_trust_anchor_fingerprint, 1, 7) = 'sha256:'
+                AND substr(certificate_trust_anchor_fingerprint, 8)
+                    NOT GLOB '*[^0-9a-f]*'),
+            CHECK (deployment_generation >= 1),
+            CHECK (status IN ('active', 'revoked')),
+            CHECK (
+                (status = 'active' AND revoked_at IS NULL)
+                OR (status = 'revoked' AND revoked_at IS NOT NULL)
+            ),
+            CHECK (updated_at >= created_at),
+            UNIQUE (
+                deployment_id,
+                organization_id,
+                workspace_id,
+                deployment_generation
+            )
+        )
+        """
+    )
+    connection.execute(
+        """
+        CREATE INDEX node_workload_deployments_scope_status_idx
+        ON node_workload_deployments(
+            organization_id,
+            workspace_id,
+            status,
+            deployment_id
+        )
+        """
+    )
+    connection.execute(
+        """
+        CREATE TABLE node_workload_enrollment_transactions (
+            enrollment_transaction_id TEXT PRIMARY KEY,
+            enrollment_digest TEXT NOT NULL UNIQUE,
+            digest_key_generation INTEGER NOT NULL,
+            deployment_id TEXT NOT NULL,
+            organization_id TEXT NOT NULL,
+            workspace_id TEXT NOT NULL,
+            deployment_generation INTEGER NOT NULL,
+            node_id TEXT NOT NULL UNIQUE,
+            principal_id TEXT NOT NULL UNIQUE,
+            replaces_node_id TEXT,
+            status TEXT NOT NULL,
+            created_at TEXT NOT NULL,
+            expires_at TEXT NOT NULL,
+            terminal_at TEXT,
+            FOREIGN KEY (digest_key_generation)
+                REFERENCES node_workload_enrollment_digest_key_generations(
+                    digest_key_generation
+                ),
+            FOREIGN KEY (
+                deployment_id,
+                organization_id,
+                workspace_id,
+                deployment_generation
+            ) REFERENCES node_workload_deployments(
+                deployment_id,
+                organization_id,
+                workspace_id,
+                deployment_generation
+            ),
+            FOREIGN KEY (replaces_node_id)
+                REFERENCES node_workload_identities(node_id),
+            CHECK (length(enrollment_transaction_id) = 37
+                AND substr(enrollment_transaction_id, 1, 5) = 'nenr_'
+                AND substr(enrollment_transaction_id, 6) NOT GLOB '*[^0-9a-f]*'),
+            CHECK (length(enrollment_digest) = 76
+                AND substr(enrollment_digest, 1, 12) = 'hmac-sha256:'
+                AND substr(enrollment_digest, 13) NOT GLOB '*[^0-9a-f]*'),
+            CHECK (digest_key_generation >= 1),
+            CHECK (deployment_generation >= 1),
+            CHECK (length(node_id) = 37
+                AND substr(node_id, 1, 5) = 'node_'
+                AND substr(node_id, 6) NOT GLOB '*[^0-9a-f]*'),
+            CHECK (length(principal_id) = 36
+                AND substr(principal_id, 1, 4) = 'prn_'
+                AND substr(principal_id, 5) NOT GLOB '*[^0-9a-f]*'),
+            CHECK (replaces_node_id IS NULL OR (
+                length(replaces_node_id) = 37
+                AND substr(replaces_node_id, 1, 5) = 'node_'
+                AND substr(replaces_node_id, 6) NOT GLOB '*[^0-9a-f]*'
+                AND replaces_node_id != node_id
+            )),
+            CHECK (expires_at > created_at),
+            CHECK (status IN ('pending', 'consumed', 'expired', 'revoked')),
+            CHECK (
+                (status = 'pending' AND terminal_at IS NULL)
+                OR (status IN ('consumed', 'expired', 'revoked')
+                    AND terminal_at IS NOT NULL)
+            ),
+            UNIQUE (enrollment_transaction_id, node_id),
+            UNIQUE (
+                enrollment_transaction_id,
+                node_id,
+                principal_id,
+                deployment_id,
+                organization_id,
+                workspace_id,
+                deployment_generation
+            )
+        )
+        """
+    )
+    connection.execute(
+        """
+        CREATE INDEX node_workload_enrollment_transactions_status_expiry_idx
+        ON node_workload_enrollment_transactions(status, expires_at)
+        """
+    )
+    connection.execute(
+        """
+        CREATE UNIQUE INDEX
+            node_workload_enrollment_transactions_one_pending_replacement_idx
+        ON node_workload_enrollment_transactions(replaces_node_id)
+        WHERE replaces_node_id IS NOT NULL AND status = 'pending'
+        """
+    )
+    connection.execute(
+        """
+        CREATE TABLE node_workload_public_keys (
+            key_fingerprint TEXT PRIMARY KEY,
+            node_id TEXT NOT NULL,
+            enrollment_transaction_id TEXT NOT NULL,
+            key_role TEXT NOT NULL,
+            key_generation INTEGER NOT NULL,
+            canonical_public_key TEXT NOT NULL UNIQUE,
+            status TEXT NOT NULL,
+            created_at TEXT NOT NULL,
+            retired_at TEXT,
+            FOREIGN KEY (enrollment_transaction_id, node_id)
+                REFERENCES node_workload_enrollment_transactions(
+                    enrollment_transaction_id,
+                    node_id
+                ),
+            CHECK (length(key_fingerprint) = 71
+                AND substr(key_fingerprint, 1, 7) = 'sha256:'
+                AND substr(key_fingerprint, 8) NOT GLOB '*[^0-9a-f]*'),
+            CHECK (key_role IN ('certificate', 'application')),
+            CHECK (key_generation >= 1),
+            CHECK (length(canonical_public_key) = 44
+                AND substr(canonical_public_key, 44, 1) = '='),
+            CHECK (status IN ('active', 'retired')),
+            CHECK (
+                (status = 'active' AND retired_at IS NULL)
+                OR (status = 'retired' AND retired_at IS NOT NULL)
+            ),
+            UNIQUE (node_id, key_role, key_generation)
+        )
+        """
+    )
+    connection.execute(
+        """
+        CREATE INDEX node_workload_public_keys_node_status_idx
+        ON node_workload_public_keys(node_id, status, key_role, key_generation)
+        """
+    )
+    connection.execute(
+        """
+        CREATE TABLE node_workload_identities (
+            node_id TEXT PRIMARY KEY,
+            principal_id TEXT NOT NULL UNIQUE,
+            deployment_id TEXT NOT NULL,
+            organization_id TEXT NOT NULL,
+            workspace_id TEXT NOT NULL,
+            enrollment_transaction_id TEXT NOT NULL UNIQUE,
+            deployment_generation INTEGER NOT NULL,
+            identity_generation INTEGER NOT NULL,
+            certificate_generation INTEGER NOT NULL,
+            application_key_generation INTEGER NOT NULL,
+            configuration_generation INTEGER NOT NULL,
+            certificate_fingerprint TEXT NOT NULL UNIQUE,
+            certificate_trust_anchor_fingerprint TEXT NOT NULL,
+            certificate_key_fingerprint TEXT NOT NULL UNIQUE,
+            certificate_not_before_epoch_seconds INTEGER NOT NULL,
+            certificate_not_after_epoch_seconds INTEGER NOT NULL,
+            application_key_fingerprint TEXT NOT NULL UNIQUE,
+            application_key_id TEXT NOT NULL UNIQUE,
+            status TEXT NOT NULL,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            revoked_at TEXT,
+            revocation_reason_code TEXT,
+            replacement_node_id TEXT UNIQUE,
+            FOREIGN KEY (
+                deployment_id,
+                organization_id,
+                workspace_id,
+                deployment_generation
+            ) REFERENCES node_workload_deployments(
+                deployment_id,
+                organization_id,
+                workspace_id,
+                deployment_generation
+            ),
+            FOREIGN KEY (
+                enrollment_transaction_id,
+                node_id,
+                principal_id,
+                deployment_id,
+                organization_id,
+                workspace_id,
+                deployment_generation
+            ) REFERENCES node_workload_enrollment_transactions(
+                enrollment_transaction_id,
+                node_id,
+                principal_id,
+                deployment_id,
+                organization_id,
+                workspace_id,
+                deployment_generation
+            ),
+            FOREIGN KEY (principal_id)
+                REFERENCES identity_principals(principal_id),
+            FOREIGN KEY (organization_id, principal_id)
+                REFERENCES identity_organization_memberships(
+                    organization_id,
+                    principal_id
+                ),
+            FOREIGN KEY (organization_id, workspace_id, principal_id)
+                REFERENCES identity_workspace_memberships(
+                    organization_id,
+                    workspace_id,
+                    principal_id
+                ),
+            FOREIGN KEY (certificate_key_fingerprint)
+                REFERENCES node_workload_public_keys(key_fingerprint),
+            FOREIGN KEY (application_key_fingerprint)
+                REFERENCES node_workload_public_keys(key_fingerprint),
+            FOREIGN KEY (replacement_node_id)
+                REFERENCES node_workload_identities(node_id),
+            CHECK (length(node_id) = 37
+                AND substr(node_id, 1, 5) = 'node_'
+                AND substr(node_id, 6) NOT GLOB '*[^0-9a-f]*'),
+            CHECK (length(principal_id) = 36
+                AND substr(principal_id, 1, 4) = 'prn_'
+                AND substr(principal_id, 5) NOT GLOB '*[^0-9a-f]*'),
+            CHECK (deployment_generation >= 1),
+            CHECK (identity_generation >= 1),
+            CHECK (certificate_generation >= 1),
+            CHECK (application_key_generation >= 1),
+            CHECK (configuration_generation >= 1),
+            CHECK (length(certificate_fingerprint) = 71
+                AND substr(certificate_fingerprint, 1, 7) = 'sha256:'
+                AND substr(certificate_fingerprint, 8) NOT GLOB '*[^0-9a-f]*'),
+            CHECK (length(certificate_trust_anchor_fingerprint) = 71
+                AND substr(certificate_trust_anchor_fingerprint, 1, 7) = 'sha256:'
+                AND substr(certificate_trust_anchor_fingerprint, 8)
+                    NOT GLOB '*[^0-9a-f]*'),
+            CHECK (length(certificate_key_fingerprint) = 71
+                AND substr(certificate_key_fingerprint, 1, 7) = 'sha256:'
+                AND substr(certificate_key_fingerprint, 8)
+                    NOT GLOB '*[^0-9a-f]*'),
+            CHECK (typeof(certificate_not_before_epoch_seconds) = 'integer'),
+            CHECK (typeof(certificate_not_after_epoch_seconds) = 'integer'),
+            CHECK (
+                certificate_not_after_epoch_seconds
+                    > certificate_not_before_epoch_seconds
+                AND certificate_not_after_epoch_seconds
+                    - certificate_not_before_epoch_seconds <= 86400
+            ),
+            CHECK (length(application_key_fingerprint) = 71
+                AND substr(application_key_fingerprint, 1, 7) = 'sha256:'
+                AND substr(application_key_fingerprint, 8)
+                    NOT GLOB '*[^0-9a-f]*'),
+            CHECK (length(application_key_id) = 71
+                AND substr(application_key_id, 1, 7) = 'sha256:'
+                AND substr(application_key_id, 8) NOT GLOB '*[^0-9a-f]*'),
+            CHECK (certificate_key_fingerprint != application_key_fingerprint),
+            CHECK (status IN ('active', 'revoked', 'replaced')),
+            CHECK (
+                (status = 'active'
+                    AND revoked_at IS NULL
+                    AND revocation_reason_code IS NULL
+                    AND replacement_node_id IS NULL)
+                OR (status = 'revoked'
+                    AND revoked_at IS NOT NULL
+                    AND revocation_reason_code IS NOT NULL
+                    AND replacement_node_id IS NULL)
+                OR (status = 'replaced'
+                    AND revoked_at IS NOT NULL
+                    AND revocation_reason_code = 'replacement_completed'
+                    AND replacement_node_id IS NOT NULL
+                    AND replacement_node_id != node_id)
+            ),
+            CHECK (
+                revocation_reason_code IS NULL
+                OR revocation_reason_code IN (
+                    'operator_revoked',
+                    'key_compromise',
+                    'scope_revoked',
+                    'replacement_completed'
+                )
+            ),
+            CHECK (updated_at >= created_at)
+        )
+        """
+    )
+    connection.execute(
+        """
+        CREATE INDEX node_workload_identities_scope_status_idx
+        ON node_workload_identities(
+            organization_id,
+            workspace_id,
+            deployment_id,
+            status,
+            node_id
+        )
+        """
+    )
+    connection.execute(
+        """
+        CREATE TABLE node_workload_request_nonces (
+            node_id TEXT NOT NULL,
+            nonce_digest TEXT NOT NULL,
+            deployment_generation INTEGER NOT NULL,
+            identity_generation INTEGER NOT NULL,
+            certificate_generation INTEGER NOT NULL,
+            application_key_generation INTEGER NOT NULL,
+            configuration_generation INTEGER NOT NULL,
+            request_digest TEXT NOT NULL,
+            request_timestamp INTEGER NOT NULL,
+            accepted_at INTEGER NOT NULL,
+            expires_at INTEGER NOT NULL,
+            PRIMARY KEY (node_id, nonce_digest),
+            FOREIGN KEY (node_id)
+                REFERENCES node_workload_identities(node_id),
+            CHECK (length(nonce_digest) = 71
+                AND substr(nonce_digest, 1, 7) = 'sha256:'
+                AND substr(nonce_digest, 8) NOT GLOB '*[^0-9a-f]*'),
+            CHECK (deployment_generation >= 1),
+            CHECK (identity_generation >= 1),
+            CHECK (certificate_generation >= 1),
+            CHECK (application_key_generation >= 1),
+            CHECK (configuration_generation >= 1),
+            CHECK (length(request_digest) = 71
+                AND substr(request_digest, 1, 7) = 'sha256:'
+                AND substr(request_digest, 8) NOT GLOB '*[^0-9a-f]*'),
+            CHECK (typeof(request_timestamp) = 'integer'),
+            CHECK (typeof(accepted_at) = 'integer'),
+            CHECK (typeof(expires_at) = 'integer'),
+            CHECK (expires_at > accepted_at)
+        )
+        """
+    )
+    connection.execute(
+        """
+        CREATE INDEX node_workload_request_nonces_expiry_idx
+        ON node_workload_request_nonces(expires_at, node_id)
+        """
+    )
+
+
 def expected_pis004a_schema_fingerprint() -> str:
     """Return the domain-separated digest of the exact schema-6 identity objects."""
 
@@ -1979,6 +2508,81 @@ def verify_pis004a_schema(connection: sqlite3.Connection) -> None:
     foreign_key_failures = connection.execute("PRAGMA foreign_key_check").fetchall()
     if foreign_key_failures:
         raise DatabaseMigrationError("PIS-004A foreign-key verification failed")
+
+
+def expected_pis005a_schema_fingerprint() -> str:
+    """Return the domain-separated digest of the exact schema-7 workload objects."""
+
+    expected_connection = sqlite3.connect(":memory:")
+    try:
+        expected_connection.execute("PRAGMA foreign_keys = ON")
+        _create_pis004a_tables(expected_connection)
+        _create_pis005a_tables(expected_connection)
+        return _pis004a_schema_fingerprint(
+            expected_connection,
+            table_columns=PIS005A_TABLE_COLUMNS,
+            index_names=PIS005A_INDEX_NAMES,
+            domain=b"ITHILDIN-PIS005A-SCHEMA-V1\x00",
+        )
+    finally:
+        expected_connection.close()
+
+
+def verify_pis005a_schema(connection: sqlite3.Connection) -> None:
+    """Fail closed unless schema-7 workload tables and indexes match exactly."""
+
+    expected_connection = sqlite3.connect(":memory:")
+    try:
+        expected_connection.execute("PRAGMA foreign_keys = ON")
+        _create_pis004a_tables(expected_connection)
+        _create_pis005a_tables(expected_connection)
+        for table, expected_columns in PIS005A_TABLE_COLUMNS.items():
+            if not _table_exists(connection, table):
+                raise DatabaseMigrationError(f"PIS-005A table is missing: {table}")
+            columns = tuple(
+                str(row[1]) for row in connection.execute(f"PRAGMA table_info({table})").fetchall()
+            )
+            if columns != expected_columns:
+                raise DatabaseMigrationError(f"PIS-005A table is incomplete: {table}")
+            if _schema_sql(connection, object_type="table", name=table) != _schema_sql(
+                expected_connection,
+                object_type="table",
+                name=table,
+            ):
+                raise DatabaseMigrationError(f"PIS-005A table schema differs: {table}")
+        for index_name in PIS005A_INDEX_NAMES:
+            if _schema_sql(connection, object_type="index", name=index_name) != _schema_sql(
+                expected_connection,
+                object_type="index",
+                name=index_name,
+            ):
+                raise DatabaseMigrationError(f"PIS-005A index differs: {index_name}")
+        unexpected_objects = connection.execute(
+            f"""
+            SELECT type, name FROM sqlite_master
+            WHERE sql IS NOT NULL
+              AND (
+                  lower(name) GLOB 'node_workload_*'
+                  OR lower(tbl_name) GLOB 'node_workload_*'
+              )
+              AND NOT (
+                  type = 'table'
+                  AND name IN ({_sql_values(tuple(PIS005A_TABLE_COLUMNS))})
+              )
+              AND NOT (
+                  type = 'index'
+                  AND name IN ({_sql_values(PIS005A_INDEX_NAMES)})
+              )
+            ORDER BY type, name
+            """
+        ).fetchall()
+        if unexpected_objects:
+            raise DatabaseMigrationError("PIS-005A schema has unexpected objects")
+    finally:
+        expected_connection.close()
+    foreign_key_failures = connection.execute("PRAGMA foreign_key_check").fetchall()
+    if foreign_key_failures:
+        raise DatabaseMigrationError("PIS-005A foreign-key verification failed")
 
 
 def _verify_mission_schema(connection: sqlite3.Connection) -> None:

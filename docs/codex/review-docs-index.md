@@ -20,6 +20,15 @@ externally closed.
 - [E2-ID-005 Command Center Identity UX Next-Ticket Contract](production-identity-storage-pis-004a-e2-id-005-next-ticket.md) -
   blocked future entry and acceptance boundary; no sign-in, identity UI, credential, release, or
   production authority while E1 human UAT remains incomplete.
+- [PIS-005A Local Node Workload Identity Foundation](production-identity-storage-pis-005a-node-workload-identity-foundation.md) -
+  bounded default-off SQLite and synthetic-fixture foundation for one-use Node enrollment,
+  certificate/application-key cross-binding, revocation, replay denial, and explicit nonclaims.
+- [PIS-005A Independent Implementation Review](production-identity-storage-pis-005a-independent-review.md) -
+  exact-candidate review record and disposition projection; it carries no UAT, release, promotion,
+  or remote transport authority.
+- [E2-NODE-005 Remote Transport Next-Ticket Contract](production-identity-storage-pis-005a-remote-transport-next-ticket.md) -
+  blocked future entry boundary for TLS 1.3, mTLS, CA/key custody, remote ingress, rotation,
+  external review, and operator UAT.
 - [Enterprise E1-M1 Single-Site Deployment Observed Results](enterprise-e1-m1-observed-results.md) -
   exact build, start, authenticated health, shutdown, state, and cleanup receipt disposition.
 - [Enterprise E1 Policy and Node-Configuration State Contract](enterprise-e1-configuration-state-contract.md) -
