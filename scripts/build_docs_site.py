@@ -262,6 +262,7 @@ DEFAULT_DOCS = [
     "docs/codex/enterprise-e2-production-identity-preparation.md",
     "docs/codex/enterprise-e2-scale-fixture.md",
     "docs/codex/production-identity-storage-pis-004a-local-identity-foundation.md",
+    "docs/codex/production-identity-storage-pis-004a-independent-review.md",
     "docs/codex/production-identity-storage-pis-004a-e2-id-005-next-ticket.md",
     "docs/codex/local-v1-golden-path.md",
     "docs/codex/technical-mvp-ticket-map.md",

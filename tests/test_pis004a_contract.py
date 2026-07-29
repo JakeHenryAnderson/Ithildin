@@ -23,8 +23,11 @@ def test_live_pis004a_entry_contract_is_valid_and_bounded() -> None:
 
     assert report["valid"] is True, report["failures"]
     assert report["decision_id"] == "PIS-004A"
-    assert report["status"] == "candidate_implemented_review_required"
+    assert report["status"] == "candidate_independent_review_complete_e2_id_005_blocked"
     assert report["tool_count"] == 24
+    assert report["reviewed_candidate_commit"] == pis004a_check.REVIEWED_CANDIDATE_COMMIT
+    assert report["independent_review_complete"] is True
+    assert report["open_review_findings"] == 0
     assert report["pis003_next_action"] == pis004a_check.PIS_WAIT_ACTION
     assert report["e1_human_uat_complete"] is False
     assert report["live_idp_allowed"] is False
@@ -177,6 +180,19 @@ def test_contract_rejects_work_package_or_allowed_path_expansion() -> None:
 
     assert "PIS-004A work-package scope is invalid" in failures
     assert "PIS-004A allowed paths are not exact and ordered" in failures
+
+
+def test_contract_rejects_independent_review_identity_or_authority_drift() -> None:
+    contract = copy.deepcopy(_live_contract())
+    review = contract["independent_review"]
+    assert isinstance(review, dict)
+    review["reviewed_candidate_commit"] = "0" * 40
+    review["high_findings"] = 1
+    review["e2_id_005_entry_authorized"] = True
+
+    failures = pis004a_check.validate_contract(contract)
+
+    assert "PIS-004A independent-review disposition is invalid" in failures
 
 
 def test_contract_rejects_dependency_network_or_fallback_authority() -> None:

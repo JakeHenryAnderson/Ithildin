@@ -19,9 +19,14 @@ CONTRACT_REL = Path(
     "docs/codex/production-identity-storage-pis-004a-entry-and-implementation-contract.json"
 )
 DOC_REL = Path("docs/codex/production-identity-storage-pis-004a-local-identity-foundation.md")
+REVIEW_RECORD_REL = Path("docs/codex/production-identity-storage-pis-004a-independent-review.md")
 SOURCE_COMMIT = "e86f5a19e4e067d73141246f78304597e6cc28a0"
 SOURCE_TREE = "6dbbcf0bef3320dfdfa4142f2d30b798b01511d0"
 BRANCH = "codex/enterprise-e2-pis004a-review-repair"
+REVIEWED_CANDIDATE_COMMIT = "ff358753c50037c2bc936b761f249cf5c9115749"
+REVIEWED_CANDIDATE_TREE = "0fff4fe145ca0b2b9db8fa874396486bba5eb6c7"
+REVIEWED_CANDIDATE_PARENT = "68b96608fd3c0014f93d0c89d52c75e1e251b1f9"
+REPAIR_BASELINE_COMMIT = "0c40e553a75ca8c94640c2d34a110f3ce05bb792"
 PIS004A_SCHEMA_FINGERPRINT = (
     "sha256:ca52764e2c4544446f0a1379abc60ec6d74a9320222509974d1cb35c1c955114"
 )
@@ -29,13 +34,38 @@ PIS_WAIT_ACTION = (
     "await_external_operator_target_and_signed_receipt_inputs_before_separate_"
     "collection_action_authority"
 )
-NEXT_ACTION = (
-    "reproduce_exact_candidate_in_clean_detached_worktree_then_record_independent_"
-    "review_before_any_e2_id_005_entry"
-)
-IMPLEMENTATION_STATUSES = {
-    "implementation_authorized",
-    "candidate_implemented_review_required",
+NEXT_ACTION = "stop_for_e1_human_uat_before_separate_e2_id_005_entry_decision"
+IMPLEMENTATION_STATUSES = {"candidate_independent_review_complete_e2_id_005_blocked"}
+EXPECTED_INDEPENDENT_REVIEW = {
+    "record_path": REVIEW_RECORD_REL.as_posix(),
+    "reviewed_candidate_commit": REVIEWED_CANDIDATE_COMMIT,
+    "reviewed_candidate_tree": REVIEWED_CANDIDATE_TREE,
+    "reviewed_candidate_parent": REVIEWED_CANDIDATE_PARENT,
+    "repair_baseline_commit": REPAIR_BASELINE_COMMIT,
+    "review_method": "independent_read_only_codex_review",
+    "clean_detached_worktree_verified": True,
+    "remote_identity_verified": True,
+    "focused_gate_passed": True,
+    "critical_findings": 0,
+    "high_findings": 0,
+    "medium_findings": 0,
+    "low_findings": 0,
+    "open_findings": 0,
+    "disposition": "go_record_pis_004a_independent_review_only",
+    "implementation_review_complete": True,
+    "e2_id_005_entry_authorized": False,
+    "human_uat_complete": False,
+    "release_or_promotion_authorized": False,
+}
+EXPECTED_POST_REVIEW_PATHS = {
+    CONTRACT_REL.as_posix(),
+    REVIEW_RECORD_REL.as_posix(),
+    DOC_REL.as_posix(),
+    "docs/codex/review-docs-index.md",
+    "scripts/build_docs_site.py",
+    "scripts/production_identity_storage_pis_004a_check.py",
+    "scripts/review_docs.py",
+    "tests/test_pis004a_contract.py",
 }
 PROTECTED_HASHES = {
     "docs/codex/production-identity-storage-architecture.md": (
@@ -133,6 +163,7 @@ EXPECTED_ALLOWED_PATHS = [
     "apps/api/src/ithildin_api/trusted_host_promotion_v2_migration.py",
     "docs/codex/production-identity-storage-pis-004a-e2-id-005-next-ticket.md",
     "docs/codex/production-identity-storage-pis-004a-entry-and-implementation-contract.json",
+    "docs/codex/production-identity-storage-pis-004a-independent-review.md",
     "docs/codex/production-identity-storage-pis-004a-local-identity-foundation.md",
     "docs/codex/review-docs-index.md",
     "pyproject.toml",
@@ -227,6 +258,9 @@ def build_report(root: Path) -> dict[str, Any]:
         "branch": _git_one(root, "branch", "--show-current"),
         "tool_count": _tool_count(root),
         "schema_fingerprint": PIS004A_SCHEMA_FINGERPRINT,
+        "reviewed_candidate_commit": REVIEWED_CANDIDATE_COMMIT,
+        "independent_review_complete": True,
+        "open_review_findings": 0,
         "pis003_next_action": PIS_WAIT_ACTION,
         "e1_human_uat_complete": False,
         "live_idp_allowed": False,
@@ -263,6 +297,7 @@ def validate_contract(contract: dict[str, Any]) -> list[str]:
             "dependency_gate",
             "persistence",
             "safety_contract",
+            "independent_review",
             "allowed_paths",
             "validation",
             "rollback",
@@ -283,6 +318,8 @@ def validate_contract(contract: dict[str, Any]) -> list[str]:
         failures.append("PIS-004A authority ceiling is invalid")
     if contract.get("work_packages") != EXPECTED_WORK_PACKAGES:
         failures.append("PIS-004A work-package scope is invalid")
+    if contract.get("independent_review") != EXPECTED_INDEPENDENT_REVIEW:
+        failures.append("PIS-004A independent-review disposition is invalid")
     if contract.get("allowed_paths") != EXPECTED_ALLOWED_PATHS:
         failures.append("PIS-004A allowed paths are not exact and ordered")
     if contract.get("nonclaims") != EXPECTED_NONCLAIMS:
@@ -609,6 +646,30 @@ def _validate_repository(
     elif not _git_ok(root, "merge-base", "--is-ancestor", SOURCE_COMMIT, "HEAD"):
         failures.append("PIS-004A source commit is not an ancestor of HEAD")
 
+    if not _git_ok(root, "cat-file", "-e", f"{REVIEWED_CANDIDATE_COMMIT}^{{commit}}"):
+        failures.append("PIS-004A reviewed implementation candidate is unavailable")
+    elif (
+        _git_one(root, "rev-parse", f"{REVIEWED_CANDIDATE_COMMIT}^{{tree}}")
+        != REVIEWED_CANDIDATE_TREE
+        or _git_one(root, "rev-parse", f"{REVIEWED_CANDIDATE_COMMIT}^") != REVIEWED_CANDIDATE_PARENT
+        or not _git_ok(root, "merge-base", "--is-ancestor", REVIEWED_CANDIDATE_COMMIT, "HEAD")
+    ):
+        failures.append("PIS-004A reviewed implementation candidate identity changed")
+    post_review_paths = _post_review_changed_paths(root)
+    if post_review_paths != EXPECTED_POST_REVIEW_PATHS:
+        unexpected_post_review = sorted(post_review_paths - EXPECTED_POST_REVIEW_PATHS)
+        missing_post_review = sorted(EXPECTED_POST_REVIEW_PATHS - post_review_paths)
+        if unexpected_post_review:
+            failures.append(
+                "PIS-004A post-review record changed implementation paths: "
+                + ", ".join(unexpected_post_review)
+            )
+        if missing_post_review:
+            failures.append(
+                "PIS-004A post-review record inventory is incomplete: "
+                + ", ".join(missing_post_review)
+            )
+
     for relative, expected_hash in PROTECTED_HASHES.items():
         if _sha256(root / relative) != expected_hash:
             failures.append(f"PIS-004A changed protected standing authority: {relative}")
@@ -653,7 +714,9 @@ def _validate_repository(
 
     doc = _read(root / DOC_REL, failures)
     for phrase in (
-        "Status: candidate implemented; independent review required.",
+        "Status: independent implementation review complete; E2-ID-005 remains blocked.",
+        REVIEWED_CANDIDATE_COMMIT,
+        REVIEW_RECORD_REL.name,
         "Current governed tool count: exactly `24`.",
         PIS_WAIT_ACTION,
         "E1 contract still records `human_uat_complete: false`",
@@ -662,12 +725,31 @@ def _validate_repository(
     ):
         if phrase not in doc:
             failures.append(f"PIS-004A document is missing required phrase: {phrase}")
+    review_record = _read(root / REVIEW_RECORD_REL, failures)
+    for phrase in (
+        "Status: independent implementation review complete; no open findings.",
+        REVIEWED_CANDIDATE_COMMIT,
+        REVIEWED_CANDIDATE_TREE,
+        REVIEWED_CANDIDATE_PARENT,
+        REPAIR_BASELINE_COMMIT,
+        "Critical findings: `0`.",
+        "High findings: `0`.",
+        "Medium findings: `0`.",
+        "Low findings: `0`.",
+        "Open findings: `0`.",
+        "E2-ID-005 therefore remains blocked",
+    ):
+        if phrase not in review_record:
+            failures.append(f"PIS-004A review record is missing required phrase: {phrase}")
     doc_name = DOC_REL.as_posix()
     for source_name, relative, expected in (
         ("README", "README.md", doc_name),
         ("review docs", "scripts/review_docs.py", doc_name),
         ("docs site", "scripts/build_docs_site.py", doc_name),
         ("review index", "docs/codex/review-docs-index.md", DOC_REL.name),
+        ("review docs", "scripts/review_docs.py", REVIEW_RECORD_REL.as_posix()),
+        ("docs site", "scripts/build_docs_site.py", REVIEW_RECORD_REL.as_posix()),
+        ("review index", "docs/codex/review-docs-index.md", REVIEW_RECORD_REL.name),
         ("Makefile", "Makefile", "production-identity-storage-pis-004a-check:"),
     ):
         if expected not in _read(root / relative, failures):
@@ -877,6 +959,18 @@ def _changed_paths(root: Path) -> set[str]:
     return paths
 
 
+def _post_review_changed_paths(root: Path) -> set[str]:
+    paths: set[str] = set()
+    for args in (
+        ("diff", "--name-only", f"{REVIEWED_CANDIDATE_COMMIT}..HEAD"),
+        ("diff", "--name-only"),
+        ("diff", "--cached", "--name-only"),
+        ("ls-files", "--others", "--exclude-standard"),
+    ):
+        paths.update(line for line in _git_output(root, *args).splitlines() if line)
+    return paths
+
+
 def _tool_count(root: Path) -> int:
     lock = _load_json(root / "tool-manifests.lock.json", [])
     manifests = lock.get("manifests") if isinstance(lock, dict) else None
@@ -969,6 +1063,9 @@ def render_report(report: dict[str, Any]) -> str:
         f"branch: {report['branch']}",
         f"tool_count: {report['tool_count']}",
         f"schema_fingerprint: {report['schema_fingerprint']}",
+        f"reviewed_candidate_commit: {report['reviewed_candidate_commit']}",
+        "independent_review_complete: true",
+        "open_review_findings: 0",
         f"pis003_next_action: {report['pis003_next_action']}",
         "e1_human_uat_complete: false",
         "live_idp_allowed: false",

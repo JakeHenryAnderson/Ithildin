@@ -1,6 +1,6 @@
 # PIS-004A Local Identity, Session, And Authorization Foundation
 
-Status: candidate implemented; independent review required.
+Status: independent implementation review complete; E2-ID-005 remains blocked.
 
 Decision ID: `PIS-004A`.
 
@@ -8,10 +8,14 @@ Source commit: `e86f5a19e4e067d73141246f78304597e6cc28a0`.
 
 Branch: `codex/enterprise-e2-pis004a-review-repair`.
 
+Reviewed implementation candidate: `ff358753c50037c2bc936b761f249cf5c9115749`.
+
 Current governed tool count: exactly `24`.
 
 The machine-readable entry and implementation contract is
 [`production-identity-storage-pis-004a-entry-and-implementation-contract.json`](production-identity-storage-pis-004a-entry-and-implementation-contract.json).
+The independent disposition is recorded in
+[`production-identity-storage-pis-004a-independent-review.md`](production-identity-storage-pis-004a-independent-review.md).
 Validate this bounded lane from the repository root:
 
 ```sh
@@ -182,9 +186,11 @@ the checkout is clean and equals the freshly fetched authorized remote branch ti
 divergent named branch, a different detached commit, any dirty detached state, and every other
 named branch fail closed.
 
-A clean candidate and passing automated checks are not independent review, human UAT, release
-acceptance, or production promotion. The next action is
-`reproduce_exact_candidate_in_clean_detached_worktree_then_record_independent_review_before_any_e2_id_005_entry`.
+The independent read-only review of exact implementation candidate
+`ff358753c50037c2bc936b761f249cf5c9115749` found no Critical, High, Medium, or Low issue after
+reproducing the focused gate and the prior approval-classification and provider-generation drift
+cases. That review is not human UAT, release acceptance, or production promotion. The next action
+is `stop_for_e1_human_uat_before_separate_e2_id_005_entry_decision`.
 
 ## E2-ID-005 stop line
 
