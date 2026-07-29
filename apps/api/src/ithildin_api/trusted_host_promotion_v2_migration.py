@@ -9,11 +9,11 @@ from pathlib import Path
 from ithildin_api.database_migration_backup import (
     DatabaseBackupError,
     ensure_pre_v4_backup,
-    ensure_pre_v5_backup,
+    ensure_pre_v6_backup,
 )
 
-DATABASE_SCHEMA_VERSION = "5"
-MINIMUM_WRITER_VERSION = "5"
+DATABASE_SCHEMA_VERSION = "6"
+MINIMUM_WRITER_VERSION = "6"
 APPROVAL_CONTRACT_VERSION = "2"
 PROMOTION_AUTHORITY_SCHEMA_VERSION = "1"
 
@@ -252,6 +252,8 @@ PIS004A_TABLE_COLUMNS = {
         "organization_id",
         "workspace_id",
         "requester_principal_id",
+        "requester_identity_generation",
+        "requester_membership_generation",
         "approval_class",
         "request_generation",
         "status",
@@ -310,6 +312,27 @@ PIS004A_TABLE_COLUMNS = {
         "first_seen_at",
         "expires_at",
     ),
+    "identity_session_digest_key_generations": (
+        "digest_key_generation",
+        "status",
+        "first_seen_at",
+        "activated_at",
+        "retired_at",
+    ),
+    "identity_authentication_grants": (
+        "authentication_grant_id",
+        "assertion_audit_id",
+        "organization_id",
+        "principal_id",
+        "identity_generation",
+        "membership_generation",
+        "authentication_method",
+        "authentication_time",
+        "created_at",
+        "expires_at",
+        "status",
+        "consumed_at",
+    ),
 }
 
 PIS004A_INDEX_NAMES = (
@@ -321,6 +344,44 @@ PIS004A_INDEX_NAMES = (
     "identity_sessions_idle_expiry_idx",
     "identity_preauthentication_expiry_idx",
     "identity_oidc_replays_expiry_idx",
+    "identity_session_digest_key_generations_status_idx",
+    "identity_authentication_grants_expiry_idx",
+)
+
+PIS004A_V5_TABLE_COLUMNS = {
+    table: (
+        (
+            "approval_request_id",
+            "organization_id",
+            "workspace_id",
+            "requester_principal_id",
+            "approval_class",
+            "request_generation",
+            "status",
+            "created_at",
+            "updated_at",
+        )
+        if table == "identity_approval_requests"
+        else columns
+    )
+    for table, columns in PIS004A_TABLE_COLUMNS.items()
+    if table
+    not in {
+        "identity_session_digest_key_generations",
+        "identity_authentication_grants",
+    }
+}
+PIS004A_V5_INDEX_NAMES = tuple(
+    name
+    for name in PIS004A_INDEX_NAMES
+    if name
+    not in {
+        "identity_session_digest_key_generations_status_idx",
+        "identity_authentication_grants_expiry_idx",
+    }
+)
+PIS004A_V5_SCHEMA_FINGERPRINT = (
+    "sha256:39c49742d0bb0aec44cc238f4d122028a2bdcc9bd5c20d4c67b250c52c119bdd"
 )
 
 TRUSTED_HOST_PROMOTION_TOOL = "trusted_host.promotion.stage"
@@ -391,8 +452,8 @@ def initialize_or_migrate_database(db_path: Path) -> None:
         minimum_writer = _metadata_value(connection, "minimum_writer_version")
         _validate_version_metadata(current=current, minimum_writer=minimum_writer)
         had_user_tables = _has_user_tables(connection)
-        if current == "4":
-            ensure_pre_v5_backup(
+        if current in {"4", "5"}:
+            ensure_pre_v6_backup(
                 locked_source=connection,
                 db_path=db_path,
                 source_schema_version=current,
@@ -411,23 +472,26 @@ def initialize_or_migrate_database(db_path: Path) -> None:
             _verify_v2_schema(connection)
             _verify_mission_schema(connection)
             verify_pis004a_schema(connection)
+        elif current == "5":
+            _verify_pis004a_v5_schema(connection)
+            _migrate_v5_to_v6(connection)
         elif current == "4":
             _verify_v2_schema(connection)
             _verify_mission_schema(connection)
-            _migrate_v4_to_v5(connection)
+            _migrate_v4_to_v6(connection)
         elif current == "3":
             _verify_v2_schema(connection)
             _migrate_v3_to_v4(connection)
-            _migrate_v4_to_v5(connection)
+            _migrate_v4_to_v6(connection)
         elif current == "2":
             _verify_v2_schema(connection, require_placement_states=False)
             _migrate_v2_to_v3(connection)
             _migrate_v3_to_v4(connection)
-            _migrate_v4_to_v5(connection)
+            _migrate_v4_to_v6(connection)
         elif current in {None, "0", "1"}:
             _migrate_tables(connection)
             _migrate_v3_to_v4(connection)
-            _migrate_v4_to_v5(connection)
+            _migrate_v4_to_v6(connection)
         else:  # pragma: no cover - guarded above, retained as a fail-closed fence
             raise DatabaseMigrationError(f"unsupported database schema version: {current}")
 
@@ -609,8 +673,7 @@ def _migrate_v2_to_v3(connection: sqlite3.Connection) -> None:
     for table, columns in V2_TABLE_COLUMNS.items():
         column_list = ", ".join(columns)
         connection.execute(
-            f"INSERT INTO {table} ({column_list}) "
-            f"SELECT {column_list} FROM {table}_v2"
+            f"INSERT INTO {table} ({column_list}) SELECT {column_list} FROM {table}_v2"
         )
         connection.execute(f"DROP TABLE {table}_v2")
 
@@ -626,8 +689,8 @@ def _migrate_v3_to_v4(connection: sqlite3.Connection) -> None:
     _create_mission_tables(connection)
 
 
-def _migrate_v4_to_v5(connection: sqlite3.Connection) -> None:
-    """Add the local-only PIS-004A identity and session authority tables."""
+def _migrate_v4_to_v6(connection: sqlite3.Connection) -> None:
+    """Add the repaired local-only PIS-004A identity and session authority."""
 
     existing = [table for table in PIS004A_TABLE_COLUMNS if _table_exists(connection, table)]
     if existing:
@@ -635,6 +698,34 @@ def _migrate_v4_to_v5(connection: sqlite3.Connection) -> None:
             "database v4 contains unexpected PIS-004A tables: " + ", ".join(existing)
         )
     _create_pis004a_tables(connection)
+
+
+def _migrate_v5_to_v6(connection: sqlite3.Connection) -> None:
+    """Bind queued approvals to exact requester authority generations."""
+
+    connection.execute("DROP INDEX identity_approval_requests_scope_status_idx")
+    connection.execute(
+        "ALTER TABLE identity_approval_requests RENAME TO identity_approval_requests_v5"
+    )
+    _create_identity_approval_requests_table(connection)
+    connection.execute(
+        """
+        INSERT INTO identity_approval_requests (
+            approval_request_id, organization_id, workspace_id,
+            requester_principal_id, requester_identity_generation,
+            requester_membership_generation, approval_class,
+            request_generation, status, created_at, updated_at
+        )
+        SELECT approval_request_id, organization_id, workspace_id,
+               requester_principal_id, NULL, NULL, approval_class,
+               request_generation,
+               CASE WHEN status = 'pending' THEN 'cancelled' ELSE status END,
+               created_at, updated_at
+        FROM identity_approval_requests_v5
+        """
+    )
+    connection.execute("DROP TABLE identity_approval_requests_v5")
+    _create_pis004a_repair_tables(connection)
 
 
 def _create_v2_tables(connection: sqlite3.Connection) -> None:
@@ -1009,9 +1100,7 @@ def _create_mission_tables(connection: sqlite3.Connection) -> None:
         )
         """
     )
-    connection.execute(
-        "CREATE INDEX missions_updated_idx ON missions(updated_at DESC, mission_id)"
-    )
+    connection.execute("CREATE INDEX missions_updated_idx ON missions(updated_at DESC, mission_id)")
     connection.execute(
         """
         CREATE TABLE mission_audit_evidence_bindings (
@@ -1254,8 +1343,143 @@ def _create_mission_tables(connection: sqlite3.Connection) -> None:
         """
     )
     connection.execute(
-        "CREATE INDEX mission_report_nonces_accepted_idx "
-        "ON mission_report_nonces(accepted_at)"
+        "CREATE INDEX mission_report_nonces_accepted_idx ON mission_report_nonces(accepted_at)"
+    )
+
+
+def _create_identity_approval_requests_table(
+    connection: sqlite3.Connection,
+) -> None:
+    connection.execute(
+        """
+        CREATE TABLE identity_approval_requests (
+            approval_request_id TEXT PRIMARY KEY,
+            organization_id TEXT NOT NULL,
+            workspace_id TEXT NOT NULL,
+            requester_principal_id TEXT NOT NULL,
+            requester_identity_generation INTEGER,
+            requester_membership_generation INTEGER,
+            approval_class TEXT NOT NULL,
+            request_generation INTEGER NOT NULL,
+            status TEXT NOT NULL,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            FOREIGN KEY (organization_id, workspace_id)
+                REFERENCES identity_workspaces(organization_id, workspace_id),
+            FOREIGN KEY (organization_id, requester_principal_id)
+                REFERENCES identity_organization_memberships(
+                    organization_id,
+                    principal_id
+                ),
+            CHECK (length(approval_request_id) = 36
+                AND substr(approval_request_id, 1, 4) = 'apr_'
+                AND substr(approval_request_id, 5) NOT GLOB '*[^0-9a-f]*'),
+            CHECK (
+                (requester_identity_generation IS NULL
+                    AND requester_membership_generation IS NULL
+                    AND status != 'pending')
+                OR
+                (requester_identity_generation >= 1
+                    AND requester_membership_generation >= 1)
+            ),
+            CHECK (approval_class IN (
+                'standard',
+                'trusted_host_placement',
+                'high_risk'
+            )),
+            CHECK (request_generation >= 1),
+            CHECK (status IN ('pending', 'approved', 'denied', 'cancelled')),
+            CHECK (updated_at >= created_at)
+        )
+        """
+    )
+    connection.execute(
+        """
+        CREATE INDEX identity_approval_requests_scope_status_idx
+        ON identity_approval_requests(
+            organization_id,
+            workspace_id,
+            status,
+            created_at
+        )
+        """
+    )
+
+
+def _create_pis004a_repair_tables(connection: sqlite3.Connection) -> None:
+    connection.execute(
+        """
+        CREATE TABLE identity_session_digest_key_generations (
+            digest_key_generation INTEGER PRIMARY KEY,
+            status TEXT NOT NULL,
+            first_seen_at TEXT NOT NULL,
+            activated_at TEXT,
+            retired_at TEXT,
+            CHECK (digest_key_generation >= 1),
+            CHECK (status IN ('active', 'retained', 'retired')),
+            CHECK (
+                (status = 'active' AND activated_at IS NOT NULL
+                    AND retired_at IS NULL)
+                OR (status = 'retained' AND retired_at IS NULL)
+                OR (status = 'retired' AND retired_at IS NOT NULL)
+            ),
+            CHECK (activated_at IS NULL OR activated_at >= first_seen_at),
+            CHECK (retired_at IS NULL OR retired_at >= first_seen_at)
+        )
+        """
+    )
+    connection.execute(
+        """
+        CREATE INDEX identity_session_digest_key_generations_status_idx
+        ON identity_session_digest_key_generations(
+            status,
+            digest_key_generation
+        )
+        """
+    )
+    connection.execute(
+        """
+        CREATE TABLE identity_authentication_grants (
+            authentication_grant_id TEXT PRIMARY KEY,
+            assertion_audit_id TEXT NOT NULL UNIQUE,
+            organization_id TEXT NOT NULL,
+            principal_id TEXT NOT NULL,
+            identity_generation INTEGER NOT NULL,
+            membership_generation INTEGER NOT NULL,
+            authentication_method TEXT NOT NULL,
+            authentication_time TEXT NOT NULL,
+            created_at TEXT NOT NULL,
+            expires_at TEXT NOT NULL,
+            status TEXT NOT NULL,
+            consumed_at TEXT,
+            FOREIGN KEY (organization_id, principal_id)
+                REFERENCES identity_organization_memberships(
+                    organization_id,
+                    principal_id
+                ),
+            CHECK (length(authentication_grant_id) = 39
+                AND substr(authentication_grant_id, 1, 7) = 'agrant_'
+                AND substr(authentication_grant_id, 8) NOT GLOB '*[^0-9a-f]*'),
+            CHECK (length(assertion_audit_id) = 37
+                AND substr(assertion_audit_id, 1, 5) = 'oaud_'
+                AND substr(assertion_audit_id, 6) NOT GLOB '*[^0-9a-f]*'),
+            CHECK (identity_generation >= 1),
+            CHECK (membership_generation >= 1),
+            CHECK (authentication_method = 'oidc_fixture'),
+            CHECK (expires_at > created_at),
+            CHECK (status IN ('active', 'consumed', 'revoked')),
+            CHECK (
+                (status = 'active' AND consumed_at IS NULL)
+                OR (status IN ('consumed', 'revoked') AND consumed_at IS NOT NULL)
+            )
+        )
+        """
+    )
+    connection.execute(
+        """
+        CREATE INDEX identity_authentication_grants_expiry_idx
+        ON identity_authentication_grants(status, expires_at)
+        """
     )
 
 
@@ -1428,50 +1652,7 @@ def _create_pis004a_tables(connection: sqlite3.Connection) -> None:
         )
         """
     )
-    connection.execute(
-        """
-        CREATE TABLE identity_approval_requests (
-            approval_request_id TEXT PRIMARY KEY,
-            organization_id TEXT NOT NULL,
-            workspace_id TEXT NOT NULL,
-            requester_principal_id TEXT NOT NULL,
-            approval_class TEXT NOT NULL,
-            request_generation INTEGER NOT NULL,
-            status TEXT NOT NULL,
-            created_at TEXT NOT NULL,
-            updated_at TEXT NOT NULL,
-            FOREIGN KEY (organization_id, workspace_id)
-                REFERENCES identity_workspaces(organization_id, workspace_id),
-            FOREIGN KEY (organization_id, requester_principal_id)
-                REFERENCES identity_organization_memberships(
-                    organization_id,
-                    principal_id
-                ),
-            CHECK (length(approval_request_id) = 36
-                AND substr(approval_request_id, 1, 4) = 'apr_'
-                AND substr(approval_request_id, 5) NOT GLOB '*[^0-9a-f]*'),
-            CHECK (approval_class IN (
-                'standard',
-                'trusted_host_placement',
-                'high_risk'
-            )),
-            CHECK (request_generation >= 1),
-            CHECK (status IN ('pending', 'approved', 'denied', 'cancelled')),
-            CHECK (updated_at >= created_at)
-        )
-        """
-    )
-    connection.execute(
-        """
-        CREATE INDEX identity_approval_requests_scope_status_idx
-        ON identity_approval_requests(
-            organization_id,
-            workspace_id,
-            status,
-            created_at
-        )
-        """
-    )
+    _create_identity_approval_requests_table(connection)
     connection.execute(
         """
         CREATE TABLE identity_session_families (
@@ -1649,40 +1830,93 @@ def _create_pis004a_tables(connection: sqlite3.Connection) -> None:
         ON identity_oidc_replays(expires_at)
         """
     )
+    _create_pis004a_repair_tables(connection)
 
 
 def expected_pis004a_schema_fingerprint() -> str:
-    """Return the domain-separated digest of the exact schema-5 identity objects."""
+    """Return the domain-separated digest of the exact schema-6 identity objects."""
 
     expected_connection = sqlite3.connect(":memory:")
     try:
         expected_connection.execute("PRAGMA foreign_keys = ON")
         _create_pis004a_tables(expected_connection)
-        objects = [
-            ("table", table, _schema_sql(expected_connection, object_type="table", name=table))
-            for table in PIS004A_TABLE_COLUMNS
-        ]
-        objects.extend(
-            (
-                "index",
-                index_name,
-                _schema_sql(expected_connection, object_type="index", name=index_name),
-            )
-            for index_name in PIS004A_INDEX_NAMES
+        return _pis004a_schema_fingerprint(
+            expected_connection,
+            table_columns=PIS004A_TABLE_COLUMNS,
+            index_names=PIS004A_INDEX_NAMES,
+            domain=b"ITHILDIN-PIS004A-SCHEMA-V2\x00",
         )
     finally:
         expected_connection.close()
+
+
+def _pis004a_schema_fingerprint(
+    connection: sqlite3.Connection,
+    *,
+    table_columns: dict[str, tuple[str, ...]],
+    index_names: tuple[str, ...],
+    domain: bytes,
+) -> str:
+    objects = [
+        ("table", table, _schema_sql(connection, object_type="table", name=table))
+        for table in table_columns
+    ]
+    objects.extend(
+        (
+            "index",
+            index_name,
+            _schema_sql(connection, object_type="index", name=index_name),
+        )
+        for index_name in index_names
+    )
     payload = "\n".join(
-        f"{object_type}\t{name}\t{schema_sql}"
-        for object_type, name, schema_sql in objects
+        f"{object_type}\t{name}\t{schema_sql}" for object_type, name, schema_sql in objects
     ).encode("utf-8")
-    return "sha256:" + hashlib.sha256(
-        b"ITHILDIN-PIS004A-SCHEMA-V1\x00" + payload
-    ).hexdigest()
+    return "sha256:" + hashlib.sha256(domain + payload).hexdigest()
+
+
+def _verify_pis004a_v5_schema(connection: sqlite3.Connection) -> None:
+    for table, expected_columns in PIS004A_V5_TABLE_COLUMNS.items():
+        if not _table_exists(connection, table):
+            raise DatabaseMigrationError(f"PIS-004A v5 table is missing: {table}")
+        columns = tuple(
+            str(row[1]) for row in connection.execute(f"PRAGMA table_info({table})").fetchall()
+        )
+        if columns != expected_columns:
+            raise DatabaseMigrationError(f"PIS-004A v5 table is incomplete: {table}")
+    observed = _pis004a_schema_fingerprint(
+        connection,
+        table_columns=PIS004A_V5_TABLE_COLUMNS,
+        index_names=PIS004A_V5_INDEX_NAMES,
+        domain=b"ITHILDIN-PIS004A-SCHEMA-V1\x00",
+    )
+    if observed != PIS004A_V5_SCHEMA_FINGERPRINT:
+        raise DatabaseMigrationError("PIS-004A v5 schema differs")
+    unexpected_objects = connection.execute(
+        f"""
+        SELECT type, name FROM sqlite_master
+        WHERE sql IS NOT NULL
+          AND (
+              lower(name) GLOB 'identity_*'
+              OR lower(tbl_name) GLOB 'identity_*'
+          )
+          AND NOT (
+              type = 'table'
+              AND name IN ({_sql_values(tuple(PIS004A_V5_TABLE_COLUMNS))})
+          )
+          AND NOT (
+              type = 'index'
+              AND name IN ({_sql_values(PIS004A_V5_INDEX_NAMES)})
+          )
+        ORDER BY type, name
+        """
+    ).fetchall()
+    if unexpected_objects:
+        raise DatabaseMigrationError("PIS-004A v5 schema has unexpected objects")
 
 
 def verify_pis004a_schema(connection: sqlite3.Connection) -> None:
-    """Fail closed unless schema-5 identity tables and indexes match exactly."""
+    """Fail closed unless schema-6 identity tables and indexes match exactly."""
 
     expected_connection = sqlite3.connect(":memory:")
     try:
@@ -1692,8 +1926,7 @@ def verify_pis004a_schema(connection: sqlite3.Connection) -> None:
             if not _table_exists(connection, table):
                 raise DatabaseMigrationError(f"PIS-004A table is missing: {table}")
             columns = tuple(
-                str(row[1])
-                for row in connection.execute(f"PRAGMA table_info({table})").fetchall()
+                str(row[1]) for row in connection.execute(f"PRAGMA table_info({table})").fetchall()
             )
             if columns != expected_columns:
                 raise DatabaseMigrationError(f"PIS-004A table is incomplete: {table}")
@@ -1746,8 +1979,7 @@ def _verify_mission_schema(connection: sqlite3.Connection) -> None:
             if not _table_exists(connection, table):
                 raise DatabaseMigrationError(f"Mission Command table is missing: {table}")
             columns = tuple(
-                str(row[1])
-                for row in connection.execute(f"PRAGMA table_info({table})").fetchall()
+                str(row[1]) for row in connection.execute(f"PRAGMA table_info({table})").fetchall()
             )
             if columns != expected_columns:
                 raise DatabaseMigrationError(f"Mission Command table is incomplete: {table}")

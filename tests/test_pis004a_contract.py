@@ -40,24 +40,27 @@ def test_live_pis004a_entry_contract_is_valid_and_bounded() -> None:
         "porcelain",
     ),
     [
-        (pis004a_check.BRANCH, pis004a_check.BRANCH, "branch", "", " M allowed.py"),
+        (pis004a_check.BRANCH, pis004a_check.BRANCH, "a" * 40, "a" * 40, ""),
         ("", "HEAD", "a" * 40, "a" * 40, ""),
     ],
 )
-def test_candidate_checkout_accepts_exact_branch_or_detached_review(
+def test_candidate_checkout_accepts_only_clean_exact_remote_candidate(
     current_branch: str,
     head_name: str,
     head_oid: str,
     authorized_candidate_oid: str,
     porcelain: str | None,
 ) -> None:
-    assert pis004a_check._candidate_checkout_failures(  # noqa: SLF001
-        current_branch=current_branch,
-        head_name=head_name,
-        head_oid=head_oid,
-        authorized_candidate_oid=authorized_candidate_oid,
-        porcelain=porcelain,
-    ) == []
+    assert (
+        pis004a_check._candidate_checkout_failures(  # noqa: SLF001
+            current_branch=current_branch,
+            head_name=head_name,
+            head_oid=head_oid,
+            authorized_candidate_oid=authorized_candidate_oid,
+            porcelain=porcelain,
+        )
+        == []
+    )
 
 
 @pytest.mark.parametrize(
@@ -84,7 +87,7 @@ def test_candidate_checkout_accepts_exact_branch_or_detached_review(
             "a" * 40,
             "b" * 40,
             "",
-            "PIS-004A detached review does not match the fetched authorized branch tip",
+            "PIS-004A checkout does not match the fetched authorized branch tip",
         ),
         (
             "",
@@ -92,7 +95,7 @@ def test_candidate_checkout_accepts_exact_branch_or_detached_review(
             "a" * 40,
             "",
             "",
-            "PIS-004A detached review does not match the fetched authorized branch tip",
+            "PIS-004A checkout does not match the fetched authorized branch tip",
         ),
         (
             "",
@@ -100,7 +103,7 @@ def test_candidate_checkout_accepts_exact_branch_or_detached_review(
             "a" * 40,
             "a" * 40,
             "?? untracked",
-            "PIS-004A detached review worktree is not clean",
+            "PIS-004A candidate worktree is not clean",
         ),
         (
             "",
@@ -108,7 +111,23 @@ def test_candidate_checkout_accepts_exact_branch_or_detached_review(
             "a" * 40,
             "a" * 40,
             None,
-            "PIS-004A detached review cleanliness could not be verified",
+            "PIS-004A checkout cleanliness could not be verified",
+        ),
+        (
+            pis004a_check.BRANCH,
+            pis004a_check.BRANCH,
+            "a" * 40,
+            "b" * 40,
+            "",
+            "PIS-004A checkout does not match the fetched authorized branch tip",
+        ),
+        (
+            pis004a_check.BRANCH,
+            pis004a_check.BRANCH,
+            "a" * 40,
+            "a" * 40,
+            " M allowed.py",
+            "PIS-004A candidate worktree is not clean",
         ),
     ],
 )
@@ -170,12 +189,10 @@ def test_contract_rejects_dependency_network_or_fallback_authority() -> None:
     failures = pis004a_check.validate_contract(contract)
 
     assert (
-        "PIS-004A dependency gate permits forbidden behavior: "
-        "live_discovery_or_jwk_fetch_allowed"
+        "PIS-004A dependency gate permits forbidden behavior: live_discovery_or_jwk_fetch_allowed"
     ) in failures
     assert (
-        "PIS-004A dependency gate permits forbidden behavior: "
-        "hand_rolled_oidc_fallback_allowed"
+        "PIS-004A dependency gate permits forbidden behavior: hand_rolled_oidc_fallback_allowed"
     ) in failures
 
 

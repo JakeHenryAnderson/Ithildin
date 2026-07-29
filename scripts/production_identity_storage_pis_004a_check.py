@@ -21,9 +21,9 @@ CONTRACT_REL = Path(
 DOC_REL = Path("docs/codex/production-identity-storage-pis-004a-local-identity-foundation.md")
 SOURCE_COMMIT = "e86f5a19e4e067d73141246f78304597e6cc28a0"
 SOURCE_TREE = "6dbbcf0bef3320dfdfa4142f2d30b798b01511d0"
-BRANCH = "codex/enterprise-e2-pis004a-local-identity"
+BRANCH = "codex/enterprise-e2-pis004a-review-repair"
 PIS004A_SCHEMA_FINGERPRINT = (
-    "sha256:39c49742d0bb0aec44cc238f4d122028a2bdcc9bd5c20d4c67b250c52c119bdd"
+    "sha256:98df31b25b379ebaf477744456111e89b6cfed290a108a0bcad1915194a1a7b4"
 )
 PIS_WAIT_ACTION = (
     "await_external_operator_target_and_signed_receipt_inputs_before_separate_"
@@ -164,7 +164,12 @@ EXPECTED_NEGATIVE_INVENTORY = [
     "idle_and_absolute_expiry",
     "rotation_replay_and_family_revocation",
     "identity_and_membership_generation_drift",
-    "schema_five_exact_ddl_and_constraint_drift",
+    "schema_six_exact_ddl_and_constraint_drift",
+    "schema_five_to_six_fail_closed_migration",
+    "organization_membership_reenable_authority_resurrection",
+    "queued_approval_requester_authority_drift",
+    "authentication_grant_replay_and_generation_drift",
+    "digest_key_generation_retirement_resurrection",
     "preauthentication_replay",
     "origin_and_csrf_mismatch",
     "digest_key_generation_unavailable",
@@ -414,24 +419,16 @@ def _validate_dependency_gate(value: object, failures: list[str]) -> None:
             "version": "1.7.2",
             "python_requirement": ">=3.10",
             "license": "BSD-3-Clause",
-            "wheel_sha256": (
-                "3e1faedc9d87e7d56a164eca3ccb6ace0d61b94abe83e92242f8dc8bba9b4a9f"
-            ),
-            "sdist_sha256": (
-                "2cea25fefcd4e7173bdf1372c0afc265c8034b23a8cd5dcb6a9164b826c64231"
-            ),
+            "wheel_sha256": ("3e1faedc9d87e7d56a164eca3ccb6ace0d61b94abe83e92242f8dc8bba9b4a9f"),
+            "sdist_sha256": ("2cea25fefcd4e7173bdf1372c0afc265c8034b23a8cd5dcb6a9164b826c64231"),
             "source": "https://github.com/authlib/authlib/tree/v1.7.2",
         },
         "joserfc": {
             "version": "1.7.4",
             "python_requirement": ">=3.10",
             "license": "BSD-3-Clause",
-            "wheel_sha256": (
-                "32d46c2cd5e3203c13e87a6c61333cab310b1ba80cd54b4c4f386a848a122463"
-            ),
-            "sdist_sha256": (
-                "b3bc561672ae541b17a9237053b48a03dacddd92d68047b3ecdfb4b5714a88ed"
-            ),
+            "wheel_sha256": ("32d46c2cd5e3203c13e87a6c61333cab310b1ba80cd54b4c4f386a848a122463"),
+            "sdist_sha256": ("b3bc561672ae541b17a9237053b48a03dacddd92d68047b3ecdfb4b5714a88ed"),
             "source": "https://github.com/authlib/joserfc/tree/v1.7.4",
         },
     }
@@ -480,9 +477,9 @@ def _validate_persistence(value: object, failures: list[str]) -> None:
         return
     if (
         value.get("backend") != "local_sqlite_only"
-        or value.get("coordinated_schema_target") != "5"
+        or value.get("coordinated_schema_target") != "6"
         or value.get("schema_fingerprint") != PIS004A_SCHEMA_FINGERPRINT
-        or value.get("minimum_writer_after_activation") != "5"
+        or value.get("minimum_writer_after_activation") != "6"
         or value.get("pre_migration_backup_required") is not True
         or value.get("session_lookup_digest") != "keyed_hmac_sha256"
         or value.get("schema_removal_posture") != "restore_pre_migration_backup_only"
@@ -516,6 +513,12 @@ def _validate_safety_contract(value: object, failures: list[str]) -> None:
         "preauthentication_atomic_one_use_required",
         "allowed_origin_and_session_bound_csrf_required",
         "digest_key_generation_fail_closed",
+        "digest_key_retirement_monotonic",
+        "authentication_grant_atomic_one_use_required",
+        "organization_disable_revokes_workspace_memberships",
+        "approval_requester_generation_revalidation_required",
+        "safe_audit_vocabulary_closed",
+        "strong_recent_auth_policy_required",
         "authorization_server_state_only",
         "human_approval_by_node_or_service_allowed",
         "cross_organization_or_workspace_access_allowed",
@@ -538,6 +541,12 @@ def _validate_safety_contract(value: object, failures: list[str]) -> None:
         "preauthentication_atomic_one_use_required",
         "allowed_origin_and_session_bound_csrf_required",
         "digest_key_generation_fail_closed",
+        "digest_key_retirement_monotonic",
+        "authentication_grant_atomic_one_use_required",
+        "organization_disable_revokes_workspace_memberships",
+        "approval_requester_generation_revalidation_required",
+        "safe_audit_vocabulary_closed",
+        "strong_recent_auth_policy_required",
         "authorization_server_state_only",
     )
     if any(value.get(key) is not True for key in required_true):
@@ -600,8 +609,7 @@ def _validate_repository(
         failures.append("PIS-004A does not preserve the E1 human-UAT stop line")
 
     pis_path = (
-        root
-        / "docs/codex/production-identity-storage-pis-003-sd-pg-001-"
+        root / "docs/codex/production-identity-storage-pis-003-sd-pg-001-"
         "environment-evidence-collection-authority.json"
     )
     pis = _load_json(pis_path, failures)
@@ -616,9 +624,11 @@ def _validate_repository(
     ):
         failures.append("PIS-004A routes around the PIS-003 external-input wait")
 
-    if _sha256(root / "tool-manifests.lock.json") != (
-        "3834a18a5b8169dd66b3d96d79d6e69d252ebae17a1a9453f93f8686db1edc77"
-    ) or _tool_count(root) != 24:
+    if (
+        _sha256(root / "tool-manifests.lock.json")
+        != ("3834a18a5b8169dd66b3d96d79d6e69d252ebae17a1a9453f93f8686db1edc77")
+        or _tool_count(root) != 24
+    ):
         failures.append("PIS-004A changed the exact 24-tool manifest lock")
     _validate_dependency_lock(root, failures)
 
@@ -662,25 +672,21 @@ def _candidate_checkout_failures(
     authorized_candidate_oid: str,
     porcelain: str | None,
 ) -> list[str]:
-    if current_branch == BRANCH:
-        return []
-    if current_branch != "" or head_name != "HEAD":
+    if current_branch not in {"", BRANCH}:
+        return ["PIS-004A is not on its exact isolated branch or detached for review"]
+    if current_branch == BRANCH and head_name != BRANCH:
+        return ["PIS-004A named candidate branch identity is inconsistent"]
+    if current_branch == "" and head_name != "HEAD":
         return ["PIS-004A is not on its exact isolated branch or detached for review"]
     checkout_failures: list[str] = []
-    if (
-        authorized_candidate_oid == ""
-        or head_oid == ""
-        or head_oid != authorized_candidate_oid
-    ):
+    if authorized_candidate_oid == "" or head_oid == "" or head_oid != authorized_candidate_oid:
         checkout_failures.append(
-            "PIS-004A detached review does not match the fetched authorized branch tip"
+            "PIS-004A checkout does not match the fetched authorized branch tip"
         )
     if porcelain is None:
-        checkout_failures.append(
-            "PIS-004A detached review cleanliness could not be verified"
-        )
+        checkout_failures.append("PIS-004A checkout cleanliness could not be verified")
     elif porcelain.strip():
-        checkout_failures.append("PIS-004A detached review worktree is not clean")
+        checkout_failures.append("PIS-004A candidate worktree is not clean")
     return checkout_failures
 
 
@@ -691,9 +697,7 @@ def _validate_dependency_lock(root: Path, failures: list[str]) -> None:
         source_pyproject = tomllib.loads(
             _git_output(root, "show", f"{SOURCE_COMMIT}:pyproject.toml")
         )
-        source_lock = tomllib.loads(
-            _git_output(root, "show", f"{SOURCE_COMMIT}:uv.lock")
-        )
+        source_lock = tomllib.loads(_git_output(root, "show", f"{SOURCE_COMMIT}:uv.lock"))
     except (OSError, UnicodeError, tomllib.TOMLDecodeError) as exc:
         failures.append(f"PIS-004A dependency files cannot be loaded: {exc}")
         return
@@ -704,18 +708,14 @@ def _validate_dependency_lock(root: Path, failures: list[str]) -> None:
     }
     current_direct = set(pyproject.get("project", {}).get("dependencies", []))
     source_direct = set(source_pyproject.get("project", {}).get("dependencies", []))
-    if (
-        current_direct - source_direct != expected_direct
-        or source_direct - current_direct
-    ):
+    if current_direct - source_direct != expected_direct or source_direct - current_direct:
         failures.append("PIS-004A pyproject dependency delta is not exact")
 
     current_packages = _packages_by_name(lock)
     source_packages = _packages_by_name(source_lock)
-    if (
-        set(current_packages) - set(source_packages) != {"authlib", "joserfc"}
-        or set(source_packages) - set(current_packages)
-    ):
+    if set(current_packages) - set(source_packages) != {"authlib", "joserfc"} or set(
+        source_packages
+    ) - set(current_packages):
         failures.append("PIS-004A locked package delta is not exactly Authlib and JOSERFC")
         return
     for name, source_package in source_packages.items():
@@ -758,20 +758,15 @@ def _validate_dependency_lock(root: Path, failures: list[str]) -> None:
         failures.append("PIS-004A root lock package is malformed")
         return
     source_dependencies = source_root.get("dependencies")
-    if (
-        not isinstance(source_dependencies, list)
-        or {
-            str(item["name"])
-            for item in dependencies
-            if isinstance(item, dict) and isinstance(item.get("name"), str)
-        }
-        - {
-            str(item["name"])
-            for item in source_dependencies
-            if isinstance(item, dict) and isinstance(item.get("name"), str)
-        }
-        != {"authlib", "joserfc"}
-    ):
+    if not isinstance(source_dependencies, list) or {
+        str(item["name"])
+        for item in dependencies
+        if isinstance(item, dict) and isinstance(item.get("name"), str)
+    } - {
+        str(item["name"])
+        for item in source_dependencies
+        if isinstance(item, dict) and isinstance(item.get("name"), str)
+    } != {"authlib", "joserfc"}:
         failures.append("PIS-004A root dependency linkage is not exact")
     normalized_root["dependencies"] = [
         item
@@ -784,24 +779,17 @@ def _validate_dependency_lock(root: Path, failures: list[str]) -> None:
         return
     source_metadata = source_root.get("metadata")
     source_requires_dist = (
-        source_metadata.get("requires-dist")
-        if isinstance(source_metadata, dict)
-        else None
+        source_metadata.get("requires-dist") if isinstance(source_metadata, dict) else None
     )
-    if (
-        not isinstance(source_requires_dist, list)
-        or {
-            (str(item["name"]), str(item.get("specifier", "")))
-            for item in requires_dist
-            if isinstance(item, dict) and isinstance(item.get("name"), str)
-        }
-        - {
-            (str(item["name"]), str(item.get("specifier", "")))
-            for item in source_requires_dist
-            if isinstance(item, dict) and isinstance(item.get("name"), str)
-        }
-        != {("authlib", "==1.7.2"), ("joserfc", "==1.7.4")}
-    ):
+    if not isinstance(source_requires_dist, list) or {
+        (str(item["name"]), str(item.get("specifier", "")))
+        for item in requires_dist
+        if isinstance(item, dict) and isinstance(item.get("name"), str)
+    } - {
+        (str(item["name"]), str(item.get("specifier", "")))
+        for item in source_requires_dist
+        if isinstance(item, dict) and isinstance(item.get("name"), str)
+    } != {("authlib", "==1.7.2"), ("joserfc", "==1.7.4")}:
         failures.append("PIS-004A root dependency metadata is not exact")
     metadata["requires-dist"] = [
         item
@@ -918,13 +906,16 @@ def _closed_object(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
 
 
 def _git_ok(root: Path, *args: str) -> bool:
-    return subprocess.run(
-        ["git", *args],
-        cwd=root,
-        check=False,
-        capture_output=True,
-        text=True,
-    ).returncode == 0
+    return (
+        subprocess.run(
+            ["git", *args],
+            cwd=root,
+            check=False,
+            capture_output=True,
+            text=True,
+        ).returncode
+        == 0
+    )
 
 
 def _git_one(root: Path, *args: str) -> str:

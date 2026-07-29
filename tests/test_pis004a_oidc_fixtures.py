@@ -12,9 +12,15 @@ from typing import Any, cast
 
 import pytest
 from ithildin_api.database import initialize_database
-from ithildin_api.enterprise_identity import EnterpriseIdentityStore
+from ithildin_api.enterprise_identity import (
+    EnterpriseAuditOutcome,
+    EnterpriseAuditReasonCode,
+    EnterpriseIdentityStore,
+    OrganizationRole,
+)
 from ithildin_api.enterprise_sessions import (
     EnterpriseSessionStore,
+    SessionAuthenticationError,
     SessionConfigurationError,
     SessionDigestKeyRing,
 )
@@ -114,9 +120,7 @@ class OidcFixture:
             "redirect_uri": str(CALLBACK_DOCUMENT["redirect_uri"]),
             "origin": str(CALLBACK_DOCUMENT["origin"]),
             "authorization_code": str(CALLBACK_DOCUMENT["authorization_code"]),
-            "captured_authorization_request_code_challenge": (
-                transaction.pkce_challenge
-            ),
+            "captured_authorization_request_code_challenge": (transaction.pkce_challenge),
         }
         values.update(overrides)
         return FixtureCallback(**values)
@@ -155,6 +159,17 @@ def make_fixture(
         organization.organization_id,
         exact_issuer=ISSUER,
     )
+    resolution = identity.provision_human_identity(
+        organization.organization_id,
+        provider.provider_configuration_id,
+        exact_issuer=ISSUER,
+        subject="synthetic-subject-Aa-001",
+    )
+    identity.set_organization_membership(
+        organization.organization_id,
+        resolution.principal_id,
+        roles={OrganizationRole.MEMBER},
+    )
     sessions = EnterpriseSessionStore(
         db_path,
         key_ring=SessionDigestKeyRing({1: b"A" * 32}, active_generation=1),
@@ -173,9 +188,7 @@ def make_fixture(
         expected_audience=AUDIENCE,
         discovery_fixture=discovery,
         jwks_fixture=jwks,
-        expected_authorization_code_digest=authorization_code_fixture_digest(
-            AUTHORIZATION_CODE
-        ),
+        expected_authorization_code_digest=authorization_code_fixture_digest(AUTHORIZATION_CODE),
         clock=clock,
         clock_skew=timedelta(seconds=60),
         id_factory=factories.identifier,
@@ -216,18 +229,29 @@ def test_valid_fixture_binds_identity_code_and_replay_state_without_secrets(
         59,
         tzinfo=UTC,
     )
-    resolution = fixture.identity.provision_human_identity(
+    resolution = fixture.identity.resolve_identity(
         assertion.organization_id,
         assertion.provider_configuration_id,
         exact_issuer=assertion.exact_issuer,
         subject=assertion.subject,
     )
-    assert fixture.identity.resolve_identity(
-        assertion.organization_id,
-        assertion.provider_configuration_id,
-        exact_issuer=assertion.exact_issuer,
-        subject=assertion.subject,
-    ).principal_id == resolution.principal_id
+    assert (
+        fixture.identity.resolve_identity(
+            assertion.organization_id,
+            assertion.provider_configuration_id,
+            exact_issuer=assertion.exact_issuer,
+            subject=assertion.subject,
+        ).principal_id
+        == resolution.principal_id
+    )
+    issued = fixture.sessions.issue_session(assertion.authentication_grant_id)
+    assert issued.context.principal_id == resolution.principal_id
+    assert issued.context.recent_auth_at == assertion.authentication_time
+    with pytest.raises(
+        SessionAuthenticationError,
+        match="authentication grant did not authenticate",
+    ):
+        fixture.sessions.issue_session(assertion.authentication_grant_id)
 
     with sqlite3.connect(fixture.db_path) as connection:
         replay_rows = connection.execute(
@@ -246,8 +270,8 @@ def test_valid_fixture_binds_identity_code_and_replay_state_without_secrets(
     assert TOKENS["valid"].encode() not in database_bytes
     audit = json.dumps(
         assertion.safe_audit_metadata(
-            outcome="accepted",
-            reason_code="fixture_conformance_valid",
+            outcome=EnterpriseAuditOutcome.ACCEPTED,
+            reason_code=EnterpriseAuditReasonCode.FIXTURE_CONFORMANCE_VALID,
         ),
         sort_keys=True,
     )

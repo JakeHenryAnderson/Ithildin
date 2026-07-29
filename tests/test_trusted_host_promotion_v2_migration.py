@@ -16,15 +16,11 @@ from ithildin_audit_core import AuditWriter
 from ithildin_schemas import ApprovalStatus
 
 BASELINE_COMMIT = "250e6d8947972de28de134b72e0561bf39c62f5f"
-BASELINE_APPROVALS_SHA256 = (
-    "214bd207ac5208ecbfd6fbd5ba5ec024485edc11f88e133a5e5e699821dfec48"
-)
-BASELINE_PROMOTIONS_SHA256 = (
-    "5361ac1ec20098bff482def23cbd26e3d86e5201a6f64cc03a031853b1df5eeb"
-)
+BASELINE_APPROVALS_SHA256 = "214bd207ac5208ecbfd6fbd5ba5ec024485edc11f88e133a5e5e699821dfec48"
+BASELINE_PROMOTIONS_SHA256 = "5361ac1ec20098bff482def23cbd26e3d86e5201a6f64cc03a031853b1df5eeb"
 
 
-def test_empty_database_is_created_with_v2_contract_and_schema_five_writer(
+def test_empty_database_is_created_with_v2_contract_and_schema_six_writer(
     tmp_path: Path,
 ) -> None:
     db_path = tmp_path / "ithildin.sqlite3"
@@ -36,8 +32,8 @@ def test_empty_database_is_created_with_v2_contract_and_schema_five_writer(
         approval_sql = _table_sql(connection, "approvals")
         proposal_sql = _table_sql(connection, "trusted_host_promotion_proposals")
         attempt_sql = _table_sql(connection, "trusted_host_promotion_attempts")
-    assert metadata["schema_version"] == "5"
-    assert metadata["minimum_writer_version"] == "5"
+    assert metadata["schema_version"] == "6"
+    assert metadata["minimum_writer_version"] == "6"
     assert "v2_pending" in approval_sql
     assert "legacy_unbound" in approval_sql
     assert "authority_snapshot_hash" in proposal_sql
@@ -81,8 +77,8 @@ def test_legacy_rows_migrate_atomically_without_synthesized_authority(tmp_path: 
     assert "legacy-user" in str(approval[5])
     assert proposal == ("thp_v1", "legacy_unbound", None, None, None)
     assert attempt == ("thpa_v1", "legacy_prepared", "1", None)
-    assert metadata["schema_version"] == "5"
-    assert metadata["minimum_writer_version"] == "5"
+    assert metadata["schema_version"] == "6"
+    assert metadata["minimum_writer_version"] == "6"
 
 
 def test_legacy_terminal_rows_remain_readable_with_closed_statuses(tmp_path: Path) -> None:
@@ -188,8 +184,8 @@ def test_schema_two_constraint_upgrade_is_atomic_and_preserves_rows(tmp_path: Pa
         approval = connection.execute(
             "SELECT approval_id, status, approval_contract_version FROM approvals"
         ).fetchone()
-    assert metadata["schema_version"] == "5"
-    assert metadata["minimum_writer_version"] == "5"
+    assert metadata["schema_version"] == "6"
+    assert metadata["minimum_writer_version"] == "6"
     assert "v2_executing" in proposal_sql
     assert "v2_placement_evidence_recovery_required" in proposal_sql
     assert approval == ("appr_v2", "v2_pending", "2")
@@ -215,9 +211,7 @@ def test_interrupted_schema_two_constraint_upgrade_rolls_back(
     with sqlite3.connect(db_path) as connection:
         tables = {
             str(row[0])
-            for row in connection.execute(
-                "SELECT name FROM sqlite_master WHERE type = 'table'"
-            )
+            for row in connection.execute("SELECT name FROM sqlite_master WHERE type = 'table'")
         }
         metadata = dict(connection.execute("SELECT key, value FROM app_metadata"))
         proposal_sql = _table_sql(connection, "trusted_host_promotion_proposals")
@@ -232,7 +226,7 @@ def test_interrupted_schema_two_constraint_upgrade_rolls_back(
 
 @pytest.mark.parametrize(
     ("key", "value"),
-    [("schema_version", "6"), ("minimum_writer_version", "6")],
+        [("schema_version", "7"), ("minimum_writer_version", "7")],
 )
 def test_newer_database_or_minimum_writer_is_rejected(
     tmp_path: Path,
@@ -301,9 +295,7 @@ def test_interrupted_migration_rolls_back_without_mixed_tables(
     with sqlite3.connect(db_path) as connection:
         tables = {
             str(row[0])
-            for row in connection.execute(
-                "SELECT name FROM sqlite_master WHERE type = 'table'"
-            )
+            for row in connection.execute("SELECT name FROM sqlite_master WHERE type = 'table'")
         }
         schema_version = connection.execute(
             "SELECT value FROM app_metadata WHERE key = 'schema_version'"
@@ -353,9 +345,7 @@ def test_previous_writer_contract_cannot_mutate_migrated_or_v2_rows(tmp_path: Pa
                 "WHERE approval_id = 'appr_v2'"
             )
         statuses = dict(
-            connection.execute(
-                "SELECT proposal_id, status FROM trusted_host_promotion_proposals"
-            )
+            connection.execute("SELECT proposal_id, status FROM trusted_host_promotion_proposals")
         )
     assert statuses["thp_v1"] == "legacy_unbound"
     assert all(status != "approval_required" for status in statuses.values())
@@ -393,12 +383,8 @@ def _create_v1_fixture(
 ) -> None:
     db_path.parent.mkdir(parents=True, exist_ok=True)
     with sqlite3.connect(db_path) as connection:
-        connection.execute(
-            "CREATE TABLE app_metadata (key TEXT PRIMARY KEY, value TEXT NOT NULL)"
-        )
-        connection.execute(
-            "INSERT INTO app_metadata (key, value) VALUES ('schema_version', '1')"
-        )
+        connection.execute("CREATE TABLE app_metadata (key TEXT PRIMARY KEY, value TEXT NOT NULL)")
+        connection.execute("INSERT INTO app_metadata (key, value) VALUES ('schema_version', '1')")
         connection.execute(
             """
             CREATE TABLE approvals (

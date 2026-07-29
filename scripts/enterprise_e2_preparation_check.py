@@ -23,7 +23,7 @@ BASE_COMMIT = "9df7a04cec197fd4953de692793a32e69c107b49"
 E1_CANDIDATE = "02e39d57a6d38a14d959bb88a32da79fe34e4e13"
 E1_CANDIDATE_TREE = "9850b6cbd40742d67388527de802961ddef306bd"
 PREPARATION_BRANCH = "codex/enterprise-e2-production-identity-prep"
-PIS004A_BRANCH = "codex/enterprise-e2-pis004a-local-identity"
+PIS004A_BRANCH = "codex/enterprise-e2-pis004a-review-repair"
 PIS004A_SOURCE_COMMIT = "e86f5a19e4e067d73141246f78304597e6cc28a0"
 PIS004A_SOURCE_TREE = "6dbbcf0bef3320dfdfa4142f2d30b798b01511d0"
 PIS_WAIT_ACTION = (
@@ -31,8 +31,7 @@ PIS_WAIT_ACTION = (
     "collection_action_authority"
 )
 NEXT_ACTION = (
-    "continue_e1_human_uat_and_existing_pis_external_input_wait_before_separate_"
-    "e2_entry_decision"
+    "continue_e1_human_uat_and_existing_pis_external_input_wait_before_separate_e2_entry_decision"
 )
 WORK_PACKAGE_IDS = tuple(f"E2-ID-00{index}" for index in range(1, 6))
 EXPECTED_AUTHORITY = {
@@ -163,8 +162,7 @@ def validate_contract(contract: dict[str, Any]) -> list[str]:
     if (
         contract.get("schema_version") != "1"
         or contract.get("track_id") != "E2-PREP"
-        or contract.get("status")
-        != "preparation_complete_implementation_not_authorized"
+        or contract.get("status") != "preparation_complete_implementation_not_authorized"
     ):
         failures.append("E2 preparation contract identity is invalid")
     if contract.get("tool_count") != 24:
@@ -178,12 +176,9 @@ def validate_contract(contract: dict[str, Any]) -> list[str]:
     }:
         failures.append("E2 preparation base does not preserve the exact E1 handoff")
     if contract.get("standing_authority") != {
-        "identity_storage_architecture": (
-            "docs/codex/production-identity-storage-architecture.md"
-        ),
+        "identity_storage_architecture": ("docs/codex/production-identity-storage-architecture.md"),
         "identity_threat_model": (
-            "docs/codex/production-identity-storage-pis-001-"
-            "threat-model-and-dependency-decision.md"
+            "docs/codex/production-identity-storage-pis-001-threat-model-and-dependency-decision.md"
         ),
         "current_pis_authority": (
             "docs/codex/production-identity-storage-pis-003-sd-pg-001-"
@@ -223,15 +218,14 @@ def validate_contract(contract: dict[str, Any]) -> list[str]:
         failures.append("E2 identity reconciliation expands authority or duplicates architecture")
     packages = identity.get("work_packages")
     package_list: list[dict[str, Any]] = (
-        [item for item in packages if isinstance(item, dict)]
-        if isinstance(packages, list)
-        else []
+        [item for item in packages if isinstance(item, dict)] if isinstance(packages, list) else []
     )
     package_ids = [item.get("id") for item in package_list]
     if package_ids != list(WORK_PACKAGE_IDS):
         failures.append("E2 identity work packages are not exact and ordered")
     elif any(
-        set(item) != {
+        set(item)
+        != {
             "id",
             "title",
             "status",
@@ -244,9 +238,7 @@ def validate_contract(contract: dict[str, Any]) -> list[str]:
         failures.append("E2 identity work packages are not proposal-only gated records")
     scale = contract.get("scale_fixture")
     expected_fixture_digest = hashlib.sha256(
-        enterprise_e2_scale_fixture.canonical_bytes(
-            enterprise_e2_scale_fixture.build_fixture()
-        )
+        enterprise_e2_scale_fixture.canonical_bytes(enterprise_e2_scale_fixture.build_fixture())
     ).hexdigest()
     if not isinstance(scale, dict) or scale != {
         "schema_version": enterprise_e2_scale_fixture.SCHEMA_VERSION,
@@ -282,8 +274,7 @@ def _validate_repository(
         failures.append("E2 preparation is not on its isolated branch")
     elif current_branch == PIS004A_BRANCH and (
         not _git_ok(root, "merge-base", "--is-ancestor", PIS004A_SOURCE_COMMIT, "HEAD")
-        or _git_one(root, "rev-parse", f"{PIS004A_SOURCE_COMMIT}^{{tree}}")
-        != PIS004A_SOURCE_TREE
+        or _git_one(root, "rev-parse", f"{PIS004A_SOURCE_COMMIT}^{{tree}}") != PIS004A_SOURCE_TREE
     ):
         failures.append("E2 preparation descendant does not preserve its exact source")
 
@@ -310,8 +301,7 @@ def _validate_repository(
         failures.append("E2 preparation changed the E1 human-UAT stop line")
 
     authority_path = (
-        root
-        / "docs/codex/production-identity-storage-pis-003-sd-pg-001-"
+        root / "docs/codex/production-identity-storage-pis-003-sd-pg-001-"
         "environment-evidence-collection-authority.json"
     )
     pis = _load_json(authority_path, failures)
@@ -320,8 +310,7 @@ def _validate_repository(
         pis.get("next_required_action") != PIS_WAIT_ACTION
         or not isinstance(pis_authority, dict)
         or pis_authority.get("external_target_selection_allowed") is not True
-        or pis_authority.get("external_environment_receipt_collection_allowed")
-        is not True
+        or pis_authority.get("external_environment_receipt_collection_allowed") is not True
         or pis_authority.get("operational_collection_action_effective") is not False
         or pis_authority.get("production_identity_allowed") is not False
         or pis_authority.get("runtime_postgres_allowed") is not False
@@ -379,10 +368,14 @@ def _validate_repository(
             failures.append(
                 "E2 preparation changed paths outside its lane: " + ", ".join(unexpected)
             )
-    elif current_branch == PIS004A_BRANCH and not (
-        root
-        / "docs/codex/production-identity-storage-pis-004a-entry-and-implementation-contract.json"
-    ).is_file():
+    elif (
+        current_branch == PIS004A_BRANCH
+        and not (
+            root
+            / "docs/codex/"
+            "production-identity-storage-pis-004a-entry-and-implementation-contract.json"
+        ).is_file()
+    ):
         failures.append("E2 preparation descendant is missing its separate entry decision")
     if contract.get("authority") != EXPECTED_AUTHORITY:
         failures.append("E2 repository validation observed an expanded authority contract")
@@ -439,13 +432,16 @@ def _closed_object(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
 
 
 def _git_ok(root: Path, *args: str) -> bool:
-    return subprocess.run(
-        ["git", *args],
-        cwd=root,
-        check=False,
-        capture_output=True,
-        text=True,
-    ).returncode == 0
+    return (
+        subprocess.run(
+            ["git", *args],
+            cwd=root,
+            check=False,
+            capture_output=True,
+            text=True,
+        ).returncode
+        == 0
+    )
 
 
 def _git_one(root: Path, *args: str) -> str:

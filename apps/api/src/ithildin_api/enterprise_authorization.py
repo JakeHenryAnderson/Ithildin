@@ -54,10 +54,48 @@ class EnterpriseAction(StrEnum):
     DESTRUCTIVE = "destructive"
 
 
+_REQUIRED_RECENT_AUTHENTICATION_ACTIONS = frozenset(
+    {
+        EnterpriseAction.APPROVE,
+        EnterpriseAction.MANAGE_MEMBERSHIP,
+        EnterpriseAction.DESTRUCTIVE,
+    }
+)
+_STRONG_RECENT_AUTHENTICATION_METHODS = frozenset({AuthenticationMethod.OIDC_FIXTURE})
+
+
 class ApprovalClass(StrEnum):
     STANDARD = "standard"
     TRUSTED_HOST_PLACEMENT = "trusted_host_placement"
     HIGH_RISK = "high_risk"
+
+
+class AuthorizationReasonCode(StrEnum):
+    AUTHORIZED = "authorized"
+    MUTATION_ORIGIN_AND_CSRF_REQUIRED = "mutation_origin_and_csrf_required"
+    STALE_REQUESTER_AUTHORITY = "stale_requester_authority"
+    SELF_APPROVAL_FORBIDDEN = "self_approval_forbidden"
+    BULK_LIMIT_EXCEEDED = "bulk_limit_exceeded"
+    CROSS_SCOPE_BULK_FORBIDDEN = "cross_scope_bulk_forbidden"
+    HUMAN_PRINCIPAL_REQUIRED = "human_principal_required"
+    ORGANIZATION_SCOPE_MISMATCH = "organization_scope_mismatch"
+    WORKSPACE_AUTHORITY_UNAVAILABLE = "workspace_authority_unavailable"
+    AUTHORITY_GENERATION_MISMATCH = "authority_generation_mismatch"
+    ROLE_NOT_AUTHORIZED = "role_not_authorized"
+    RECENT_HUMAN_AUTHENTICATION_REQUIRED = "recent_human_authentication_required"
+
+
+class ServerOwnedApprovalOperation(StrEnum):
+    STANDARD_CHANGE = "standard_change"
+    TRUSTED_HOST_PLACEMENT = "trusted_host_placement"
+    HIGH_RISK_CHANGE = "high_risk_change"
+
+
+_APPROVAL_CLASS_BY_OPERATION = {
+    ServerOwnedApprovalOperation.STANDARD_CHANGE: ApprovalClass.STANDARD,
+    ServerOwnedApprovalOperation.TRUSTED_HOST_PLACEMENT: (ApprovalClass.TRUSTED_HOST_PLACEMENT),
+    ServerOwnedApprovalOperation.HIGH_RISK_CHANGE: ApprovalClass.HIGH_RISK,
+}
 
 
 class _FrozenModel(BaseModel):
@@ -91,8 +129,13 @@ class EnterpriseAuthorizationPolicy(_FrozenModel):
             raise ValueError("recent-auth maximum age must be positive")
         if not self.recent_authentication_methods:
             raise ValueError("recent-auth method set must not be empty")
-        if EnterpriseAction.APPROVE not in self.recent_authentication_actions:
-            raise ValueError("human approval must require recent authentication")
+        if not self.recent_authentication_methods <= (_STRONG_RECENT_AUTHENTICATION_METHODS):
+            raise ValueError("recent-auth method set contains a non-strong authentication method")
+        if not _REQUIRED_RECENT_AUTHENTICATION_ACTIONS <= (self.recent_authentication_actions):
+            raise ValueError(
+                "approval, membership management, and destructive actions "
+                "must require recent authentication"
+            )
         return self
 
 
@@ -106,6 +149,8 @@ class ApprovalRequestRecord(_FrozenModel):
     organization_id: str = Field(pattern=r"^org_[0-9a-f]{32}$")
     workspace_id: str = Field(pattern=r"^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$")
     requester_principal_id: str = Field(pattern=r"^prn_[0-9a-f]{32}$")
+    requester_identity_generation: int = Field(ge=1)
+    requester_membership_generation: int = Field(ge=1)
     approval_class: ApprovalClass
     request_generation: int = Field(ge=1)
     created_at: datetime
@@ -121,7 +166,7 @@ class ApprovalRequestRecord(_FrozenModel):
 class AuthorizationDecision(_FrozenModel):
     decision_id: str
     allowed: bool
-    reason_code: str
+    reason_code: AuthorizationReasonCode
     action: EnterpriseAction
     principal_id: str
     principal_type: EnterprisePrincipalType
@@ -144,7 +189,7 @@ class AuthorizationDecision(_FrozenModel):
         return {
             "decision_id": self.decision_id,
             "outcome": "allowed" if self.allowed else "denied",
-            "reason_code": self.reason_code,
+            "reason_code": self.reason_code.value,
             "action": self.action.value,
             "principal_id": self.principal_id,
             "principal_type": self.principal_type.value,
@@ -209,6 +254,14 @@ class _ApprovalRequestAuthority(Protocol):
         organization_id: str,
     ) -> ApprovalRequestRecord: ...
 
+    def _create_pending(
+        self,
+        *,
+        scope: ServerOwnedResourceScope,
+        requester: MembershipAuthorityState,
+        approval_class: ApprovalClass,
+    ) -> ApprovalRequestRecord: ...
+
 
 class EnterpriseApprovalRequestStore:
     """Authoritative pending-approval records resolved only by opaque ID."""
@@ -225,20 +278,29 @@ class EnterpriseApprovalRequestStore:
         self._clock = clock
         self._id_factory = id_factory or _random_id
 
-    def create_pending(
+    def _create_pending(
         self,
         *,
         scope: ServerOwnedResourceScope,
-        requester_principal_id: str,
+        requester: MembershipAuthorityState,
         approval_class: ApprovalClass,
     ) -> ApprovalRequestRecord:
+        if (
+            requester.organization_id != scope.organization_id
+            or requester.workspace_id != scope.workspace_id
+            or requester.principal_type is not EnterprisePrincipalType.HUMAN
+        ):
+            raise AuthorizationAuthorityUnavailableError(
+                "approval requester authority is unavailable"
+            )
         now = _require_aware_utc(self._clock())
         approval_request_id = self._id_factory("apr_")
         with closing(self._connection()) as connection, connection:
             authority = connection.execute(
                 """
                 SELECT p.principal_type, p.enabled, o.enabled, om.enabled,
-                       w.enabled, wm.enabled
+                       w.enabled, wm.enabled, p.identity_generation,
+                       om.membership_generation
                 FROM identity_principals AS p
                 JOIN identity_organization_memberships AS om
                   ON om.principal_id = p.principal_id
@@ -257,32 +319,38 @@ class EnterpriseApprovalRequestStore:
                 (
                     scope.organization_id,
                     scope.workspace_id,
-                    requester_principal_id,
+                    requester.principal_id,
                 ),
             ).fetchone()
-            if authority is None or any(
-                not bool(authority[index]) for index in (1, 2, 3, 4, 5)
-            ):
+            if authority is None or any(not bool(authority[index]) for index in (1, 2, 3, 4, 5)):
                 raise AuthorizationAuthorityUnavailableError(
                     "approval requester authority is unavailable"
                 )
             if str(authority[0]) != EnterprisePrincipalType.HUMAN.value:
+                raise AuthorizationAuthorityUnavailableError("approval requester must be human")
+            if (
+                int(authority[6]) != requester.identity_generation
+                or int(authority[7]) != requester.membership_generation
+            ):
                 raise AuthorizationAuthorityUnavailableError(
-                    "approval requester must be human"
+                    "approval requester authority changed concurrently"
                 )
             connection.execute(
                 """
                 INSERT INTO identity_approval_requests (
                     approval_request_id, organization_id, workspace_id,
-                    requester_principal_id, approval_class,
+                    requester_principal_id, requester_identity_generation,
+                    requester_membership_generation, approval_class,
                     request_generation, status, created_at, updated_at
-                ) VALUES (?, ?, ?, ?, ?, 1, 'pending', ?, ?)
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, 1, 'pending', ?, ?)
                 """,
                 (
                     approval_request_id,
                     scope.organization_id,
                     scope.workspace_id,
-                    requester_principal_id,
+                    requester.principal_id,
+                    int(authority[6]),
+                    int(authority[7]),
                     approval_class.value,
                     now.isoformat(),
                     now.isoformat(),
@@ -292,7 +360,9 @@ class EnterpriseApprovalRequestStore:
             approval_request_id=approval_request_id,
             organization_id=scope.organization_id,
             workspace_id=scope.workspace_id,
-            requester_principal_id=requester_principal_id,
+            requester_principal_id=requester.principal_id,
+            requester_identity_generation=int(authority[6]),
+            requester_membership_generation=int(authority[7]),
             approval_class=approval_class,
             request_generation=1,
             created_at=now,
@@ -304,14 +374,13 @@ class EnterpriseApprovalRequestStore:
         organization_id: str,
     ) -> ApprovalRequestRecord:
         if not _APPROVAL_REQUEST_ID_PATTERN.fullmatch(approval_request_id):
-            raise AuthorizationAuthorityUnavailableError(
-                "approval request is unavailable"
-            )
+            raise AuthorizationAuthorityUnavailableError("approval request is unavailable")
         with closing(self._connection()) as connection, connection:
             row = connection.execute(
                 """
                 SELECT approval_request_id, organization_id, workspace_id,
-                       requester_principal_id, approval_class,
+                       requester_principal_id, requester_identity_generation,
+                       requester_membership_generation, approval_class,
                        request_generation, created_at
                 FROM identity_approval_requests
                 WHERE approval_request_id = ?
@@ -321,23 +390,21 @@ class EnterpriseApprovalRequestStore:
                 (approval_request_id, organization_id),
             ).fetchone()
         if row is None:
-            raise AuthorizationAuthorityUnavailableError(
-                "approval request is unavailable"
-            )
+            raise AuthorizationAuthorityUnavailableError("approval request is unavailable")
         try:
             return ApprovalRequestRecord(
                 approval_request_id=str(row[0]),
                 organization_id=str(row[1]),
                 workspace_id=str(row[2]),
                 requester_principal_id=str(row[3]),
-                approval_class=ApprovalClass(str(row[4])),
-                request_generation=int(row[5]),
-                created_at=_parse_datetime(str(row[6])),
+                requester_identity_generation=int(row[4]),
+                requester_membership_generation=int(row[5]),
+                approval_class=ApprovalClass(str(row[6])),
+                request_generation=int(row[7]),
+                created_at=_parse_datetime(str(row[8])),
             )
         except (ValueError, TypeError) as exc:
-            raise AuthorizationAuthorityUnavailableError(
-                "approval request is unavailable"
-            ) from exc
+            raise AuthorizationAuthorityUnavailableError("approval request is unavailable") from exc
 
     def _connection(self) -> sqlite3.Connection:
         connection = sqlite3.connect(self.db_path)
@@ -407,7 +474,7 @@ class EnterpriseAuthorizationEngine:
             return decision.model_copy(
                 update={
                     "allowed": False,
-                    "reason_code": "mutation_origin_and_csrf_required",
+                    "reason_code": (AuthorizationReasonCode.MUTATION_ORIGIN_AND_CSRF_REQUIRED),
                 }
             )
         return decision
@@ -468,6 +535,33 @@ class EnterpriseAuthorizationEngine:
         )
         if not decision.allowed:
             return decision
+        try:
+            requester = self._identities.current_authority_state(
+                request.requester_principal_id,
+                request.organization_id,
+                request.workspace_id,
+            )
+        except EnterpriseIdentityError:
+            return decision.model_copy(
+                update={
+                    "allowed": False,
+                    "reason_code": AuthorizationReasonCode.STALE_REQUESTER_AUTHORITY,
+                }
+            )
+        if (
+            requester.principal_type is not EnterprisePrincipalType.HUMAN
+            or requester.principal_id != request.requester_principal_id
+            or requester.organization_id != request.organization_id
+            or requester.workspace_id != request.workspace_id
+            or requester.identity_generation != request.requester_identity_generation
+            or requester.membership_generation != request.requester_membership_generation
+        ):
+            return decision.model_copy(
+                update={
+                    "allowed": False,
+                    "reason_code": AuthorizationReasonCode.STALE_REQUESTER_AUTHORITY,
+                }
+            )
         if (
             request.approval_class in policy.self_approval_denied_for
             and request.requester_principal_id == decision.principal_id
@@ -475,10 +569,53 @@ class EnterpriseAuthorizationEngine:
             return decision.model_copy(
                 update={
                     "allowed": False,
-                    "reason_code": "self_approval_forbidden",
+                    "reason_code": AuthorizationReasonCode.SELF_APPROVAL_FORBIDDEN,
                 }
             )
         return decision
+
+    def request_approval(
+        self,
+        session_handle: str,
+        *,
+        allowed_origin: str,
+        csrf_token: str,
+        scope: ServerOwnedResourceScope,
+        operation: ServerOwnedApprovalOperation,
+    ) -> ApprovalRequestRecord:
+        if not isinstance(operation, ServerOwnedApprovalOperation):
+            raise EnterpriseAuthorizationError("approval operation is not server-owned")
+        policy = self._current_policy()
+        session = self._sessions.validate_mutation(
+            session_handle,
+            allowed_origin=allowed_origin,
+            csrf_token=csrf_token,
+        )
+        decision = self._authorize_core(
+            session,
+            scope=scope,
+            action=EnterpriseAction.CONTRIBUTE,
+            approval_request_id=None,
+            approval_request_generation=None,
+            policy=policy,
+        )
+        if not decision.allowed:
+            raise AuthorizationAuthorityUnavailableError("approval requester is not authorized")
+        try:
+            requester = self._identities.current_authority_state(
+                session.principal_id,
+                session.organization_id,
+                scope.workspace_id,
+            )
+        except EnterpriseIdentityError as exc:
+            raise AuthorizationAuthorityUnavailableError(
+                "approval requester authority is unavailable"
+            ) from exc
+        return self._approval_requests._create_pending(
+            scope=scope,
+            requester=requester,
+            approval_class=_APPROVAL_CLASS_BY_OPERATION[operation],
+        )
 
     def authorize_bulk_read(
         self,
@@ -503,14 +640,14 @@ class EnterpriseAuthorizationEngine:
             return decision.model_copy(
                 update={
                     "allowed": False,
-                    "reason_code": "bulk_limit_exceeded",
+                    "reason_code": AuthorizationReasonCode.BULK_LIMIT_EXCEEDED,
                 }
             )
         if any(resource_scope != scope for resource_scope in resource_scopes):
             return decision.model_copy(
                 update={
                     "allowed": False,
-                    "reason_code": "cross_scope_bulk_forbidden",
+                    "reason_code": AuthorizationReasonCode.CROSS_SCOPE_BULK_FORBIDDEN,
                 }
             )
         return decision
@@ -581,7 +718,7 @@ class EnterpriseAuthorizationEngine:
                 policy=policy,
                 recent_auth_satisfied=recent_auth_satisfied,
                 allowed=False,
-                reason_code="human_principal_required",
+                reason_code=AuthorizationReasonCode.HUMAN_PRINCIPAL_REQUIRED,
                 approval_request_id=approval_request_id,
                 approval_request_generation=approval_request_generation,
             )
@@ -594,7 +731,7 @@ class EnterpriseAuthorizationEngine:
                 policy=policy,
                 recent_auth_satisfied=recent_auth_satisfied,
                 allowed=False,
-                reason_code="organization_scope_mismatch",
+                reason_code=AuthorizationReasonCode.ORGANIZATION_SCOPE_MISMATCH,
                 approval_request_id=approval_request_id,
                 approval_request_generation=approval_request_generation,
             )
@@ -613,7 +750,7 @@ class EnterpriseAuthorizationEngine:
                 policy=policy,
                 recent_auth_satisfied=recent_auth_satisfied,
                 allowed=False,
-                reason_code="workspace_authority_unavailable",
+                reason_code=AuthorizationReasonCode.WORKSPACE_AUTHORITY_UNAVAILABLE,
                 approval_request_id=approval_request_id,
                 approval_request_generation=approval_request_generation,
             )
@@ -632,7 +769,7 @@ class EnterpriseAuthorizationEngine:
                 policy=policy,
                 recent_auth_satisfied=recent_auth_satisfied,
                 allowed=False,
-                reason_code="authority_generation_mismatch",
+                reason_code=AuthorizationReasonCode.AUTHORITY_GENERATION_MISMATCH,
                 approval_request_id=approval_request_id,
                 approval_request_generation=approval_request_generation,
             )
@@ -649,14 +786,11 @@ class EnterpriseAuthorizationEngine:
                 policy=policy,
                 recent_auth_satisfied=recent_auth_satisfied,
                 allowed=False,
-                reason_code="role_not_authorized",
+                reason_code=AuthorizationReasonCode.ROLE_NOT_AUTHORIZED,
                 approval_request_id=approval_request_id,
                 approval_request_generation=approval_request_generation,
             )
-        if (
-            action in policy.recent_authentication_actions
-            and not recent_auth_satisfied
-        ):
+        if action in policy.recent_authentication_actions and not recent_auth_satisfied:
             return self._decision(
                 session=session,
                 principal_type=authority.principal_type,
@@ -665,7 +799,7 @@ class EnterpriseAuthorizationEngine:
                 policy=policy,
                 recent_auth_satisfied=False,
                 allowed=False,
-                reason_code="recent_human_authentication_required",
+                reason_code=(AuthorizationReasonCode.RECENT_HUMAN_AUTHENTICATION_REQUIRED),
                 approval_request_id=approval_request_id,
                 approval_request_generation=approval_request_generation,
             )
@@ -677,7 +811,7 @@ class EnterpriseAuthorizationEngine:
             policy=policy,
             recent_auth_satisfied=recent_auth_satisfied,
             allowed=True,
-            reason_code="authorized",
+            reason_code=AuthorizationReasonCode.AUTHORIZED,
             approval_request_id=approval_request_id,
             approval_request_generation=approval_request_generation,
         )
@@ -724,7 +858,7 @@ class EnterpriseAuthorizationEngine:
         policy: EnterpriseAuthorizationPolicy,
         recent_auth_satisfied: bool,
         allowed: bool,
-        reason_code: str,
+        reason_code: AuthorizationReasonCode,
         approval_request_id: str | None,
         approval_request_generation: int | None,
     ) -> AuthorizationDecision:
@@ -795,10 +929,7 @@ def _roles_allow(
             OrganizationRole.ORGANIZATION_ADMIN in organization
         )
     if action is EnterpriseAction.APPROVE:
-        return (
-            WorkspaceRole.APPROVER in workspace
-            or OrganizationRole.APPROVER in organization
-        )
+        return WorkspaceRole.APPROVER in workspace or OrganizationRole.APPROVER in organization
     if action is EnterpriseAction.MANAGE_MEMBERSHIP:
         return (
             WorkspaceRole.WORKSPACE_ADMIN in workspace
@@ -830,9 +961,7 @@ def _parse_datetime(value: str) -> datetime:
 
 def _require_aware_utc(value: datetime) -> datetime:
     if value.tzinfo is None:
-        raise AuthorizationAuthorityUnavailableError(
-            "trusted authorization clock is unavailable"
-        )
+        raise AuthorizationAuthorityUnavailableError("trusted authorization clock is unavailable")
     return value.astimezone(UTC)
 
 

@@ -161,6 +161,7 @@ rules:
     candidate = runtime_candidate or runtime_candidate_fixture()
     verifier = runtime_candidate_verifier
     if verifier is None and configure_runtime_candidate_verifier:
+
         def verify_fixture_candidate() -> RuntimeCandidateRecord:
             return candidate
 
@@ -5706,7 +5707,7 @@ def test_database_initialization_is_idempotent(tmp_path: Path) -> None:
             """
         ).fetchall()
 
-    assert rows == [("minimum_writer_version", "5"), ("schema_version", "5")]
+    assert rows == [("minimum_writer_version", "6"), ("schema_version", "6")]
 
 
 @pytest.mark.parametrize(

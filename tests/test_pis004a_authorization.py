@@ -5,6 +5,7 @@ import sqlite3
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from uuid import uuid4
 
 import pytest
 from ithildin_api.database import initialize_database
@@ -16,7 +17,9 @@ from ithildin_api.enterprise_authorization import (
     EnterpriseAction,
     EnterpriseApprovalRequestStore,
     EnterpriseAuthorizationEngine,
+    EnterpriseAuthorizationError,
     EnterpriseAuthorizationPolicy,
+    ServerOwnedApprovalOperation,
     ServerOwnedResourceScope,
 )
 from ithildin_api.enterprise_identity import (
@@ -109,7 +112,11 @@ def make_fixture(
         organization.organization_id,
         "alpha",
         identity.principal_id,
-        roles={WorkspaceRole.READER, WorkspaceRole.APPROVER},
+        roles={
+            WorkspaceRole.READER,
+            WorkspaceRole.CONTRIBUTOR,
+            WorkspaceRole.APPROVER,
+        },
     )
     identities.set_workspace_membership(
         organization.organization_id,
@@ -123,14 +130,54 @@ def make_fixture(
         allowed_origins=frozenset({ORIGIN}),
         clock=clock,
     )
-    issued = sessions.issue_session(
+    authority = identities.current_organization_authority(
         identity.principal_id,
         organization.organization_id,
-        authentication_method=authentication_method,
     )
-    policies = PolicyState(
-        current=policy or EnterpriseAuthorizationPolicy(policy_generation=1)
-    )
+    authentication_grant_id = "agrant_" + uuid4().hex
+    with sqlite3.connect(db_path) as connection:
+        connection.execute(
+            """
+            INSERT INTO identity_authentication_grants (
+                authentication_grant_id, assertion_audit_id,
+                organization_id, principal_id, identity_generation,
+                membership_generation, authentication_method,
+                authentication_time, created_at, expires_at,
+                status, consumed_at
+            ) VALUES (?, ?, ?, ?, ?, ?, 'oidc_fixture', ?, ?, ?,
+                      'active', NULL)
+            """,
+            (
+                authentication_grant_id,
+                "oaud_" + uuid4().hex,
+                organization.organization_id,
+                identity.principal_id,
+                authority.identity_generation,
+                authority.membership_generation,
+                clock.now.isoformat(),
+                clock.now.isoformat(),
+                (clock.now + timedelta(minutes=1)).isoformat(),
+            ),
+        )
+    issued = sessions.issue_session(authentication_grant_id)
+    if authentication_method is AuthenticationMethod.LOCAL_RECOVERY:
+        with sqlite3.connect(db_path) as connection:
+            connection.execute(
+                """
+                UPDATE identity_sessions
+                SET authentication_method = 'local_recovery'
+                WHERE session_id = ?
+                """,
+                (issued.context.session_id,),
+            )
+        issued = issued.model_copy(
+            update={
+                "context": issued.context.model_copy(
+                    update={"authentication_method": AuthenticationMethod.LOCAL_RECOVERY}
+                )
+            }
+        )
+    policies = PolicyState(current=policy or EnterpriseAuthorizationPolicy(policy_generation=1))
     approvals = EnterpriseApprovalRequestStore(db_path, clock=clock)
     engine = EnterpriseAuthorizationEngine.from_stores(
         sessions=sessions,
@@ -168,13 +215,29 @@ def approval_request(
     approval_class: ApprovalClass,
     workspace_id: str = "alpha",
 ) -> ApprovalRequestRecord:
-    return fixture.approvals.create_pending(
+    session = (
+        fixture.session
+        if requester_principal_id == fixture.principal_id
+        else issue_session_for_principal(
+            fixture,
+            principal_id=requester_principal_id,
+            organization_id=fixture.organization_id,
+        )
+    )
+    operation = {
+        ApprovalClass.STANDARD: ServerOwnedApprovalOperation.STANDARD_CHANGE,
+        ApprovalClass.TRUSTED_HOST_PLACEMENT: (ServerOwnedApprovalOperation.TRUSTED_HOST_PLACEMENT),
+        ApprovalClass.HIGH_RISK: ServerOwnedApprovalOperation.HIGH_RISK_CHANGE,
+    }[approval_class]
+    return fixture.engine.request_approval(
+        session.handle,
+        allowed_origin=ORIGIN,
+        csrf_token=session.csrf_token,
         scope=ServerOwnedResourceScope(
             organization_id=fixture.organization_id,
             workspace_id=workspace_id,
         ),
-        requester_principal_id=requester_principal_id,
-        approval_class=approval_class,
+        operation=operation,
     )
 
 
@@ -210,9 +273,47 @@ def provision_other_human(
         fixture.organization_id,
         "alpha",
         identity.principal_id,
-        roles={WorkspaceRole.READER},
+        roles={WorkspaceRole.READER, WorkspaceRole.CONTRIBUTOR},
     )
     return identity.principal_id
+
+
+def issue_session_for_principal(
+    fixture: AuthorizationFixture,
+    *,
+    principal_id: str,
+    organization_id: str,
+) -> SessionClientMaterial:
+    authority = fixture.identities.current_organization_authority(
+        principal_id,
+        organization_id,
+    )
+    authentication_grant_id = "agrant_" + uuid4().hex
+    with sqlite3.connect(fixture.db_path) as connection:
+        connection.execute(
+            """
+            INSERT INTO identity_authentication_grants (
+                authentication_grant_id, assertion_audit_id,
+                organization_id, principal_id, identity_generation,
+                membership_generation, authentication_method,
+                authentication_time, created_at, expires_at,
+                status, consumed_at
+            ) VALUES (?, ?, ?, ?, ?, ?, 'oidc_fixture', ?, ?, ?,
+                      'active', NULL)
+            """,
+            (
+                authentication_grant_id,
+                "oaud_" + uuid4().hex,
+                organization_id,
+                principal_id,
+                authority.identity_generation,
+                authority.membership_generation,
+                fixture.clock.now.isoformat(),
+                fixture.clock.now.isoformat(),
+                (fixture.clock.now + timedelta(minutes=1)).isoformat(),
+            ),
+        )
+    return fixture.sessions.issue_session(authentication_grant_id)
 
 
 def test_allowed_decision_binds_all_current_server_authority(tmp_path: Path) -> None:
@@ -232,10 +333,7 @@ def test_allowed_decision_binds_all_current_server_authority(tmp_path: Path) -> 
     assert decision.organization_id == fixture.organization_id
     assert decision.workspace_id == "alpha"
     assert decision.identity_generation == fixture.session.context.identity_generation
-    assert (
-        decision.membership_generation
-        == fixture.session.context.membership_generation
-    )
+    assert decision.membership_generation == fixture.session.context.membership_generation
     assert decision.session_id == fixture.session.context.session_id
     assert decision.session_audit_id == fixture.session.context.session_audit_id
     assert decision.authentication_method is AuthenticationMethod.OIDC_FIXTURE
@@ -325,10 +423,7 @@ def test_mutation_authorization_requires_exact_origin_and_session_csrf(
             action=action,
         )
         assert not without_mutation_proof.allowed
-        assert (
-            without_mutation_proof.reason_code
-            == "mutation_origin_and_csrf_required"
-        )
+        assert without_mutation_proof.reason_code == "mutation_origin_and_csrf_required"
 
 
 def test_approval_uses_opaque_server_record_and_requires_mutation_proof(
@@ -374,6 +469,90 @@ def test_approval_uses_opaque_server_record_and_requires_mutation_proof(
     assert decision.effect_authority is False
 
 
+@pytest.mark.parametrize("authority_change", ["identity_disabled", "membership_changed"])
+def test_queued_approval_revalidates_exact_requester_authority(
+    tmp_path: Path,
+    authority_change: str,
+) -> None:
+    fixture = make_fixture(tmp_path)
+    requester_principal_id = provision_other_human(
+        fixture,
+        subject="subject-queued-requester",
+    )
+    request = approval_request(
+        fixture,
+        requester_principal_id=requester_principal_id,
+        approval_class=ApprovalClass.HIGH_RISK,
+    )
+    created_authority = fixture.identities.current_authority_state(
+        requester_principal_id,
+        fixture.organization_id,
+        "alpha",
+    )
+    assert request.requester_identity_generation == created_authority.identity_generation
+    assert request.requester_membership_generation == created_authority.membership_generation
+
+    if authority_change == "identity_disabled":
+        fixture.identities.set_principal_enabled(
+            requester_principal_id,
+            enabled=False,
+        )
+    else:
+        fixture.identities.set_workspace_membership(
+            fixture.organization_id,
+            "alpha",
+            requester_principal_id,
+            roles={WorkspaceRole.CONTRIBUTOR},
+        )
+
+    decision = evaluate_approval(fixture, request)
+
+    assert not decision.allowed
+    assert decision.reason_code == "stale_requester_authority"
+    assert decision.approval_request_id == request.approval_request_id
+    assert decision.effect_authority is False
+
+
+def test_organization_membership_reenable_does_not_revive_queued_request(
+    tmp_path: Path,
+) -> None:
+    fixture = make_fixture(tmp_path)
+    requester_principal_id = provision_other_human(
+        fixture,
+        subject="subject-reenabled-requester",
+    )
+    request = approval_request(
+        fixture,
+        requester_principal_id=requester_principal_id,
+        approval_class=ApprovalClass.HIGH_RISK,
+    )
+
+    fixture.identities.set_organization_membership(
+        fixture.organization_id,
+        requester_principal_id,
+        roles={OrganizationRole.MEMBER},
+        enabled=False,
+    )
+    fixture.identities.set_organization_membership(
+        fixture.organization_id,
+        requester_principal_id,
+        roles={OrganizationRole.MEMBER},
+        enabled=True,
+    )
+
+    decision = evaluate_approval(fixture, request)
+
+    assert not decision.allowed
+    assert decision.reason_code == "stale_requester_authority"
+    assert (
+        fixture.identities.list_workspace_memberships(
+            requester_principal_id,
+            fixture.organization_id,
+        )
+        == ()
+    )
+
+
 def test_unknown_and_cross_organization_approval_ids_are_indistinguishable(
     tmp_path: Path,
 ) -> None:
@@ -402,15 +581,22 @@ def test_unknown_and_cross_organization_approval_ids_are_indistinguishable(
         other_organization.organization_id,
         "outside",
         other_identity.principal_id,
-        roles={WorkspaceRole.APPROVER},
+        roles={WorkspaceRole.CONTRIBUTOR, WorkspaceRole.APPROVER},
     )
-    other_request = fixture.approvals.create_pending(
+    other_session = issue_session_for_principal(
+        fixture,
+        principal_id=other_identity.principal_id,
+        organization_id=other_organization.organization_id,
+    )
+    other_request = fixture.engine.request_approval(
+        other_session.handle,
+        allowed_origin=ORIGIN,
+        csrf_token=other_session.csrf_token,
         scope=ServerOwnedResourceScope(
             organization_id=other_organization.organization_id,
             workspace_id="outside",
         ),
-        requester_principal_id=other_identity.principal_id,
-        approval_class=ApprovalClass.HIGH_RISK,
+        operation=ServerOwnedApprovalOperation.HIGH_RISK_CHANGE,
     )
 
     failures: list[str] = []
@@ -524,10 +710,7 @@ def test_cross_organization_and_unjoined_workspace_fail_closed(
 
     assert not wrong_organization.allowed
     assert wrong_organization.reason_code == "organization_scope_mismatch"
-    assert (
-        wrong_organization.authenticated_organization_id
-        != wrong_organization.organization_id
-    )
+    assert wrong_organization.authenticated_organization_id != wrong_organization.organization_id
     assert not unjoined_workspace.allowed
     assert unjoined_workspace.reason_code == "workspace_authority_unavailable"
 
@@ -581,9 +764,7 @@ def test_listing_has_no_scope_input_and_returns_only_current_memberships(
         (fixture.organization_id, "beta"),
     ]
     assert all(item.decision.allowed for item in listed)
-    assert all(
-        item.decision.organization_id == fixture.organization_id for item in listed
-    )
+    assert all(item.decision.organization_id == fixture.organization_id for item in listed)
 
 
 def test_policy_generation_is_loaded_server_side_for_each_decision(
@@ -790,7 +971,9 @@ def test_disabled_or_corrupt_workspace_authority_denies_without_enumeration(
     assert corrupt_denial.reason_code == "workspace_authority_unavailable"
 
 
-def test_caller_authority_injection_and_unsafe_policy_shapes_are_rejected() -> None:
+def test_caller_authority_injection_and_unsafe_policy_shapes_are_rejected(
+    tmp_path: Path,
+) -> None:
     with pytest.raises(CallerAuthorityRejectedError):
         reject_caller_authority_fields(
             {
@@ -801,9 +984,22 @@ def test_caller_authority_injection_and_unsafe_policy_shapes_are_rejected() -> N
     with pytest.raises(ValidationError, match="approval"):
         EnterpriseAuthorizationPolicy(
             policy_generation=1,
-            recent_authentication_actions=frozenset(
-                {EnterpriseAction.MANAGE_MEMBERSHIP}
-            ),
+            recent_authentication_actions=frozenset({EnterpriseAction.MANAGE_MEMBERSHIP}),
+        )
+    with pytest.raises(ValidationError, match="non-strong"):
+        EnterpriseAuthorizationPolicy(
+            policy_generation=1,
+            recent_authentication_methods=frozenset({AuthenticationMethod.LOCAL_RECOVERY}),
+        )
+    fixture = make_fixture(tmp_path)
+    assert not hasattr(fixture.approvals, "create_pending")
+    with pytest.raises(EnterpriseAuthorizationError, match="server-owned"):
+        fixture.engine.request_approval(
+            fixture.session.handle,
+            allowed_origin=ORIGIN,
+            csrf_token=fixture.session.csrf_token,
+            scope=scope(fixture, "alpha"),
+            operation="high_risk",  # type: ignore[arg-type]
         )
 
 

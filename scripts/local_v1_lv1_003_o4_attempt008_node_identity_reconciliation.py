@@ -41,31 +41,23 @@ EXPECTED_DESCRIPTOR_DIGEST = (
 )
 EXPECTED_SCHEMA_VERSION = "4"
 EXPECTED_MINIMUM_WRITER_VERSION = "4"
-PIS004A_SCHEMA_VERSION = "5"
-PIS004A_MINIMUM_WRITER_VERSION = "5"
+PIS004A_SCHEMA_VERSION = "6"
+PIS004A_MINIMUM_WRITER_VERSION = "6"
 EXPECTED_PIS004A_SCHEMA_FINGERPRINT = (
-    "sha256:39c49742d0bb0aec44cc238f4d122028a2bdcc9bd5c20d4c67b250c52c119bdd"
+    "sha256:98df31b25b379ebaf477744456111e89b6cfed290a108a0bcad1915194a1a7b4"
 )
 MAX_DATABASE_BYTES = 128 * 1024 * 1024
 GIT_EXECUTABLE = "/usr/bin/git"
 
 AUTHORIZATION_JSON = Path(
-    "docs/codex/"
-    "local-v1-lv1-003-o4-attempt008-node-identity-reconciliation-authorization.json"
+    "docs/codex/local-v1-lv1-003-o4-attempt008-node-identity-reconciliation-authorization.json"
 )
 AUTHORIZATION_MD = Path(
-    "docs/codex/"
-    "local-v1-lv1-003-o4-attempt008-node-identity-reconciliation-authorization.md"
+    "docs/codex/local-v1-lv1-003-o4-attempt008-node-identity-reconciliation-authorization.md"
 )
-SCRIPT_PATH = Path(
-    "scripts/local_v1_lv1_003_o4_attempt008_node_identity_reconciliation.py"
-)
-TEST_PATH = Path(
-    "tests/test_local_v1_lv1_003_o4_attempt008_node_identity_reconciliation.py"
-)
-CHECK_TARGET = (
-    "local-v1-lv1-003-o4-attempt008-node-identity-reconciliation-check"
-)
+SCRIPT_PATH = Path("scripts/local_v1_lv1_003_o4_attempt008_node_identity_reconciliation.py")
+TEST_PATH = Path("tests/test_local_v1_lv1_003_o4_attempt008_node_identity_reconciliation.py")
+CHECK_TARGET = "local-v1-lv1-003-o4-attempt008-node-identity-reconciliation-check"
 RUN_TARGET = "local-v1-lv1-003-o4-attempt008-node-identity-reconciliation-run"
 CANDIDATE_PATH_ALLOWLIST = sorted(
     [
@@ -376,8 +368,7 @@ def _expected_authorization() -> JsonObject:
     return {
         "schema_version": "1",
         "record_type": (
-            "local_v1_lv1_003_o4_attempt008_node_identity_"
-            "reconciliation_authorization"
+            "local_v1_lv1_003_o4_attempt008_node_identity_reconciliation_authorization"
         ),
         "record_status": "AUTHORIZED_UNCONSUMED_EXACT_ONE_SHOT",
         "reconciliation_id": RECONCILIATION_ID,
@@ -385,14 +376,9 @@ def _expected_authorization() -> JsonObject:
         "parent_tree": PARENT_TREE,
         "run_id": RUN_ID,
         "compose_project": PROJECT,
-        "candidate_path_allowlist": cast(
-            list[JsonValue], CANDIDATE_PATH_ALLOWLIST
-        ),
+        "candidate_path_allowlist": cast(list[JsonValue], CANDIDATE_PATH_ALLOWLIST),
         "target": {
-            "database_path": (
-                "var/local-v1-lv1-003-o4-runtime/"
-                f"{RUN_ID}/var/db/{DATABASE_NAME}"
-            ),
+            "database_path": (f"var/local-v1-lv1-003-o4-runtime/{RUN_ID}/var/db/{DATABASE_NAME}"),
             "workspace_id": WORKSPACE_ID,
             "display_name": DISPLAY_NAME,
             "expected_descriptor_digest": EXPECTED_DESCRIPTOR_DIGEST,
@@ -418,9 +404,7 @@ def _expected_authorization() -> JsonObject:
 
 def validate_authorization(repo_root: Path) -> None:
     try:
-        observed = json.loads(
-            (repo_root / AUTHORIZATION_JSON).read_text(encoding="utf-8")
-        )
+        observed = json.loads((repo_root / AUTHORIZATION_JSON).read_text(encoding="utf-8"))
         document = (repo_root / AUTHORIZATION_MD).read_text(encoding="utf-8")
     except (OSError, json.JSONDecodeError) as exc:
         raise ReconciliationError("authorization_invalid") from exc
@@ -500,9 +484,7 @@ def _open_directory(parent_fd: int, name: str, *, private: bool) -> tuple[int, F
     try:
         descriptor = os.open(name, _OPEN_DIRECTORY_FLAGS, dir_fd=parent_fd)
     except OSError as exc:
-        raise ReconciliationError(
-            "identity_unresolved_reconciliation_required"
-        ) from exc
+        raise ReconciliationError("identity_unresolved_reconciliation_required") from exc
     identity = FileIdentity.from_stat(os.fstat(descriptor))
     if (
         not stat.S_ISDIR(identity.mode)
@@ -518,9 +500,7 @@ def _open_chain(repo_root: Path) -> tuple[list[int], list[FileIdentity]]:
     try:
         root = os.open(repo_root, _OPEN_DIRECTORY_FLAGS)
     except OSError as exc:
-        raise ReconciliationError(
-            "identity_unresolved_reconciliation_required"
-        ) from exc
+        raise ReconciliationError("identity_unresolved_reconciliation_required") from exc
     descriptors = [root]
     identities = [FileIdentity.from_stat(os.fstat(root))]
     try:
@@ -553,9 +533,7 @@ def _sidecars_absent(directory_fd: int) -> bool:
         except FileNotFoundError:
             continue
         except OSError as exc:
-            raise ReconciliationError(
-                "identity_unresolved_reconciliation_required"
-            ) from exc
+            raise ReconciliationError("identity_unresolved_reconciliation_required") from exc
         return False
     return True
 
@@ -566,13 +544,9 @@ def _revalidate_chain(
     identities: list[FileIdentity],
 ) -> None:
     try:
-        root_path_identity = FileIdentity.from_stat(
-            os.stat(repo_root, follow_symlinks=False)
-        )
+        root_path_identity = FileIdentity.from_stat(os.stat(repo_root, follow_symlinks=False))
     except OSError as exc:
-        raise ReconciliationError(
-            "identity_unresolved_reconciliation_required"
-        ) from exc
+        raise ReconciliationError("identity_unresolved_reconciliation_required") from exc
     if root_path_identity != identities[0]:
         raise ReconciliationError("identity_unresolved_reconciliation_required")
     for index, component in enumerate(RUNTIME_COMPONENTS, start=1):
@@ -585,17 +559,12 @@ def _revalidate_chain(
                 )
             )
         except OSError as exc:
-            raise ReconciliationError(
-                "identity_unresolved_reconciliation_required"
-            ) from exc
+            raise ReconciliationError("identity_unresolved_reconciliation_required") from exc
         if (
             path_identity != identities[index]
-            or FileIdentity.from_stat(os.fstat(descriptors[index]))
-            != identities[index]
+            or FileIdentity.from_stat(os.fstat(descriptors[index])) != identities[index]
         ):
-            raise ReconciliationError(
-                "identity_unresolved_reconciliation_required"
-            )
+            raise ReconciliationError("identity_unresolved_reconciliation_required")
 
 
 def _read_database_snapshot(repo_root: Path) -> bytearray:
@@ -612,9 +581,7 @@ def _read_database_snapshot(repo_root: Path) -> bytearray:
                 dir_fd=database_directory,
             )
         except OSError as exc:
-            raise ReconciliationError(
-                "identity_unresolved_reconciliation_required"
-            ) from exc
+            raise ReconciliationError("identity_unresolved_reconciliation_required") from exc
         before = FileIdentity.from_stat(os.fstat(database_fd))
         if (
             not stat.S_ISREG(before.mode)
@@ -645,14 +612,8 @@ def _read_database_snapshot(repo_root: Path) -> bytearray:
                 )
             )
         except OSError as exc:
-            raise ReconciliationError(
-                "identity_unresolved_reconciliation_required"
-            ) from exc
-        if (
-            after != before
-            or path_after != before
-            or not _sidecars_absent(database_directory)
-        ):
+            raise ReconciliationError("identity_unresolved_reconciliation_required") from exc
+        if after != before or path_after != before or not _sidecars_absent(database_directory):
             raise ReconciliationError("identity_unresolved_reconciliation_required")
         _revalidate_chain(repo_root, directories, identities)
         return data
@@ -760,14 +721,11 @@ def _parse_timestamp(value: object) -> datetime | None:
 def _validate_schema_shape(connection: sqlite3.Connection) -> dict[str, str]:
     for table, expected_columns in _EXPECTED_TABLE_COLUMNS.items():
         table_rows = connection.execute(
-            "SELECT type, ncol FROM pragma_table_list(?) "
-            "WHERE schema = 'main' AND name = ?",
+            "SELECT type, ncol FROM pragma_table_list(?) WHERE schema = 'main' AND name = ?",
             (table, table),
         ).fetchall()
         if table_rows != [("table", len(expected_columns))]:
-            raise ReconciliationError(
-                "identity_unresolved_reconciliation_required"
-            )
+            raise ReconciliationError("identity_unresolved_reconciliation_required")
         observed_columns = tuple(
             str(row[0])
             for row in connection.execute(
@@ -776,9 +734,7 @@ def _validate_schema_shape(connection: sqlite3.Connection) -> dict[str, str]:
             ).fetchall()
         )
         if observed_columns != expected_columns:
-            raise ReconciliationError(
-                "identity_unresolved_reconciliation_required"
-            )
+            raise ReconciliationError("identity_unresolved_reconciliation_required")
     rows = connection.execute(
         "SELECT key, value FROM app_metadata "
         "WHERE key IN ('schema_version', 'minimum_writer_version')"
@@ -795,17 +751,12 @@ def _validate_schema_shape(connection: sqlite3.Connection) -> dict[str, str]:
     if len(rows) != 2 or versions not in (v4, v5):
         raise ReconciliationError("identity_unresolved_reconciliation_required")
     if versions == v5:
-        if (
-            expected_pis004a_schema_fingerprint()
-            != EXPECTED_PIS004A_SCHEMA_FINGERPRINT
-        ):
+        if expected_pis004a_schema_fingerprint() != EXPECTED_PIS004A_SCHEMA_FINGERPRINT:
             raise ReconciliationError("identity_unresolved_reconciliation_required")
         try:
             verify_pis004a_schema(connection)
         except (DatabaseMigrationError, sqlite3.DatabaseError) as exc:
-            raise ReconciliationError(
-                "identity_unresolved_reconciliation_required"
-            ) from exc
+            raise ReconciliationError("identity_unresolved_reconciliation_required") from exc
     return versions
 
 
@@ -828,9 +779,10 @@ def project_identity(snapshot: bytes | bytearray) -> JsonObject:
         ).fetchall()
         if {str(row["key"]): str(row["value"]) for row in versions} != expected_versions:
             raise ReconciliationError("identity_unresolved_reconciliation_required")
-        if _single_row(
-            connection, "SELECT count(*) AS count FROM node_enrollment_codes"
-        )["count"] != 1:
+        if (
+            _single_row(connection, "SELECT count(*) AS count FROM node_enrollment_codes")["count"]
+            != 1
+        ):
             raise ReconciliationError("identity_unresolved_reconciliation_required")
         enrollment = _single_row(
             connection,
@@ -852,14 +804,15 @@ def project_identity(snapshot: bytes | bytearray) -> JsonObject:
             "configuration_acknowledged_at, configuration_acknowledgment_status "
             "FROM nodes",
         )
-        if _single_row(connection, "SELECT count(*) AS count FROM node_nonces")[
-            "count"
-        ] != 0:
+        if _single_row(connection, "SELECT count(*) AS count FROM node_nonces")["count"] != 0:
             raise ReconciliationError("identity_unresolved_reconciliation_required")
-        if _single_row(
-            connection,
-            "SELECT count(*) AS count FROM node_identity_key_rotations",
-        )["count"] != 0:
+        if (
+            _single_row(
+                connection,
+                "SELECT count(*) AS count FROM node_identity_key_rotations",
+            )["count"]
+            != 0
+        ):
             raise ReconciliationError("identity_unresolved_reconciliation_required")
         activity_queries = (
             "SELECT count(*) AS count FROM node_configurations",
@@ -874,9 +827,7 @@ def project_identity(snapshot: bytes | bytearray) -> JsonObject:
         for query in activity_queries:
             count = _single_row(connection, query)["count"]
             if count != 0:
-                raise ReconciliationError(
-                    "identity_unresolved_reconciliation_required"
-                )
+                raise ReconciliationError("identity_unresolved_reconciliation_required")
     except (sqlite3.DatabaseError, sqlite3.NotSupportedError) as exc:
         raise ReconciliationError("identity_unresolved_reconciliation_required") from exc
     finally:
@@ -934,9 +885,12 @@ def project_identity(snapshot: bytes | bytearray) -> JsonObject:
         classification = "identity_bound_revoked"
     else:
         raise ReconciliationError("identity_unresolved_reconciliation_required")
-    identity_digest = "sha256:" + hashlib.sha256(
-        b"ITHILDIN-ATTEMPT008-NODE-ID-V1\x00" + node_id.encode("ascii")
-    ).hexdigest()
+    identity_digest = (
+        "sha256:"
+        + hashlib.sha256(
+            b"ITHILDIN-ATTEMPT008-NODE-ID-V1\x00" + node_id.encode("ascii")
+        ).hexdigest()
+    )
     return {
         "classification": classification,
         "node_id": node_id,
@@ -1038,9 +992,7 @@ def consume_budget(
             raise ReconciliationError("attempt_budget_already_consumed") from exc
         except OSError as exc:
             raise ReconciliationError("receipt_write_failed") from exc
-        receipt_fd, _identity = _open_directory(
-            base_fd, RECEIPT_DIRECTORY, private=True
-        )
+        receipt_fd, _identity = _open_directory(base_fd, RECEIPT_DIRECTORY, private=True)
         held.append(receipt_fd)
         _write_exclusive(
             receipt_fd,
@@ -1092,10 +1044,7 @@ def _public_projection(private: JsonObject) -> JsonObject:
 
 def run_live(repo_root: Path = ROOT) -> JsonObject:
     report = build_report(repo_root)
-    if (
-        report["static_candidate_valid"] is not True
-        or report["execution_available"] is not True
-    ):
+    if report["static_candidate_valid"] is not True or report["execution_available"] is not True:
         raise ReconciliationError("identity_reconciliation_not_authorized")
     candidate_commit = cast(str, report["candidate_commit"])
     candidate_tree = cast(str, report["candidate_tree"])
@@ -1133,18 +1082,12 @@ def run_live(repo_root: Path = ROOT) -> JsonObject:
                 RESULT_RECEIPT,
                 {
                     "schema_version": "1",
-                    "record_type": (
-                        "attempt008_node_identity_reconciliation_result"
-                    ),
+                    "record_type": ("attempt008_node_identity_reconciliation_result"),
                     "reconciliation_id": RECONCILIATION_ID,
                     "candidate_commit": candidate_commit,
                     "candidate_tree": candidate_tree,
-                    "classification": (
-                        "identity_unresolved_reconciliation_required"
-                    ),
-                    "failure_code": (
-                        "identity_unresolved_reconciliation_required"
-                    ),
+                    "classification": ("identity_unresolved_reconciliation_required"),
+                    "failure_code": ("identity_unresolved_reconciliation_required"),
                     "quarantine_confirmed": False,
                     "revocation_authorized": False,
                     "cleanup_authorized": False,
@@ -1155,9 +1098,7 @@ def run_live(repo_root: Path = ROOT) -> JsonObject:
             )
         except ReconciliationError:
             pass
-        raise ReconciliationError(
-            "identity_unresolved_reconciliation_required"
-        ) from None
+        raise ReconciliationError("identity_unresolved_reconciliation_required") from None
     finally:
         for index in range(len(snapshot)):
             snapshot[index] = 0
@@ -1181,10 +1122,7 @@ def main(arguments: Iterable[str] | None = None) -> int:
     except Exception:
         print("attempt008_node_identity_reconciliation_error: unexpected_failure")
         return 1
-    print(
-        "attempt008_node_identity_reconciliation_status: "
-        f"{projection['classification']}"
-    )
+    print(f"attempt008_node_identity_reconciliation_status: {projection['classification']}")
     return 0
 
 

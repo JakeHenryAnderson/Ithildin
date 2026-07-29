@@ -6,7 +6,7 @@ Decision ID: `PIS-004A`.
 
 Source commit: `e86f5a19e4e067d73141246f78304597e6cc28a0`.
 
-Branch: `codex/enterprise-e2-pis004a-local-identity`.
+Branch: `codex/enterprise-e2-pis004a-review-repair`.
 
 Current governed tool count: exactly `24`.
 
@@ -46,14 +46,15 @@ The bounded implementation may add:
 - server-owned organization and workspace memberships, roles, identity generations, and membership
   generations;
 - opaque high-entropy sessions whose client handle is never stored, with keyed lookup digests,
-  non-authenticating audit IDs, idle/absolute expiry, rotation, family revocation, and generation
-  invalidation;
+  non-authenticating audit IDs, idle/absolute expiry, rotation, family revocation, generation
+  invalidation, one-use OIDC authentication grants, and irreversible persisted digest-key
+  retirement;
 - atomic one-use preauthentication transactions, allowed-origin validation, and session-bound CSRF;
 - authorization snapshots derived only from current server state and bound to principal,
   organization, workspace, identity and membership generations, session, authentication method,
   recent-auth state, and policy generation;
 - explicit human-versus-Node/service approval, separation-of-duty, self-approval, listing, and bulk
-  scope rules;
+  scope rules, with queued requester identity/membership generations revalidated at approval time;
 - a synthetic, zero-network OIDC fixture seam with exact issuer/redirect, state, nonce, PKCE,
   asymmetric algorithm, key, audience, time, skew, replay, and malformed-input denial; and
 - an additive local SQLite schema migration plus the exact dependency delta approved below.
@@ -66,8 +67,17 @@ The current local bearer-admin behavior remains the compatibility baseline.
 The candidate adds no API route, browser import, cookie, feature-enabled configuration, effect
 consumer, or governed tool. Identity/session/authorization modules remain unreferenced by the
 existing application service, and authorization snapshots explicitly carry
-`effect_authority: false`. Schema-5 activation creates only local authority tables and does not
+`effect_authority: false`. Schema-6 activation creates only local authority tables and does not
 enable a sign-in path. Existing API and local bearer-admin behavior remain the runtime default.
+
+The review-repair candidate also closes the independent review findings without broadening product
+authority. Disabling an organization membership atomically disables every child workspace
+membership; re-enabling the organization membership does not restore those roles, so each workspace
+grant requires explicit reassignment. Approval request creation derives its requester from a
+validated mutation session and maps a closed server-owned operation to its approval class. Approval
+execution rechecks the requester's current human identity plus exact identity and membership
+generations. Recent authentication is mandatory for approval, membership management, and
+destructive actions, and local recovery cannot be configured as a strong recent-auth method.
 
 ## Authlib dependency and provenance gate
 
@@ -104,14 +114,16 @@ seam is not evidence that such an exchange exists.
 
 ## Persistence, migration, and rollback
 
-SQLite remains the only runtime backend. PIS-004A may move the coordinated local schema from
-version `4` to `5`, create a private pre-v5 backup before upgrading an existing version-4 database,
-and set minimum writer `5` after activation. Migration is atomic and verified against exact table
-and index definitions. Older writers must fail closed.
+SQLite remains the only runtime backend. PIS-004A moves the coordinated local schema from version
+`4` or the rejected candidate's version `5` to repaired version `6`, creates a private pre-v6 backup
+before either upgrade, and sets minimum writer `6` after activation. Migration is atomic and
+verified against exact table and index definitions. Schema-5 pending approvals lack requester
+generation bindings and are therefore preserved but changed to `cancelled`; they cannot become
+approvable under schema 6. Older writers must fail closed.
 
 The read-only Attempt-008 Node identity projector retains its exact schema-4 profile and adds a
-separate schema-5 compatibility profile. Schema 5 is bound to the domain-separated fingerprint
-`sha256:39c49742d0bb0aec44cc238f4d122028a2bdcc9bd5c20d4c67b250c52c119bdd`.
+separate schema-6 compatibility profile. Schema 6 is bound to the domain-separated fingerprint
+`sha256:98df31b25b379ebaf477744456111e89b6cfed290a108a0bcad1915194a1a7b4`.
 The profile compares complete normalized table and index DDL against a freshly generated expected
 schema, rejects unexpected `identity_*` objects and foreign-key failures, and rechecks metadata
 after installing its read-only authorizer. Same-column removal of primary-key, foreign-key,
@@ -121,18 +133,23 @@ identity tables and grants no revocation, cleanup, execution, UAT, or release au
 Rollback is restore-only:
 
 1. keep or return the feature to disabled;
-2. stop the schema-5 writer;
-3. restore the verified pre-v5 SQLite backup; and
+2. stop the schema-6 writer;
+3. restore the verified pre-v6 SQLite backup; and
 4. revert `pyproject.toml` and `uv.lock` exactly if the fixture adapter is removed.
 
-There is no automated down migration and no destructive table drop. Restoring the pre-v5 backup
+There is no automated down migration and no destructive table drop. Restoring the pre-v6 backup
 discards only post-migration local PIS-004A state; that data-loss boundary requires an explicit
 operator decision. No external system or production data is in scope.
 
 The schema structurally omits OIDC authorization codes, access tokens, ID tokens, refresh tokens,
-raw claims, and raw session handles. Audit output is limited to random local references, coarse
-reason codes, generations, and timestamps. It must not contain raw subjects, claims, customer
-names, credentials, handles, CSRF values, or tokens.
+raw claims, and raw session handles. Session issuance consumes a short-lived, atomic one-use grant
+record produced only after fixture OIDC validation and exact identity resolution; raw
+principal/organization/authentication-method issuance is not exposed. Digest-key generations have
+persisted `active`, `retained`, or `retired` state; retirement revokes affected sessions and active
+preauthentication records, and another process cannot restore a retired generation. Audit output
+uses a closed outcome/reason vocabulary and is limited to random local references, coarse reason
+codes, generations, and timestamps. It must not contain raw subjects, claims, customer names,
+credentials, handles, CSRF values, or tokens.
 
 ## Test and candidate procedure
 
@@ -147,15 +164,16 @@ After focused and broader checks pass, a separate reviewer should reproduce the 
 clean detached worktree:
 
 ```sh
-git fetch origin refs/heads/codex/enterprise-e2-pis004a-local-identity:refs/remotes/origin/codex/enterprise-e2-pis004a-local-identity
+git fetch origin refs/heads/codex/enterprise-e2-pis004a-review-repair:refs/remotes/origin/codex/enterprise-e2-pis004a-review-repair
 git worktree add --detach /tmp/ithildin-pis004a-review <candidate_commit>
 cd /tmp/ithildin-pis004a-review
 make production-identity-storage-pis-004a-check
 ```
 
-The gate accepts the exact authorized implementation branch or a clean detached `HEAD` that equals
-the freshly fetched authorized remote branch tip. A different detached commit, any dirty detached
-state, and every other named branch fail closed.
+The gate accepts the exact authorized implementation branch or a clean detached `HEAD` only when
+the checkout is clean and equals the freshly fetched authorized remote branch tip. A dirty or
+divergent named branch, a different detached commit, any dirty detached state, and every other
+named branch fail closed.
 
 A clean candidate and passing automated checks are not independent review, human UAT, release
 acceptance, or production promotion. The next action is

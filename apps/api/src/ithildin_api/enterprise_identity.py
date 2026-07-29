@@ -83,6 +83,32 @@ class WorkspaceRole(StrEnum):
     SERVICE = "service"
 
 
+class EnterpriseAuditOutcome(StrEnum):
+    ACCEPTED = "accepted"
+    ALLOWED = "allowed"
+    DENIED = "denied"
+
+
+class EnterpriseAuditReasonCode(StrEnum):
+    IDENTITY_RESOLVED = "identity_resolved"
+    MEMBERSHIP_AUTHORITY_RESOLVED = "membership_authority_resolved"
+    SESSION_VALID = "session_valid"
+    PREAUTHENTICATION_CONSUMED = "preauthentication_consumed"
+    FIXTURE_CONFORMANCE_VALID = "fixture_conformance_valid"
+
+
+def validate_safe_audit_labels(
+    *,
+    outcome: EnterpriseAuditOutcome,
+    reason_code: EnterpriseAuditReasonCode,
+) -> tuple[str, str]:
+    if not isinstance(outcome, EnterpriseAuditOutcome):
+        raise ValueError("audit outcome is not in the closed enterprise vocabulary")
+    if not isinstance(reason_code, EnterpriseAuditReasonCode):
+        raise ValueError("audit reason is not in the closed enterprise vocabulary")
+    return outcome.value, reason_code.value
+
+
 class _FrozenModel(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
@@ -121,7 +147,16 @@ class IdentityResolution(_FrozenModel):
     provider_configuration_id: str
     identity_generation: int
 
-    def safe_audit_metadata(self, *, outcome: str, reason_code: str) -> JsonObject:
+    def safe_audit_metadata(
+        self,
+        *,
+        outcome: EnterpriseAuditOutcome,
+        reason_code: EnterpriseAuditReasonCode,
+    ) -> JsonObject:
+        safe_outcome, safe_reason_code = validate_safe_audit_labels(
+            outcome=outcome,
+            reason_code=reason_code,
+        )
         return {
             "identity_audit_id": self.identity_audit_id,
             "principal_id": self.principal_id,
@@ -129,8 +164,8 @@ class IdentityResolution(_FrozenModel):
             "organization_id": self.organization_id,
             "provider_configuration_id": self.provider_configuration_id,
             "identity_generation": self.identity_generation,
-            "outcome": outcome,
-            "reason_code": reason_code,
+            "outcome": safe_outcome,
+            "reason_code": safe_reason_code,
         }
 
 
@@ -144,7 +179,16 @@ class MembershipAuthorityState(_FrozenModel):
     organization_roles: tuple[OrganizationRole, ...]
     workspace_roles: tuple[WorkspaceRole, ...]
 
-    def safe_audit_metadata(self, *, outcome: str, reason_code: str) -> JsonObject:
+    def safe_audit_metadata(
+        self,
+        *,
+        outcome: EnterpriseAuditOutcome,
+        reason_code: EnterpriseAuditReasonCode,
+    ) -> JsonObject:
+        safe_outcome, safe_reason_code = validate_safe_audit_labels(
+            outcome=outcome,
+            reason_code=reason_code,
+        )
         return {
             "principal_id": self.principal_id,
             "principal_type": self.principal_type.value,
@@ -152,8 +196,8 @@ class MembershipAuthorityState(_FrozenModel):
             "workspace_id": self.workspace_id,
             "identity_generation": self.identity_generation,
             "membership_generation": self.membership_generation,
-            "outcome": outcome,
-            "reason_code": reason_code,
+            "outcome": safe_outcome,
+            "reason_code": safe_reason_code,
         }
 
 
@@ -488,6 +532,16 @@ class EnterpriseIdentityStore:
                         principal_id,
                     ),
                 )
+            if not enabled:
+                connection.execute(
+                    """
+                    UPDATE identity_workspace_memberships
+                    SET enabled = 0, updated_at = ?
+                    WHERE organization_id = ? AND principal_id = ?
+                      AND enabled = 1
+                    """,
+                    (now.isoformat(), organization_id, principal_id),
+                )
         return generation
 
     def create_workspace(self, organization_id: str, workspace_id: str) -> None:
@@ -742,6 +796,25 @@ class EnterpriseIdentityStore:
             )
             if updated.rowcount != 1:
                 raise EnterpriseIdentityConflictError("identity generation changed concurrently")
+            if not enabled:
+                connection.execute(
+                    """
+                    UPDATE identity_organization_memberships
+                    SET enabled = 0,
+                        membership_generation = membership_generation + 1,
+                        updated_at = ?
+                    WHERE principal_id = ? AND enabled = 1
+                    """,
+                    (now.isoformat(), principal_id),
+                )
+                connection.execute(
+                    """
+                    UPDATE identity_workspace_memberships
+                    SET enabled = 0, updated_at = ?
+                    WHERE principal_id = ? AND enabled = 1
+                    """,
+                    (now.isoformat(), principal_id),
+                )
         return generation
 
     def _connection(self) -> sqlite3.Connection:
@@ -856,24 +929,55 @@ def _parse_roles[RoleT: StrEnum](
 
 
 def _validate_exact_issuer(value: str) -> None:
-    if value != value.strip() or len(value) > 2048:
+    if (
+        not value
+        or value != value.strip()
+        or len(value) > 2048
+        or _has_control(value)
+        or any(character.isspace() for character in value)
+        or "\\" in value
+        or not _is_valid_utf8(value)
+    ):
         raise EnterpriseIdentityError("exact issuer is malformed")
-    parsed = urlsplit(value)
+    try:
+        parsed = urlsplit(value)
+        parsed_port = parsed.port
+    except ValueError as exc:
+        raise EnterpriseIdentityError("exact issuer is malformed") from exc
     if (
         parsed.scheme != "https"
         or not parsed.netloc
+        or parsed.hostname is None
+        or parsed.netloc.endswith(":")
+        or (parsed_port is not None and not 1 <= parsed_port <= 65535)
         or parsed.username is not None
         or parsed.password is not None
         or parsed.query
         or parsed.fragment
-        or "\\" in value
     ):
         raise EnterpriseIdentityError("exact issuer is malformed")
 
 
 def _validate_subject(value: str) -> None:
-    if not 1 <= len(value) <= 512 or any(ord(character) < 0x20 for character in value):
+    if (
+        not 1 <= len(value) <= 512
+        or _has_control(value)
+        or not _is_valid_utf8(value)
+        or len(value.encode("utf-8")) > 512
+    ):
         raise EnterpriseIdentityError("external subject is malformed")
+
+
+def _has_control(value: str) -> bool:
+    return any(ord(character) < 0x20 or ord(character) == 0x7F for character in value)
+
+
+def _is_valid_utf8(value: str) -> bool:
+    try:
+        value.encode("utf-8")
+    except UnicodeEncodeError:
+        return False
+    return True
 
 
 def _validate_workspace_id(value: str) -> None:

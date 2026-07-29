@@ -24,8 +24,14 @@ from joserfc.errors import JoseError
 from joserfc.jwt import JWTClaimsRegistry
 from pydantic import BaseModel, ConfigDict, Field
 
+from ithildin_api.enterprise_identity import (
+    EnterpriseAuditOutcome,
+    EnterpriseAuditReasonCode,
+    validate_safe_audit_labels,
+)
 from ithildin_api.enterprise_sessions import (
     AuthenticationMethod,
+    EnterpriseSessionError,
     EnterpriseSessionStore,
     PreauthenticationError,
 )
@@ -120,6 +126,7 @@ class FixtureCallback(_FrozenModel):
 
 class OidcIdentityAssertion(_FrozenModel):
     assertion_audit_id: str
+    authentication_grant_id: str = Field(pattern=r"^agrant_[0-9a-f]{32}$")
     organization_id: str
     provider_configuration_id: str
     exact_issuer: str
@@ -128,14 +135,23 @@ class OidcIdentityAssertion(_FrozenModel):
     authentication_time: datetime
     token_expires_at: datetime
 
-    def safe_audit_metadata(self, *, outcome: str, reason_code: str) -> JsonObject:
+    def safe_audit_metadata(
+        self,
+        *,
+        outcome: EnterpriseAuditOutcome,
+        reason_code: EnterpriseAuditReasonCode,
+    ) -> JsonObject:
+        safe_outcome, safe_reason_code = validate_safe_audit_labels(
+            outcome=outcome,
+            reason_code=reason_code,
+        )
         return {
             "assertion_audit_id": self.assertion_audit_id,
             "organization_id": self.organization_id,
             "provider_configuration_id": self.provider_configuration_id,
             "authentication_method": self.authentication_method.value,
-            "outcome": outcome,
-            "reason_code": reason_code,
+            "outcome": safe_outcome,
+            "reason_code": safe_reason_code,
         }
 
 
@@ -167,21 +183,15 @@ class ZeroNetworkOidcFixtureAdapter:
         _validate_redirect_uri(configured_redirect_uri)
         _validate_origin(allowed_origin)
         if _redirect_origin(configured_redirect_uri) != allowed_origin:
-            raise OidcFixtureConfigurationError(
-                "configured redirect and origin are inconsistent"
-            )
+            raise OidcFixtureConfigurationError("configured redirect and origin are inconsistent")
         if (
             not 1 <= len(expected_audience) <= 512
             or _has_control(expected_audience)
             or not _is_valid_utf8(expected_audience)
         ):
             raise OidcFixtureConfigurationError("configured audience is malformed")
-        if _SHA256_DIGEST_PATTERN.fullmatch(
-            expected_authorization_code_digest
-        ) is None:
-            raise OidcFixtureConfigurationError(
-                "authorization-code fixture digest is malformed"
-            )
+        if _SHA256_DIGEST_PATTERN.fullmatch(expected_authorization_code_digest) is None:
+            raise OidcFixtureConfigurationError("authorization-code fixture digest is malformed")
         if not timedelta(0) <= clock_skew <= timedelta(minutes=5):
             raise OidcFixtureConfigurationError("OIDC clock skew is out of bounds")
         self.db_path = db_path
@@ -190,9 +200,7 @@ class ZeroNetworkOidcFixtureAdapter:
         self._configured_redirect_uri = configured_redirect_uri
         self._allowed_origin = allowed_origin
         self._expected_audience = expected_audience
-        self._expected_authorization_code_digest = (
-            expected_authorization_code_digest
-        )
+        self._expected_authorization_code_digest = expected_authorization_code_digest
         self._clock = clock
         self._clock_skew = clock_skew
         self._id_factory = id_factory or _random_id
@@ -218,9 +226,7 @@ class ZeroNetworkOidcFixtureAdapter:
             authorization_code_fixture_digest(callback.authorization_code),
             self._expected_authorization_code_digest,
         ):
-            raise OidcFixtureValidationError(
-                "authorization-code fixture binding mismatch"
-            )
+            raise OidcFixtureValidationError("authorization-code fixture binding mismatch")
         try:
             transaction = self._sessions.consume_preauthentication(
                 callback.transaction_handle,
@@ -230,20 +236,14 @@ class ZeroNetworkOidcFixtureAdapter:
                 allowed_origin=callback.origin,
             )
         except PreauthenticationError as exc:
-            raise OidcFixtureValidationError(
-                "preauthentication transaction was denied"
-            ) from exc
+            raise OidcFixtureValidationError("preauthentication transaction was denied") from exc
         if (
             transaction.exact_issuer != self._configured_exact_issuer
             or transaction.configured_redirect_uri != self._configured_redirect_uri
             or transaction.allowed_origin != self._allowed_origin
         ):
-            raise OidcFixtureValidationError(
-                "preauthentication configuration binding mismatch"
-            )
-        expected_challenge = str(
-            create_s256_code_challenge(transaction.pkce_verifier)
-        )
+            raise OidcFixtureValidationError("preauthentication configuration binding mismatch")
+        expected_challenge = str(create_s256_code_challenge(transaction.pkce_verifier))
         if not hmac.compare_digest(
             expected_challenge,
             callback.captured_authorization_request_code_challenge,
@@ -264,11 +264,10 @@ class ZeroNetworkOidcFixtureAdapter:
                 nonce=nonce,
             )
         except PreauthenticationError as exc:
-            raise OidcFixtureValidationError(
-                "preauthentication nonce was denied"
-            ) from exc
+            raise OidcFixtureValidationError("preauthentication nonce was denied") from exc
         expires_at = _numeric_date(claims, "exp")
         authentication_time = _numeric_date(claims, "auth_time")
+        subject = _require_string_claim(claims, "sub", maximum_length=512)
         self._record_replay(
             organization_id=transaction.organization_id,
             provider_configuration_id=transaction.provider_configuration_id,
@@ -278,12 +277,28 @@ class ZeroNetworkOidcFixtureAdapter:
             now=now,
             token_expires_at=expires_at,
         )
+        assertion_audit_id = self._id_factory("oaud_")
+        try:
+            authentication_grant_id = self._sessions._record_oidc_authentication_grant(  # noqa: SLF001
+                assertion_audit_id=assertion_audit_id,
+                organization_id=transaction.organization_id,
+                provider_configuration_id=transaction.provider_configuration_id,
+                exact_issuer=self._configured_exact_issuer,
+                subject=subject,
+                authentication_time=authentication_time,
+                token_expires_at=expires_at,
+            )
+        except EnterpriseSessionError as exc:
+            raise OidcFixtureValidationError(
+                "OIDC assertion identity authority is unavailable"
+            ) from exc
         return OidcIdentityAssertion(
-            assertion_audit_id=self._id_factory("oaud_"),
+            assertion_audit_id=assertion_audit_id,
+            authentication_grant_id=authentication_grant_id,
             organization_id=transaction.organization_id,
             provider_configuration_id=transaction.provider_configuration_id,
             exact_issuer=self._configured_exact_issuer,
-            subject=_require_string_claim(claims, "sub", maximum_length=512),
+            subject=subject,
             authentication_method=AuthenticationMethod.OIDC_FIXTURE,
             authentication_time=authentication_time,
             token_expires_at=expires_at,
@@ -314,9 +329,7 @@ class ZeroNetworkOidcFixtureAdapter:
             try:
                 _validate_https_url(value)
             except OidcFixtureConfigurationError as exc:
-                raise OidcFixtureValidationError(
-                    "discovery endpoint is malformed"
-                ) from exc
+                raise OidcFixtureValidationError("discovery endpoint is malformed") from exc
         if discovery.get("response_types_supported") != ["code"]:
             raise OidcFixtureValidationError("discovery response type is unsupported")
         if discovery.get("subject_types_supported") != ["public"]:
@@ -347,9 +360,7 @@ class ZeroNetworkOidcFixtureAdapter:
         public_keys: dict[str, jwk.RSAKey] = {}
         for raw_key in raw_keys:
             if set(raw_key) != _JWK_KEYS or set(raw_key) & _PRIVATE_JWK_KEYS:
-                raise OidcFixtureValidationError(
-                    "JWK is not the fixed public profile"
-                )
+                raise OidcFixtureValidationError("JWK is not the fixed public profile")
             key_identifier = raw_key.get("kid")
             if (
                 not isinstance(key_identifier, str)
@@ -368,13 +379,8 @@ class ZeroNetworkOidcFixtureAdapter:
             try:
                 imported_key = jwk.import_key(raw_key)
             except (JoseError, TypeError, ValueError) as exc:
-                raise OidcFixtureValidationError(
-                    "JWK could not be imported"
-                ) from exc
-            if (
-                not isinstance(imported_key, jwk.RSAKey)
-                or imported_key.raw_value.key_size < 2048
-            ):
+                raise OidcFixtureValidationError("JWK could not be imported") from exc
+            if not isinstance(imported_key, jwk.RSAKey) or imported_key.raw_value.key_size < 2048:
                 raise OidcFixtureValidationError("JWK strength is insufficient")
             public_keys[key_identifier] = imported_key
         return public_keys
@@ -395,9 +401,7 @@ class ZeroNetworkOidcFixtureAdapter:
         try:
             return self._public_keys[kid]
         except KeyError as exc:
-            raise OidcFixtureValidationError(
-                "token key identifier is unavailable"
-            ) from exc
+            raise OidcFixtureValidationError("token key identifier is unavailable") from exc
 
     def _decode_and_validate_claims(
         self,
@@ -406,9 +410,7 @@ class ZeroNetworkOidcFixtureAdapter:
         key: jwk.RSAKey,
         now: datetime,
     ) -> dict[str, Any]:
-        if not 1 <= len(compact_id_token) <= 16384 or _has_control(
-            compact_id_token
-        ):
+        if not 1 <= len(compact_id_token) <= 16384 or _has_control(compact_id_token):
             raise OidcFixtureValidationError("ID token is malformed")
         try:
             token = jwt.decode(
@@ -420,14 +422,10 @@ class ZeroNetworkOidcFixtureAdapter:
             if not isinstance(token.claims, dict) or not all(
                 isinstance(name, str) for name in token.claims
             ):
-                raise OidcFixtureValidationError(
-                    "ID token claims must be a JSON object"
-                )
+                raise OidcFixtureValidationError("ID token claims must be a JSON object")
             claims = dict(token.claims)
         except (JoseError, TypeError, ValueError, RecursionError) as exc:
-            raise OidcFixtureValidationError(
-                "ID token signature or payload is invalid"
-            ) from exc
+            raise OidcFixtureValidationError("ID token signature or payload is invalid") from exc
         if not set(claims) <= _TOKEN_CLAIM_KEYS:
             raise OidcFixtureValidationError("ID token claims exceed the fixed profile")
         now_timestamp = int(now.timestamp())
@@ -520,9 +518,7 @@ class ZeroNetworkOidcFixtureAdapter:
                     or not bool(authority[1])
                     or not bool(authority[2])
                 ):
-                    raise OidcFixtureValidationError(
-                        "provider configuration is unavailable"
-                    )
+                    raise OidcFixtureValidationError("provider configuration is unavailable")
                 connection.execute(
                     "DELETE FROM identity_oidc_replays WHERE expires_at <= ?",
                     (now.isoformat(),),
@@ -547,14 +543,10 @@ class ZeroNetworkOidcFixtureAdapter:
                 )
             except sqlite3.IntegrityError as exc:
                 _rollback_quietly(connection)
-                raise OidcFixtureReplayError(
-                    "OIDC fixture credential replay was denied"
-                ) from exc
+                raise OidcFixtureReplayError("OIDC fixture credential replay was denied") from exc
             except sqlite3.Error as exc:
                 _rollback_quietly(connection)
-                raise OidcFixtureValidationError(
-                    "OIDC replay authority is unavailable"
-                ) from exc
+                raise OidcFixtureValidationError("OIDC replay authority is unavailable") from exc
             except BaseException:
                 _rollback_quietly(connection)
                 raise
@@ -602,9 +594,7 @@ def _load_json_object(
         raise OidcFixtureValidationError(f"{label} fixture is malformed")
     stripped = payload.lstrip()
     if stripped.startswith((b"http://", b"https://")):
-        raise OidcNetworkForbiddenError(
-            f"{label} must be captured bytes, not a network reference"
-        )
+        raise OidcNetworkForbiddenError(f"{label} must be captured bytes, not a network reference")
     try:
         value = json.loads(payload, cls=_StrictJsonDecoder)
     except (
@@ -614,9 +604,7 @@ def _load_json_object(
         RecursionError,
     ) as exc:
         raise OidcFixtureValidationError(f"{label} fixture is malformed") from exc
-    if not isinstance(value, dict) or not all(
-        isinstance(key, str) for key in value
-    ):
+    if not isinstance(value, dict) or not all(isinstance(key, str) for key in value):
         raise OidcFixtureValidationError(f"{label} fixture is malformed")
     return value
 
@@ -668,9 +656,7 @@ def _numeric_date(claims: Mapping[str, object], name: str) -> datetime:
     try:
         return datetime.fromtimestamp(value, tz=UTC)
     except (OverflowError, OSError, ValueError) as exc:
-        raise OidcFixtureValidationError(
-            f"ID token {name} claim is malformed"
-        ) from exc
+        raise OidcFixtureValidationError(f"ID token {name} claim is malformed") from exc
 
 
 def _validate_https_url(value: str) -> None:
@@ -697,10 +683,7 @@ def _validate_redirect_uri(value: str) -> None:
         or parsed.username is not None
         or parsed.password is not None
         or parsed.fragment
-        or (
-            parsed.scheme == "http"
-            and parsed.hostname not in {"127.0.0.1", "::1", "localhost"}
-        )
+        or (parsed.scheme == "http" and parsed.hostname not in {"127.0.0.1", "::1", "localhost"})
     ):
         raise OidcFixtureConfigurationError("configured redirect URI is malformed")
 
@@ -714,10 +697,7 @@ def _validate_origin(value: str) -> None:
         or parsed.path
         or parsed.query
         or parsed.fragment
-        or (
-            parsed.scheme == "http"
-            and parsed.hostname not in {"127.0.0.1", "::1", "localhost"}
-        )
+        or (parsed.scheme == "http" and parsed.hostname not in {"127.0.0.1", "::1", "localhost"})
     ):
         raise OidcFixtureConfigurationError("allowed origin is malformed")
 
@@ -772,27 +752,16 @@ def _is_valid_utf8(value: str) -> bool:
 def authorization_code_fixture_digest(authorization_code: str) -> str:
     """Return the domain-separated digest for one synthetic fixture code."""
 
-    if (
-        not 1 <= len(authorization_code) <= 2048
-        or any(
-            ord(character) < 0x21 or ord(character) > 0x7E
-            for character in authorization_code
-        )
+    if not 1 <= len(authorization_code) <= 2048 or any(
+        ord(character) < 0x21 or ord(character) > 0x7E for character in authorization_code
     ):
-        raise OidcFixtureConfigurationError(
-            "authorization-code fixture is malformed"
-        )
+        raise OidcFixtureConfigurationError("authorization-code fixture is malformed")
     return _replay_digest("authorization-code", authorization_code)
 
 
 def _replay_digest(purpose: str, credential: str) -> str:
     digest = hashlib.sha256(
-        (
-            "ithildin-pis004a-oidc-replay-v1:"
-            + purpose
-            + "\N{NULL}"
-            + credential
-        ).encode("utf-8")
+        ("ithildin-pis004a-oidc-replay-v1:" + purpose + "\N{NULL}" + credential).encode("utf-8")
     ).hexdigest()
     return "sha256:" + digest
 

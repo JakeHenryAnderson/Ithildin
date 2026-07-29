@@ -10,6 +10,8 @@ import pytest
 from ithildin_api.database import initialize_database
 from ithildin_api.enterprise_identity import (
     CallerAuthorityRejectedError,
+    EnterpriseAuditOutcome,
+    EnterpriseAuditReasonCode,
     EnterpriseIdentityConflictError,
     EnterpriseIdentityDisabledError,
     EnterpriseIdentityError,
@@ -72,7 +74,10 @@ def test_exact_identity_key_uses_random_principal_and_safe_audit_reference(
         exact_issuer=ISSUER,
         subject="subject-Aa-001",
     )
-    audit = resolved.safe_audit_metadata(outcome="allowed", reason_code="identity_resolved")
+    audit = resolved.safe_audit_metadata(
+        outcome=EnterpriseAuditOutcome.ALLOWED,
+        reason_code=EnterpriseAuditReasonCode.IDENTITY_RESOLVED,
+    )
 
     assert principal_id.startswith("prn_")
     assert len(principal_id) == 36
@@ -94,6 +99,16 @@ def test_exact_identity_key_uses_random_principal_and_safe_audit_reference(
         "outcome",
         "reason_code",
     }
+    with pytest.raises(ValueError, match="closed enterprise vocabulary"):
+        resolved.safe_audit_metadata(
+            outcome="secret-bearing-outcome",  # type: ignore[arg-type]
+            reason_code=EnterpriseAuditReasonCode.IDENTITY_RESOLVED,
+        )
+    with pytest.raises(ValueError, match="closed enterprise vocabulary"):
+        resolved.safe_audit_metadata(
+            outcome=EnterpriseAuditOutcome.ALLOWED,
+            reason_code="secret-bearing-reason",  # type: ignore[arg-type]
+        )
 
 
 @pytest.mark.parametrize(
@@ -132,9 +147,7 @@ def test_immutable_identity_key_cannot_be_remapped(tmp_path: Path) -> None:
         )
 
     with sqlite3.connect(store.db_path) as connection:
-        rows = connection.execute(
-            "SELECT principal_id FROM identity_bindings"
-        ).fetchall()
+        rows = connection.execute("SELECT principal_id FROM identity_bindings").fetchall()
     assert rows == [(principal_id,)]
 
 
@@ -147,6 +160,10 @@ def test_malformed_issuer_or_subject_fails_before_persistence(tmp_path: Path) ->
         "https://user@identity.example.test",
         "https://identity.example.test?tenant=a",
         " https://identity.example.test",
+        "https://identity.example.test:99999",
+        "https://identity.example.test:",
+        "https://identity.example.test/\x7f",
+        "https://identity.example.test/\ud800",
     ):
         with pytest.raises(EnterpriseIdentityError, match="issuer is malformed"):
             store.add_provider_configuration(
@@ -158,13 +175,19 @@ def test_malformed_issuer_or_subject_fails_before_persistence(tmp_path: Path) ->
         organization.organization_id,
         exact_issuer=ISSUER,
     )
-    with pytest.raises(EnterpriseIdentityError, match="subject is malformed"):
-        store.provision_human_identity(
-            organization.organization_id,
-            provider.provider_configuration_id,
-            exact_issuer=ISSUER,
-            subject="subject\ninjected",
-        )
+    for subject in (
+        "subject\ninjected",
+        "subject\x7finjected",
+        "subject\ud800injected",
+        "a" * 511 + "\N{SNOWMAN}",
+    ):
+        with pytest.raises(EnterpriseIdentityError, match="subject is malformed"):
+            store.provision_human_identity(
+                organization.organization_id,
+                provider.provider_configuration_id,
+                exact_issuer=ISSUER,
+                subject=subject,
+            )
 
 
 def test_caller_authority_fields_are_rejected_recursively() -> None:
@@ -265,6 +288,70 @@ def test_membership_change_invalidates_prior_generation_and_lists_only_current_o
     assert all(item.membership_generation == generation for item in listed)
 
 
+def test_reenabling_organization_membership_does_not_restore_workspace_roles(
+    tmp_path: Path,
+) -> None:
+    store = make_store(tmp_path)
+    organization_id, _, principal_id = provision(store)
+    store.set_organization_membership(
+        organization_id,
+        principal_id,
+        roles={OrganizationRole.MEMBER},
+    )
+    store.create_workspace(organization_id, "alpha")
+    store.create_workspace(organization_id, "beta")
+    for workspace_id in ("alpha", "beta"):
+        store.set_workspace_membership(
+            organization_id,
+            workspace_id,
+            principal_id,
+            roles={WorkspaceRole.WORKSPACE_ADMIN},
+        )
+
+    disabled_generation = store.set_organization_membership(
+        organization_id,
+        principal_id,
+        roles={OrganizationRole.MEMBER},
+        enabled=False,
+    )
+    reenabled_generation = store.set_organization_membership(
+        organization_id,
+        principal_id,
+        roles={OrganizationRole.MEMBER},
+        enabled=True,
+    )
+
+    assert reenabled_generation == disabled_generation + 1
+    assert store.list_workspace_memberships(principal_id, organization_id) == ()
+    for workspace_id in ("alpha", "beta"):
+        with pytest.raises(EnterpriseIdentityDisabledError, match="disabled"):
+            store.current_authority_state(
+                principal_id,
+                organization_id,
+                workspace_id,
+            )
+
+    explicit_generation = store.set_workspace_membership(
+        organization_id,
+        "alpha",
+        principal_id,
+        roles={WorkspaceRole.READER},
+    )
+    assert explicit_generation == reenabled_generation + 1
+    restored = store.current_authority_state(
+        principal_id,
+        organization_id,
+        "alpha",
+    )
+    assert restored.workspace_roles == (WorkspaceRole.READER,)
+    with pytest.raises(EnterpriseIdentityDisabledError, match="disabled"):
+        store.current_authority_state(
+            principal_id,
+            organization_id,
+            "beta",
+        )
+
+
 def test_human_cannot_receive_cross_organization_membership(tmp_path: Path) -> None:
     store = make_store(tmp_path)
     _, _, principal_id = provision(store)
@@ -295,8 +382,29 @@ def test_disable_increments_identity_generation_and_fails_closed(tmp_path: Path)
     )
 
     generation = store.set_principal_enabled(principal_id, enabled=False)
+    store.set_principal_enabled(principal_id, enabled=True)
 
     assert generation == 2
+    with pytest.raises(EnterpriseIdentityDisabledError, match="disabled"):
+        store.current_organization_authority(principal_id, organization_id)
+    with pytest.raises(EnterpriseIdentityDisabledError, match="disabled"):
+        store.current_authority_state(principal_id, organization_id, "alpha")
+
+    store.set_organization_membership(
+        organization_id,
+        principal_id,
+        roles={OrganizationRole.MEMBER},
+    )
+    resolved = store.resolve_identity(
+        organization_id,
+        provider_id,
+        exact_issuer=ISSUER,
+        subject="subject-Aa-001",
+    )
+    assert resolved.identity_generation == 3
+    with pytest.raises(EnterpriseIdentityDisabledError, match="disabled"):
+        store.current_authority_state(principal_id, organization_id, "alpha")
+    store.set_principal_enabled(principal_id, enabled=False)
     with pytest.raises(EnterpriseIdentityDisabledError, match="disabled"):
         store.resolve_identity(
             organization_id,
@@ -304,8 +412,6 @@ def test_disable_increments_identity_generation_and_fails_closed(tmp_path: Path)
             exact_issuer=ISSUER,
             subject="subject-Aa-001",
         )
-    with pytest.raises(EnterpriseIdentityDisabledError, match="disabled"):
-        store.current_authority_state(principal_id, organization_id, "alpha")
 
 
 def test_node_and_service_principals_are_distinct_from_humans(tmp_path: Path) -> None:

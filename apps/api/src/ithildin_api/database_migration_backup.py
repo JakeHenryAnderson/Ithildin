@@ -17,6 +17,7 @@ from ithildin_schemas import JsonObject, canonical_json
 BACKUP_RECEIPT_VERSION = "1"
 TARGET_SCHEMA_VERSION = "4"
 PIS004A_TARGET_SCHEMA_VERSION = "5"
+PIS004A_REPAIR_TARGET_SCHEMA_VERSION = "6"
 
 
 class DatabaseBackupError(RuntimeError):
@@ -63,6 +64,28 @@ def ensure_pre_v5_backup(
         supported_source_versions={"4"},
         target_schema_version=PIS004A_TARGET_SCHEMA_VERSION,
         paths=pre_v5_backup_paths(db_path),
+        now=now,
+    )
+
+
+def ensure_pre_v6_backup(
+    *,
+    locked_source: sqlite3.Connection,
+    db_path: Path,
+    source_schema_version: str,
+    source_minimum_writer_version: str | None,
+    now: datetime | None = None,
+) -> JsonObject:
+    """Create or verify the restore-only backup for the PIS-004A repair migration."""
+
+    return _ensure_pre_migration_backup(
+        locked_source=locked_source,
+        db_path=db_path,
+        source_schema_version=source_schema_version,
+        source_minimum_writer_version=source_minimum_writer_version,
+        supported_source_versions={"4", "5"},
+        target_schema_version=PIS004A_REPAIR_TARGET_SCHEMA_VERSION,
+        paths=pre_v6_backup_paths(db_path),
         now=now,
     )
 
@@ -127,6 +150,12 @@ def pre_v4_backup_paths(db_path: Path) -> tuple[Path, Path]:
 def pre_v5_backup_paths(db_path: Path) -> tuple[Path, Path]:
     backup_path = db_path.with_name(f"{db_path.name}.pre-v5.sqlite3")
     receipt_path = db_path.with_name(f"{db_path.name}.pre-v5-receipt.json")
+    return backup_path, receipt_path
+
+
+def pre_v6_backup_paths(db_path: Path) -> tuple[Path, Path]:
+    backup_path = db_path.with_name(f"{db_path.name}.pre-v6.sqlite3")
+    receipt_path = db_path.with_name(f"{db_path.name}.pre-v6-receipt.json")
     return backup_path, receipt_path
 
 

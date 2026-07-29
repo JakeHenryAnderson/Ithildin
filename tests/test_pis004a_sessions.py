@@ -9,10 +9,13 @@ from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from uuid import uuid4
 
 import pytest
 from ithildin_api.database import initialize_database
 from ithildin_api.enterprise_identity import (
+    EnterpriseAuditOutcome,
+    EnterpriseAuditReasonCode,
     EnterpriseIdentityStore,
     EnterprisePrincipalType,
     OrganizationRole,
@@ -23,6 +26,7 @@ from ithildin_api.enterprise_sessions import (
     PreauthenticationError,
     PreauthenticationReplayError,
     SessionAuthenticationError,
+    SessionClientMaterial,
     SessionConfigurationError,
     SessionDigestKeyRing,
     SessionExpiredError,
@@ -115,8 +119,7 @@ def make_fixture(
     )
     sessions = EnterpriseSessionStore(
         db_path,
-        key_ring=key_ring
-        or SessionDigestKeyRing({1: b"A" * 32}, active_generation=1),
+        key_ring=key_ring or SessionDigestKeyRing({1: b"A" * 32}, active_generation=1),
         allowed_origins=frozenset({ORIGIN}),
         clock=clock,
         secret_factory=factories.secret,
@@ -137,11 +140,83 @@ def make_fixture(
     )
 
 
+def create_authentication_grant(
+    fixture: SessionFixture,
+    *,
+    principal_id: str | None = None,
+    authentication_time: datetime | None = None,
+) -> str:
+    authority = fixture.identity.current_organization_authority(
+        principal_id or fixture.principal_id,
+        fixture.organization_id,
+    )
+    grant_id = "agrant_" + uuid4().hex
+    now = fixture.clock.now
+    with sqlite3.connect(fixture.db_path) as connection:
+        connection.execute(
+            """
+            INSERT INTO identity_authentication_grants (
+                authentication_grant_id, assertion_audit_id,
+                organization_id, principal_id, identity_generation,
+                membership_generation, authentication_method,
+                authentication_time, created_at, expires_at,
+                status, consumed_at
+            ) VALUES (?, ?, ?, ?, ?, ?, 'oidc_fixture', ?, ?, ?,
+                      'active', NULL)
+            """,
+            (
+                grant_id,
+                "oaud_" + uuid4().hex,
+                fixture.organization_id,
+                authority.principal_id,
+                authority.identity_generation,
+                authority.membership_generation,
+                (authentication_time or now).isoformat(),
+                now.isoformat(),
+                (now + timedelta(minutes=1)).isoformat(),
+            ),
+        )
+    return grant_id
+
+
+def issue_session(
+    fixture: SessionFixture,
+    *,
+    principal_id: str | None = None,
+    authentication_method: AuthenticationMethod = AuthenticationMethod.OIDC_FIXTURE,
+    recent_auth_at: datetime | None = None,
+) -> SessionClientMaterial:
+    issued = fixture.sessions.issue_session(
+        create_authentication_grant(
+            fixture,
+            principal_id=principal_id,
+            authentication_time=recent_auth_at,
+        )
+    )
+    if authentication_method is AuthenticationMethod.OIDC_FIXTURE:
+        return issued
+    with sqlite3.connect(fixture.db_path) as connection:
+        connection.execute(
+            """
+            UPDATE identity_sessions
+            SET authentication_method = ?
+            WHERE session_id = ?
+            """,
+            (authentication_method.value, issued.context.session_id),
+        )
+    return issued.model_copy(
+        update={
+            "context": issued.context.model_copy(
+                update={"authentication_method": authentication_method}
+            )
+        }
+    )
+
+
 def test_only_keyed_session_and_csrf_digests_are_persisted(tmp_path: Path) -> None:
     fixture = make_fixture(tmp_path)
-    issued = fixture.sessions.issue_session(
-        fixture.principal_id,
-        fixture.organization_id,
+    issued = issue_session(
+        fixture,
         authentication_method=AuthenticationMethod.OIDC_FIXTURE,
     )
 
@@ -168,7 +243,10 @@ def test_only_keyed_session_and_csrf_digests_are_persisted(tmp_path: Path) -> No
     validated = fixture.sessions.validate_session(issued.handle)
     assert validated == issued.context
     serialized_audit = json.dumps(
-        validated.safe_audit_metadata(outcome="allowed", reason_code="session_valid"),
+        validated.safe_audit_metadata(
+            outcome=EnterpriseAuditOutcome.ALLOWED,
+            reason_code=EnterpriseAuditReasonCode.SESSION_VALID,
+        ),
         sort_keys=True,
     )
     assert issued.handle not in serialized_audit
@@ -187,10 +265,30 @@ def test_session_digest_key_configuration_and_retirement_fail_closed(
         SessionDigestKeyRing({1: b"short"}, active_generation=1)
 
     fixture = make_fixture(tmp_path)
-    issued = fixture.sessions.issue_session(
-        fixture.principal_id,
-        fixture.organization_id,
+    issued = issue_session(
+        fixture,
         authentication_method=AuthenticationMethod.OIDC_FIXTURE,
+    )
+    preauthentication = fixture.sessions.create_preauthentication(
+        fixture.organization_id,
+        fixture.provider_configuration_id,
+        exact_issuer=ISSUER,
+        configured_redirect_uri=REDIRECT_URI,
+        allowed_origin=ORIGIN,
+    )
+    consumed_client = fixture.sessions.create_preauthentication(
+        fixture.organization_id,
+        fixture.provider_configuration_id,
+        exact_issuer=ISSUER,
+        configured_redirect_uri=REDIRECT_URI,
+        allowed_origin=ORIGIN,
+    )
+    consumed_transaction = fixture.sessions.consume_preauthentication(
+        consumed_client.transaction_handle,
+        state=consumed_client.state,
+        exact_issuer=ISSUER,
+        configured_redirect_uri=REDIRECT_URI,
+        allowed_origin=ORIGIN,
     )
     retired_store = EnterpriseSessionStore(
         fixture.db_path,
@@ -200,15 +298,64 @@ def test_session_digest_key_configuration_and_retirement_fail_closed(
     )
     with pytest.raises(SessionAuthenticationError, match="did not authenticate"):
         retired_store.validate_session(issued.handle)
+    with pytest.raises(SessionAuthenticationError, match="did not authenticate"):
+        fixture.sessions.validate_session(issued.handle)
+    with pytest.raises(SessionConfigurationError, match="cannot be restored"):
+        EnterpriseSessionStore(
+            fixture.db_path,
+            key_ring=SessionDigestKeyRing(
+                {1: b"A" * 32, 2: b"B" * 32},
+                active_generation=2,
+            ),
+            allowed_origins=frozenset({ORIGIN}),
+            clock=fixture.clock,
+        )
+    with pytest.raises(PreauthenticationError, match="did not authenticate"):
+        retired_store.consume_preauthentication(
+            preauthentication.transaction_handle,
+            state=preauthentication.state,
+            exact_issuer=ISSUER,
+            configured_redirect_uri=REDIRECT_URI,
+            allowed_origin=ORIGIN,
+        )
+    with pytest.raises(PreauthenticationError, match="generation is retired"):
+        fixture.sessions.validate_preauthentication_nonce(
+            consumed_transaction,
+            nonce=consumed_client.nonce,
+        )
+    with sqlite3.connect(fixture.db_path) as connection:
+        key_generations = connection.execute(
+            """
+            SELECT digest_key_generation, status
+            FROM identity_session_digest_key_generations
+            ORDER BY digest_key_generation
+            """
+        ).fetchall()
+        family = connection.execute(
+            "SELECT revocation_reason FROM identity_session_families"
+        ).fetchone()
+        preauthentication_statuses = connection.execute(
+            """
+            SELECT status, pkce_verifier_envelope
+            FROM identity_preauthentication_transactions
+            ORDER BY transaction_id
+            """
+        ).fetchall()
+    assert key_generations == [(1, "retired"), (2, "active")]
+    assert family == ("digest_key_generation_retired",)
+    assert sorted(str(row[0]) for row in preauthentication_statuses) == [
+        "consumed",
+        "revoked",
+    ]
+    assert all(str(row[1]).startswith("redacted:") for row in preauthentication_statuses)
 
 
 def test_key_rotation_reads_retained_generation_and_writes_active_generation(
     tmp_path: Path,
 ) -> None:
     initial = make_fixture(tmp_path)
-    issued = initial.sessions.issue_session(
-        initial.principal_id,
-        initial.organization_id,
+    issued = issue_session(
+        initial,
         authentication_method=AuthenticationMethod.OIDC_FIXTURE,
     )
     rotated_key_store = EnterpriseSessionStore(
@@ -234,6 +381,47 @@ def test_key_rotation_reads_retained_generation_and_writes_active_generation(
     assert rotated_key_store.validate_session(successor.handle) == successor.context
 
 
+def test_authentication_grant_is_atomic_one_use_and_generation_bound(
+    tmp_path: Path,
+) -> None:
+    concurrent = make_fixture(tmp_path / "concurrent")
+    grant_id = create_authentication_grant(concurrent)
+    stores = tuple(
+        EnterpriseSessionStore(
+            concurrent.db_path,
+            key_ring=SessionDigestKeyRing(
+                {1: b"A" * 32},
+                active_generation=1,
+            ),
+            allowed_origins=frozenset({ORIGIN}),
+            clock=concurrent.clock,
+        )
+        for _ in range(2)
+    )
+
+    def consume(store: EnterpriseSessionStore) -> str:
+        try:
+            return store.issue_session(grant_id).context.session_id
+        except SessionAuthenticationError:
+            return "denied"
+
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        results = list(executor.map(consume, stores))
+
+    assert results.count("denied") == 1
+    assert len([result for result in results if result.startswith("sess_")]) == 1
+
+    stale = make_fixture(tmp_path / "stale")
+    stale_grant_id = create_authentication_grant(stale)
+    stale.identity.set_organization_membership(
+        stale.organization_id,
+        stale.principal_id,
+        roles={OrganizationRole.MEMBER},
+    )
+    with pytest.raises(SessionAuthenticationError, match="authority is stale"):
+        stale.sessions.issue_session(stale_grant_id)
+
+
 @pytest.mark.parametrize(
     ("principal_type", "role"),
     [
@@ -255,9 +443,9 @@ def test_node_and_service_principals_cannot_receive_interactive_sessions(
     )
 
     with pytest.raises(SessionAuthenticationError, match="human principal"):
-        fixture.sessions.issue_session(
-            principal.principal_id,
-            fixture.organization_id,
+        issue_session(
+            fixture,
+            principal_id=principal.principal_id,
             authentication_method=AuthenticationMethod.OIDC_FIXTURE,
         )
 
@@ -266,9 +454,8 @@ def test_legacy_nonhuman_session_family_is_revoked_on_validation(
     tmp_path: Path,
 ) -> None:
     fixture = make_fixture(tmp_path)
-    issued = fixture.sessions.issue_session(
-        fixture.principal_id,
-        fixture.organization_id,
+    issued = issue_session(
+        fixture,
         authentication_method=AuthenticationMethod.OIDC_FIXTURE,
     )
     node = fixture.identity.create_nonhuman_principal(EnterprisePrincipalType.NODE)
@@ -314,9 +501,8 @@ def test_idle_expiry_and_absolute_expiry_use_the_injected_clock(tmp_path: Path) 
         idle_ttl=timedelta(minutes=5),
         absolute_ttl=timedelta(hours=1),
     )
-    issued_idle = idle.sessions.issue_session(
-        idle.principal_id,
-        idle.organization_id,
+    issued_idle = issue_session(
+        idle,
         authentication_method=AuthenticationMethod.OIDC_FIXTURE,
     )
     idle.clock.advance(timedelta(minutes=5))
@@ -328,9 +514,8 @@ def test_idle_expiry_and_absolute_expiry_use_the_injected_clock(tmp_path: Path) 
         idle_ttl=timedelta(minutes=5),
         absolute_ttl=timedelta(minutes=12),
     )
-    issued_absolute = absolute.sessions.issue_session(
-        absolute.principal_id,
-        absolute.organization_id,
+    issued_absolute = issue_session(
+        absolute,
         authentication_method=AuthenticationMethod.OIDC_FIXTURE,
     )
     absolute.clock.advance(timedelta(minutes=4))
@@ -344,9 +529,8 @@ def test_idle_expiry_and_absolute_expiry_use_the_injected_clock(tmp_path: Path) 
 
 def test_rotated_handle_replay_revokes_the_entire_family(tmp_path: Path) -> None:
     fixture = make_fixture(tmp_path)
-    issued = fixture.sessions.issue_session(
-        fixture.principal_id,
-        fixture.organization_id,
+    issued = issue_session(
+        fixture,
         authentication_method=AuthenticationMethod.OIDC_FIXTURE,
     )
     successor = fixture.sessions.rotate_session(issued.handle)
@@ -371,9 +555,8 @@ def test_rotated_handle_replay_revokes_the_entire_family(tmp_path: Path) -> None
 
 def test_explicit_family_revocation_invalidates_active_handle(tmp_path: Path) -> None:
     fixture = make_fixture(tmp_path)
-    issued = fixture.sessions.issue_session(
-        fixture.principal_id,
-        fixture.organization_id,
+    issued = issue_session(
+        fixture,
         authentication_method=AuthenticationMethod.LOCAL_RECOVERY,
     )
 
@@ -389,9 +572,8 @@ def test_server_generation_change_invalidates_session(
     change: str,
 ) -> None:
     fixture = make_fixture(tmp_path)
-    issued = fixture.sessions.issue_session(
-        fixture.principal_id,
-        fixture.organization_id,
+    issued = issue_session(
+        fixture,
         authentication_method=AuthenticationMethod.OIDC_FIXTURE,
     )
     if change == "membership":
@@ -409,14 +591,12 @@ def test_server_generation_change_invalidates_session(
 
 def test_mutation_requires_exact_origin_and_session_bound_csrf(tmp_path: Path) -> None:
     fixture = make_fixture(tmp_path)
-    first = fixture.sessions.issue_session(
-        fixture.principal_id,
-        fixture.organization_id,
+    first = issue_session(
+        fixture,
         authentication_method=AuthenticationMethod.OIDC_FIXTURE,
     )
-    second = fixture.sessions.issue_session(
-        fixture.principal_id,
-        fixture.organization_id,
+    second = issue_session(
+        fixture,
         authentication_method=AuthenticationMethod.OIDC_FIXTURE,
     )
 
@@ -454,9 +634,7 @@ def test_preauthentication_is_bound_one_use_and_does_not_persist_raw_secrets(
         allowed_origin=ORIGIN,
     )
     expected_challenge = (
-        base64.urlsafe_b64encode(
-            hashlib.sha256(f"{4:064d}".encode("ascii")).digest()
-        )
+        base64.urlsafe_b64encode(hashlib.sha256(f"{4:064d}".encode("ascii")).digest())
         .rstrip(b"=")
         .decode("ascii")
     )
@@ -604,9 +782,8 @@ def test_expired_preauthentication_is_revoked_atomically(tmp_path: Path) -> None
 def test_recent_authentication_binds_method_and_maximum_age(tmp_path: Path) -> None:
     fixture = make_fixture(tmp_path)
     recent_auth_at = fixture.clock.now - timedelta(minutes=4)
-    issued = fixture.sessions.issue_session(
-        fixture.principal_id,
-        fixture.organization_id,
+    issued = issue_session(
+        fixture,
         authentication_method=AuthenticationMethod.LOCAL_RECOVERY,
         recent_auth_at=recent_auth_at,
     )

@@ -31,7 +31,7 @@ MISSION_TABLES = (
 PIS004A_TABLES = tuple(migration.PIS004A_TABLE_COLUMNS)
 
 
-def test_schema_five_preserves_closed_mission_tables(tmp_path: Path) -> None:
+def test_schema_six_preserves_closed_mission_tables(tmp_path: Path) -> None:
     db_path = tmp_path / "ithildin.sqlite3"
 
     initialize_database(db_path)
@@ -40,16 +40,14 @@ def test_schema_five_preserves_closed_mission_tables(tmp_path: Path) -> None:
         metadata = dict(connection.execute("SELECT key, value FROM app_metadata"))
         tables = {
             str(row[0])
-            for row in connection.execute(
-                "SELECT name FROM sqlite_master WHERE type = 'table'"
-            )
+            for row in connection.execute("SELECT name FROM sqlite_master WHERE type = 'table'")
         }
         mission_sql = _table_sql(connection, "missions")
         transition_sql = _table_sql(connection, "mission_transition_attempts")
         evidence_sql = _table_sql(connection, "mission_audit_evidence_bindings")
         report_sql = _table_sql(connection, "mission_report_receipts")
-    assert metadata["schema_version"] == "5"
-    assert metadata["minimum_writer_version"] == "5"
+    assert metadata["schema_version"] == "6"
+    assert metadata["minimum_writer_version"] == "6"
     assert set(MISSION_TABLES) <= tables
     assert "requester_identity_generation" in mission_sql
     assert "synthetic_read_review_v1" in mission_sql
@@ -61,7 +59,7 @@ def test_schema_five_preserves_closed_mission_tables(tmp_path: Path) -> None:
     assert "failure_reason_code" in report_sql
 
 
-def test_schema_five_rejects_semantically_invalid_report_receipts(tmp_path: Path) -> None:
+def test_schema_six_rejects_semantically_invalid_report_receipts(tmp_path: Path) -> None:
     db_path = tmp_path / "ithildin.sqlite3"
     initialize_database(db_path)
 
@@ -117,9 +115,7 @@ def test_v3_upgrade_creates_private_backup_receipt_and_restore_only_copy(
         backup_metadata = dict(connection.execute("SELECT key, value FROM app_metadata"))
         backup_tables = {
             str(row[0])
-            for row in connection.execute(
-                "SELECT name FROM sqlite_master WHERE type = 'table'"
-            )
+            for row in connection.execute("SELECT name FROM sqlite_master WHERE type = 'table'")
         }
     assert backup_metadata["schema_version"] == "3"
     assert not (set(MISSION_TABLES) & backup_tables)
@@ -144,9 +140,7 @@ def test_interrupted_v3_upgrade_rolls_back_and_reuses_exact_backup(
         metadata = dict(connection.execute("SELECT key, value FROM app_metadata"))
         tables = {
             str(row[0])
-            for row in connection.execute(
-                "SELECT name FROM sqlite_master WHERE type = 'table'"
-            )
+            for row in connection.execute("SELECT name FROM sqlite_master WHERE type = 'table'")
         }
     assert metadata["schema_version"] == "3"
     assert not (set(MISSION_TABLES) & tables)
@@ -304,8 +298,7 @@ def test_missing_mission_foreign_key_is_rejected(tmp_path: Path) -> None:
         connection.execute(weakened)
         connection.execute("DROP TABLE mission_report_receipts")
         connection.execute(
-            "ALTER TABLE mission_report_receipts_weakened "
-            "RENAME TO mission_report_receipts"
+            "ALTER TABLE mission_report_receipts_weakened RENAME TO mission_report_receipts"
         )
         connection.execute(
             "CREATE INDEX mission_report_receipts_mission_idx "
