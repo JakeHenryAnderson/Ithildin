@@ -35,9 +35,9 @@ def test_contract_rejects_release_claim_in_title() -> None:
     assert "PIS-005A contract identity is invalid" in failures
 
 
-def test_contract_requires_status_specific_next_action() -> None:
+def test_contract_rejects_status_inconsistent_next_action() -> None:
     contract = copy.deepcopy(_contract())
-    contract["status"] = "candidate_independent_review_pending"
+    contract["next_action"] = "release_and_promote"
 
     failures = pis005a_check.validate_contract(contract)
 
