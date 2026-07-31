@@ -13,7 +13,7 @@
     "canonical_key_prerequisite_tree": "86731324feec59596146a1149cdde69f47dd58d0",
     "implementation_baseline_commit": "83db1196213b0e4e7de5d97ab0fb37b934ca4ab7",
     "implementation_baseline_tree": "86731324feec59596146a1149cdde69f47dd58d0",
-    "branch": "codex/enterprise-e2-pis005a-node-identity",
+    "branch": "codex/enterprise-e2-pis005a-review-repair-2",
     "e1_human_uat_complete": false
   },
   "standing_authority": {
@@ -175,12 +175,13 @@
   "persistence": {
     "backend": "local_sqlite_only",
     "coordinated_schema_target": "7",
-    "schema_fingerprint": "sha256:5b804d92cd45385b5f21cd4a31b7c641ef35a6d5f4ea5ac0339ebdfebe67b9c5",
+    "schema_fingerprint": "sha256:d42147d48ab2cf7f193c340a7c60302dd61ec1fdd2112d072ebcd50bd5cccd82",
     "schema_fingerprint_status": "exact_ddl_bound",
     "schema_fingerprint_domain": "ITHILDIN-PIS005A-SCHEMA-V1",
     "minimum_writer_after_activation": "7",
     "migration_mode": "atomic_offline_local_startup",
     "pre_migration_backup_required": true,
+    "pre_migration_backup_locked_source_logical_match_required": true,
     "automatic_down_migration_allowed": false,
     "new_object_prefix": "node_workload_",
     "table_inventory": [
@@ -218,6 +219,7 @@
     "certificate_der_maximum_bytes": 65536,
     "enrollment_digest_key_generation_fail_closed": true,
     "expired_replacement_terminalized_before_retry": true,
+    "ordinary_expired_enrollment_terminalized_before_failure": true,
     "certificate_and_application_pop_cover_same_canonical_binding": true,
     "certificate_application_key_clone_denied": true,
     "global_cross_role_public_key_registry_required": true,
@@ -234,7 +236,9 @@
     "identity_certificate_application_configuration_generations_independent": true,
     "one_pending_replacement_per_revoked_node": true,
     "request_current_state_revalidation_required": true,
+    "request_persisted_trust_anchor_and_application_key_id_revalidation_required": true,
     "request_nonce_atomic_one_use_required": true,
+    "request_nonce_strict_older_pruning_required": true,
     "request_maximum_clock_skew_seconds": 300,
     "request_nonce_retention_seconds": 600,
     "request_body_maximum_bytes": 1048576,
@@ -243,6 +247,8 @@
     "revocation_increments_authority_generations": true,
     "revoked_or_replaced_identity_restoration_allowed": false,
     "replacement_requires_new_node_id_and_both_new_keys": true,
+    "replacement_preserves_original_revocation_cause": true,
+    "replacement_completion_recorded_separately": true,
     "security_time_sampled_after_write_lock": true,
     "safe_evidence_reason_codes_server_owned": true,
     "safe_validation_error_summary_required": true,
@@ -336,6 +342,8 @@
       "stale_identity_certificate_application_or_configuration_generation",
       "application_signature_or_request_digest_mismatch",
       "request_timestamp_and_nonce_replay",
+      "request_nonce_exact_boundary_restart_and_concurrent_pruning",
+      "persisted_trust_anchor_same_key_ca_reissue_and_application_key_id_drift",
       "concurrent_enrollment_replay",
       "concurrent_request_replay",
       "revocation_race_and_replace_not_restore",
@@ -343,6 +351,8 @@
       "security_time_sampled_after_database_lock",
       "migration_exact_ddl_constraint_index_and_foreign_key_drift",
       "migration_interruption_backup_reuse_and_old_writer_refusal",
+      "migration_locked_source_substituted_backup_provenance_mismatch",
+      "replacement_preserves_original_revocation_cause",
       "authority_anchor_and_review_lifecycle_gate_mutation",
       "safe_evidence_vocabulary_and_validation_error_redaction",
       "raw_secret_private_key_signature_certificate_or_request_body_evidence_leak"
@@ -357,7 +367,7 @@
   },
   "candidate_procedure": {
     "focused_command": "make production-identity-storage-pis-005a-check",
-    "independent_review_template": "git fetch origin refs/heads/codex/enterprise-e2-pis005a-node-identity:refs/remotes/origin/codex/enterprise-e2-pis005a-node-identity && git worktree add --detach /tmp/ithildin-pis005a-review <candidate_commit> && cd /tmp/ithildin-pis005a-review && make production-identity-storage-pis-005a-check",
+    "independent_review_template": "git fetch origin refs/heads/codex/enterprise-e2-pis005a-review-repair-2:refs/remotes/origin/codex/enterprise-e2-pis005a-review-repair-2 && git worktree add --detach /tmp/ithildin-pis005a-review <candidate_commit> && cd /tmp/ithildin-pis005a-review && make production-identity-storage-pis-005a-check",
     "candidate_must_be_clean": true,
     "independent_review_required": true,
     "release_or_promotion_authorized_by_candidate": false

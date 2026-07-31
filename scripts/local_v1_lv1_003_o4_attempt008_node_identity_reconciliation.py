@@ -51,7 +51,7 @@ EXPECTED_PIS004A_SCHEMA_FINGERPRINT = (
     "sha256:ca52764e2c4544446f0a1379abc60ec6d74a9320222509974d1cb35c1c955114"
 )
 EXPECTED_PIS005A_SCHEMA_FINGERPRINT = (
-    "sha256:5b804d92cd45385b5f21cd4a31b7c641ef35a6d5f4ea5ac0339ebdfebe67b9c5"
+    "sha256:d42147d48ab2cf7f193c340a7c60302dd61ec1fdd2112d072ebcd50bd5cccd82"
 )
 PIS005A_TABLES: Final[tuple[str, ...]] = (
     "node_workload_enrollment_digest_key_generations",

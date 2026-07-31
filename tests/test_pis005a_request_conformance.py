@@ -9,6 +9,8 @@ from pathlib import Path
 from threading import Barrier, Event
 
 import pytest
+from cryptography import x509
+from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from ithildin_api.enterprise_node_identity import (
     NodeRequestVerificationSnapshot,
@@ -25,6 +27,7 @@ from pydantic import ValidationError
 from test_pis005a_enrollment import (
     NOW,
     EnrollmentHarness,
+    FixtureCA,
     _begin_observed_store,
     _database_artifact_bytes,
     _fixture_ca,
@@ -179,6 +182,139 @@ def test_request_rejects_unavailable_restart_trust_anchor(tmp_path: Path) -> Non
         wrong_trust_store.verify_request(_request(harness, nonce="8" * 32))
 
 
+def test_request_rejects_persisted_identity_anchor_drift(tmp_path: Path) -> None:
+    harness = _bound_harness(tmp_path)
+    with sqlite3.connect(harness.enrollment.db_path) as connection:
+        connection.execute(
+            """
+            UPDATE node_workload_identities
+            SET certificate_trust_anchor_fingerprint = ?
+            WHERE node_id = ?
+            """,
+            ("sha256:" + ("0" * 64), harness.binding.node_id),
+        )
+        connection.commit()
+
+    with pytest.raises(
+        NodeWorkloadAuthenticationError,
+        match="identity trust-anchor binding is stale",
+    ):
+        harness.enrollment.store.verify_request(_request(harness, nonce="0" * 32))
+
+
+def test_request_rejects_same_key_ca_certificate_reissue(tmp_path: Path) -> None:
+    harness = _bound_harness(tmp_path)
+    original_ca = harness.enrollment.ca
+    reissued_certificate = (
+        x509.CertificateBuilder()
+        .subject_name(original_ca.certificate.subject)
+        .issuer_name(original_ca.certificate.issuer)
+        .public_key(original_ca.private_key.public_key())
+        .serial_number(x509.random_serial_number())
+        .not_valid_before(NOW - timedelta(days=1))
+        .not_valid_after(NOW + timedelta(days=31))
+        .add_extension(x509.BasicConstraints(ca=True, path_length=0), critical=True)
+        .add_extension(
+            x509.KeyUsage(
+                digital_signature=False,
+                content_commitment=False,
+                key_encipherment=False,
+                data_encipherment=False,
+                key_agreement=False,
+                key_cert_sign=True,
+                crl_sign=True,
+                encipher_only=False,
+                decipher_only=False,
+            ),
+            critical=True,
+        )
+        .sign(original_ca.private_key, algorithm=None)
+    )
+    reissued_ca = FixtureCA(
+        private_key=original_ca.private_key,
+        certificate=reissued_certificate,
+        trust=original_ca.trust.from_der(
+            reissued_certificate.public_bytes(serialization.Encoding.DER)
+        ),
+    )
+    assert (
+        reissued_ca.certificate.public_key().public_bytes(
+            serialization.Encoding.Raw,
+            serialization.PublicFormat.Raw,
+        )
+        == original_ca.certificate.public_key().public_bytes(
+            serialization.Encoding.Raw,
+            serialization.PublicFormat.Raw,
+        )
+    )
+    assert reissued_ca.trust.certificate_fingerprint != (
+        original_ca.trust.certificate_fingerprint
+    )
+    reissued_store = NodeWorkloadIdentityStore(
+        harness.enrollment.db_path,
+        digest_keys=NodeWorkloadDigestKeyRing({1: b"d" * 32}, active_generation=1),
+        certificate_trust=reissued_ca.trust,
+        clock=harness.enrollment.clock,
+    )
+
+    with pytest.raises(NodeWorkloadAuthenticationError, match="trust anchor is unavailable"):
+        reissued_store.verify_request(_request(harness, nonce="f" * 32))
+
+
+def test_request_rejects_legacy_application_key_id_drift(tmp_path: Path) -> None:
+    harness = _bound_harness(tmp_path)
+    with sqlite3.connect(harness.enrollment.db_path) as connection:
+        connection.execute(
+            """
+            UPDATE node_workload_identities
+            SET application_key_id = ?
+            WHERE node_id = ?
+            """,
+            ("sha256:" + ("f" * 64), harness.binding.node_id),
+        )
+        connection.commit()
+
+    with pytest.raises(
+        NodeWorkloadAuthenticationError,
+        match="application key identifier binding is stale",
+    ):
+        harness.enrollment.store.verify_request(_request(harness, nonce="e" * 32))
+
+
+@pytest.mark.parametrize(
+    ("binding_field", "replacement"),
+    [
+        ("enrollment_transaction_id", "nenr_" + ("f" * 32)),
+        ("certificate_trust_anchor_fingerprint", "sha256:" + ("f" * 64)),
+        ("application_key_id", "sha256:" + ("f" * 64)),
+    ],
+)
+def test_canonical_request_message_binds_persisted_identity_anchors(
+    tmp_path: Path,
+    binding_field: str,
+    replacement: str,
+) -> None:
+    harness = _bound_harness(tmp_path)
+    original = canonical_node_workload_request_message(
+        binding=harness.binding,
+        method="POST",
+        path="/fixture/node/report",
+        request_timestamp=int(NOW.timestamp()),
+        nonce="c" * 32,
+        request_digest=request_body_digest(b"request"),
+    )
+    drifted = canonical_node_workload_request_message(
+        binding=harness.binding.model_copy(update={binding_field: replacement}),
+        method="POST",
+        path="/fixture/node/report",
+        request_timestamp=int(NOW.timestamp()),
+        nonce="c" * 32,
+        request_digest=request_body_digest(b"request"),
+    )
+
+    assert drifted != original
+
+
 def test_request_models_reject_noncanonical_fields_and_extra_authority(
     tmp_path: Path,
 ) -> None:
@@ -306,6 +442,65 @@ def test_concurrent_request_replay_has_one_winner_and_survives_restart(
         ).fetchone() == (1,)
     with pytest.raises(NodeWorkloadAuthenticationError, match="already consumed"):
         _second_store(harness.enrollment).verify_request(envelope)
+
+
+def test_nonce_pruning_is_strict_at_boundary_and_linearized_after_restart(
+    tmp_path: Path,
+) -> None:
+    harness = _bound_harness(tmp_path)
+    nonce = "0" * 32
+    harness.enrollment.store.verify_request(_request(harness, nonce=nonce))
+
+    harness.enrollment.clock.value = NOW + timedelta(seconds=600)
+    at_boundary = _request(
+        harness,
+        nonce=nonce,
+        request_timestamp=int(harness.enrollment.clock().timestamp()),
+    )
+    with pytest.raises(NodeWorkloadAuthenticationError, match="already consumed"):
+        _second_store(harness.enrollment).verify_request(at_boundary)
+    with sqlite3.connect(harness.enrollment.db_path) as connection:
+        assert connection.execute(
+            "SELECT accepted_at, expires_at FROM node_workload_request_nonces"
+        ).fetchone() == (int(NOW.timestamp()), int(NOW.timestamp()) + 600)
+
+    harness.enrollment.clock.value = NOW + timedelta(seconds=601)
+    after_boundary = _request(
+        harness,
+        nonce=nonce,
+        request_timestamp=int(harness.enrollment.clock().timestamp()),
+    )
+    stores = (
+        _second_store(harness.enrollment),
+        _second_store(harness.enrollment),
+    )
+    barrier = Barrier(2)
+
+    def verify(store: NodeWorkloadIdentityStore) -> str:
+        barrier.wait()
+        try:
+            store.verify_request(after_boundary)
+        except NodeWorkloadAuthenticationError as exc:
+            assert "already consumed" in str(exc)
+            return "replayed"
+        return "accepted"
+
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        outcomes = sorted(
+            future.result()
+            for future in (
+                executor.submit(verify, stores[0]),
+                executor.submit(verify, stores[1]),
+            )
+        )
+    assert outcomes == ["accepted", "replayed"]
+    with sqlite3.connect(harness.enrollment.db_path) as connection:
+        assert connection.execute(
+            "SELECT accepted_at, expires_at FROM node_workload_request_nonces"
+        ).fetchone() == (
+            int(harness.enrollment.clock().timestamp()),
+            int(harness.enrollment.clock().timestamp()) + 600,
+        )
 
 
 def test_request_revocation_race_linearizes_without_effect_authority(

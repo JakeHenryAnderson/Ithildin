@@ -8,7 +8,13 @@ Source commit: `e8e6a75ca3d76a233243f5e890091f3c95731da9`.
 
 Security prerequisite: `83db1196213b0e4e7de5d97ab0fb37b934ca4ab7`.
 
-Branch: `codex/enterprise-e2-pis005a-node-identity`.
+Branch: `codex/enterprise-e2-pis005a-review-repair-2`.
+
+Rejected predecessor evidence remains unchanged: branch
+`codex/enterprise-e2-pis005a-node-identity`, commit
+`fce0a3668db5150cf0aa75de1fd914b296a2e099`, tree
+`331adb70f2c2c24def540c3576fc6876e33c478c`. That exact candidate was rejected with
+`Critical 0 / High 1 / Medium 1 / Low 3`; this repair candidate does not relabel or mutate it.
 
 Current governed tool count: exactly `24`.
 
@@ -93,13 +99,17 @@ order-independent set.
 Enrollment secrets are generated directly with the standard-library cryptographic RNG at 256 bits,
 have a maximum one-hour lifetime, and are returned once. Fixture certificate DER is capped at
 65,536 bytes. Request envelopes are capped at 1 MiB, use a 300-second trusted-clock window, retain
-one-use nonce digests for 600 seconds, and bind the computed body digest plus every current
-deployment/identity/certificate/application/configuration generation. These bounds describe the
-local conformance seam only and are not transport or supported-scale claims.
+one-use nonce digests for 600 seconds, prune only rows strictly older than the lock-sampled time,
+and bind the computed body digest plus the enrollment, trust-anchor, legacy application-key ID,
+and every current deployment/identity/certificate/application/configuration generation. Persisted
+trust anchors are re-bound to both deployment state and the configured certificate, while the
+legacy application-key ID is re-derived from the stored canonical public key. These bounds
+describe the local conformance seam only and are not transport or supported-scale claims.
 
 Security time is sampled only after the SQLite `BEGIN IMMEDIATE` write lock is acquired, so lock
 wait cannot preserve a pre-expiry enrollment, request timestamp, or certificate-validity result.
-An expired replacement enrollment is atomically terminalized before retry. A partial unique index
+Ordinary and replacement enrollment expiry is atomically terminalized under the write lock before
+failure or retry. A partial unique index
 permits only one pending replacement for a revoked Node while retaining expired history; concurrent
 replacement issuance therefore has exactly one winner.
 
@@ -117,8 +127,11 @@ only exact `node_workload_*` objects. Existing `nodes`, `node_nonces`, and other
 tables are not silently promoted into enterprise identity authority.
 
 Migration from schema 6 takes a private verified pre-v7 backup before the atomic schema change.
-The migration verifies exact table and index SQL, columns, constraints, unexpected prefixed
-objects, and foreign keys. Older writers fail closed on schema 7.
+The source logical digest is derived from the already locked connection, and a temporary backup
+must match that locked snapshot before it can be promoted or receive a receipt. The migration
+verifies exact table and index SQL, columns, constraints, unexpected prefixed objects, and foreign
+keys. Older writers fail closed on schema 7. Replacement completion has its own timestamp while
+the original `operator_revoked`, `key_compromise`, or `scope_revoked` cause remains immutable.
 
 The historical Attempt 008 reconciliation projection recognizes schema 7 only when both the
 PIS-004A and PIS-005A fingerprints verify exactly and all six `node_workload_*` tables are empty.
@@ -152,7 +165,7 @@ After focused and broader checks pass, a separate reviewer should reproduce the 
 candidate in a clean detached worktree:
 
 ```sh
-git fetch origin refs/heads/codex/enterprise-e2-pis005a-node-identity:refs/remotes/origin/codex/enterprise-e2-pis005a-node-identity
+git fetch origin refs/heads/codex/enterprise-e2-pis005a-review-repair-2:refs/remotes/origin/codex/enterprise-e2-pis005a-review-repair-2
 git worktree add --detach /tmp/ithildin-pis005a-review <candidate_commit>
 cd /tmp/ithildin-pis005a-review
 make production-identity-storage-pis-005a-check

@@ -129,10 +129,9 @@ def _ensure_pre_migration_backup(
     if source_schema_version not in supported_source_versions:
         raise DatabaseBackupError("pre-migration backup source version is unsupported")
     backup_path, receipt_path = paths
-    source_logical_digest = _logical_digest(db_path)
+    source_logical_digest = _logical_digest_connection(locked_source)
     if receipt_path.exists() or backup_path.exists():
         return _verify_existing_backup(
-            db_path=db_path,
             backup_path=backup_path,
             receipt_path=receipt_path,
             source_schema_version=source_schema_version,
@@ -145,6 +144,10 @@ def _ensure_pre_migration_backup(
     temporary = backup_path.with_name(f".{backup_path.name}.{uuid4().hex}.tmp")
     try:
         _create_backup(db_path, temporary)
+        if _logical_digest(temporary) != source_logical_digest:
+            raise DatabaseBackupError(
+                "temporary pre-migration backup does not match the locked source database"
+            )
         os.chmod(temporary, 0o600)
         _fsync_file(temporary)
         os.replace(temporary, backup_path)
@@ -160,8 +163,9 @@ def _ensure_pre_migration_backup(
         _write_receipt(receipt_path, receipt)
         return receipt
     except (OSError, sqlite3.DatabaseError, ValueError) as exc:
-        temporary.unlink(missing_ok=True)
         raise DatabaseBackupError("pre-migration backup creation failed") from exc
+    finally:
+        temporary.unlink(missing_ok=True)
 
 
 def pre_v4_backup_paths(db_path: Path) -> tuple[Path, Path]:
@@ -190,7 +194,6 @@ def pre_v7_backup_paths(db_path: Path) -> tuple[Path, Path]:
 
 def _verify_existing_backup(
     *,
-    db_path: Path,
     backup_path: Path,
     receipt_path: Path,
     source_schema_version: str,
@@ -339,12 +342,21 @@ def _logical_digest(path: Path) -> str:
     try:
         connection = sqlite3.connect(f"file:{path}?mode=ro", uri=True)
         try:
-            row = connection.execute("PRAGMA integrity_check").fetchone()
-            if row != ("ok",):
-                raise DatabaseBackupError("database integrity check failed")
-            dump = "\n".join(connection.iterdump()).encode("utf-8")
+            return _logical_digest_connection(connection)
         finally:
             connection.close()
+    except sqlite3.DatabaseError as exc:
+        raise DatabaseBackupError("database backup source is invalid") from exc
+
+
+def _logical_digest_connection(connection: sqlite3.Connection) -> str:
+    """Digest one SQLite connection's locked logical snapshot."""
+
+    try:
+        row = connection.execute("PRAGMA integrity_check").fetchone()
+        if row != ("ok",):
+            raise DatabaseBackupError("database integrity check failed")
+        dump = "\n".join(connection.iterdump()).encode("utf-8")
     except sqlite3.DatabaseError as exc:
         raise DatabaseBackupError("database backup source is invalid") from exc
     return f"sha256:{hashlib.sha256(dump).hexdigest()}"

@@ -25,7 +25,7 @@ NEXT_TICKET_REL = Path(
     "docs/codex/production-identity-storage-pis-005a-remote-transport-next-ticket.md"
 )
 REVIEW_RECORD_REL = Path("docs/codex/production-identity-storage-pis-005a-independent-review.md")
-BRANCH = "codex/enterprise-e2-pis005a-node-identity"
+BRANCH = "codex/enterprise-e2-pis005a-review-repair-2"
 SOURCE_COMMIT = "e8e6a75ca3d76a233243f5e890091f3c95731da9"
 SOURCE_TREE = "1a5a6c818bf3fd5e17bcffedaae4cf5497e1e6f2"
 SECURITY_PREREQUISITE_COMMIT = "83db1196213b0e4e7de5d97ab0fb37b934ca4ab7"
@@ -33,7 +33,7 @@ SECURITY_PREREQUISITE_TREE = "86731324feec59596146a1149cdde69f47dd58d0"
 TOOL_COUNT = 24
 TOOL_LOCK_SHA256 = "3834a18a5b8169dd66b3d96d79d6e69d252ebae17a1a9453f93f8686db1edc77"
 PIS005A_SCHEMA_FINGERPRINT = (
-    "sha256:5b804d92cd45385b5f21cd4a31b7c641ef35a6d5f4ea5ac0339ebdfebe67b9c5"
+    "sha256:d42147d48ab2cf7f193c340a7c60302dd61ec1fdd2112d072ebcd50bd5cccd82"
 )
 
 _TOP_LEVEL_KEYS = {
@@ -171,6 +171,8 @@ _EXPECTED_NEGATIVE_CASES = [
     "stale_identity_certificate_application_or_configuration_generation",
     "application_signature_or_request_digest_mismatch",
     "request_timestamp_and_nonce_replay",
+    "request_nonce_exact_boundary_restart_and_concurrent_pruning",
+    "persisted_trust_anchor_same_key_ca_reissue_and_application_key_id_drift",
     "concurrent_enrollment_replay",
     "concurrent_request_replay",
     "revocation_race_and_replace_not_restore",
@@ -178,6 +180,8 @@ _EXPECTED_NEGATIVE_CASES = [
     "security_time_sampled_after_database_lock",
     "migration_exact_ddl_constraint_index_and_foreign_key_drift",
     "migration_interruption_backup_reuse_and_old_writer_refusal",
+    "migration_locked_source_substituted_backup_provenance_mismatch",
+    "replacement_preserves_original_revocation_cause",
     "authority_anchor_and_review_lifecycle_gate_mutation",
     "safe_evidence_vocabulary_and_validation_error_redaction",
     "raw_secret_private_key_signature_certificate_or_request_body_evidence_leak",
@@ -518,6 +522,7 @@ def _validate_persistence(value: object, failures: list[str]) -> None:
         "minimum_writer_after_activation": "7",
         "migration_mode": "atomic_offline_local_startup",
         "pre_migration_backup_required": True,
+        "pre_migration_backup_locked_source_logical_match_required": True,
         "automatic_down_migration_allowed": False,
         "new_object_prefix": "node_workload_",
         "table_inventory": [
@@ -562,13 +567,18 @@ def _validate_safety(value: object, failures: list[str]) -> None:
         "enrollment_atomic_one_use_required",
         "enrollment_digest_key_generation_fail_closed",
         "expired_replacement_terminalized_before_retry",
+        "ordinary_expired_enrollment_terminalized_before_failure",
         "global_cross_role_public_key_registry_required",
         "identity_certificate_application_configuration_generations_independent",
         "one_pending_replacement_per_revoked_node",
         "organization_workspace_deployment_cross_binding_required",
+        "replacement_completion_recorded_separately",
+        "replacement_preserves_original_revocation_cause",
         "replacement_requires_new_node_id_and_both_new_keys",
         "request_current_state_revalidation_required",
+        "request_persisted_trust_anchor_and_application_key_id_revalidation_required",
         "request_nonce_atomic_one_use_required",
+        "request_nonce_strict_older_pruning_required",
         "revocation_disables_principal_and_memberships",
         "revocation_increments_authority_generations",
         "server_preallocates_deployment_id",
@@ -663,8 +673,8 @@ def _validate_candidate_procedure(value: object, failures: list[str]) -> None:
     expected = {
         "focused_command": "make production-identity-storage-pis-005a-check",
         "independent_review_template": (
-            "git fetch origin refs/heads/codex/enterprise-e2-pis005a-node-identity:"
-            "refs/remotes/origin/codex/enterprise-e2-pis005a-node-identity && "
+            "git fetch origin refs/heads/codex/enterprise-e2-pis005a-review-repair-2:"
+            "refs/remotes/origin/codex/enterprise-e2-pis005a-review-repair-2 && "
             "git worktree add --detach /tmp/ithildin-pis005a-review <candidate_commit> && "
             "cd /tmp/ithildin-pis005a-review && "
             "make production-identity-storage-pis-005a-check"

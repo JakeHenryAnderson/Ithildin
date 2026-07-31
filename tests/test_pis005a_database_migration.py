@@ -9,10 +9,14 @@ import sys
 from pathlib import Path
 from types import ModuleType
 
+import ithildin_api.database_migration_backup as migration_backup
 import ithildin_api.trusted_host_promotion_v2_migration as migration
 import pytest
 from ithildin_api.database import initialize_database
-from ithildin_api.database_migration_backup import pre_v7_backup_paths
+from ithildin_api.database_migration_backup import (
+    DatabaseBackupError,
+    pre_v7_backup_paths,
+)
 from ithildin_api.node_configuration import NodeConfigurationStore
 from ithildin_api.node_configuration_trust import (
     NodeConfigurationTrustTransitionStore,
@@ -27,7 +31,7 @@ from scripts import (
 
 SCHEMA_SIX_COMMIT = "83db1196213b0e4e7de5d97ab0fb37b934ca4ab7"
 EXPECTED_PIS005A_SCHEMA_FINGERPRINT = (
-    "sha256:5b804d92cd45385b5f21cd4a31b7c641ef35a6d5f4ea5ac0339ebdfebe67b9c5"
+    "sha256:d42147d48ab2cf7f193c340a7c60302dd61ec1fdd2112d072ebcd50bd5cccd82"
 )
 
 
@@ -164,6 +168,69 @@ def test_interrupted_v6_to_v7_upgrade_rolls_back_and_reuses_exact_backup(
     initialize_database(db_path)
     assert backup_path.read_bytes() == backup_bytes
     assert receipt_path.read_bytes() == receipt_bytes
+
+
+def test_substituted_integrity_valid_backup_is_never_blessed(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    db_path = tmp_path / "ithildin.sqlite3"
+    substituted_path = tmp_path / "substituted.sqlite3"
+    frozen = _load_schema_six_migration(tmp_path)
+    frozen.initialize_or_migrate_database(db_path)
+    frozen.initialize_or_migrate_database(substituted_path)
+    with sqlite3.connect(substituted_path) as connection:
+        connection.execute(
+            """
+            INSERT INTO identity_organizations (
+                organization_id, enabled, created_at, updated_at
+            ) VALUES (?, 1, ?, ?)
+            """,
+            (
+                "org_00000000000000000000000000000001",
+                "2026-07-30T12:00:00+00:00",
+                "2026-07-30T12:00:00+00:00",
+            ),
+        )
+        connection.commit()
+        assert connection.execute("PRAGMA integrity_check").fetchone() == ("ok",)
+    original_create_backup = migration_backup._create_backup  # noqa: SLF001
+
+    def substitute_backup(source_path: Path, destination_path: Path) -> None:
+        assert source_path == db_path
+        substituted_path.replace(source_path)
+        original_create_backup(source_path, destination_path)
+
+    monkeypatch.setattr(migration_backup, "_create_backup", substitute_backup)
+
+    with pytest.raises(
+        DatabaseBackupError,
+        match="temporary pre-migration backup does not match the locked source database",
+    ):
+        initialize_database(db_path)
+
+    backup_path, receipt_path = pre_v7_backup_paths(db_path)
+    assert not backup_path.exists()
+    assert not receipt_path.exists()
+    assert not tuple(tmp_path.glob(f".{backup_path.name}.*.tmp"))
+    with sqlite3.connect(db_path) as connection:
+        assert dict(connection.execute("SELECT key, value FROM app_metadata")) == {
+            "schema_version": "6",
+            "minimum_writer_version": "6",
+        }
+        assert connection.execute(
+            """
+            SELECT count(*) FROM sqlite_master
+            WHERE lower(name) GLOB 'node_workload_*'
+               OR lower(tbl_name) GLOB 'node_workload_*'
+            """
+        ).fetchone() == (0,)
+        assert connection.execute(
+            """
+            SELECT count(*) FROM identity_organizations
+            WHERE organization_id = 'org_00000000000000000000000000000001'
+            """
+        ).fetchone() == (1,)
 
 
 @pytest.mark.parametrize(

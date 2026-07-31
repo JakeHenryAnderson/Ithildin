@@ -41,13 +41,27 @@ Current governed tool count: exactly `24`.
 ## Pending Review Procedure
 
 The exact implementation candidate is frozen and awaits independent review. The reviewer must fetch
-`origin/codex/enterprise-e2-pis005a-node-identity`, check out the exact candidate commit in a clean
+`origin/codex/enterprise-e2-pis005a-review-repair-2`, check out the exact candidate commit in a clean
 detached worktree, verify that the fetched remote identity, detached `HEAD`, and exact tree match,
 and run:
 
 ```sh
 make production-identity-storage-pis-005a-check
 ```
+
+This is a fresh review of the entire repaired candidate, not a review limited to the repair diff.
+The rejected predecessor remains branch `codex/enterprise-e2-pis005a-node-identity`, commit
+`fce0a3668db5150cf0aa75de1fd914b296a2e099`, tree
+`331adb70f2c2c24def540c3576fc6876e33c478c`; it is evidence only and remains rejected.
+
+The fresh review must re-evaluate the entire candidate and independently verify all five repair
+areas:
+
+- locked-source backup provenance and substituted-path rejection before promotion or receipt;
+- persisted trust-anchor/application-key-ID revalidation and canonical request cross-binding;
+- durable ordinary enrollment expiry at the exact boundary;
+- strict older-than nonce pruning with restart, replay, and concurrency behavior; and
+- immutable original revocation cause with separately recorded replacement completion.
 
 The final record may be written only after the independent review reports zero open Critical,
 High, Medium, and Low findings. The post-review descendant may change only this record, the

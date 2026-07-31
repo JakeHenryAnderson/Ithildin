@@ -456,6 +456,7 @@ PIS005A_TABLE_COLUMNS = {
         "updated_at",
         "revoked_at",
         "revocation_reason_code",
+        "replacement_completed_at",
         "replacement_node_id",
     ),
     "node_workload_request_nonces": (
@@ -2202,6 +2203,7 @@ def _create_pis005a_tables(connection: sqlite3.Connection) -> None:
             updated_at TEXT NOT NULL,
             revoked_at TEXT,
             revocation_reason_code TEXT,
+            replacement_completed_at TEXT,
             replacement_node_id TEXT UNIQUE,
             FOREIGN KEY (
                 deployment_id,
@@ -2293,14 +2295,18 @@ def _create_pis005a_tables(connection: sqlite3.Connection) -> None:
                 (status = 'active'
                     AND revoked_at IS NULL
                     AND revocation_reason_code IS NULL
+                    AND replacement_completed_at IS NULL
                     AND replacement_node_id IS NULL)
                 OR (status = 'revoked'
                     AND revoked_at IS NOT NULL
                     AND revocation_reason_code IS NOT NULL
+                    AND replacement_completed_at IS NULL
                     AND replacement_node_id IS NULL)
                 OR (status = 'replaced'
                     AND revoked_at IS NOT NULL
-                    AND revocation_reason_code = 'replacement_completed'
+                    AND revocation_reason_code IS NOT NULL
+                    AND replacement_completed_at IS NOT NULL
+                    AND replacement_completed_at >= revoked_at
                     AND replacement_node_id IS NOT NULL
                     AND replacement_node_id != node_id)
             ),
@@ -2309,8 +2315,7 @@ def _create_pis005a_tables(connection: sqlite3.Connection) -> None:
                 OR revocation_reason_code IN (
                     'operator_revoked',
                     'key_compromise',
-                    'scope_revoked',
-                    'replacement_completed'
+                    'scope_revoked'
                 )
             ),
             CHECK (updated_at >= created_at)

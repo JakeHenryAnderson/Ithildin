@@ -9,6 +9,7 @@ from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from threading import Barrier, Event
+from typing import Literal
 
 import pytest
 from cryptography import x509
@@ -407,7 +408,7 @@ def test_certificate_spki_algorithm_mismatch_fails_closed(tmp_path: Path) -> Non
 
 def test_expired_and_revoked_enrollment_transactions_fail_closed(tmp_path: Path) -> None:
     expired = _harness(tmp_path / "expired")
-    expired.clock.value = NOW + timedelta(seconds=901)
+    expired.clock.value = expired.material.expires_at
     expired_proof, _ = _proof(
         expired,
         certificate_key=Ed25519PrivateKey.generate(),
@@ -415,6 +416,17 @@ def test_expired_and_revoked_enrollment_transactions_fail_closed(tmp_path: Path)
     )
     with pytest.raises(NodeWorkloadAuthenticationError, match="not valid"):
         expired.store.complete_enrollment(expired_proof)
+    with sqlite3.connect(expired.db_path) as connection:
+        assert connection.execute(
+            """
+            SELECT status, terminal_at
+            FROM node_workload_enrollment_transactions
+            WHERE enrollment_transaction_id = ?
+            """,
+            (expired.material.enrollment_transaction_id,),
+        ).fetchone() == ("expired", expired.material.expires_at.isoformat())
+    with pytest.raises(NodeWorkloadConflictError, match="no longer active"):
+        _second_store(expired).complete_enrollment(expired_proof)
 
     revoked = _harness(tmp_path / "revoked")
     revoked_proof, _ = _proof(
@@ -636,7 +648,8 @@ def test_revocation_is_one_way_and_replacement_rejects_all_clone_roles(
     with sqlite3.connect(harness.db_path) as connection:
         old_state = connection.execute(
             """
-            SELECT status, revocation_reason_code, replacement_node_id
+            SELECT status, revocation_reason_code, replacement_completed_at,
+                   replacement_node_id
             FROM node_workload_identities WHERE node_id = ?
             """,
             (old_binding.node_id,),
@@ -648,8 +661,61 @@ def test_revocation_is_one_way_and_replacement_rejects_all_clone_roles(
             """,
             (old_binding.node_id,),
         ).fetchone()
-    assert old_state == ("replaced", "replacement_completed", new_binding.node_id)
+    assert old_state == (
+        "replaced",
+        "operator_revoked",
+        NOW.isoformat(),
+        new_binding.node_id,
+    )
     assert old_keys == (2,)
+
+
+@pytest.mark.parametrize(
+    "reason_code",
+    ["operator_revoked", "key_compromise", "scope_revoked"],
+)
+def test_replacement_preserves_original_revocation_cause(
+    tmp_path: Path,
+    reason_code: Literal["operator_revoked", "key_compromise", "scope_revoked"],
+) -> None:
+    harness = _harness(tmp_path)
+    original_proof, _ = _proof(
+        harness,
+        certificate_key=Ed25519PrivateKey.generate(),
+        application_key=Ed25519PrivateKey.generate(),
+    )
+    original = harness.store.complete_enrollment(original_proof)
+    harness.store.revoke_node(
+        original.node_id,
+        reason_code=reason_code,
+    )
+    harness.clock.value = NOW + timedelta(minutes=1)
+    replacement = harness.store.issue_replacement_enrollment(original.node_id)
+    replacement_proof, _ = _proof_for_material(
+        harness,
+        replacement,
+        certificate_key=Ed25519PrivateKey.generate(),
+        application_key=Ed25519PrivateKey.generate(),
+    )
+    completed = harness.store.complete_enrollment(replacement_proof)
+
+    with sqlite3.connect(harness.db_path) as connection:
+        state = connection.execute(
+            """
+            SELECT status, revoked_at, revocation_reason_code,
+                   replacement_completed_at, replacement_node_id
+            FROM node_workload_identities
+            WHERE node_id = ?
+            """,
+            (original.node_id,),
+        ).fetchone()
+    assert state == (
+        "replaced",
+        NOW.isoformat(),
+        reason_code,
+        harness.clock.value.isoformat(),
+        completed.node_id,
+    )
 
 
 def test_expired_replacement_enrollment_is_terminalized_and_retryable(

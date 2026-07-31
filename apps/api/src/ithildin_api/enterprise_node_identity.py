@@ -721,199 +721,223 @@ class NodeWorkloadIdentityStore:
         return record.client_material(enrollment_secret=secret)
 
     def complete_enrollment(self, proof: NodeEnrollmentProof) -> NodeWorkloadBinding:
+        connection = self._connection()
         try:
-            with self._transaction() as connection:
-                now = _require_aware_utc(self._clock())
-                record = self._require_enrollment(
-                    connection,
-                    proof.enrollment_transaction_id,
-                )
-                if record.status != "pending":
-                    raise NodeWorkloadConflictError("enrollment transaction is no longer active")
-                if now >= record.expires_at:
-                    raise NodeWorkloadAuthenticationError("enrollment transaction is not valid")
-                self._require_active_digest_generation(
-                    connection,
-                    record.digest_key_generation,
-                    allow_retained=True,
-                )
-                presented_digest = self._digest_keys.digest(
-                    record.digest_key_generation,
-                    proof.enrollment_secret,
-                )
-                if not hmac.compare_digest(record.enrollment_digest, presented_digest):
-                    raise NodeWorkloadAuthenticationError("enrollment proof is invalid")
-                deployment = self._require_active_deployment(
-                    connection,
-                    record.deployment_id,
-                )
-                if (
-                    deployment["organization_id"] != record.organization_id
-                    or deployment["workspace_id"] != record.workspace_id
-                    or int(deployment["deployment_generation"]) != record.deployment_generation
-                ):
-                    raise NodeWorkloadAuthenticationError("enrollment deployment binding is stale")
-                material = record.client_material(enrollment_secret=proof.enrollment_secret)
-                validated_leaf, application_fingerprint, application_key_id, message = (
-                    _validated_enrollment_message(
-                        material=material,
-                        certificate_der=proof.certificate_der,
-                        application_public_key=proof.application_public_key,
-                        certificate_trust=self._certificate_trust,
-                        at=now,
-                    )
-                )
-                _verify_ed25519_signature(
-                    validated_leaf.certificate_public_key,
-                    proof.certificate_proof_signature,
-                    message,
-                )
-                _verify_ed25519_signature(
-                    proof.application_public_key,
-                    proof.application_proof_signature,
-                    message,
-                )
-                now_text = now.isoformat()
-                connection.execute(
-                    """
-                    INSERT INTO identity_principals (
-                        principal_id, principal_type, enabled, identity_generation,
-                        created_at, updated_at
-                    ) VALUES (?, 'node', 1, 1, ?, ?)
-                    """,
-                    (record.principal_id, now_text, now_text),
-                )
-                connection.execute(
-                    """
-                    INSERT INTO identity_organization_memberships (
-                        organization_id, principal_id, enabled, membership_generation,
-                        roles_json, created_at, updated_at
-                    ) VALUES (?, ?, 1, 1, ?, ?, ?)
-                    """,
-                    (
-                        record.organization_id,
-                        record.principal_id,
-                        _ORGANIZATION_ROLES_JSON,
-                        now_text,
-                        now_text,
-                    ),
-                )
-                connection.execute(
-                    """
-                    INSERT INTO identity_workspace_memberships (
-                        organization_id, workspace_id, principal_id, enabled,
-                        roles_json, created_at, updated_at
-                    ) VALUES (?, ?, ?, 1, ?, ?, ?)
-                    """,
-                    (
-                        record.organization_id,
-                        record.workspace_id,
-                        record.principal_id,
-                        _WORKSPACE_ROLES_JSON,
-                        now_text,
-                        now_text,
-                    ),
-                )
-                key_rows = (
-                    (
-                        validated_leaf.certificate_key_fingerprint,
-                        "certificate",
-                        validated_leaf.certificate_public_key,
-                    ),
-                    (
-                        application_fingerprint,
-                        "application",
-                        proof.application_public_key,
-                    ),
-                )
-                for key_fingerprint, key_role, canonical_public_key in key_rows:
-                    connection.execute(
-                        """
-                        INSERT INTO node_workload_public_keys (
-                            key_fingerprint, node_id, enrollment_transaction_id,
-                            key_role, key_generation, canonical_public_key,
-                            status, created_at, retired_at
-                        ) VALUES (?, ?, ?, ?, 1, ?, 'active', ?, NULL)
-                        """,
-                        (
-                            key_fingerprint,
-                            record.node_id,
-                            record.enrollment_transaction_id,
-                            key_role,
-                            canonical_public_key,
-                            now_text,
-                        ),
-                    )
-                connection.execute(
-                    """
-                    INSERT INTO node_workload_identities (
-                        node_id, principal_id, deployment_id, organization_id,
-                        workspace_id, enrollment_transaction_id,
-                        deployment_generation, identity_generation,
-                        certificate_generation, application_key_generation,
-                        configuration_generation, certificate_fingerprint,
-                        certificate_trust_anchor_fingerprint,
-                        certificate_key_fingerprint,
-                        certificate_not_before_epoch_seconds,
-                        certificate_not_after_epoch_seconds,
-                        application_key_fingerprint, application_key_id,
-                        status, created_at, updated_at, revoked_at,
-                        revocation_reason_code, replacement_node_id
-                    ) VALUES (
-                        ?, ?, ?, ?, ?, ?, ?, 1, 1, 1, 1, ?, ?, ?, ?, ?, ?, ?,
-                        'active', ?, ?, NULL, NULL, NULL
-                    )
-                    """,
-                    (
-                        record.node_id,
-                        record.principal_id,
-                        record.deployment_id,
-                        record.organization_id,
-                        record.workspace_id,
-                        record.enrollment_transaction_id,
-                        record.deployment_generation,
-                        validated_leaf.certificate_fingerprint,
-                        record.certificate_trust_anchor_fingerprint,
-                        validated_leaf.certificate_key_fingerprint,
-                        validated_leaf.not_before_epoch_seconds,
-                        validated_leaf.not_after_epoch_seconds,
-                        application_fingerprint,
-                        application_key_id,
-                        now_text,
-                        now_text,
-                    ),
-                )
-                consumed = connection.execute(
+            connection.execute("BEGIN IMMEDIATE")
+            now = _require_aware_utc(self._clock())
+            record = self._require_enrollment(
+                connection,
+                proof.enrollment_transaction_id,
+            )
+            if record.status != "pending":
+                raise NodeWorkloadConflictError("enrollment transaction is no longer active")
+            if now >= record.expires_at:
+                expired = connection.execute(
                     """
                     UPDATE node_workload_enrollment_transactions
-                    SET status = 'consumed', terminal_at = ?
+                    SET status = 'expired', terminal_at = ?
                     WHERE enrollment_transaction_id = ? AND status = 'pending'
                     """,
-                    (now_text, record.enrollment_transaction_id),
+                    (now.isoformat(), record.enrollment_transaction_id),
                 )
-                if consumed.rowcount != 1:
+                if expired.rowcount != 1:
                     raise NodeWorkloadConflictError(
-                        "enrollment transaction was consumed concurrently"
+                        "enrollment transaction expiry changed concurrently"
                     )
-                if record.replaces_node_id is not None:
-                    replaced = connection.execute(
-                        """
-                        UPDATE node_workload_identities
-                        SET status = 'replaced', updated_at = ?,
-                            revocation_reason_code = 'replacement_completed',
-                            replacement_node_id = ?
-                        WHERE node_id = ? AND status = 'revoked'
-                          AND replacement_node_id IS NULL
-                        """,
-                        (now_text, record.node_id, record.replaces_node_id),
-                    )
-                    if replaced.rowcount != 1:
-                        raise NodeWorkloadConflictError("replacement lineage changed concurrently")
-                binding = self._require_binding(connection, record.node_id)
+                connection.execute("COMMIT")
+                raise NodeWorkloadAuthenticationError("enrollment transaction is not valid")
+            self._require_active_digest_generation(
+                connection,
+                record.digest_key_generation,
+                allow_retained=True,
+            )
+            presented_digest = self._digest_keys.digest(
+                record.digest_key_generation,
+                proof.enrollment_secret,
+            )
+            if not hmac.compare_digest(record.enrollment_digest, presented_digest):
+                raise NodeWorkloadAuthenticationError("enrollment proof is invalid")
+            deployment = self._require_active_deployment(
+                connection,
+                record.deployment_id,
+            )
+            if (
+                deployment["organization_id"] != record.organization_id
+                or deployment["workspace_id"] != record.workspace_id
+                or int(deployment["deployment_generation"]) != record.deployment_generation
+            ):
+                raise NodeWorkloadAuthenticationError("enrollment deployment binding is stale")
+            material = record.client_material(enrollment_secret=proof.enrollment_secret)
+            validated_leaf, application_fingerprint, application_key_id, message = (
+                _validated_enrollment_message(
+                    material=material,
+                    certificate_der=proof.certificate_der,
+                    application_public_key=proof.application_public_key,
+                    certificate_trust=self._certificate_trust,
+                    at=now,
+                )
+            )
+            _verify_ed25519_signature(
+                validated_leaf.certificate_public_key,
+                proof.certificate_proof_signature,
+                message,
+            )
+            _verify_ed25519_signature(
+                proof.application_public_key,
+                proof.application_proof_signature,
+                message,
+            )
+            now_text = now.isoformat()
+            connection.execute(
+                """
+                INSERT INTO identity_principals (
+                    principal_id, principal_type, enabled, identity_generation,
+                    created_at, updated_at
+                ) VALUES (?, 'node', 1, 1, ?, ?)
+                """,
+                (record.principal_id, now_text, now_text),
+            )
+            connection.execute(
+                """
+                INSERT INTO identity_organization_memberships (
+                    organization_id, principal_id, enabled, membership_generation,
+                    roles_json, created_at, updated_at
+                ) VALUES (?, ?, 1, 1, ?, ?, ?)
+                """,
+                (
+                    record.organization_id,
+                    record.principal_id,
+                    _ORGANIZATION_ROLES_JSON,
+                    now_text,
+                    now_text,
+                ),
+            )
+            connection.execute(
+                """
+                INSERT INTO identity_workspace_memberships (
+                    organization_id, workspace_id, principal_id, enabled,
+                    roles_json, created_at, updated_at
+                ) VALUES (?, ?, ?, 1, ?, ?, ?)
+                """,
+                (
+                    record.organization_id,
+                    record.workspace_id,
+                    record.principal_id,
+                    _WORKSPACE_ROLES_JSON,
+                    now_text,
+                    now_text,
+                ),
+            )
+            key_rows = (
+                (
+                    validated_leaf.certificate_key_fingerprint,
+                    "certificate",
+                    validated_leaf.certificate_public_key,
+                ),
+                (
+                    application_fingerprint,
+                    "application",
+                    proof.application_public_key,
+                ),
+            )
+            for key_fingerprint, key_role, canonical_public_key in key_rows:
+                connection.execute(
+                    """
+                    INSERT INTO node_workload_public_keys (
+                        key_fingerprint, node_id, enrollment_transaction_id,
+                        key_role, key_generation, canonical_public_key,
+                        status, created_at, retired_at
+                    ) VALUES (?, ?, ?, ?, 1, ?, 'active', ?, NULL)
+                    """,
+                    (
+                        key_fingerprint,
+                        record.node_id,
+                        record.enrollment_transaction_id,
+                        key_role,
+                        canonical_public_key,
+                        now_text,
+                    ),
+                )
+            connection.execute(
+                """
+                INSERT INTO node_workload_identities (
+                    node_id, principal_id, deployment_id, organization_id,
+                    workspace_id, enrollment_transaction_id,
+                    deployment_generation, identity_generation,
+                    certificate_generation, application_key_generation,
+                    configuration_generation, certificate_fingerprint,
+                    certificate_trust_anchor_fingerprint,
+                    certificate_key_fingerprint,
+                    certificate_not_before_epoch_seconds,
+                    certificate_not_after_epoch_seconds,
+                    application_key_fingerprint, application_key_id,
+                    status, created_at, updated_at, revoked_at,
+                    revocation_reason_code, replacement_completed_at,
+                    replacement_node_id
+                ) VALUES (
+                    ?, ?, ?, ?, ?, ?, ?, 1, 1, 1, 1, ?, ?, ?, ?, ?, ?, ?,
+                    'active', ?, ?, NULL, NULL, NULL, NULL
+                )
+                """,
+                (
+                    record.node_id,
+                    record.principal_id,
+                    record.deployment_id,
+                    record.organization_id,
+                    record.workspace_id,
+                    record.enrollment_transaction_id,
+                    record.deployment_generation,
+                    validated_leaf.certificate_fingerprint,
+                    record.certificate_trust_anchor_fingerprint,
+                    validated_leaf.certificate_key_fingerprint,
+                    validated_leaf.not_before_epoch_seconds,
+                    validated_leaf.not_after_epoch_seconds,
+                    application_fingerprint,
+                    application_key_id,
+                    now_text,
+                    now_text,
+                ),
+            )
+            consumed = connection.execute(
+                """
+                UPDATE node_workload_enrollment_transactions
+                SET status = 'consumed', terminal_at = ?
+                WHERE enrollment_transaction_id = ? AND status = 'pending'
+                """,
+                (now_text, record.enrollment_transaction_id),
+            )
+            if consumed.rowcount != 1:
+                raise NodeWorkloadConflictError(
+                    "enrollment transaction was consumed concurrently"
+                )
+            if record.replaces_node_id is not None:
+                replaced = connection.execute(
+                    """
+                    UPDATE node_workload_identities
+                    SET status = 'replaced', updated_at = ?,
+                        replacement_completed_at = ?,
+                        replacement_node_id = ?
+                    WHERE node_id = ? AND status = 'revoked'
+                      AND replacement_node_id IS NULL
+                    """,
+                    (now_text, now_text, record.node_id, record.replaces_node_id),
+                )
+                if replaced.rowcount != 1:
+                    raise NodeWorkloadConflictError("replacement lineage changed concurrently")
+            binding = self._require_binding(connection, record.node_id)
+            connection.execute("COMMIT")
         except sqlite3.IntegrityError as exc:
+            if connection.in_transaction:
+                connection.execute("ROLLBACK")
             raise NodeWorkloadConflictError(
                 "Node workload identity or public key is already registered"
             ) from exc
+        except BaseException:
+            if connection.in_transaction:
+                connection.execute("ROLLBACK")
+            raise
+        finally:
+            connection.close()
         return binding
 
     def revoke_node(
@@ -1073,6 +1097,16 @@ class NodeWorkloadIdentityStore:
                 or int(deployment["deployment_generation"]) != binding.deployment_generation
             ):
                 raise NodeWorkloadAuthenticationError("deployment scope binding is stale")
+            if not hmac.compare_digest(
+                binding.certificate_trust_anchor_fingerprint,
+                cast(str, deployment["certificate_trust_anchor_fingerprint"]),
+            ) or not hmac.compare_digest(
+                binding.certificate_trust_anchor_fingerprint,
+                self._certificate_trust.certificate_fingerprint,
+            ):
+                raise NodeWorkloadAuthenticationError(
+                    "Node identity trust-anchor binding is stale"
+                )
             self._require_current_node_authority(connection, binding)
             claimed_generations = (
                 envelope.deployment_generation,
@@ -1123,6 +1157,16 @@ class NodeWorkloadIdentityStore:
             ):
                 raise NodeWorkloadAuthenticationError("presented certificate binding is stale")
             application_public_key = cast(str, application_key["canonical_public_key"])
+            try:
+                application_key_id = node_identity_key_id(application_public_key)
+            except ValueError as exc:
+                raise NodeWorkloadAuthenticationError(
+                    "stored Node application key is invalid"
+                ) from exc
+            if not hmac.compare_digest(application_key_id, binding.application_key_id):
+                raise NodeWorkloadAuthenticationError(
+                    "Node application key identifier binding is stale"
+                )
             message = canonical_node_workload_request_message(
                 binding=binding,
                 method=envelope.method,
@@ -1135,6 +1179,13 @@ class NodeWorkloadIdentityStore:
                 application_public_key,
                 envelope.application_signature,
                 message,
+            )
+            connection.execute(
+                """
+                DELETE FROM node_workload_request_nonces
+                WHERE expires_at < ?
+                """,
+                (now_epoch,),
             )
             try:
                 connection.execute(
@@ -1661,9 +1712,14 @@ def canonical_node_workload_request_message(
         "deployment_id": binding.deployment_id,
         "organization_id": binding.organization_id,
         "workspace_id": binding.workspace_id,
+        "enrollment_transaction_id": binding.enrollment_transaction_id,
         "certificate_fingerprint": binding.certificate_fingerprint,
+        "certificate_trust_anchor_fingerprint": (
+            binding.certificate_trust_anchor_fingerprint
+        ),
         "certificate_key_fingerprint": binding.certificate_key_fingerprint,
         "application_key_fingerprint": binding.application_key_fingerprint,
+        "application_key_id": binding.application_key_id,
         "deployment_generation": binding.deployment_generation,
         "identity_generation": binding.identity_generation,
         "certificate_generation": binding.certificate_generation,
