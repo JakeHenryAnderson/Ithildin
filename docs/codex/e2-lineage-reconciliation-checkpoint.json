@@ -64,11 +64,26 @@
         "4a6b9e5061874a26c5f9d20a39818930866a6d55"
       ]
     },
-    "reconciliation_candidate": {
+    "rejected_reconciliation_candidate": {
       "branch": "codex/e2-control-tower-lineage-reconciliation",
+      "commit": "51c625a3f3538308c356747e170c9f79f83df41f",
+      "tree": "99329bbf0e0da7b40d6a1e0ba9ba7dac8557a7ad",
+      "sole_parent": "b06e8399674f17c188f6502c320a6d2746d24532",
+      "review_status": "rejected_after_high_finding",
+      "review_findings": {
+        "critical": 0,
+        "high": 1,
+        "medium": 0,
+        "low": 0
+      },
+      "finding": "H-01_production_cli_mandatory_control_bypass"
+    },
+    "reconciliation_candidate": {
+      "branch": "codex/e2-control-tower-lineage-reconciliation-repair-1",
       "commit_binding": "checked_out_local_branch_tip",
       "tree_binding": "checked_out_commit_tree",
-      "sole_parent": "b06e8399674f17c188f6502c320a6d2746d24532"
+      "sole_parent": "51c625a3f3538308c356747e170c9f79f83df41f",
+      "repair_status": "H-01_repaired_pending_fresh_independent_review"
     }
   },
   "protected_refs": {
@@ -84,7 +99,8 @@
     "codex/enterprise-e2-pis005a-review-repair-6": "735877b2bb387a50dfbd376d6d3d8c047fd49c8f",
     "codex/enterprise-e2-pis005a-review-repair-7": "3c4060ca997089228debfff7c082f6fd5c96fb04",
     "codex/enterprise-e2-pis005a-review-repair-8": "88f9717198709bfa7b5d520bb4aa41c427543042",
-    "codex/enterprise-e2-pis005a-review-repair-9": "afb81bdc023a300ba49d48d5fddcc8babbf44575"
+    "codex/enterprise-e2-pis005a-review-repair-9": "afb81bdc023a300ba49d48d5fddcc8babbf44575",
+    "codex/e2-control-tower-lineage-reconciliation": "51c625a3f3538308c356747e170c9f79f83df41f"
   },
   "product_acceptance": {
     "personal_technical_preview_continuation_accepted": true,

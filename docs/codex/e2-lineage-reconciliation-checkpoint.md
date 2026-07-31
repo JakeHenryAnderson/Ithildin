@@ -29,15 +29,22 @@ review disposition is layered over that historical snapshot as current PIS statu
   `b06e8399674f17c188f6502c320a6d2746d24532`, tree
   `855dbd27cc6cc9788a955ff7a6a10e12583c3332`, with raw parents exactly `(F, P)`
   in that order.
-- This reconciliation candidate `R` is the checked-out tip of
-  `codex/e2-control-tower-lineage-reconciliation`. Its sole raw parent must be `M`; the checker
-  reports its exact commit and tree at validation time. This avoids an impossible self-referential
-  commit hash while still binding the reviewed candidate to one exact local branch tip.
+- Rejected reconciliation candidate `R0`: commit
+  `51c625a3f3538308c356747e170c9f79f83df41f`, tree
+  `99329bbf0e0da7b40d6a1e0ba9ba7dac8557a7ad`, sole raw parent `M`, preserved at
+  `codex/e2-control-tower-lineage-reconciliation`. Its independent review stopped at
+  `C0/H1/M0/L0` after H-01 proved the production CLI could emit valid evidence while bypassing
+  mandatory frozen gates and live-ref verification. No review disposition was created.
+- This fresh repair candidate `R1` is the checked-out tip of
+  `codex/e2-control-tower-lineage-reconciliation-repair-1`. Its sole raw parent must be exact `R0`;
+  the checker reports its exact commit and tree at validation time. This avoids an impossible
+  self-referential commit hash while binding the pending candidate to one exact local branch tip.
 
 The source refs for `main`, the product checkpoint, E2 preparation, PIS-004A, every protected
 PIS-005A predecessor, and the repair-9 disposition remain pinned in the
 [closed machine-readable record](e2-lineage-reconciliation-checkpoint.json). The reconciliation
-checker compares local, tracking, and live remote identities and fails closed on movement.
+checker compares local, tracking, and live remote identities and fails closed on movement. The
+rejected `R0` branch is itself protected evidence and may not move.
 
 ## Preserved Acceptance And Authority
 
@@ -64,8 +71,21 @@ make e2-lineage-reconciliation-check
 
 The target validates the closed record, exact source commits and trees, raw-parent order, protected
 local/tracking/live refs, clean non-shallow state, unsafe Git metadata and redirects, byte-exact
-product artifacts, frozen PIS review documents, the `F`/`M`/`R` path inventories, 24-tool and
-Gateway ceilings, and all authority nonclaims. It uses safe temporary detached worktrees to:
+product artifacts, frozen PIS review documents, the `F`/`M`/`R0`/`R1` path inventories, 24-tool and
+Gateway ceilings, and all authority nonclaims. The production CLI has no switch, alias, environment
+setting, configuration field, JSON mode, quiet mode, or alternate entry path that can suppress
+mandatory live-ref or frozen-gate validation while producing valid evidence. Unknown arguments are
+rejected before a report is built. A valid JSON report must explicitly contain verified live-ref
+evidence and this closed, nonempty five-result frozen-gate inventory:
+
+- exact product checkpoint at `P`;
+- exact PIS-005A report at `D`;
+- exact PIS-004A report at `D`;
+- complete repaired PIS fixture and attack matrix from exact `F` and `D`;
+- exact named E2 preparation checkpoint.
+
+Missing, empty, partial, or extra evidence makes the report invalid. The checker uses
+safe temporary detached worktrees to:
 
 - validate the product checkpoint at exact `P`;
 - run both PIS report builders at exact `D`;
@@ -85,6 +105,8 @@ run or claim success for `make release-check` or `make review-candidate`.
 
 ## Next Step
 
-Obtain a fresh independent read-only review of the exact clean `R` commit and tree. Only a separate
-zero-finding disposition may create the reviewed reconciliation baseline for a later, separately
-authorized E2-ID-005A implementation lane.
+Obtain a complete fresh independent read-only review of the entire exact clean `R1` commit and tree,
+including the H-01 repair and all previously uncompleted review areas. H-01 is
+implementation-repaired but remains independent-review pending. Only a separate zero-finding
+disposition may create the reviewed reconciliation baseline for a later, separately authorized
+E2-ID-005A implementation lane.

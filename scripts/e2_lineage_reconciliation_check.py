@@ -22,7 +22,8 @@ from scripts import production_identity_storage_pis_005a_check as pis005a_check
 ROOT = Path(__file__).resolve().parents[1]
 RECORD_REL = Path("docs/codex/e2-lineage-reconciliation-checkpoint.json")
 DOC_REL = Path("docs/codex/e2-lineage-reconciliation-checkpoint.md")
-BRANCH = "codex/e2-control-tower-lineage-reconciliation"
+BRANCH = "codex/e2-control-tower-lineage-reconciliation-repair-1"
+REJECTED_BRANCH = "codex/e2-control-tower-lineage-reconciliation"
 
 MAIN_COMMIT = "cc4de49be0ac7915b33c412fc9b06128fa690a26"
 MAIN_TREE = "139d2036f8da6f2e806f11bdbcc9d6451c34e94b"
@@ -43,6 +44,8 @@ F_COMMIT = "c10c6051a62a62fb5618909295828782147428f2"
 F_TREE = "1b3002c64e2891ae6a3a2519e4015ac3a1f56beb"
 M_COMMIT = "b06e8399674f17c188f6502c320a6d2746d24532"
 M_TREE = "855dbd27cc6cc9788a955ff7a6a10e12583c3332"
+REJECTED_COMMIT = "51c625a3f3538308c356747e170c9f79f83df41f"
+REJECTED_TREE = "99329bbf0e0da7b40d6a1e0ba9ba7dac8557a7ad"
 
 PROTECTED_REFS = {
     "main": MAIN_COMMIT,
@@ -72,6 +75,21 @@ PROTECTED_REFS = {
     ),
     "codex/enterprise-e2-pis005a-review-repair-8": REPAIR_8_COMMIT,
     "codex/enterprise-e2-pis005a-review-repair-9": DISPOSITION_COMMIT,
+    REJECTED_BRANCH: REJECTED_COMMIT,
+}
+
+EXPECTED_FROZEN_GATE_LABELS = (
+    "exact_product_checkpoint",
+    "exact_pis005a_report",
+    "exact_pis004a_report",
+    "complete_repaired_pis_fixture_matrix",
+    "exact_e2_preparation",
+)
+EXPECTED_LIVE_REF_EVIDENCE: dict[str, Any] = {
+    "status": "verified",
+    "remote": "origin",
+    "protected_ref_count": len(PROTECTED_REFS),
+    "local_tracking_live_match": True,
 }
 
 PRODUCT_ARTIFACTS = (
@@ -110,6 +128,12 @@ R_PATHS = {
     "scripts/e2_lineage_reconciliation_check.py": "A",
     "scripts/review_docs.py": "M",
     "tests/test_e2_lineage_reconciliation_check.py": "A",
+}
+REPAIR_PATHS = {
+    "docs/codex/e2-lineage-reconciliation-checkpoint.json": "M",
+    "docs/codex/e2-lineage-reconciliation-checkpoint.md": "M",
+    "scripts/e2_lineage_reconciliation_check.py": "M",
+    "tests/test_e2_lineage_reconciliation_check.py": "M",
 }
 
 EXPECTED_RECORD: dict[str, Any] = {
@@ -167,11 +191,26 @@ EXPECTED_RECORD: dict[str, Any] = {
             "tree": M_TREE,
             "raw_parents": [F_COMMIT, PRODUCT_COMMIT],
         },
+        "rejected_reconciliation_candidate": {
+            "branch": REJECTED_BRANCH,
+            "commit": REJECTED_COMMIT,
+            "tree": REJECTED_TREE,
+            "sole_parent": M_COMMIT,
+            "review_status": "rejected_after_high_finding",
+            "review_findings": {
+                "critical": 0,
+                "high": 1,
+                "medium": 0,
+                "low": 0,
+            },
+            "finding": "H-01_production_cli_mandatory_control_bypass",
+        },
         "reconciliation_candidate": {
             "branch": BRANCH,
             "commit_binding": "checked_out_local_branch_tip",
             "tree_binding": "checked_out_commit_tree",
-            "sole_parent": M_COMMIT,
+            "sole_parent": REJECTED_COMMIT,
+            "repair_status": "H-01_repaired_pending_fresh_independent_review",
         },
     },
     "protected_refs": PROTECTED_REFS,
@@ -283,6 +322,7 @@ def _fixed_identity_failures(root: Path) -> list[str]:
         DISPOSITION_COMMIT: (DISPOSITION_TREE, REVIEWED_COMMIT),
         F_COMMIT: (F_TREE, DISPOSITION_COMMIT),
         M_COMMIT: (M_TREE, f"{F_COMMIT} {PRODUCT_COMMIT}"),
+        REJECTED_COMMIT: (REJECTED_TREE, M_COMMIT),
     }
     for commit, identity in expected.items():
         if _identity(root, commit) != identity:
@@ -304,6 +344,8 @@ def _fixed_identity_failures(root: Path) -> list[str]:
         failures.append("fixture repair changed paths other than the approved test file")
     if _changed_entries(root, F_COMMIT, M_COMMIT) != M_FIRST_PARENT_PATHS:
         failures.append("integration merge first-parent inventory changed")
+    if _changed_entries(root, M_COMMIT, REJECTED_COMMIT) != R_PATHS:
+        failures.append("rejected reconciliation candidate inventory changed")
     if _changed_entries(root, REVIEWED_COMMIT, DISPOSITION_COMMIT) != {
         relative: "M" for relative in FROZEN_PIS_REVIEW_DOCS
     }:
@@ -311,48 +353,66 @@ def _fixed_identity_failures(root: Path) -> list[str]:
     return failures
 
 
-def _protected_ref_failures(root: Path, *, verify_live_refs: bool) -> list[str]:
+def _protected_ref_verification(root: Path) -> tuple[list[str], dict[str, Any]]:
     failures: list[str] = []
+    local_tracking_match = True
     for branch, expected in PROTECTED_REFS.items():
         local = _git_or_none(root, "rev-parse", f"refs/heads/{branch}^{{commit}}")
         tracking = _git_or_none(
             root, "rev-parse", f"refs/remotes/origin/{branch}^{{commit}}"
         )
         if local != expected or tracking != expected:
+            local_tracking_match = False
             failures.append(f"protected local or tracking ref moved: {branch}")
-    if not verify_live_refs:
-        return failures
     arguments = tuple(f"refs/heads/{branch}" for branch in PROTECTED_REFS)
     output = _git_or_none(root, "ls-remote", "--heads", "origin", *arguments)
     if output is None:
         failures.append("live protected refs could not be verified")
-        return failures
+        return failures, {
+            "status": "failed",
+            "remote": "origin",
+            "protected_ref_count": len(PROTECTED_REFS),
+            "local_tracking_live_match": False,
+        }
     observed: dict[str, str] = {}
     for line in output.splitlines():
         commit, separator, ref = line.partition("\t")
         if not separator or not ref.startswith("refs/heads/"):
             failures.append("live protected ref output is malformed")
-            return failures
+            return failures, {
+                "status": "failed",
+                "remote": "origin",
+                "protected_ref_count": len(PROTECTED_REFS),
+                "local_tracking_live_match": False,
+            }
         observed[ref.removeprefix("refs/heads/")] = commit
-    if observed != PROTECTED_REFS:
+    live_match = observed == PROTECTED_REFS
+    if not live_match:
         failures.append("one or more live protected refs moved or disappeared")
-    return failures
+    verified = local_tracking_match and live_match
+    return failures, {
+        "status": "verified" if verified else "failed",
+        "remote": "origin",
+        "protected_ref_count": len(PROTECTED_REFS),
+        "local_tracking_live_match": verified,
+    }
 
 
-def validate_git_bindings(root: Path, *, verify_live_refs: bool) -> dict[str, Any]:
+def validate_git_bindings(root: Path) -> dict[str, Any]:
     failures = list(
         pis005a_check._git_topology_metadata_failures(root)  # noqa: SLF001
     )
     failures.extend(_fixed_identity_failures(root))
-    failures.extend(_protected_ref_failures(root, verify_live_refs=verify_live_refs))
+    protected_failures, live_ref_evidence = _protected_ref_verification(root)
+    failures.extend(protected_failures)
     head = _git_or_none(root, "rev-parse", "HEAD^{commit}")
     tree = _git_or_none(root, "rev-parse", "HEAD^{tree}")
     parents = _git_or_none(root, "show", "-s", "--format=%P", "HEAD")
     branch = _git_or_none(root, "symbolic-ref", "--short", "HEAD")
     local = _git_or_none(root, "rev-parse", f"refs/heads/{BRANCH}^{{commit}}")
-    if not head or branch != BRANCH or local != head or parents != M_COMMIT:
+    if not head or branch != BRANCH or local != head or parents != REJECTED_COMMIT:
         failures.append("reconciliation candidate branch, identity, or sole parent is invalid")
-    if head and _changed_entries(root, M_COMMIT, head) != R_PATHS:
+    if head and _changed_entries(root, REJECTED_COMMIT, head) != REPAIR_PATHS:
         failures.append("reconciliation candidate path inventory is invalid")
     status = _git_or_none(root, "status", "--porcelain=v1", "--untracked-files=all")
     if status is None or status:
@@ -363,6 +423,7 @@ def validate_git_bindings(root: Path, *, verify_live_refs: bool) -> dict[str, An
         "commit": head,
         "tree": tree,
         "raw_parents": parents.split() if parents else [],
+        "live_ref_verification": live_ref_evidence,
         "failures": failures,
     }
 
@@ -606,65 +667,99 @@ def run_frozen_gates(root: Path) -> tuple[list[str], dict[str, str]]:
         if not passed:
             failures.append(f"{label} failed:\n{summary}")
 
-    with _detached_worktree(root, PRODUCT_COMMIT) as product_root:
-        run(
-            "exact_product_checkpoint",
-            [sys.executable, "scripts/product_line_acceptance_checkpoint.py"],
-            product_root,
-        )
-    with _detached_worktree(root, DISPOSITION_COMMIT) as disposition_root:
-        run(
-            "exact_pis005a_report",
-            [sys.executable, "scripts/production_identity_storage_pis_005a_check.py"],
-            disposition_root,
-        )
-        run(
-            "exact_pis004a_report",
-            [sys.executable, "scripts/production_identity_storage_pis_004a_check.py"],
-            disposition_root,
-        )
-        with tempfile.TemporaryDirectory(prefix="ithildin-repaired-pis-tests-") as test_dir:
-            test_path = Path(test_dir) / "test_pis005a_contract.py"
-            test_path.write_bytes(
-                _git_blob(root, F_COMMIT, "tests/test_pis005a_contract.py")
-            )
-            environment = os.environ.copy()
-            environment["PYTHONPATH"] = str(disposition_root)
+    try:
+        with _detached_worktree(root, PRODUCT_COMMIT) as product_root:
             run(
-                "complete_repaired_pis_fixture_matrix",
-                [
-                    sys.executable,
-                    "-m",
-                    "pytest",
-                    str(test_path),
-                    "--rootdir",
-                    str(disposition_root),
-                    "-p",
-                    "no:cacheprovider",
-                    "-q",
-                ],
-                disposition_root,
-                env=environment,
+                "exact_product_checkpoint",
+                [sys.executable, "scripts/product_line_acceptance_checkpoint.py"],
+                product_root,
             )
-    with _isolated_named_checkout(
-        root,
-        "codex/enterprise-e2-production-identity-prep",
-        E2_COMMIT,
-    ) as e2_root:
-        run(
-            "exact_e2_preparation",
-            [sys.executable, "scripts/enterprise_e2_preparation_check.py"],
-            e2_root,
-        )
+    except RuntimeError as exc:
+        label = "exact_product_checkpoint"
+        summaries[label] = f"not executed: {exc}"
+        failures.append(f"{label} failed:\n{exc}")
+
+    disposition_labels = (
+        "exact_pis005a_report",
+        "exact_pis004a_report",
+        "complete_repaired_pis_fixture_matrix",
+    )
+    try:
+        with _detached_worktree(root, DISPOSITION_COMMIT) as disposition_root:
+            run(
+                "exact_pis005a_report",
+                [sys.executable, "scripts/production_identity_storage_pis_005a_check.py"],
+                disposition_root,
+            )
+            run(
+                "exact_pis004a_report",
+                [sys.executable, "scripts/production_identity_storage_pis_004a_check.py"],
+                disposition_root,
+            )
+            with tempfile.TemporaryDirectory(
+                prefix="ithildin-repaired-pis-tests-"
+            ) as test_dir:
+                test_path = Path(test_dir) / "test_pis005a_contract.py"
+                test_path.write_bytes(
+                    _git_blob(root, F_COMMIT, "tests/test_pis005a_contract.py")
+                )
+                environment = os.environ.copy()
+                environment["PYTHONPATH"] = str(disposition_root)
+                run(
+                    "complete_repaired_pis_fixture_matrix",
+                    [
+                        sys.executable,
+                        "-m",
+                        "pytest",
+                        str(test_path),
+                        "--rootdir",
+                        str(disposition_root),
+                        "-p",
+                        "no:cacheprovider",
+                        "-q",
+                    ],
+                    disposition_root,
+                    env=environment,
+                )
+    except (OSError, RuntimeError) as exc:
+        for label in disposition_labels:
+            if label not in summaries:
+                summaries[label] = f"not executed: {exc}"
+                failures.append(f"{label} failed:\n{exc}")
+
+    try:
+        with _isolated_named_checkout(
+            root,
+            "codex/enterprise-e2-production-identity-prep",
+            E2_COMMIT,
+        ) as e2_root:
+            run(
+                "exact_e2_preparation",
+                [sys.executable, "scripts/enterprise_e2_preparation_check.py"],
+                e2_root,
+            )
+    except RuntimeError as exc:
+        label = "exact_e2_preparation"
+        summaries[label] = f"not executed: {exc}"
+        failures.append(f"{label} failed:\n{exc}")
     return failures, summaries
 
 
-def build_report(
-    root: Path = ROOT,
-    *,
-    run_external_gates: bool,
-    verify_live_refs: bool,
-) -> dict[str, Any]:
+def _frozen_evidence_failures(summaries: dict[str, str]) -> list[str]:
+    if set(summaries) != set(EXPECTED_FROZEN_GATE_LABELS):
+        return ["frozen gate summary inventory is missing, partial, or extra"]
+    if any(not isinstance(summary, str) or not summary.strip() for summary in summaries.values()):
+        return ["frozen gate summary inventory contains an empty or invalid result"]
+    return []
+
+
+def _live_ref_evidence_failures(evidence: dict[str, Any]) -> list[str]:
+    if evidence != EXPECTED_LIVE_REF_EVIDENCE:
+        return ["live protected-ref verification evidence is missing or invalid"]
+    return []
+
+
+def build_authoritative_report(root: Path = ROOT) -> dict[str, Any]:
     failures: list[str] = []
     try:
         record = load_record(root / RECORD_REL)
@@ -672,16 +767,25 @@ def build_report(
         record = {}
         failures.append(f"lineage reconciliation record cannot be loaded: {exc}")
     failures.extend(validate_record(record))
-    git_report = validate_git_bindings(root, verify_live_refs=verify_live_refs)
+    git_report = validate_git_bindings(root)
     failures.extend(git_report["failures"])
     failures.extend(validate_frozen_artifacts(root))
     failures.extend(validate_authority_ceilings(root, record))
     failures.extend(validate_navigation(root))
-    frozen_summaries: dict[str, str] = {}
-    if run_external_gates and not failures:
+    try:
         frozen_failures, frozen_summaries = run_frozen_gates(root)
         failures.extend(frozen_failures)
+    except (OSError, RuntimeError, subprocess.SubprocessError) as exc:
+        frozen_summaries = {}
+        failures.append(f"mandatory frozen gates could not be executed: {exc}")
+    failures.extend(_frozen_evidence_failures(frozen_summaries))
+    live_ref_evidence = git_report["live_ref_verification"]
+    failures.extend(_live_ref_evidence_failures(live_ref_evidence))
+    authority = record.get("authority", {})
+    if not isinstance(authority, dict):
+        authority = {}
     return {
+        "authoritative": True,
         "valid": not failures,
         "record_status": record.get("record_status"),
         "candidate_branch": BRANCH,
@@ -689,18 +793,15 @@ def build_report(
         "candidate_tree": git_report["tree"],
         "raw_parents": git_report["raw_parents"],
         "governed_tool_count": (
-            record.get("authority", {}).get("governed_tool_count")
-            if isinstance(record.get("authority"), dict)
-            else None
+            authority.get("governed_tool_count")
         ),
-        "runtime_authority": (
-            record.get("authority", {}).get("runtime_authority")
-            if isinstance(record.get("authority"), dict)
-            else None
+        "runtime_authority": authority.get("runtime_authority"),
+        "human_uat_complete": authority.get("human_uat_complete"),
+        "release_allowed": authority.get("release_allowed"),
+        "e2_id_005a_implementation_authorized": authority.get(
+            "e2_id_005a_implementation_authorized"
         ),
-        "human_uat_complete": False,
-        "release_allowed": False,
-        "e2_id_005a_implementation_authorized": False,
+        "live_ref_verification": live_ref_evidence,
         "frozen_gate_summaries": frozen_summaries,
         "failures": failures,
     }
@@ -709,6 +810,7 @@ def build_report(
 def render_report(report: dict[str, Any]) -> str:
     lines = [
         "Ithildin E2 lineage reconciliation checkpoint",
+        f"authoritative: {str(report['authoritative']).lower()}",
         f"valid: {str(report['valid']).lower()}",
         f"record_status: {report['record_status']}",
         f"candidate_branch: {report['candidate_branch']}",
@@ -723,6 +825,11 @@ def render_report(report: dict[str, Any]) -> str:
             "e2_id_005a_implementation_authorized: "
             f"{str(report['e2_id_005a_implementation_authorized']).lower()}"
         ),
+        (
+            "live_ref_verification: "
+            f"{report['live_ref_verification']['status']} "
+            f"({report['live_ref_verification']['protected_ref_count']} protected refs)"
+        ),
     ]
     summaries = report["frozen_gate_summaries"]
     if summaries:
@@ -735,16 +842,10 @@ def render_report(report: dict[str, Any]) -> str:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser(description=__doc__, allow_abbrev=False)
     parser.add_argument("--json", action="store_true")
-    parser.add_argument("--skip-frozen-gates", action="store_true", help=argparse.SUPPRESS)
-    parser.add_argument("--skip-live-refs", action="store_true", help=argparse.SUPPRESS)
     args = parser.parse_args()
-    report = build_report(
-        ROOT,
-        run_external_gates=not args.skip_frozen_gates,
-        verify_live_refs=not args.skip_live_refs,
-    )
+    report = build_authoritative_report(ROOT)
     print(json.dumps(report, indent=2, sort_keys=True) if args.json else render_report(report))
     return 0 if report["valid"] else 1
 
