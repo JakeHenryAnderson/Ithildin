@@ -16,6 +16,10 @@ from scripts import enterprise_e2_preparation_check as e2_check
 from scripts import production_identity_storage_pis_004a_check as pis004a_check
 from scripts import production_identity_storage_pis_005a_check as pis005a_check
 
+PENDING_TEMPLATE_COMMIT = "a23dd3c525bf748a632d8ad3ebd9597883dc0842"
+PENDING_TEMPLATE_TREE = "c37ff1043cdfe4511fa35a63cd7fd1675f85c797"
+PENDING_TEMPLATE_PARENT = "88f9717198709bfa7b5d520bb4aa41c427543042"
+
 
 def _contract() -> dict[str, object]:
     return pis005a_check.load_contract(
@@ -1630,6 +1634,20 @@ def _record_completed_review(repository: Path) -> dict[str, str]:
 
 
 def _initialize_full_report_candidate_repository(tmp_path: Path) -> Path:
+    assert (
+        _git(pis005a_check.ROOT, "rev-parse", f"{PENDING_TEMPLATE_COMMIT}^{{commit}}")
+        == PENDING_TEMPLATE_COMMIT
+    )
+    assert (
+        _git(pis005a_check.ROOT, "rev-parse", f"{PENDING_TEMPLATE_COMMIT}^{{tree}}")
+        == PENDING_TEMPLATE_TREE
+    )
+    assert (
+        _git(pis005a_check.ROOT, "show", "-s", "--format=%P", PENDING_TEMPLATE_COMMIT)
+        == PENDING_TEMPLATE_PARENT
+        == pis005a_check.REPAIR_BASE_COMMIT
+    )
+
     repository = tmp_path / "full-report-repository"
     git_executable = shutil.which("git", path=os.defpath)
     assert git_executable is not None
@@ -1657,30 +1675,44 @@ def _initialize_full_report_candidate_repository(tmp_path: Path) -> Path:
         pis005a_check.REPAIR_BASE_COMMIT,
     )
 
-    candidate_paths: set[str] = set()
-    for arguments in (
-        ("diff", "--name-only", f"{pis005a_check.REPAIR_BASE_COMMIT}..HEAD"),
-        ("diff", "--name-only"),
-        ("diff", "--cached", "--name-only"),
-        ("ls-files", "--others", "--exclude-standard"),
-    ):
-        candidate_paths.update(
-            line
-            for line in _git(pis005a_check.ROOT, *arguments).splitlines()
-            if line
-        )
-    for relative in sorted(candidate_paths):
-        source = pis005a_check.ROOT / relative
+    candidate_inventory = _git(
+        pis005a_check.ROOT,
+        "diff",
+        "--name-status",
+        "--find-renames",
+        f"{pis005a_check.REPAIR_BASE_COMMIT}..{PENDING_TEMPLATE_COMMIT}",
+    ).splitlines()
+    for inventory_entry in candidate_inventory:
+        fields = inventory_entry.split("\t")
+        status = fields[0]
+        if status not in {"A", "M", "D"} or len(fields) != 2:
+            raise AssertionError(
+                f"unsupported pending-template inventory entry: {inventory_entry}"
+            )
+        relative = fields[1]
         destination = repository / relative
-        if source.is_file():
-            destination.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copy2(source, destination)
-        elif destination.exists():
+        if status in {"A", "M"}:
+            _git(
+                repository,
+                "checkout",
+                PENDING_TEMPLATE_COMMIT,
+                "--",
+                relative,
+            )
+        elif not destination.is_file():
+            raise AssertionError(f"pending-template deletion is not a file: {relative}")
+        else:
             destination.unlink()
 
     _git(repository, "add", "-A")
     _git(repository, "commit", "-q", "-m", "PIS-005A repair-9 full report fixture")
     candidate = _git(repository, "rev-parse", "HEAD")
+    assert _git(repository, "show", "-s", "--format=%P", candidate) == (
+        pis005a_check.REPAIR_BASE_COMMIT
+    )
+    assert _git(repository, "rev-parse", f"{candidate}^{{tree}}") == (
+        PENDING_TEMPLATE_TREE
+    )
     for branch, commit, _tree in pis005a_check._PREDECESSOR_REFS:  # noqa: SLF001
         _git(repository, "update-ref", f"refs/heads/{branch}", commit)
         _git(repository, "update-ref", f"refs/remotes/origin/{branch}", commit)
