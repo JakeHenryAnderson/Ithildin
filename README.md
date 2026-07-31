@@ -2,8 +2,16 @@
 
 Ithildin is a local-first governed MCP/tool gateway for AI agents.
 
-**Current status:** Enterprise Track E1 implementation on an isolated descendant of the frozen
-Local v1 candidate-preparation branch. Historical review lineage remains evidence only.
+**Current status:** Personal technical-preview and bounded Enterprise E1 single-site-pilot
+development continuation accepted against their frozen candidates. Historical review lineage
+remains evidence only.
+
+The [product-line acceptance checkpoint](docs/codex/product-line-acceptance-checkpoint.md) records
+this scoped direction without claiming human UAT, release acceptance, production readiness,
+production promotion, public security-product readiness, or external-system authority. Run
+`make product-line-acceptance-checkpoint` to validate the
+[closed machine-readable record](docs/codex/product-line-acceptance-checkpoint.json) and its
+preserved boundaries.
 
 Active delivery target: **Ithildin Local v1.0**. The authoritative
 [Local v1.0 completion contract](docs/codex/local-v1-completion-contract.md) defines eight fixed,
