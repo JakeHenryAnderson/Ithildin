@@ -1878,7 +1878,7 @@ def _open_trusted_directory(path: Path) -> tuple[int, os.stat_result]:
 
 
 def _require_platform_support() -> None:
-    required_flags = ("O_CLOEXEC", "O_DIRECTORY", "O_NOFOLLOW")
+    required_flags = ("O_CLOEXEC", "O_DIRECTORY", "O_NONBLOCK", "O_NOFOLLOW")
     if any(not hasattr(os, flag) for flag in required_flags):
         raise DatabaseBackupError("required no-follow descriptor semantics are unsupported")
     if (
@@ -1952,7 +1952,7 @@ def _open_unique_temporary(directory_fd: int, name: str) -> int:
 
 
 def _open_alias(directory_fd: int, name: str) -> int:
-    flags = os.O_RDONLY | os.O_CLOEXEC | os.O_NOFOLLOW
+    flags = os.O_RDONLY | os.O_NONBLOCK | os.O_CLOEXEC | os.O_NOFOLLOW
     try:
         descriptor = os.open(name, flags, dir_fd=directory_fd)
     except OSError as exc:

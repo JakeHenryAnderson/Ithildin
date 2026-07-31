@@ -8,11 +8,11 @@ Source commit: `e8e6a75ca3d76a233243f5e890091f3c95731da9`.
 
 Security prerequisite: `83db1196213b0e4e7de5d97ab0fb37b934ca4ab7`.
 
-Branch: `codex/enterprise-e2-pis005a-review-repair-5`.
+Branch: `codex/enterprise-e2-pis005a-review-repair-6`.
 
-Frozen repair source: branch `origin/codex/enterprise-e2-pis005a-review-repair-4`, commit
-`22566cae4a1bc84dca20747d7bd1531d77d7f025`, tree
-`44952292c183b4a481f15dc691e6c04e90e45d55`.
+Frozen repair source: branch `origin/codex/enterprise-e2-pis005a-review-repair-5`, commit
+`cedcf5d0bf3baeab12f54600a247a61a4671d7f9`, tree
+`6e4c4097680c97c77913ba10054dbb5e234abe4c`.
 
 Rejected predecessor evidence remains unchanged:
 
@@ -27,9 +27,12 @@ Rejected predecessor evidence remains unchanged:
   `49e958caeba4f3bce51feaa4e842f8f622c00d4a`; and
 - branch `codex/enterprise-e2-pis005a-review-repair-4`, commit
   `22566cae4a1bc84dca20747d7bd1531d77d7f025`, tree
-  `44952292c183b4a481f15dc691e6c04e90e45d55`.
+  `44952292c183b4a481f15dc691e6c04e90e45d55`; and
+- branch `codex/enterprise-e2-pis005a-review-repair-5`, commit
+  `cedcf5d0bf3baeab12f54600a247a61a4671d7f9`, tree
+  `6e4c4097680c97c77913ba10054dbb5e234abe4c`.
 
-None of the four rejected exact candidates is relabeled or mutated by this fresh repair-5
+None of the five rejected exact candidates is relabeled or mutated by this fresh repair-6
 candidate.
 
 Current governed tool count: exactly `24`.
@@ -224,14 +227,16 @@ window, dual-name canonical/anchor substitution and bounded exact-inode recovery
 backup/receipt snapshot mismatch, same-content different-inode substitution, marker/receipt and
 native/legacy restart classification, symlink/temp/permission/owner/link-count/competing-anchor
 attacks, child-process crashes around commit, post-finalization same-UID mutation detection on the
-next restart, authority-anchor and review-lifecycle mutation, detached PIS-005A successor topology,
-exact evidence vocabulary, validation-error redaction, and database/evidence canaries.
+next restart, passive FIFO rejection with bounded startup completion, authority-anchor and
+review-lifecycle mutation, exact one-commit PIS-005A successor topology in named and detached modes,
+predecessor-ref drift, exact evidence vocabulary, validation-error redaction, and
+database/evidence canaries.
 
 After focused and broader checks pass, a separate reviewer should reproduce the exact pushed
 candidate in a clean detached worktree:
 
 ```sh
-git fetch origin refs/heads/codex/enterprise-e2-pis005a-review-repair-5:refs/remotes/origin/codex/enterprise-e2-pis005a-review-repair-5
+git fetch origin refs/heads/codex/enterprise-e2-pis005a-review-repair-6:refs/heads/codex/enterprise-e2-pis005a-review-repair-6 refs/heads/codex/enterprise-e2-pis005a-review-repair-6:refs/remotes/origin/codex/enterprise-e2-pis005a-review-repair-6
 git worktree add --detach /tmp/ithildin-pis005a-review <candidate_commit>
 cd /tmp/ithildin-pis005a-review
 make production-identity-storage-pis-005a-check

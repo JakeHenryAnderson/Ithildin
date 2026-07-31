@@ -41,16 +41,16 @@ Current governed tool count: exactly `24`.
 ## Pending Review Procedure
 
 The exact implementation candidate is frozen and awaits independent review. The reviewer must fetch
-`origin/codex/enterprise-e2-pis005a-review-repair-5`, check out the exact candidate commit in a clean
-detached worktree, verify that the fetched remote identity, detached `HEAD`, and exact tree match,
-and run:
+`origin/codex/enterprise-e2-pis005a-review-repair-6` into matching exact local and remote-tracking
+candidate refs, check out the exact candidate commit in a clean detached worktree, verify that both
+refs, detached `HEAD`, and the exact tree match, and run:
 
 ```sh
 make production-identity-storage-pis-005a-check
 ```
 
 This is a fresh review of the entire repaired candidate, not a review limited to the repair diff.
-All four predecessor candidates are evidence only and remain rejected:
+All five predecessor candidates are evidence only and remain rejected:
 
 - `codex/enterprise-e2-pis005a-node-identity`,
   `fce0a3668db5150cf0aa75de1fd914b296a2e099`, tree
@@ -63,11 +63,14 @@ All four predecessor candidates are evidence only and remain rejected:
   `49e958caeba4f3bce51feaa4e842f8f622c00d4a`; and
 - `codex/enterprise-e2-pis005a-review-repair-4`,
   `22566cae4a1bc84dca20747d7bd1531d77d7f025`, tree
-  `44952292c183b4a481f15dc691e6c04e90e45d55`.
+  `44952292c183b4a481f15dc691e6c04e90e45d55`; and
+- `codex/enterprise-e2-pis005a-review-repair-5`,
+  `cedcf5d0bf3baeab12f54600a247a61a4671d7f9`, tree
+  `6e4c4097680c97c77913ba10054dbb5e234abe4c`.
 
-The repair-4 independent review returned `NO_GO` with `C0/H0/M1/L1`. Its partial-publication
-recoverability and predecessor/successor checkout-binding findings are repair inputs only, not a
-positive disposition for repair-4 or this new candidate.
+The repair-5 independent review returned `NO_GO` with `C0/H0/M0/L2`. Its arbitrary-descendant
+topology acceptance and blocking FIFO-open findings are repair inputs only, not a positive
+disposition for repair-5 or this new candidate.
 
 The fresh review must re-evaluate the entire candidate and independently verify every repair area:
 
@@ -89,9 +92,12 @@ The fresh review must re-evaluate the entire candidate and independently verify 
   postcommit/pre-finalize;
 - trusted/private/non-symlink directory enforcement plus unsupported no-follow/hardlink failure,
   permission, ownership, link-count, symlink, temp, canonical, anchor, marker, receipt, in-place,
-  snapshot, and same-content-different-inode attack coverage;
+  snapshot, same-content-different-inode, and bounded passive-FIFO attack coverage without weakening
+  the explicit active same-UID writer nonclaim;
 - exact PIS-004A gate recognition of the contract-bound named and detached PIS-005A successor,
-  with unrelated and rejected predecessor topology failing closed;
+  requiring exact local and fetched candidate refs, a sole direct repair-5 parent with its exact
+  tree and refs, and unchanged accepted/rejected ancestry, with extra commits, merges, unrelated
+  commits, missing refs, ref drift, and rejected predecessor topology failing closed;
 - persisted trust-anchor/application-key-ID revalidation and canonical request cross-binding;
 - durable ordinary enrollment expiry at the exact boundary;
 - strict older-than nonce pruning with restart, replay, and concurrency behavior; and

@@ -26,16 +26,47 @@ PIS005A_CONTRACT_REL = Path(
 SOURCE_COMMIT = "e86f5a19e4e067d73141246f78304597e6cc28a0"
 SOURCE_TREE = "6dbbcf0bef3320dfdfa4142f2d30b798b01511d0"
 BRANCH = "codex/enterprise-e2-pis004a-review-repair"
-PIS005A_SUCCESSOR_BRANCH = "codex/enterprise-e2-pis005a-review-repair-5"
+PIS005A_SUCCESSOR_BRANCH = "codex/enterprise-e2-pis005a-review-repair-6"
 PIS005A_SUCCESSOR_BASE_COMMIT = "83db1196213b0e4e7de5d97ab0fb37b934ca4ab7"
 PIS005A_SUCCESSOR_BASE_TREE = "86731324feec59596146a1149cdde69f47dd58d0"
-PIS005A_REPAIR_BASE_BRANCH = "codex/enterprise-e2-pis005a-review-repair-4"
-PIS005A_REPAIR_BASE_COMMIT = "22566cae4a1bc84dca20747d7bd1531d77d7f025"
-PIS005A_REPAIR_BASE_TREE = "44952292c183b4a481f15dc691e6c04e90e45d55"
+PIS005A_REPAIR_BASE_BRANCH = "codex/enterprise-e2-pis005a-review-repair-5"
+PIS005A_REPAIR_BASE_COMMIT = "cedcf5d0bf3baeab12f54600a247a61a4671d7f9"
+PIS005A_REPAIR_BASE_TREE = "6e4c4097680c97c77913ba10054dbb5e234abe4c"
+_PIS005A_ORIGINAL_BRANCH = "codex/enterprise-e2-pis005a-node-identity"
+_PIS005A_ORIGINAL_COMMIT = "fce0a3668db5150cf0aa75de1fd914b296a2e099"
+_PIS005A_ORIGINAL_TREE = "331adb70f2c2c24def540c3576fc6876e33c478c"
+_PIS005A_REPAIR_2_BRANCH = "codex/enterprise-e2-pis005a-review-repair-2"
+_PIS005A_REPAIR_2_COMMIT = "1542bd0469e18a0ae52cc48920f30b4e41518513"
+_PIS005A_REPAIR_2_TREE = "ba9a40e929ff330c15c6c23766006eb1c26878ef"
+_PIS005A_REPAIR_3_BRANCH = "codex/enterprise-e2-pis005a-review-repair-3"
+_PIS005A_REPAIR_3_COMMIT = "afd13f98440d4cd9c032b6a996db133bdf78055d"
+_PIS005A_REPAIR_3_TREE = "49e958caeba4f3bce51feaa4e842f8f622c00d4a"
+_PIS005A_REPAIR_4_BRANCH = "codex/enterprise-e2-pis005a-review-repair-4"
+_PIS005A_REPAIR_4_COMMIT = "22566cae4a1bc84dca20747d7bd1531d77d7f025"
+_PIS005A_REPAIR_4_TREE = "44952292c183b4a481f15dc691e6c04e90e45d55"
+_PIS005A_PREDECESSOR_REFS = (
+    (
+        BRANCH,
+        "e8e6a75ca3d76a233243f5e890091f3c95731da9",
+        "1a5a6c818bf3fd5e17bcffedaae4cf5497e1e6f2",
+    ),
+    (_PIS005A_ORIGINAL_BRANCH, _PIS005A_ORIGINAL_COMMIT, _PIS005A_ORIGINAL_TREE),
+    (_PIS005A_REPAIR_2_BRANCH, _PIS005A_REPAIR_2_COMMIT, _PIS005A_REPAIR_2_TREE),
+    (_PIS005A_REPAIR_3_BRANCH, _PIS005A_REPAIR_3_COMMIT, _PIS005A_REPAIR_3_TREE),
+    (_PIS005A_REPAIR_4_BRANCH, _PIS005A_REPAIR_4_COMMIT, _PIS005A_REPAIR_4_TREE),
+    (PIS005A_REPAIR_BASE_BRANCH, PIS005A_REPAIR_BASE_COMMIT, PIS005A_REPAIR_BASE_TREE),
+)
+_PIS005A_REPAIR_PARENT_CHAIN = (
+    (_PIS005A_REPAIR_2_COMMIT, _PIS005A_ORIGINAL_COMMIT),
+    (_PIS005A_REPAIR_3_COMMIT, _PIS005A_REPAIR_2_COMMIT),
+    (_PIS005A_REPAIR_4_COMMIT, _PIS005A_REPAIR_3_COMMIT),
+    (PIS005A_REPAIR_BASE_COMMIT, _PIS005A_REPAIR_4_COMMIT),
+)
 PIS005A_REJECTED_COMMITS = {
-    "fce0a3668db5150cf0aa75de1fd914b296a2e099",
-    "1542bd0469e18a0ae52cc48920f30b4e41518513",
-    "afd13f98440d4cd9c032b6a996db133bdf78055d",
+    _PIS005A_ORIGINAL_COMMIT,
+    _PIS005A_REPAIR_2_COMMIT,
+    _PIS005A_REPAIR_3_COMMIT,
+    _PIS005A_REPAIR_4_COMMIT,
     PIS005A_REPAIR_BASE_COMMIT,
 }
 PIS004A_REVIEW_COMMIT = "e8e6a75ca3d76a233243f5e890091f3c95731da9"
@@ -845,6 +876,8 @@ def _pis005a_successor_context_failures(
     authority = contract.get("authority")
     expected_review_template = (
         f"git fetch origin refs/heads/{PIS005A_SUCCESSOR_BRANCH}:"
+        f"refs/heads/{PIS005A_SUCCESSOR_BRANCH} "
+        f"refs/heads/{PIS005A_SUCCESSOR_BRANCH}:"
         f"refs/remotes/origin/{PIS005A_SUCCESSOR_BRANCH} && "
         "git worktree add --detach /tmp/ithildin-pis005a-review "
         "<candidate_commit> && cd /tmp/ithildin-pis005a-review && "
@@ -880,6 +913,13 @@ def _pis005a_successor_context_failures(
         and authority.get("production_identity_allowed") is False
         and authority.get("runtime_postgres_allowed") is False
         and authority.get("remote_transport_allowed") is False
+    )
+    head_parent_line = _git_one(root, "show", "-s", "--format=%P", "HEAD")
+    head_parents = tuple(head_parent_line.split())
+    head_parent_tree = (
+        _git_one(root, "rev-parse", f"{head_parents[0]}^{{tree}}")
+        if len(head_parents) == 1
+        else ""
     )
     return _pis005a_successor_checkout_failures(
         current_branch=current_branch,
@@ -941,6 +981,9 @@ def _pis005a_successor_context_failures(
             "rev-parse",
             f"refs/remotes/origin/{BRANCH}^{{commit}}",
         ),
+        head_parents=head_parents,
+        head_parent_tree=head_parent_tree,
+        predecessor_topology_valid=_pis005a_predecessor_topology_is_exact(root),
     )
 
 
@@ -962,6 +1005,9 @@ def _pis005a_successor_checkout_failures(
     repair_base_remote_oid: str,
     repair_base_is_ancestor: bool,
     pis004a_remote_oid: str,
+    head_parents: tuple[str, ...] = (PIS005A_REPAIR_BASE_COMMIT,),
+    head_parent_tree: str = PIS005A_REPAIR_BASE_TREE,
+    predecessor_topology_valid: bool = True,
 ) -> list[str]:
     failures: list[str] = []
     if (
@@ -972,6 +1018,9 @@ def _pis005a_successor_checkout_failures(
         or not repair_base_is_ancestor
         or pis004a_remote_oid != PIS004A_REVIEW_COMMIT
         or head_oid in PIS005A_REJECTED_COMMITS
+        or head_parents != (PIS005A_REPAIR_BASE_COMMIT,)
+        or head_parent_tree != PIS005A_REPAIR_BASE_TREE
+        or not predecessor_topology_valid
     ):
         failures.append("PIS-004A exact PIS-005A successor identity is invalid")
     if shallow_state != "false":
@@ -1001,9 +1050,13 @@ def _pis005a_successor_checkout_failures(
         failures.append("PIS-004A is not on the exact PIS-005A successor branch or detached")
         return failures
     if (
-        remote_successor_oid == ""
+        local_successor_oid == ""
+        or local_successor_tree == ""
+        or remote_successor_oid == ""
         or remote_successor_tree == ""
+        or head_oid != local_successor_oid
         or head_oid != remote_successor_oid
+        or head_tree != local_successor_tree
         or head_tree != remote_successor_tree
     ):
         failures.append(
@@ -1014,6 +1067,28 @@ def _pis005a_successor_checkout_failures(
     elif porcelain.strip():
         failures.append("PIS-004A detached PIS-005A successor is not clean")
     return failures
+
+
+def _pis005a_predecessor_topology_is_exact(root: Path) -> bool:
+    for branch, commit, tree in _PIS005A_PREDECESSOR_REFS:
+        if _git_one(root, "rev-parse", f"{commit}^{{tree}}") != tree:
+            return False
+        for ref in (f"refs/heads/{branch}", f"refs/remotes/origin/{branch}"):
+            if (
+                _git_one(root, "rev-parse", f"{ref}^{{commit}}") != commit
+                or _git_one(root, "rev-parse", f"{ref}^{{tree}}") != tree
+            ):
+                return False
+    for child, parent in _PIS005A_REPAIR_PARENT_CHAIN:
+        if _git_one(root, "show", "-s", "--format=%P", child) != parent:
+            return False
+    return _git_ok(
+        root,
+        "merge-base",
+        "--is-ancestor",
+        PIS004A_REVIEW_COMMIT,
+        _PIS005A_ORIGINAL_COMMIT,
+    )
 
 
 def _validate_dependency_lock(root: Path, failures: list[str]) -> None:

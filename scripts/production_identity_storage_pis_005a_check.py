@@ -25,18 +25,45 @@ NEXT_TICKET_REL = Path(
     "docs/codex/production-identity-storage-pis-005a-remote-transport-next-ticket.md"
 )
 REVIEW_RECORD_REL = Path("docs/codex/production-identity-storage-pis-005a-independent-review.md")
-BRANCH = "codex/enterprise-e2-pis005a-review-repair-5"
+BRANCH = "codex/enterprise-e2-pis005a-review-repair-6"
 SOURCE_COMMIT = "e8e6a75ca3d76a233243f5e890091f3c95731da9"
 SOURCE_TREE = "1a5a6c818bf3fd5e17bcffedaae4cf5497e1e6f2"
 SECURITY_PREREQUISITE_COMMIT = "83db1196213b0e4e7de5d97ab0fb37b934ca4ab7"
 SECURITY_PREREQUISITE_TREE = "86731324feec59596146a1149cdde69f47dd58d0"
-REPAIR_BASE_BRANCH = "codex/enterprise-e2-pis005a-review-repair-4"
-REPAIR_BASE_COMMIT = "22566cae4a1bc84dca20747d7bd1531d77d7f025"
-REPAIR_BASE_TREE = "44952292c183b4a481f15dc691e6c04e90e45d55"
+REPAIR_BASE_BRANCH = "codex/enterprise-e2-pis005a-review-repair-5"
+REPAIR_BASE_COMMIT = "cedcf5d0bf3baeab12f54600a247a61a4671d7f9"
+REPAIR_BASE_TREE = "6e4c4097680c97c77913ba10054dbb5e234abe4c"
+_ORIGINAL_BRANCH = "codex/enterprise-e2-pis005a-node-identity"
+_ORIGINAL_COMMIT = "fce0a3668db5150cf0aa75de1fd914b296a2e099"
+_ORIGINAL_TREE = "331adb70f2c2c24def540c3576fc6876e33c478c"
+_REPAIR_2_BRANCH = "codex/enterprise-e2-pis005a-review-repair-2"
+_REPAIR_2_COMMIT = "1542bd0469e18a0ae52cc48920f30b4e41518513"
+_REPAIR_2_TREE = "ba9a40e929ff330c15c6c23766006eb1c26878ef"
+_REPAIR_3_BRANCH = "codex/enterprise-e2-pis005a-review-repair-3"
+_REPAIR_3_COMMIT = "afd13f98440d4cd9c032b6a996db133bdf78055d"
+_REPAIR_3_TREE = "49e958caeba4f3bce51feaa4e842f8f622c00d4a"
+_REPAIR_4_BRANCH = "codex/enterprise-e2-pis005a-review-repair-4"
+_REPAIR_4_COMMIT = "22566cae4a1bc84dca20747d7bd1531d77d7f025"
+_REPAIR_4_TREE = "44952292c183b4a481f15dc691e6c04e90e45d55"
+_PREDECESSOR_REFS = (
+    ("codex/enterprise-e2-pis004a-review-repair", SOURCE_COMMIT, SOURCE_TREE),
+    (_ORIGINAL_BRANCH, _ORIGINAL_COMMIT, _ORIGINAL_TREE),
+    (_REPAIR_2_BRANCH, _REPAIR_2_COMMIT, _REPAIR_2_TREE),
+    (_REPAIR_3_BRANCH, _REPAIR_3_COMMIT, _REPAIR_3_TREE),
+    (_REPAIR_4_BRANCH, _REPAIR_4_COMMIT, _REPAIR_4_TREE),
+    (REPAIR_BASE_BRANCH, REPAIR_BASE_COMMIT, REPAIR_BASE_TREE),
+)
+_REPAIR_PARENT_CHAIN = (
+    (_REPAIR_2_COMMIT, _ORIGINAL_COMMIT),
+    (_REPAIR_3_COMMIT, _REPAIR_2_COMMIT),
+    (_REPAIR_4_COMMIT, _REPAIR_3_COMMIT),
+    (REPAIR_BASE_COMMIT, _REPAIR_4_COMMIT),
+)
 REJECTED_CANDIDATE_COMMITS = {
-    "fce0a3668db5150cf0aa75de1fd914b296a2e099",
-    "1542bd0469e18a0ae52cc48920f30b4e41518513",
-    "afd13f98440d4cd9c032b6a996db133bdf78055d",
+    _ORIGINAL_COMMIT,
+    _REPAIR_2_COMMIT,
+    _REPAIR_3_COMMIT,
+    _REPAIR_4_COMMIT,
     REPAIR_BASE_COMMIT,
 }
 TOOL_COUNT = 24
@@ -198,6 +225,8 @@ _EXPECTED_NEGATIVE_CASES = [
     "migration_symlink_temp_permission_owner_link_count_and_competing_anchor_attacks",
     "migration_child_process_precommit_and_postcommit_crash_schedules",
     "migration_post_finalization_same_uid_mutation_detected_on_restart_nonclaim",
+    "migration_passive_fifo_nonblocking_artifact_rejection",
+    "candidate_exact_one_commit_topology_and_predecessor_ref_drift",
     "pis004a_detached_successor_exact_topology",
     "replacement_preserves_original_revocation_cause",
     "authority_anchor_and_review_lifecycle_gate_mutation",
@@ -420,19 +449,24 @@ def _validate_base(value: object, failures: list[str]) -> None:
         "branch": BRANCH,
         "rejected_predecessors": [
             {
-                "branch": "codex/enterprise-e2-pis005a-node-identity",
-                "commit": "fce0a3668db5150cf0aa75de1fd914b296a2e099",
-                "tree": "331adb70f2c2c24def540c3576fc6876e33c478c",
+                "branch": _ORIGINAL_BRANCH,
+                "commit": _ORIGINAL_COMMIT,
+                "tree": _ORIGINAL_TREE,
             },
             {
-                "branch": "codex/enterprise-e2-pis005a-review-repair-2",
-                "commit": "1542bd0469e18a0ae52cc48920f30b4e41518513",
-                "tree": "ba9a40e929ff330c15c6c23766006eb1c26878ef",
+                "branch": _REPAIR_2_BRANCH,
+                "commit": _REPAIR_2_COMMIT,
+                "tree": _REPAIR_2_TREE,
             },
             {
-                "branch": "codex/enterprise-e2-pis005a-review-repair-3",
-                "commit": "afd13f98440d4cd9c032b6a996db133bdf78055d",
-                "tree": "49e958caeba4f3bce51feaa4e842f8f622c00d4a",
+                "branch": _REPAIR_3_BRANCH,
+                "commit": _REPAIR_3_COMMIT,
+                "tree": _REPAIR_3_TREE,
+            },
+            {
+                "branch": _REPAIR_4_BRANCH,
+                "commit": _REPAIR_4_COMMIT,
+                "tree": _REPAIR_4_TREE,
             },
             {
                 "branch": REPAIR_BASE_BRANCH,
@@ -752,7 +786,8 @@ def _validate_candidate_procedure(value: object, failures: list[str]) -> None:
     expected = {
         "focused_command": "make production-identity-storage-pis-005a-check",
         "independent_review_template": (
-            f"git fetch origin refs/heads/{BRANCH}:refs/remotes/origin/{BRANCH} && "
+            f"git fetch origin refs/heads/{BRANCH}:refs/heads/{BRANCH} "
+            f"refs/heads/{BRANCH}:refs/remotes/origin/{BRANCH} && "
             "git worktree add --detach /tmp/ithildin-pis005a-review <candidate_commit> && "
             "cd /tmp/ithildin-pis005a-review && "
             "make production-identity-storage-pis-005a-check"
@@ -999,53 +1034,53 @@ def _candidate_checkout_failures(
     status: object,
     review: dict[str, object] | None,
 ) -> list[str]:
-    failures: list[str] = []
     branch = _git_or_none(root, "branch", "--show-current")
     head_name = _git_or_none(root, "rev-parse", "--abbrev-ref", "HEAD")
     head = _git_or_none(root, "rev-parse", "HEAD^{commit}")
     head_tree = _git_or_none(root, "rev-parse", "HEAD^{tree}")
-    shallow_state = _git_or_none(root, "rev-parse", "--is-shallow-repository")
-    porcelain = _git_or_none(
-        root,
-        "status",
-        "--porcelain=v1",
-        "--untracked-files=all",
-    )
     if branch is None or head_name is None or head is None or head_tree is None:
         return ["PIS-005A checkout identity cannot be verified"]
-    if shallow_state != "false":
-        failures.append("PIS-005A candidate repository is shallow or unverifiable")
-    if branch not in {"", BRANCH}:
-        failures.append("PIS-005A is not on its exact isolated branch or detached for review")
-    if branch == BRANCH and head_name != BRANCH:
-        failures.append("PIS-005A named candidate branch identity is inconsistent")
-    if branch == "" and head_name != "HEAD":
-        failures.append("PIS-005A detached candidate identity is inconsistent")
-    if porcelain is None:
-        failures.append("PIS-005A candidate worktree cleanliness is unavailable")
-    elif porcelain.strip():
-        failures.append("PIS-005A candidate worktree is not clean")
-
-    remote = _git_or_none(root, "rev-parse", f"refs/remotes/origin/{BRANCH}^{{commit}}")
-    remote_tree = _git_or_none(root, "rev-parse", f"refs/remotes/origin/{BRANCH}^{{tree}}")
-    if remote is None or remote_tree is None:
-        failures.append("PIS-005A fetched candidate identity is unavailable")
-    elif head != remote or head_tree != remote_tree:
-        failures.append(
-            "PIS-005A checkout does not match the fetched authorized commit and tree"
-        )
-    if branch == BRANCH:
-        local = _git_or_none(root, "rev-parse", f"refs/heads/{BRANCH}^{{commit}}")
-        local_tree = _git_or_none(root, "rev-parse", f"refs/heads/{BRANCH}^{{tree}}")
-        if (
-            local is None
-            or local_tree is None
-            or head != local
-            or head_tree != local_tree
-        ):
-            failures.append("PIS-005A named candidate does not match its exact local branch")
-    if head in REJECTED_CANDIDATE_COMMITS:
-        failures.append("PIS-005A candidate is not a new descendant of the exact repair base")
+    topology_commit = head
+    if status == "candidate_independent_review_complete" and review is not None:
+        reviewed_commit = review.get("reviewed_candidate_commit")
+        if isinstance(reviewed_commit, str):
+            topology_commit = reviewed_commit
+    parent_line = _git_or_none(root, "show", "-s", "--format=%P", topology_commit)
+    parents = tuple(parent_line.split()) if parent_line is not None else None
+    parent_tree = (
+        _git_or_none(root, "rev-parse", f"{parents[0]}^{{tree}}")
+        if parents is not None and len(parents) == 1
+        else None
+    )
+    failures = _candidate_identity_failures(
+        branch=branch,
+        head_name=head_name,
+        head=head,
+        head_tree=head_tree,
+        local=_git_or_none(root, "rev-parse", f"refs/heads/{BRANCH}^{{commit}}"),
+        local_tree=_git_or_none(root, "rev-parse", f"refs/heads/{BRANCH}^{{tree}}"),
+        remote=_git_or_none(
+            root,
+            "rev-parse",
+            f"refs/remotes/origin/{BRANCH}^{{commit}}",
+        ),
+        remote_tree=_git_or_none(
+            root,
+            "rev-parse",
+            f"refs/remotes/origin/{BRANCH}^{{tree}}",
+        ),
+        candidate_commit=topology_commit,
+        candidate_parents=parents,
+        candidate_parent_tree=parent_tree,
+        predecessor_topology_valid=_predecessor_topology_is_exact(root),
+        shallow_state=_git_or_none(root, "rev-parse", "--is-shallow-repository"),
+        porcelain=_git_or_none(
+            root,
+            "status",
+            "--porcelain=v1",
+            "--untracked-files=all",
+        ),
+    )
     if status == "candidate_independent_review_complete" and review is not None:
         reviewed_commit = review.get("reviewed_candidate_commit")
         reviewed_tree = review.get("reviewed_candidate_tree")
@@ -1082,6 +1117,92 @@ def _candidate_checkout_failures(
         except (OSError, subprocess.CalledProcessError):
             failures.append("PIS-005A reviewed candidate is unavailable or not an ancestor of HEAD")
     return failures
+
+
+def _candidate_identity_failures(
+    *,
+    branch: str,
+    head_name: str,
+    head: str,
+    head_tree: str,
+    local: str | None,
+    local_tree: str | None,
+    remote: str | None,
+    remote_tree: str | None,
+    candidate_commit: str,
+    candidate_parents: tuple[str, ...] | None,
+    candidate_parent_tree: str | None,
+    predecessor_topology_valid: bool,
+    shallow_state: str | None,
+    porcelain: str | None,
+) -> list[str]:
+    failures: list[str] = []
+    if shallow_state != "false":
+        failures.append("PIS-005A candidate repository is shallow or unverifiable")
+    if branch not in {"", BRANCH}:
+        failures.append("PIS-005A is not on its exact isolated branch or detached for review")
+    if branch == BRANCH and head_name != BRANCH:
+        failures.append("PIS-005A named candidate branch identity is inconsistent")
+    if branch == "" and head_name != "HEAD":
+        failures.append("PIS-005A detached candidate identity is inconsistent")
+    if porcelain is None:
+        failures.append("PIS-005A candidate worktree cleanliness is unavailable")
+    elif porcelain.strip():
+        failures.append("PIS-005A candidate worktree is not clean")
+    if local is None or local_tree is None:
+        failures.append("PIS-005A exact local candidate identity is unavailable")
+    if remote is None or remote_tree is None:
+        failures.append("PIS-005A fetched candidate identity is unavailable")
+    if (
+        local is not None
+        and local_tree is not None
+        and remote is not None
+        and remote_tree is not None
+        and (
+            head != local
+            or head != remote
+            or head_tree != local_tree
+            or head_tree != remote_tree
+        )
+    ):
+        failures.append(
+            "PIS-005A checkout does not match the fetched authorized commit and tree"
+        )
+    if (
+        candidate_commit in REJECTED_CANDIDATE_COMMITS
+        or candidate_parents != (REPAIR_BASE_COMMIT,)
+        or candidate_parent_tree != REPAIR_BASE_TREE
+    ):
+        failures.append("PIS-005A candidate is not the exact direct child of repair-5")
+    if not predecessor_topology_valid:
+        failures.append("PIS-005A accepted or rejected predecessor identity changed")
+    return failures
+
+
+def _predecessor_topology_is_exact(root: Path) -> bool:
+    for branch, commit, tree in _PREDECESSOR_REFS:
+        if _git_or_none(root, "rev-parse", f"{commit}^{{tree}}") != tree:
+            return False
+        for ref in (f"refs/heads/{branch}", f"refs/remotes/origin/{branch}"):
+            if (
+                _git_or_none(root, "rev-parse", f"{ref}^{{commit}}") != commit
+                or _git_or_none(root, "rev-parse", f"{ref}^{{tree}}") != tree
+            ):
+                return False
+    for child, parent in _REPAIR_PARENT_CHAIN:
+        if _git_or_none(root, "show", "-s", "--format=%P", child) != parent:
+            return False
+    try:
+        subprocess.run(
+            ["git", "merge-base", "--is-ancestor", SOURCE_COMMIT, _ORIGINAL_COMMIT],
+            cwd=root,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+    except (OSError, subprocess.CalledProcessError):
+        return False
+    return True
 
 
 def _live_stop_line_failures(root: Path) -> list[str]:

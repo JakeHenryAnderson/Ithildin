@@ -424,18 +424,12 @@ def test_contract_rejects_non_hex_or_nonzero_completed_review_disposition() -> N
 
 def test_completed_review_checkout_accepts_ancestor_candidate_and_only_review_paths(
     tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     repository = tmp_path / "repository"
-    repository.mkdir()
-    _git(repository, "init", "-q")
-    _git(repository, "config", "user.name", "PIS-005A fixture")
-    _git(repository, "config", "user.email", "pis005a@example.invalid")
-    _git(repository, "checkout", "-q", "-b", pis005a_check.BRANCH)
-    (repository / "implementation.py").write_text("candidate = True\n", encoding="utf-8")
-    _git(repository, "add", "implementation.py")
-    _git(repository, "commit", "-q", "-m", "candidate")
-    candidate = _git(repository, "rev-parse", "HEAD")
-    candidate_tree = _git(repository, "rev-parse", "HEAD^{tree}")
+    topology = _initialize_exact_candidate_repository(repository, monkeypatch)
+    candidate = topology["candidate"]
+    candidate_tree = topology["candidate_tree"]
 
     for relative in pis005a_check._EXPECTED_POST_REVIEW_PATHS:  # noqa: SLF001
         path = repository / relative
@@ -518,23 +512,11 @@ def test_candidate_checkout_rejects_missing_remote_and_dirty_original_reproducti
 @pytest.mark.parametrize("detached", [False, True])
 def test_candidate_checkout_accepts_clean_exact_named_and_detached_topologies(
     tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
     detached: bool,
 ) -> None:
     repository = tmp_path / "repository"
-    repository.mkdir()
-    _git(repository, "init", "-q")
-    _git(repository, "config", "user.name", "PIS-005A fixture")
-    _git(repository, "config", "user.email", "pis005a@example.invalid")
-    _git(repository, "checkout", "-q", "-b", pis005a_check.BRANCH)
-    (repository / "implementation.py").write_text("candidate = True\n", encoding="utf-8")
-    _git(repository, "add", "implementation.py")
-    _git(repository, "commit", "-q", "-m", "candidate")
-    _git(
-        repository,
-        "update-ref",
-        f"refs/remotes/origin/{pis005a_check.BRANCH}",
-        "HEAD",
-    )
+    _initialize_exact_candidate_repository(repository, monkeypatch)
     if detached:
         _git(repository, "checkout", "-q", "--detach", "HEAD")
 
@@ -640,7 +622,199 @@ def test_candidate_checkout_rejects_exact_rejected_topology(
         review=None,
     )
 
-    assert "PIS-005A candidate is not a new descendant of the exact repair base" in failures
+    assert "PIS-005A candidate is not the exact direct child of repair-5" in failures
+
+
+def test_candidate_identity_pure_arbitrary_agreeing_descendant_fails_closed() -> None:
+    agreeing_commit = "c" * 40
+    agreeing_tree = "d" * 40
+
+    failures = pis005a_check._candidate_identity_failures(  # noqa: SLF001
+        branch=pis005a_check.BRANCH,
+        head_name=pis005a_check.BRANCH,
+        head=agreeing_commit,
+        head_tree=agreeing_tree,
+        local=agreeing_commit,
+        local_tree=agreeing_tree,
+        remote=agreeing_commit,
+        remote_tree=agreeing_tree,
+        candidate_commit=agreeing_commit,
+        candidate_parents=("a" * 40,),
+        candidate_parent_tree=pis005a_check.REPAIR_BASE_TREE,
+        predecessor_topology_valid=True,
+        shallow_state="false",
+        porcelain="",
+    )
+
+    assert "PIS-005A candidate is not the exact direct child of repair-5" in failures
+
+
+@pytest.mark.parametrize(
+    ("mutation", "expected_failure"),
+    [
+        (
+            "extra_commit",
+            "PIS-005A candidate is not the exact direct child of repair-5",
+        ),
+        (
+            "merge_parent",
+            "PIS-005A candidate is not the exact direct child of repair-5",
+        ),
+        (
+            "missing_detached_local_ref",
+            "PIS-005A exact local candidate identity is unavailable",
+        ),
+        (
+            "wrong_parent_tree",
+            "PIS-005A candidate is not the exact direct child of repair-5",
+        ),
+        (
+            "repair_base_ref_drift",
+            "PIS-005A accepted or rejected predecessor identity changed",
+        ),
+        (
+            "missing_remote_ref",
+            "PIS-005A fetched candidate identity is unavailable",
+        ),
+        (
+            "untracked_file",
+            "PIS-005A candidate worktree is not clean",
+        ),
+    ],
+)
+def test_candidate_checkout_real_repository_topology_reproductions_fail_closed(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    mutation: str,
+    expected_failure: str,
+) -> None:
+    repository = tmp_path / "repository"
+    topology = _initialize_exact_candidate_repository(repository, monkeypatch)
+    if mutation == "extra_commit":
+        history = repository / "history.txt"
+        history.write_text(history.read_text(encoding="utf-8") + "extra\n", encoding="utf-8")
+        _git(repository, "add", history.name)
+        _git(repository, "commit", "-q", "-m", "unreviewed extra descendant")
+        _git(
+            repository,
+            "update-ref",
+            f"refs/remotes/origin/{pis005a_check.BRANCH}",
+            "HEAD",
+        )
+    elif mutation == "merge_parent":
+        _git(repository, "checkout", "-q", "-b", "fixture-side", topology["repair_base"])
+        (repository / "side.txt").write_text("side\n", encoding="utf-8")
+        _git(repository, "add", "side.txt")
+        _git(repository, "commit", "-q", "-m", "side parent")
+        _git(repository, "checkout", "-q", pis005a_check.BRANCH)
+        _git(repository, "merge", "-q", "--no-ff", "fixture-side", "-m", "nonlinear merge")
+        _git(
+            repository,
+            "update-ref",
+            f"refs/remotes/origin/{pis005a_check.BRANCH}",
+            "HEAD",
+        )
+    elif mutation == "missing_detached_local_ref":
+        _git(repository, "checkout", "-q", "--detach", "HEAD")
+        _git(repository, "update-ref", "-d", f"refs/heads/{pis005a_check.BRANCH}")
+    elif mutation == "wrong_parent_tree":
+        monkeypatch.setattr(pis005a_check, "REPAIR_BASE_TREE", "0" * 40)
+    elif mutation == "repair_base_ref_drift":
+        _git(
+            repository,
+            "update-ref",
+            f"refs/heads/{pis005a_check.REPAIR_BASE_BRANCH}",
+            topology["candidate"],
+        )
+    elif mutation == "missing_remote_ref":
+        _git(
+            repository,
+            "update-ref",
+            "-d",
+            f"refs/remotes/origin/{pis005a_check.BRANCH}",
+        )
+    elif mutation == "untracked_file":
+        (repository / "untracked.txt").write_text("untracked\n", encoding="utf-8")
+    else:  # pragma: no cover - closed parameter inventory
+        raise AssertionError(f"unknown fixture mutation: {mutation}")
+
+    failures = pis005a_check._candidate_checkout_failures(  # noqa: SLF001
+        repository,
+        status="candidate_independent_review_pending",
+        review=None,
+    )
+
+    assert expected_failure in failures
+
+
+def _initialize_exact_candidate_repository(
+    repository: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> dict[str, str]:
+    repository.mkdir()
+    _git(repository, "init", "-q")
+    _git(repository, "config", "user.name", "PIS-005A fixture")
+    _git(repository, "config", "user.email", "pis005a@example.invalid")
+    accepted_branch = "codex/enterprise-e2-pis004a-review-repair"
+    branch_order = (
+        accepted_branch,
+        pis005a_check._ORIGINAL_BRANCH,  # noqa: SLF001
+        pis005a_check._REPAIR_2_BRANCH,  # noqa: SLF001
+        pis005a_check._REPAIR_3_BRANCH,  # noqa: SLF001
+        pis005a_check._REPAIR_4_BRANCH,  # noqa: SLF001
+        pis005a_check.REPAIR_BASE_BRANCH,
+        pis005a_check.BRANCH,
+    )
+    labels = ("accepted", "original", "repair-2", "repair-3", "repair-4", "repair-5", "candidate")
+    history = repository / "history.txt"
+    commits: list[str] = []
+    trees: list[str] = []
+    for index, (branch, label) in enumerate(zip(branch_order, labels, strict=True)):
+        if index == 0:
+            _git(repository, "checkout", "-q", "-b", branch)
+        else:
+            _git(repository, "checkout", "-q", "-b", branch, commits[-1])
+        prior_history = history.read_text(encoding="utf-8") if history.exists() else ""
+        history.write_text(
+            prior_history + f"{label}\n",
+            encoding="utf-8",
+        )
+        _git(repository, "add", history.name)
+        _git(repository, "commit", "-q", "-m", label)
+        commits.append(_git(repository, "rev-parse", "HEAD"))
+        trees.append(_git(repository, "rev-parse", "HEAD^{tree}"))
+    for branch, commit in zip(branch_order, commits, strict=True):
+        _git(repository, "update-ref", f"refs/remotes/origin/{branch}", commit)
+
+    monkeypatch.setattr(pis005a_check, "SOURCE_COMMIT", commits[0])
+    monkeypatch.setattr(pis005a_check, "SOURCE_TREE", trees[0])
+    monkeypatch.setattr(pis005a_check, "_ORIGINAL_COMMIT", commits[1])
+    monkeypatch.setattr(pis005a_check, "_ORIGINAL_TREE", trees[1])
+    monkeypatch.setattr(pis005a_check, "_REPAIR_2_COMMIT", commits[2])
+    monkeypatch.setattr(pis005a_check, "_REPAIR_2_TREE", trees[2])
+    monkeypatch.setattr(pis005a_check, "_REPAIR_3_COMMIT", commits[3])
+    monkeypatch.setattr(pis005a_check, "_REPAIR_3_TREE", trees[3])
+    monkeypatch.setattr(pis005a_check, "_REPAIR_4_COMMIT", commits[4])
+    monkeypatch.setattr(pis005a_check, "_REPAIR_4_TREE", trees[4])
+    monkeypatch.setattr(pis005a_check, "REPAIR_BASE_COMMIT", commits[5])
+    monkeypatch.setattr(pis005a_check, "REPAIR_BASE_TREE", trees[5])
+    monkeypatch.setattr(
+        pis005a_check,
+        "_PREDECESSOR_REFS",
+        tuple(zip(branch_order[:-1], commits[:-1], trees[:-1], strict=True)),
+    )
+    monkeypatch.setattr(
+        pis005a_check,
+        "_REPAIR_PARENT_CHAIN",
+        tuple((commits[index], commits[index - 1]) for index in range(2, 6)),
+    )
+    monkeypatch.setattr(pis005a_check, "REJECTED_CANDIDATE_COMMITS", set(commits[1:6]))
+    return {
+        "candidate": commits[6],
+        "candidate_tree": trees[6],
+        "repair_base": commits[5],
+        "repair_base_tree": trees[5],
+    }
 
 
 def _git(root: Path, *arguments: str) -> str:

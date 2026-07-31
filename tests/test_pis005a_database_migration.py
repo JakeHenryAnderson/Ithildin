@@ -4,10 +4,12 @@ import importlib.util
 import json
 import os
 import shutil
+import socket
 import sqlite3
 import stat
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 from types import ModuleType
 from typing import Any
@@ -1109,6 +1111,193 @@ def test_unsupported_no_follow_semantics_fail_closed(
     monkeypatch.setattr(migration_backup, "_require_platform_support", unsupported)
     with pytest.raises(DatabaseBackupError, match="no-follow"):
         initialize_database(db_path)
+
+
+@pytest.mark.parametrize("artifact_kind", ["fifo", "directory", "socket", "symlink"])
+def test_hostile_alias_open_is_nonblocking_nonregular_and_closes_descriptor(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    artifact_kind: str,
+) -> None:
+    artifact_name = "ithildin.sqlite3.pre-v7.sqlite3"
+    short_directory: tempfile.TemporaryDirectory[str] | None = None
+    artifact_directory = tmp_path
+    if artifact_kind == "socket":
+        short_directory = tempfile.TemporaryDirectory(prefix="p5-", dir="/tmp")
+        artifact_directory = Path(short_directory.name)
+    artifact_path = artifact_directory / artifact_name
+    socket_handle: socket.socket | None = None
+    if artifact_kind == "fifo":
+        os.mkfifo(artifact_path, 0o600)
+    elif artifact_kind == "directory":
+        artifact_path.mkdir(mode=0o700)
+    elif artifact_kind == "socket":
+        socket_handle = socket.socket(socket.AF_UNIX)
+        socket_handle.bind(str(artifact_path))
+    else:
+        target = tmp_path / "symlink-target"
+        target.write_bytes(b"target")
+        artifact_path.symlink_to(target)
+
+    directory_fd = os.open(artifact_directory, os.O_RDONLY | os.O_DIRECTORY)
+    original_open = os.open
+    opened_descriptors: list[int] = []
+    observed_flags: list[int] = []
+
+    def tracked_open(
+        name: str | bytes | os.PathLike[str] | os.PathLike[bytes],
+        flags: int,
+        mode: int = 0o777,
+        *,
+        dir_fd: int | None = None,
+    ) -> int:
+        observed_flags.append(flags)
+        descriptor = original_open(name, flags, mode, dir_fd=dir_fd)
+        opened_descriptors.append(descriptor)
+        return descriptor
+
+    monkeypatch.setattr(os, "open", tracked_open)
+    try:
+        with pytest.raises(DatabaseBackupError):
+            migration_backup._open_alias(directory_fd, artifact_name)  # noqa: SLF001
+    finally:
+        if socket_handle is not None:
+            socket_handle.close()
+        os.close(directory_fd)
+
+    assert observed_flags
+    assert observed_flags[0] & os.O_NONBLOCK
+    for descriptor in opened_descriptors:
+        with pytest.raises(OSError):
+            os.fstat(descriptor)
+    assert os.lstat(artifact_path).st_mode
+    if short_directory is not None:
+        short_directory.cleanup()
+
+
+def test_hostile_device_descriptor_is_rejected_and_closed(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    directory_fd = os.open(tmp_path, os.O_RDONLY | os.O_DIRECTORY)
+    original_open = os.open
+    opened_descriptor: int | None = None
+    observed_flags = 0
+
+    def open_device(
+        name: str | bytes | os.PathLike[str] | os.PathLike[bytes],
+        flags: int,
+        mode: int = 0o777,
+        *,
+        dir_fd: int | None = None,
+    ) -> int:
+        del name, mode, dir_fd
+        nonlocal opened_descriptor, observed_flags
+        observed_flags = flags
+        opened_descriptor = original_open("/dev/null", flags)
+        return opened_descriptor
+
+    monkeypatch.setattr(os, "open", open_device)
+    try:
+        with pytest.raises(DatabaseBackupError, match="regular file"):
+            migration_backup._open_alias(  # noqa: SLF001
+                directory_fd,
+                "ithildin.sqlite3.pre-v7.sqlite3",
+            )
+    finally:
+        os.close(directory_fd)
+
+    assert observed_flags & os.O_NONBLOCK
+    assert opened_descriptor is not None
+    with pytest.raises(OSError):
+        os.fstat(opened_descriptor)
+
+
+@pytest.mark.parametrize(
+    "artifact_position",
+    [
+        "backup_canonical",
+        "backup_anchor",
+        "backup_uuid_temporary",
+        "receipt_canonical",
+        "receipt_anchor",
+        "receipt_uuid_temporary",
+    ],
+)
+def test_passive_fifo_artifacts_fail_startup_within_timeout_and_remain_unclaimed(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    artifact_position: str,
+) -> None:
+    db_path = tmp_path / "ithildin.sqlite3"
+    frozen = _load_schema_six_migration(tmp_path)
+    frozen.initialize_or_migrate_database(db_path)
+    backup_path, receipt_path = pre_v7_backup_paths(db_path)
+    artifact_family, artifact_location = artifact_position.split("_", maxsplit=1)
+    canonical_path = backup_path if artifact_family == "backup" else receipt_path
+    if artifact_family == "receipt":
+        original_hook = migration_backup._run_raw_protocol_hook  # noqa: SLF001
+
+        def interrupt_after_backup_anchor(stage: str, artifact_name: str) -> None:
+            if stage == "anchor_published" and artifact_name == backup_path.name:
+                raise DatabaseBackupError("leave exact backup publication before receipt")
+
+        monkeypatch.setattr(
+            migration_backup,
+            "_run_raw_protocol_hook",
+            interrupt_after_backup_anchor,
+        )
+        with pytest.raises(
+            DatabaseBackupError,
+            match="leave exact backup publication before receipt",
+        ):
+            initialize_database(db_path)
+        monkeypatch.setattr(migration_backup, "_run_raw_protocol_hook", original_hook)
+    if artifact_location == "canonical":
+        fifo_path = canonical_path
+    elif artifact_location == "anchor":
+        fifo_path = tmp_path / f".{canonical_path.name}.sha256-{'0' * 64}"
+    else:
+        fifo_path = tmp_path / f".{canonical_path.name}.{'a' * 32}.tmp"
+    os.mkfifo(fifo_path, 0o600)
+
+    child = """
+import sys
+from pathlib import Path
+from ithildin_api.database import initialize_database
+from ithildin_api.database_migration_backup import (
+    DatabaseBackupError,
+    DatabaseBackupRecoveryRequired,
+    DatabaseMigrationOutcomeUnknown,
+)
+
+try:
+    initialize_database(Path(sys.argv[1]))
+except (
+    DatabaseBackupError,
+    DatabaseBackupRecoveryRequired,
+    DatabaseMigrationOutcomeUnknown,
+) as exc:
+    print(type(exc).__name__)
+    raise SystemExit(0)
+raise SystemExit(91)
+"""
+    result = subprocess.run(
+        [sys.executable, "-c", child, str(db_path)],
+        check=False,
+        capture_output=True,
+        text=True,
+        timeout=3,
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert result.stdout.strip() in {
+        "DatabaseBackupError",
+        "DatabaseBackupRecoveryRequired",
+        "DatabaseMigrationOutcomeUnknown",
+    }
+    assert stat.S_ISFIFO(os.lstat(fifo_path).st_mode)
+    _assert_schema_six_without_commit_marker(db_path)
 
 
 @pytest.mark.parametrize(

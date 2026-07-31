@@ -80,7 +80,7 @@ def test_original_pis004a_candidate_checkout_accepts_only_clean_exact_remote_can
             "c" * 40,
             "d" * 40,
         ),
-        ("", "HEAD", "", ""),
+        ("", "HEAD", "c" * 40, "d" * 40),
     ],
 )
 def test_pis005a_successor_accepts_named_implementation_and_detached_exact_candidate(
@@ -246,6 +246,102 @@ def test_pis005a_detached_successor_rejects_wrong_tree_and_shallow_repository(
     )
 
     assert expected_failure in failures
+
+
+@pytest.mark.parametrize(
+    (
+        "current_branch",
+        "local_oid",
+        "local_tree",
+        "head_parents",
+        "head_parent_tree",
+        "predecessor_topology_valid",
+    ),
+    [
+        (
+            pis004a_check.PIS005A_SUCCESSOR_BRANCH,
+            "c" * 40,
+            "d" * 40,
+            ("a" * 40,),
+            pis004a_check.PIS005A_REPAIR_BASE_TREE,
+            True,
+        ),
+        (
+            "",
+            "",
+            "",
+            (pis004a_check.PIS005A_REPAIR_BASE_COMMIT,),
+            pis004a_check.PIS005A_REPAIR_BASE_TREE,
+            True,
+        ),
+        (
+            "",
+            "c" * 40,
+            "d" * 40,
+            (
+                pis004a_check.PIS005A_REPAIR_BASE_COMMIT,
+                "a" * 40,
+            ),
+            pis004a_check.PIS005A_REPAIR_BASE_TREE,
+            True,
+        ),
+        (
+            "",
+            "c" * 40,
+            "d" * 40,
+            (pis004a_check.PIS005A_REPAIR_BASE_COMMIT,),
+            "a" * 40,
+            True,
+        ),
+        (
+            "",
+            "c" * 40,
+            "d" * 40,
+            (pis004a_check.PIS005A_REPAIR_BASE_COMMIT,),
+            pis004a_check.PIS005A_REPAIR_BASE_TREE,
+            False,
+        ),
+    ],
+)
+def test_pis005a_successor_pure_topology_negatives_fail_closed(
+    current_branch: str,
+    local_oid: str,
+    local_tree: str,
+    head_parents: tuple[str, ...],
+    head_parent_tree: str,
+    predecessor_topology_valid: bool,
+) -> None:
+    failures = pis004a_check._pis005a_successor_checkout_failures(  # noqa: SLF001
+        current_branch=current_branch,
+        head_name=(
+            pis004a_check.PIS005A_SUCCESSOR_BRANCH if current_branch else "HEAD"
+        ),
+        head_oid="c" * 40,
+        head_tree="d" * 40,
+        local_successor_oid=local_oid,
+        local_successor_tree=local_tree,
+        remote_successor_oid="c" * 40,
+        remote_successor_tree="d" * 40,
+        porcelain="",
+        shallow_state="false",
+        contract_bindings_valid=True,
+        successor_base_tree=pis004a_check.PIS005A_SUCCESSOR_BASE_TREE,
+        repair_base_tree=pis004a_check.PIS005A_REPAIR_BASE_TREE,
+        repair_base_remote_oid=pis004a_check.PIS005A_REPAIR_BASE_COMMIT,
+        repair_base_is_ancestor=True,
+        pis004a_remote_oid=pis004a_check.PIS004A_REVIEW_COMMIT,
+        head_parents=head_parents,
+        head_parent_tree=head_parent_tree,
+        predecessor_topology_valid=predecessor_topology_valid,
+    )
+
+    if local_oid == "":
+        assert (
+            "PIS-004A detached PIS-005A successor does not match the fetched commit and tree"
+            in failures
+        )
+    else:
+        assert "PIS-004A exact PIS-005A successor identity is invalid" in failures
 
 
 @pytest.mark.parametrize(
