@@ -1,0 +1,115 @@
+{
+  "schema_version": "1",
+  "record_type": "ithildin_e2_lineage_reconciliation_checkpoint",
+  "record_status": "candidate_independent_review_pending",
+  "recorded_on": "2026-07-31",
+  "sources": {
+    "main": {
+      "branch": "main",
+      "commit": "cc4de49be0ac7915b33c412fc9b06128fa690a26",
+      "tree": "139d2036f8da6f2e806f11bdbcc9d6451c34e94b"
+    },
+    "product_acceptance": {
+      "branch": "codex/product-line-acceptance-checkpoint",
+      "commit": "4a6b9e5061874a26c5f9d20a39818930866a6d55",
+      "tree": "2914c134d29e62c031f2778fa31fd858c4ac5276",
+      "sole_parent": "9df7a04cec197fd4953de692793a32e69c107b49",
+      "historical_pis_snapshot_is_current_status": false
+    },
+    "e2_preparation": {
+      "branch": "codex/enterprise-e2-production-identity-prep",
+      "commit": "e86f5a19e4e067d73141246f78304597e6cc28a0",
+      "tree": "6dbbcf0bef3320dfdfa4142f2d30b798b01511d0",
+      "sole_parent": "9df7a04cec197fd4953de692793a32e69c107b49"
+    },
+    "pis004a_disposition": {
+      "branch": "codex/enterprise-e2-pis004a-review-repair",
+      "commit": "e8e6a75ca3d76a233243f5e890091f3c95731da9",
+      "tree": "1a5a6c818bf3fd5e17bcffedaae4cf5497e1e6f2",
+      "sole_parent": "ff358753c50037c2bc936b761f249cf5c9115749"
+    },
+    "pis005a_reviewed_candidate": {
+      "commit": "a23dd3c525bf748a632d8ad3ebd9597883dc0842",
+      "tree": "c37ff1043cdfe4511fa35a63cd7fd1675f85c797",
+      "sole_parent": "88f9717198709bfa7b5d520bb4aa41c427543042",
+      "review_findings": {
+        "critical": 0,
+        "high": 0,
+        "medium": 0,
+        "low": 0,
+        "open": 0
+      }
+    },
+    "pis005a_disposition": {
+      "branch": "codex/enterprise-e2-pis005a-review-repair-9",
+      "commit": "afb81bdc023a300ba49d48d5fddcc8babbf44575",
+      "tree": "3afbe2381fcd490bf2e511695c00fb05dd226e9b",
+      "raw_parents": [
+        "a23dd3c525bf748a632d8ad3ebd9597883dc0842"
+      ]
+    },
+    "fixture_repair": {
+      "commit": "c10c6051a62a62fb5618909295828782147428f2",
+      "tree": "1b3002c64e2891ae6a3a2519e4015ac3a1f56beb",
+      "sole_parent": "afb81bdc023a300ba49d48d5fddcc8babbf44575",
+      "allowed_paths": [
+        "tests/test_pis005a_contract.py"
+      ]
+    },
+    "integration_merge": {
+      "commit": "b06e8399674f17c188f6502c320a6d2746d24532",
+      "tree": "855dbd27cc6cc9788a955ff7a6a10e12583c3332",
+      "raw_parents": [
+        "c10c6051a62a62fb5618909295828782147428f2",
+        "4a6b9e5061874a26c5f9d20a39818930866a6d55"
+      ]
+    },
+    "reconciliation_candidate": {
+      "branch": "codex/e2-control-tower-lineage-reconciliation",
+      "commit_binding": "checked_out_local_branch_tip",
+      "tree_binding": "checked_out_commit_tree",
+      "sole_parent": "b06e8399674f17c188f6502c320a6d2746d24532"
+    }
+  },
+  "protected_refs": {
+    "main": "cc4de49be0ac7915b33c412fc9b06128fa690a26",
+    "codex/product-line-acceptance-checkpoint": "4a6b9e5061874a26c5f9d20a39818930866a6d55",
+    "codex/enterprise-e2-production-identity-prep": "e86f5a19e4e067d73141246f78304597e6cc28a0",
+    "codex/enterprise-e2-pis004a-review-repair": "e8e6a75ca3d76a233243f5e890091f3c95731da9",
+    "codex/enterprise-e2-pis005a-node-identity": "fce0a3668db5150cf0aa75de1fd914b296a2e099",
+    "codex/enterprise-e2-pis005a-review-repair-2": "1542bd0469e18a0ae52cc48920f30b4e41518513",
+    "codex/enterprise-e2-pis005a-review-repair-3": "afd13f98440d4cd9c032b6a996db133bdf78055d",
+    "codex/enterprise-e2-pis005a-review-repair-4": "22566cae4a1bc84dca20747d7bd1531d77d7f025",
+    "codex/enterprise-e2-pis005a-review-repair-5": "cedcf5d0bf3baeab12f54600a247a61a4671d7f9",
+    "codex/enterprise-e2-pis005a-review-repair-6": "735877b2bb387a50dfbd376d6d3d8c047fd49c8f",
+    "codex/enterprise-e2-pis005a-review-repair-7": "3c4060ca997089228debfff7c082f6fd5c96fb04",
+    "codex/enterprise-e2-pis005a-review-repair-8": "88f9717198709bfa7b5d520bb4aa41c427543042",
+    "codex/enterprise-e2-pis005a-review-repair-9": "afb81bdc023a300ba49d48d5fddcc8babbf44575"
+  },
+  "product_acceptance": {
+    "personal_technical_preview_continuation_accepted": true,
+    "enterprise_e1_bounded_pilot_continuation_accepted": true,
+    "prescribed_human_uat_executed": false,
+    "prescribed_human_uat_passed": false
+  },
+  "authority": {
+    "governed_tool_count": 24,
+    "runtime_authority": "Gateway",
+    "e2_status": "preparation_complete_implementation_not_authorized",
+    "e2_id_005a_selected_recommendation": "command_center_local_authentication_boundary_and_credential_exit",
+    "e2_id_005a_implementation_authorized": false,
+    "pis_collection_action_authorized": false,
+    "remote_transport_allowed": false,
+    "production_identity_allowed": false,
+    "runtime_postgres_allowed": false,
+    "release_allowed": false,
+    "production_allowed": false,
+    "production_promotion_allowed": false,
+    "human_uat_complete": false
+  },
+  "separate_release_blocker": {
+    "artifact": "PIS-002/PIS-003 enterprise-route artifact validity",
+    "resolved": false,
+    "repaired_or_waived_by_this_checkpoint": false
+  }
+}

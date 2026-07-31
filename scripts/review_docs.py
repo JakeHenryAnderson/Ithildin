@@ -299,6 +299,8 @@ REVIEW_DOCS = [
     "docs/codex/local-v1-completion-contract.md",
     "docs/codex/product-line-acceptance-checkpoint.md",
     "docs/codex/product-line-acceptance-checkpoint.json",
+    "docs/codex/e2-lineage-reconciliation-checkpoint.md",
+    "docs/codex/e2-lineage-reconciliation-checkpoint.json",
     "docs/codex/enterprise-e1-completion-contract.md",
     "docs/codex/enterprise-e2-production-identity-preparation.md",
     "docs/codex/enterprise-e2-scale-fixture.md",

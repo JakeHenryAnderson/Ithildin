@@ -11,6 +11,12 @@ externally closed.
   false UAT, release, production, promotion, public-claim, and external-system authority.
 - [Machine-Readable Product-Line Acceptance Record](product-line-acceptance-checkpoint.json) -
   closed exact-candidate, waiver-scope, PIS-wait, rejected-candidate, and nonclaim bindings.
+- [E2 Lineage Reconciliation Checkpoint](e2-lineage-reconciliation-checkpoint.md) - exact product
+  and accepted PIS ancestry, fixture repair, deliberate merge-parent order, protected refs, and
+  independent-review-pending authority ceilings.
+- [Machine-Readable E2 Lineage Reconciliation Record](e2-lineage-reconciliation-checkpoint.json) -
+  closed `P/A/D/F/M/R` topology, 24-tool Gateway boundary, false authority fields, and separate
+  unresolved PIS-002/PIS-003 release blocker.
 - [Ithildin Local v1.0 Completion Contract](local-v1-completion-contract.md) - active delivery target.
 - [Ithildin Enterprise Track E1 Completion Contract](enterprise-e1-completion-contract.md) -
   active enterprise implementation contract, reuse audit, fixed milestones, and nonclaims.

@@ -27,6 +27,7 @@ NODE_RELEASE_BUNDLE ?= var/node-release-artifact/node-release-$(NODE_RELEASE_VER
 .PHONY: enterprise-e1-contract-check enterprise-e1-milestone-check enterprise-e1-single-site-bootstrap enterprise-e1-single-site-config enterprise-e1-single-site-up enterprise-e1-single-site-health enterprise-e1-single-site-down enterprise-e1-single-site-deployment-check enterprise-e1-single-site-rehearsal enterprise-e1-configuration-check enterprise-e1-recovery-check enterprise-e1-cockpit-check enterprise-e1-evidence-check enterprise-e1-inherited-local-v1-check enterprise-e1-local-v1-descendant-inventory enterprise-e1-candidate-preflight enterprise-e1-candidate-inventory enterprise-e1-candidate-check
 .PHONY: enterprise-e2-preparation-check enterprise-e2-scale-fixture-check
 .PHONY: product-line-acceptance-checkpoint
+.PHONY: e2-lineage-reconciliation-check
 
 test:
 	uv run pytest
@@ -89,6 +90,10 @@ enterprise-e2-preparation-check:
 
 product-line-acceptance-checkpoint:
 	uv run python scripts/product_line_acceptance_checkpoint.py
+
+e2-lineage-reconciliation-check:
+	uv run python scripts/e2_lineage_reconciliation_check.py
+	uv run pytest tests/test_e2_lineage_reconciliation_check.py -q
 
 enterprise-e1-single-site-bootstrap:
 	@test -n "$(E1_ENV_FILE)" || (echo "E1_ENV_FILE must be an absolute owner-only environment file" >&2; exit 2)

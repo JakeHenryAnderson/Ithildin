@@ -13,6 +13,15 @@ production promotion, public security-product readiness, or external-system auth
 [closed machine-readable record](docs/codex/product-line-acceptance-checkpoint.json) and its
 preserved boundaries.
 
+The [E2 lineage reconciliation checkpoint](docs/codex/e2-lineage-reconciliation-checkpoint.md)
+preserves that product acceptance as exact ancestry while layering the later accepted PIS-005A
+disposition over its historical PIS snapshot. Run `make e2-lineage-reconciliation-check` to
+validate the [closed reconciliation record](docs/codex/e2-lineage-reconciliation-checkpoint.json),
+frozen source refs, exact parent order, repaired PIS fixture matrix, and unchanged authority
+ceilings. Its status is independent-review pending; human UAT, release, production, promotion,
+production identity, runtime PostgreSQL, remote transport, PIS collection, and E2-ID-005A
+implementation authority remain false.
+
 Active delivery target: **Ithildin Local v1.0**. The authoritative
 [Local v1.0 completion contract](docs/codex/local-v1-completion-contract.md) defines eight fixed,
 operator-visible outcomes and reports progress as an outcome count, not an elastic percentage.
