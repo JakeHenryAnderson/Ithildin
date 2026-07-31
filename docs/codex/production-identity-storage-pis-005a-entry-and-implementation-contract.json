@@ -2,7 +2,7 @@
   "schema_version": "1",
   "decision_id": "PIS-005A",
   "title": "Local Node Workload Identity And Application-Key Cross-Binding Foundation",
-  "status": "candidate_independent_review_pending",
+  "status": "candidate_independent_review_complete",
   "base": {
     "source_branch": "origin/codex/enterprise-e2-pis004a-review-repair",
     "source_commit": "e8e6a75ca3d76a233243f5e890091f3c95731da9",
@@ -459,18 +459,18 @@
   },
   "independent_review": {
     "record_path": "docs/codex/production-identity-storage-pis-005a-independent-review.md",
-    "reviewed_candidate_commit": null,
-    "reviewed_candidate_tree": null,
+    "reviewed_candidate_commit": "a23dd3c525bf748a632d8ad3ebd9597883dc0842",
+    "reviewed_candidate_tree": "c37ff1043cdfe4511fa35a63cd7fd1675f85c797",
     "review_method": "independent_read_only_codex_review",
-    "clean_detached_worktree_verified": false,
-    "remote_identity_verified": false,
-    "focused_gate_passed": false,
-    "critical_findings": null,
-    "high_findings": null,
-    "medium_findings": null,
-    "low_findings": null,
-    "open_findings": null,
-    "implementation_review_complete": false,
+    "clean_detached_worktree_verified": true,
+    "remote_identity_verified": true,
+    "focused_gate_passed": true,
+    "critical_findings": 0,
+    "high_findings": 0,
+    "medium_findings": 0,
+    "low_findings": 0,
+    "open_findings": 0,
+    "implementation_review_complete": true,
     "live_remote_transport_authorized": false,
     "human_uat_complete": false,
     "release_or_promotion_authorized": false
@@ -496,5 +496,5 @@
     "release acceptance",
     "production promotion"
   ],
-  "next_action": "independently_review_exact_pushed_pis_005a_candidate_then_stop_before_e2_node_005"
+  "next_action": "stop_before_separate_e2_node_005_entry_decision"
 }

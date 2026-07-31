@@ -1,6 +1,6 @@
 # PIS-005A Local Node Workload Identity Foundation
 
-Status: exact implementation candidate frozen; independent review pending.
+Status: independent implementation review complete; no open findings.
 
 Decision ID: `PIS-005A`.
 
@@ -9,6 +9,11 @@ Source commit: `e8e6a75ca3d76a233243f5e890091f3c95731da9`.
 Security prerequisite: `83db1196213b0e4e7de5d97ab0fb37b934ca4ab7`.
 
 Branch: `codex/enterprise-e2-pis005a-review-repair-9`.
+
+Independently reviewed exact candidate: commit
+`a23dd3c525bf748a632d8ad3ebd9597883dc0842`, tree
+`c37ff1043cdfe4511fa35a63cd7fd1675f85c797`, sole raw parent
+`88f9717198709bfa7b5d520bb4aa41c427543042`.
 
 Frozen repair source: branch `origin/codex/enterprise-e2-pis005a-review-repair-8`, commit
 `88f9717198709bfa7b5d520bb4aa41c427543042`, tree
@@ -242,27 +247,24 @@ raw-object replacement/graft rejection, inherited Git object-resolution environm
 predecessor-ref drift, exact evidence vocabulary, validation-error redaction, and database/evidence
 canaries.
 
-After focused and broader checks pass, a separate reviewer should reproduce the exact pushed
-candidate in a clean detached worktree:
+The independent reviewer reproduced the exact pushed candidate in a clean detached worktree and
+returned `GO` for the bounded three-file review disposition with `C0/H0/M0/L0` and zero open
+findings. The durable
+[`independent review record`](production-identity-storage-pis-005a-independent-review.md) binds the
+exact reviewed identity above and records the adversarial method, all historical finding closures,
+and authority ceilings.
 
-```sh
-git fetch origin refs/heads/codex/enterprise-e2-pis005a-review-repair-9:refs/heads/codex/enterprise-e2-pis005a-review-repair-9 refs/heads/codex/enterprise-e2-pis005a-review-repair-9:refs/remotes/origin/codex/enterprise-e2-pis005a-review-repair-9
-git worktree add --detach /tmp/ithildin-pis005a-review <candidate_commit>
-cd /tmp/ithildin-pis005a-review
-make production-identity-storage-pis-005a-check
-```
+Observed review evidence included 119 focused lifecycle/Git tests; authoritative PIS-005A with 268
+tests plus Ruff and strict MyPy; cumulative PIS-004A with 176 tests plus Ruff and strict MyPy; named
+and detached E2 report/test paths with 29 tests each; and successful E1, tool-surface,
+no-new-powers, workflow, lint, diff, identity, topology, and metadata checks. E2 remains
+`preparation_complete_implementation_not_authorized` with `production_identity_allowed: false`.
 
-The pushed review candidate records `candidate_independent_review_pending` without trying to embed
-its own commit hash. The descendant review-record commit binds that exact candidate commit and
-tree, proves it is an ancestor, and is restricted to the contract, review record, status document,
-and no executable registration path. The disposition is exactly one commit whose sole raw parent
-is the reviewed repair-9 commit, and its full diff is exactly those three documentation files; it
-does not edit a checker, test, `Makefile`, registry, or runtime path. This avoids circular
-self-hashing while preventing any
-post-review implementation change from being hidden in the review-record commit.
-The external exact commit/tree/live-remote preflight freezes the pending repair-9 identity. Any
-separate structurally valid repair-8 child is a new candidate requiring its own preflight and fresh
-review rather than inheriting repair-9 review evidence.
+This post-review descendant is exactly one commit whose sole raw parent is the reviewed repair-9
+candidate and whose complete per-commit inventory is exactly three `M` entries: the contract, the
+review record, and this foundation status projection. It does not edit a checker, test, `Makefile`,
+registry, or runtime path. The reviewed repair-9 commit and every rejected predecessor remain
+immutable and reachable.
 
 Automated checks and synthetic fixtures are evidence only. They do not establish live transport,
 private-key custody, production identity, human UAT, release acceptance, or production promotion.
@@ -279,7 +281,10 @@ or automatic database restore.
 
 ## Explicit next stop
 
-After an exact candidate is independently reviewed, PIS-005A stops. The separate
+After an exact candidate is independently reviewed, PIS-005A stops. The next process step is
+lineage reconciliation. Only afterward may the separate E2-ID-005A or
 [`E2-NODE-005 next-ticket contract`](production-identity-storage-pis-005a-remote-transport-next-ticket.md)
-must be explicitly authorized before any TLS listener, mTLS integration, CA signing operation,
-remote namespace, production custody provider, rotation overlap, or remote deployment work.
+be considered, and either milestone must be explicitly authorized before any TLS listener, mTLS
+integration, CA signing operation, remote namespace, production custody provider, rotation overlap,
+or remote deployment work. The unrelated PIS-002/PIS-003 enterprise-route artifact-validity
+condition remains a release-train blocker and is not waived or relabeled here.
