@@ -13,10 +13,10 @@
     "canonical_key_prerequisite_tree": "86731324feec59596146a1149cdde69f47dd58d0",
     "implementation_baseline_commit": "83db1196213b0e4e7de5d97ab0fb37b934ca4ab7",
     "implementation_baseline_tree": "86731324feec59596146a1149cdde69f47dd58d0",
-    "repair_source_branch": "origin/codex/enterprise-e2-pis005a-review-repair-6",
-    "repair_source_commit": "735877b2bb387a50dfbd376d6d3d8c047fd49c8f",
-    "repair_source_tree": "04edcda705e8ab75b0a37eecb70dce7fafabe544",
-    "branch": "codex/enterprise-e2-pis005a-review-repair-7",
+    "repair_source_branch": "origin/codex/enterprise-e2-pis005a-review-repair-7",
+    "repair_source_commit": "3c4060ca997089228debfff7c082f6fd5c96fb04",
+    "repair_source_tree": "b4ac2880aac3170c463ae9caf27c4206d25f81bf",
+    "branch": "codex/enterprise-e2-pis005a-review-repair-8",
     "rejected_predecessors": [
       {
         "branch": "codex/enterprise-e2-pis005a-node-identity",
@@ -47,6 +47,11 @@
         "branch": "codex/enterprise-e2-pis005a-review-repair-6",
         "commit": "735877b2bb387a50dfbd376d6d3d8c047fd49c8f",
         "tree": "04edcda705e8ab75b0a37eecb70dce7fafabe544"
+      },
+      {
+        "branch": "codex/enterprise-e2-pis005a-review-repair-7",
+        "commit": "3c4060ca997089228debfff7c082f6fd5c96fb04",
+        "tree": "b4ac2880aac3170c463ae9caf27c4206d25f81bf"
       }
     ],
     "e1_human_uat_complete": false
@@ -424,7 +429,9 @@
       "migration_passive_fifo_nonblocking_artifact_rejection",
       "candidate_exact_one_commit_topology_and_predecessor_ref_drift",
       "pis004a_detached_successor_exact_topology",
+      "completed_review_single_disposition_topology_and_three_file_allowlist",
       "replacement_graft_and_inherited_git_topology_laundering",
+      "enterprise_e2_raw_git_topology_and_environment_laundering",
       "replacement_preserves_original_revocation_cause",
       "authority_anchor_and_review_lifecycle_gate_mutation",
       "safe_evidence_vocabulary_and_validation_error_redaction",
@@ -440,7 +447,7 @@
   },
   "candidate_procedure": {
     "focused_command": "make production-identity-storage-pis-005a-check",
-    "independent_review_template": "git fetch origin refs/heads/codex/enterprise-e2-pis005a-review-repair-7:refs/heads/codex/enterprise-e2-pis005a-review-repair-7 refs/heads/codex/enterprise-e2-pis005a-review-repair-7:refs/remotes/origin/codex/enterprise-e2-pis005a-review-repair-7 && git worktree add --detach /tmp/ithildin-pis005a-review <candidate_commit> && cd /tmp/ithildin-pis005a-review && make production-identity-storage-pis-005a-check",
+    "independent_review_template": "git fetch origin refs/heads/codex/enterprise-e2-pis005a-review-repair-8:refs/heads/codex/enterprise-e2-pis005a-review-repair-8 refs/heads/codex/enterprise-e2-pis005a-review-repair-8:refs/remotes/origin/codex/enterprise-e2-pis005a-review-repair-8 && git worktree add --detach /tmp/ithildin-pis005a-review <candidate_commit> && cd /tmp/ithildin-pis005a-review && make production-identity-storage-pis-005a-check",
     "candidate_must_be_clean": true,
     "independent_review_required": true,
     "release_or_promotion_authorized_by_candidate": false

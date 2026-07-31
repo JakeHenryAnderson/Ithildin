@@ -8,13 +8,19 @@ import json
 import os
 import shutil
 import subprocess
+import sys
 import tomllib
 from pathlib import Path
 from typing import Any
 
+if __package__ in {None, ""}:
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
 from ithildin_api.trusted_host_promotion_v2_migration import (
     expected_pis004a_schema_fingerprint,
 )
+
+from scripts import production_identity_storage_pis_005a_check as pis005a_check
 
 ROOT = Path(__file__).resolve().parents[1]
 CONTRACT_REL = Path(
@@ -28,12 +34,12 @@ PIS005A_CONTRACT_REL = Path(
 SOURCE_COMMIT = "e86f5a19e4e067d73141246f78304597e6cc28a0"
 SOURCE_TREE = "6dbbcf0bef3320dfdfa4142f2d30b798b01511d0"
 BRANCH = "codex/enterprise-e2-pis004a-review-repair"
-PIS005A_SUCCESSOR_BRANCH = "codex/enterprise-e2-pis005a-review-repair-7"
+PIS005A_SUCCESSOR_BRANCH = "codex/enterprise-e2-pis005a-review-repair-8"
 PIS005A_SUCCESSOR_BASE_COMMIT = "83db1196213b0e4e7de5d97ab0fb37b934ca4ab7"
 PIS005A_SUCCESSOR_BASE_TREE = "86731324feec59596146a1149cdde69f47dd58d0"
-PIS005A_REPAIR_BASE_BRANCH = "codex/enterprise-e2-pis005a-review-repair-6"
-PIS005A_REPAIR_BASE_COMMIT = "735877b2bb387a50dfbd376d6d3d8c047fd49c8f"
-PIS005A_REPAIR_BASE_TREE = "04edcda705e8ab75b0a37eecb70dce7fafabe544"
+PIS005A_REPAIR_BASE_BRANCH = "codex/enterprise-e2-pis005a-review-repair-7"
+PIS005A_REPAIR_BASE_COMMIT = "3c4060ca997089228debfff7c082f6fd5c96fb04"
+PIS005A_REPAIR_BASE_TREE = "b4ac2880aac3170c463ae9caf27c4206d25f81bf"
 _PIS005A_ORIGINAL_BRANCH = "codex/enterprise-e2-pis005a-node-identity"
 _PIS005A_ORIGINAL_COMMIT = "fce0a3668db5150cf0aa75de1fd914b296a2e099"
 _PIS005A_ORIGINAL_TREE = "331adb70f2c2c24def540c3576fc6876e33c478c"
@@ -49,6 +55,9 @@ _PIS005A_REPAIR_4_TREE = "44952292c183b4a481f15dc691e6c04e90e45d55"
 _PIS005A_REPAIR_5_BRANCH = "codex/enterprise-e2-pis005a-review-repair-5"
 _PIS005A_REPAIR_5_COMMIT = "cedcf5d0bf3baeab12f54600a247a61a4671d7f9"
 _PIS005A_REPAIR_5_TREE = "6e4c4097680c97c77913ba10054dbb5e234abe4c"
+_PIS005A_REPAIR_6_BRANCH = "codex/enterprise-e2-pis005a-review-repair-6"
+_PIS005A_REPAIR_6_COMMIT = "735877b2bb387a50dfbd376d6d3d8c047fd49c8f"
+_PIS005A_REPAIR_6_TREE = "04edcda705e8ab75b0a37eecb70dce7fafabe544"
 _PIS005A_PREDECESSOR_REFS = (
     (
         BRANCH,
@@ -60,6 +69,7 @@ _PIS005A_PREDECESSOR_REFS = (
     (_PIS005A_REPAIR_3_BRANCH, _PIS005A_REPAIR_3_COMMIT, _PIS005A_REPAIR_3_TREE),
     (_PIS005A_REPAIR_4_BRANCH, _PIS005A_REPAIR_4_COMMIT, _PIS005A_REPAIR_4_TREE),
     (_PIS005A_REPAIR_5_BRANCH, _PIS005A_REPAIR_5_COMMIT, _PIS005A_REPAIR_5_TREE),
+    (_PIS005A_REPAIR_6_BRANCH, _PIS005A_REPAIR_6_COMMIT, _PIS005A_REPAIR_6_TREE),
     (PIS005A_REPAIR_BASE_BRANCH, PIS005A_REPAIR_BASE_COMMIT, PIS005A_REPAIR_BASE_TREE),
 )
 _PIS005A_REPAIR_PARENT_CHAIN = (
@@ -67,7 +77,8 @@ _PIS005A_REPAIR_PARENT_CHAIN = (
     (_PIS005A_REPAIR_3_COMMIT, _PIS005A_REPAIR_2_COMMIT),
     (_PIS005A_REPAIR_4_COMMIT, _PIS005A_REPAIR_3_COMMIT),
     (_PIS005A_REPAIR_5_COMMIT, _PIS005A_REPAIR_4_COMMIT),
-    (PIS005A_REPAIR_BASE_COMMIT, _PIS005A_REPAIR_5_COMMIT),
+    (_PIS005A_REPAIR_6_COMMIT, _PIS005A_REPAIR_5_COMMIT),
+    (PIS005A_REPAIR_BASE_COMMIT, _PIS005A_REPAIR_6_COMMIT),
 )
 PIS005A_REJECTED_COMMITS = {
     _PIS005A_ORIGINAL_COMMIT,
@@ -75,7 +86,13 @@ PIS005A_REJECTED_COMMITS = {
     _PIS005A_REPAIR_3_COMMIT,
     _PIS005A_REPAIR_4_COMMIT,
     _PIS005A_REPAIR_5_COMMIT,
+    _PIS005A_REPAIR_6_COMMIT,
     PIS005A_REPAIR_BASE_COMMIT,
+}
+PIS005A_POST_REVIEW_PATHS = {
+    PIS005A_CONTRACT_REL.as_posix(),
+    "docs/codex/production-identity-storage-pis-005a-independent-review.md",
+    "docs/codex/production-identity-storage-pis-005a-node-workload-identity-foundation.md",
 }
 PIS004A_REVIEW_COMMIT = "e8e6a75ca3d76a233243f5e890091f3c95731da9"
 REVIEWED_CANDIDATE_COMMIT = "ff358753c50037c2bc936b761f249cf5c9115749"
@@ -902,120 +919,152 @@ def _pis005a_successor_context_failures(
 ) -> list[str]:
     contract_failures: list[str] = []
     contract = _load_json(root / PIS005A_CONTRACT_REL, contract_failures)
-    base = contract.get("base")
-    candidate = contract.get("candidate_procedure")
     review = contract.get("independent_review")
-    authority = contract.get("authority")
-    expected_review_template = (
-        f"git fetch origin refs/heads/{PIS005A_SUCCESSOR_BRANCH}:"
-        f"refs/heads/{PIS005A_SUCCESSOR_BRANCH} "
-        f"refs/heads/{PIS005A_SUCCESSOR_BRANCH}:"
-        f"refs/remotes/origin/{PIS005A_SUCCESSOR_BRANCH} && "
-        "git worktree add --detach /tmp/ithildin-pis005a-review "
-        "<candidate_commit> && cd /tmp/ithildin-pis005a-review && "
-        "make production-identity-storage-pis-005a-check"
-    )
+    status = contract.get("status")
     contract_bindings_valid = (
         not contract_failures
-        and contract.get("decision_id") == "PIS-005A"
-        and contract.get("status") == "candidate_independent_review_pending"
-        and isinstance(base, dict)
-        and base.get("source_commit") == PIS004A_REVIEW_COMMIT
-        and base.get("source_tree") == "1a5a6c818bf3fd5e17bcffedaae4cf5497e1e6f2"
-        and base.get("pis004a_reviewed_candidate_commit") == REVIEWED_CANDIDATE_COMMIT
-        and base.get("pis004a_reviewed_candidate_tree") == REVIEWED_CANDIDATE_TREE
-        and base.get("canonical_key_prerequisite_commit") == PIS005A_SUCCESSOR_BASE_COMMIT
-        and base.get("canonical_key_prerequisite_tree") == PIS005A_SUCCESSOR_BASE_TREE
-        and base.get("implementation_baseline_commit") == PIS005A_SUCCESSOR_BASE_COMMIT
-        and base.get("implementation_baseline_tree") == PIS005A_SUCCESSOR_BASE_TREE
-        and base.get("repair_source_branch") == f"origin/{PIS005A_REPAIR_BASE_BRANCH}"
-        and base.get("repair_source_commit") == PIS005A_REPAIR_BASE_COMMIT
-        and base.get("repair_source_tree") == PIS005A_REPAIR_BASE_TREE
-        and base.get("branch") == PIS005A_SUCCESSOR_BRANCH
-        and isinstance(candidate, dict)
-        and candidate.get("independent_review_template") == expected_review_template
-        and candidate.get("candidate_must_be_clean") is True
-        and candidate.get("independent_review_required") is True
-        and candidate.get("release_or_promotion_authorized_by_candidate") is False
-        and isinstance(review, dict)
-        and review.get("implementation_review_complete") is False
-        and review.get("reviewed_candidate_commit") is None
-        and isinstance(authority, dict)
-        and authority.get("new_governed_tool_allowed") is False
-        and authority.get("production_identity_allowed") is False
-        and authority.get("runtime_postgres_allowed") is False
-        and authority.get("remote_transport_allowed") is False
+        and not pis005a_check.validate_contract(contract)
+        and pis005a_check.BRANCH == PIS005A_SUCCESSOR_BRANCH
+        and pis005a_check.REPAIR_BASE_BRANCH == PIS005A_REPAIR_BASE_BRANCH
+        and pis005a_check.REPAIR_BASE_COMMIT == PIS005A_REPAIR_BASE_COMMIT
+        and pis005a_check.REPAIR_BASE_TREE == PIS005A_REPAIR_BASE_TREE
     )
+    head_oid = _git_one(root, "rev-parse", "HEAD")
+    head_tree = _git_one(root, "rev-parse", "HEAD^{tree}")
     head_parent_line = _git_one(root, "show", "-s", "--format=%P", "HEAD")
     head_parents = tuple(head_parent_line.split())
-    head_parent_tree = (
-        _git_one(root, "rev-parse", f"{head_parents[0]}^{{tree}}")
-        if len(head_parents) == 1
+    local_successor_oid = _git_one(
+        root,
+        "rev-parse",
+        f"refs/heads/{PIS005A_SUCCESSOR_BRANCH}^{{commit}}",
+    )
+    local_successor_tree = _git_one(
+        root,
+        "rev-parse",
+        f"refs/heads/{PIS005A_SUCCESSOR_BRANCH}^{{tree}}",
+    )
+    remote_successor_oid = _git_one(
+        root,
+        "rev-parse",
+        f"refs/remotes/origin/{PIS005A_SUCCESSOR_BRANCH}^{{commit}}",
+    )
+    remote_successor_tree = _git_one(
+        root,
+        "rev-parse",
+        f"refs/remotes/origin/{PIS005A_SUCCESSOR_BRANCH}^{{tree}}",
+    )
+    porcelain = _git_output_or_none(
+        root,
+        "status",
+        "--porcelain=v1",
+        "--untracked-files=all",
+    )
+    shallow_state = _git_one(root, "rev-parse", "--is-shallow-repository")
+    successor_base_tree = _git_one(
+        root,
+        "rev-parse",
+        f"{PIS005A_SUCCESSOR_BASE_COMMIT}^{{tree}}",
+    )
+    repair_base_tree = _git_one(
+        root,
+        "rev-parse",
+        f"{PIS005A_REPAIR_BASE_COMMIT}^{{tree}}",
+    )
+    repair_base_remote_oid = _git_one(
+        root,
+        "rev-parse",
+        f"refs/remotes/origin/{PIS005A_REPAIR_BASE_BRANCH}^{{commit}}",
+    )
+    repair_base_is_ancestor = _git_ok(
+        root,
+        "merge-base",
+        "--is-ancestor",
+        PIS005A_REPAIR_BASE_COMMIT,
+        "HEAD",
+    )
+    pis004a_remote_oid = _git_one(
+        root,
+        "rev-parse",
+        f"refs/remotes/origin/{BRANCH}^{{commit}}",
+    )
+    predecessor_topology_valid = _pis005a_predecessor_topology_is_exact(root)
+    if status == "candidate_independent_review_pending":
+        head_parent_tree = (
+            _git_one(root, "rev-parse", f"{head_parents[0]}^{{tree}}")
+            if len(head_parents) == 1
+            else ""
+        )
+        return _pis005a_successor_checkout_failures(
+            current_branch=current_branch,
+            head_name=head_name,
+            head_oid=head_oid,
+            head_tree=head_tree,
+            local_successor_oid=local_successor_oid,
+            local_successor_tree=local_successor_tree,
+            remote_successor_oid=remote_successor_oid,
+            remote_successor_tree=remote_successor_tree,
+            porcelain=porcelain,
+            shallow_state=shallow_state,
+            contract_bindings_valid=contract_bindings_valid,
+            successor_base_tree=successor_base_tree,
+            repair_base_tree=repair_base_tree,
+            repair_base_remote_oid=repair_base_remote_oid,
+            repair_base_is_ancestor=repair_base_is_ancestor,
+            pis004a_remote_oid=pis004a_remote_oid,
+            head_parents=head_parents,
+            head_parent_tree=head_parent_tree,
+            predecessor_topology_valid=predecessor_topology_valid,
+        )
+    if status != "candidate_independent_review_complete" or not isinstance(review, dict):
+        return ["PIS-004A exact PIS-005A successor lifecycle state is invalid"]
+
+    reviewed_oid = review.get("reviewed_candidate_commit")
+    reviewed_tree = review.get("reviewed_candidate_tree")
+    if not isinstance(reviewed_oid, str) or not isinstance(reviewed_tree, str):
+        return ["PIS-004A completed PIS-005A review identity is invalid"]
+    reviewed_parent_line = _git_one(
+        root,
+        "show",
+        "-s",
+        "--format=%P",
+        reviewed_oid,
+    )
+    reviewed_parents = tuple(reviewed_parent_line.split())
+    reviewed_parent_tree = (
+        _git_one(root, "rev-parse", f"{reviewed_parents[0]}^{{tree}}")
+        if len(reviewed_parents) == 1
         else ""
     )
-    return _pis005a_successor_checkout_failures(
+    return _pis005a_completed_review_checkout_failures(
         current_branch=current_branch,
         head_name=head_name,
-        head_oid=_git_one(root, "rev-parse", "HEAD"),
-        head_tree=_git_one(root, "rev-parse", "HEAD^{tree}"),
-        local_successor_oid=_git_one(
-            root,
-            "rev-parse",
-            f"refs/heads/{PIS005A_SUCCESSOR_BRANCH}^{{commit}}",
-        ),
-        local_successor_tree=_git_one(
-            root,
-            "rev-parse",
-            f"refs/heads/{PIS005A_SUCCESSOR_BRANCH}^{{tree}}",
-        ),
-        remote_successor_oid=_git_one(
-            root,
-            "rev-parse",
-            f"refs/remotes/origin/{PIS005A_SUCCESSOR_BRANCH}^{{commit}}",
-        ),
-        remote_successor_tree=_git_one(
-            root,
-            "rev-parse",
-            f"refs/remotes/origin/{PIS005A_SUCCESSOR_BRANCH}^{{tree}}",
-        ),
-        porcelain=_git_output_or_none(
-            root,
-            "status",
-            "--porcelain=v1",
-            "--untracked-files=all",
-        ),
-        shallow_state=_git_one(root, "rev-parse", "--is-shallow-repository"),
+        head_oid=head_oid,
+        head_tree=head_tree,
+        local_successor_oid=local_successor_oid,
+        local_successor_tree=local_successor_tree,
+        remote_successor_oid=remote_successor_oid,
+        remote_successor_tree=remote_successor_tree,
+        porcelain=porcelain,
+        shallow_state=shallow_state,
         contract_bindings_valid=contract_bindings_valid,
-        successor_base_tree=_git_one(
+        successor_base_tree=successor_base_tree,
+        repair_base_tree=repair_base_tree,
+        repair_base_remote_oid=repair_base_remote_oid,
+        repair_base_is_ancestor=repair_base_is_ancestor,
+        pis004a_remote_oid=pis004a_remote_oid,
+        predecessor_topology_valid=predecessor_topology_valid,
+        reviewed_oid=reviewed_oid,
+        reviewed_tree=reviewed_tree,
+        observed_reviewed_tree=_git_one(
             root,
             "rev-parse",
-            f"{PIS005A_SUCCESSOR_BASE_COMMIT}^{{tree}}",
+            f"{reviewed_oid}^{{tree}}",
         ),
-        repair_base_tree=_git_one(
-            root,
-            "rev-parse",
-            f"{PIS005A_REPAIR_BASE_COMMIT}^{{tree}}",
-        ),
-        repair_base_remote_oid=_git_one(
-            root,
-            "rev-parse",
-            f"refs/remotes/origin/{PIS005A_REPAIR_BASE_BRANCH}^{{commit}}",
-        ),
-        repair_base_is_ancestor=_git_ok(
-            root,
-            "merge-base",
-            "--is-ancestor",
-            PIS005A_REPAIR_BASE_COMMIT,
-            "HEAD",
-        ),
-        pis004a_remote_oid=_git_one(
-            root,
-            "rev-parse",
-            f"refs/remotes/origin/{BRANCH}^{{commit}}",
-        ),
-        head_parents=head_parents,
-        head_parent_tree=head_parent_tree,
-        predecessor_topology_valid=_pis005a_predecessor_topology_is_exact(root),
+        reviewed_parents=reviewed_parents,
+        reviewed_parent_tree=reviewed_parent_tree,
+        disposition_parents=head_parents,
+        post_review_paths=_pis005a_post_review_changed_paths(root, reviewed_oid),
+        post_review_entries=_pis005a_post_review_changed_entries(root, reviewed_oid),
     )
 
 
@@ -1098,6 +1147,103 @@ def _pis005a_successor_checkout_failures(
         failures.append("PIS-004A detached PIS-005A successor cleanliness is unavailable")
     elif porcelain.strip():
         failures.append("PIS-004A detached PIS-005A successor is not clean")
+    return failures
+
+
+def _pis005a_completed_review_checkout_failures(
+    *,
+    current_branch: str,
+    head_name: str,
+    head_oid: str,
+    head_tree: str,
+    local_successor_oid: str,
+    local_successor_tree: str,
+    remote_successor_oid: str,
+    remote_successor_tree: str,
+    porcelain: str | None,
+    shallow_state: str,
+    contract_bindings_valid: bool,
+    successor_base_tree: str,
+    repair_base_tree: str,
+    repair_base_remote_oid: str,
+    repair_base_is_ancestor: bool,
+    pis004a_remote_oid: str,
+    predecessor_topology_valid: bool,
+    reviewed_oid: str,
+    reviewed_tree: str,
+    observed_reviewed_tree: str,
+    reviewed_parents: tuple[str, ...],
+    reviewed_parent_tree: str,
+    disposition_parents: tuple[str, ...],
+    post_review_paths: set[str],
+    post_review_entries: set[tuple[str, str]],
+) -> list[str]:
+    failures: list[str] = []
+    if (
+        not contract_bindings_valid
+        or successor_base_tree != PIS005A_SUCCESSOR_BASE_TREE
+        or repair_base_tree != PIS005A_REPAIR_BASE_TREE
+        or repair_base_remote_oid != PIS005A_REPAIR_BASE_COMMIT
+        or not repair_base_is_ancestor
+        or pis004a_remote_oid != PIS004A_REVIEW_COMMIT
+        or reviewed_oid in PIS005A_REJECTED_COMMITS
+        or observed_reviewed_tree != reviewed_tree
+        or reviewed_parents != (PIS005A_REPAIR_BASE_COMMIT,)
+        or reviewed_parent_tree != PIS005A_REPAIR_BASE_TREE
+        or disposition_parents != (reviewed_oid,)
+        or not predecessor_topology_valid
+    ):
+        failures.append("PIS-004A completed PIS-005A review topology is invalid")
+    if post_review_paths != PIS005A_POST_REVIEW_PATHS:
+        unexpected = sorted(post_review_paths - PIS005A_POST_REVIEW_PATHS)
+        missing = sorted(PIS005A_POST_REVIEW_PATHS - post_review_paths)
+        if unexpected:
+            failures.append(
+                "PIS-004A PIS-005A review disposition changed forbidden paths: "
+                + ", ".join(unexpected)
+            )
+        if missing:
+            failures.append(
+                "PIS-004A PIS-005A review disposition inventory is incomplete: "
+                + ", ".join(missing)
+            )
+    expected_entries = {("M", relative) for relative in PIS005A_POST_REVIEW_PATHS}
+    if post_review_entries != expected_entries:
+        failures.append(
+            "PIS-004A PIS-005A review disposition must modify exactly the three "
+            "existing review files without deletion or rename"
+        )
+    if shallow_state != "false":
+        failures.append(
+            "PIS-004A completed PIS-005A review checkout is shallow or unverifiable"
+        )
+    if current_branch == PIS005A_SUCCESSOR_BRANCH:
+        if head_name != PIS005A_SUCCESSOR_BRANCH:
+            failures.append(
+                "PIS-004A named completed PIS-005A review identity is inconsistent"
+            )
+    elif current_branch != "" or head_name != "HEAD":
+        failures.append(
+            "PIS-004A is not on the exact completed PIS-005A branch or detached"
+        )
+    if (
+        local_successor_oid == ""
+        or local_successor_tree == ""
+        or remote_successor_oid == ""
+        or remote_successor_tree == ""
+        or head_oid != local_successor_oid
+        or head_oid != remote_successor_oid
+        or head_tree != local_successor_tree
+        or head_tree != remote_successor_tree
+    ):
+        failures.append(
+            "PIS-004A completed PIS-005A disposition does not match local, fetched, "
+            "HEAD, and tree identity"
+        )
+    if porcelain is None:
+        failures.append("PIS-004A completed PIS-005A review cleanliness is unavailable")
+    elif porcelain.strip():
+        failures.append("PIS-004A completed PIS-005A review checkout is not clean")
     return failures
 
 
@@ -1319,6 +1465,40 @@ def _post_review_changed_paths_at(root: Path, revision: str) -> set[str]:
         ).splitlines()
         if line
     }
+
+
+def _pis005a_post_review_changed_paths(
+    root: Path,
+    reviewed_candidate_commit: str,
+) -> set[str]:
+    paths: set[str] = set()
+    for args in (
+        ("diff", "--name-only", f"{reviewed_candidate_commit}..HEAD"),
+        ("diff", "--name-only"),
+        ("diff", "--cached", "--name-only"),
+        ("ls-files", "--others", "--exclude-standard"),
+    ):
+        paths.update(line for line in _git_output(root, *args).splitlines() if line)
+    return paths
+
+
+def _pis005a_post_review_changed_entries(
+    root: Path,
+    reviewed_candidate_commit: str,
+) -> set[tuple[str, str]]:
+    entries: set[tuple[str, str]] = set()
+    output = _git_output(
+        root,
+        "diff",
+        "--no-renames",
+        "--name-status",
+        f"{reviewed_candidate_commit}..HEAD",
+    )
+    for line in output.splitlines():
+        status, separator, relative = line.partition("\t")
+        if separator and status and relative:
+            entries.add((status, relative))
+    return entries
 
 
 def _tool_count(root: Path) -> int:

@@ -27,14 +27,14 @@ NEXT_TICKET_REL = Path(
     "docs/codex/production-identity-storage-pis-005a-remote-transport-next-ticket.md"
 )
 REVIEW_RECORD_REL = Path("docs/codex/production-identity-storage-pis-005a-independent-review.md")
-BRANCH = "codex/enterprise-e2-pis005a-review-repair-7"
+BRANCH = "codex/enterprise-e2-pis005a-review-repair-8"
 SOURCE_COMMIT = "e8e6a75ca3d76a233243f5e890091f3c95731da9"
 SOURCE_TREE = "1a5a6c818bf3fd5e17bcffedaae4cf5497e1e6f2"
 SECURITY_PREREQUISITE_COMMIT = "83db1196213b0e4e7de5d97ab0fb37b934ca4ab7"
 SECURITY_PREREQUISITE_TREE = "86731324feec59596146a1149cdde69f47dd58d0"
-REPAIR_BASE_BRANCH = "codex/enterprise-e2-pis005a-review-repair-6"
-REPAIR_BASE_COMMIT = "735877b2bb387a50dfbd376d6d3d8c047fd49c8f"
-REPAIR_BASE_TREE = "04edcda705e8ab75b0a37eecb70dce7fafabe544"
+REPAIR_BASE_BRANCH = "codex/enterprise-e2-pis005a-review-repair-7"
+REPAIR_BASE_COMMIT = "3c4060ca997089228debfff7c082f6fd5c96fb04"
+REPAIR_BASE_TREE = "b4ac2880aac3170c463ae9caf27c4206d25f81bf"
 _ORIGINAL_BRANCH = "codex/enterprise-e2-pis005a-node-identity"
 _ORIGINAL_COMMIT = "fce0a3668db5150cf0aa75de1fd914b296a2e099"
 _ORIGINAL_TREE = "331adb70f2c2c24def540c3576fc6876e33c478c"
@@ -50,6 +50,9 @@ _REPAIR_4_TREE = "44952292c183b4a481f15dc691e6c04e90e45d55"
 _REPAIR_5_BRANCH = "codex/enterprise-e2-pis005a-review-repair-5"
 _REPAIR_5_COMMIT = "cedcf5d0bf3baeab12f54600a247a61a4671d7f9"
 _REPAIR_5_TREE = "6e4c4097680c97c77913ba10054dbb5e234abe4c"
+_REPAIR_6_BRANCH = "codex/enterprise-e2-pis005a-review-repair-6"
+_REPAIR_6_COMMIT = "735877b2bb387a50dfbd376d6d3d8c047fd49c8f"
+_REPAIR_6_TREE = "04edcda705e8ab75b0a37eecb70dce7fafabe544"
 _PREDECESSOR_REFS = (
     ("codex/enterprise-e2-pis004a-review-repair", SOURCE_COMMIT, SOURCE_TREE),
     (_ORIGINAL_BRANCH, _ORIGINAL_COMMIT, _ORIGINAL_TREE),
@@ -57,6 +60,7 @@ _PREDECESSOR_REFS = (
     (_REPAIR_3_BRANCH, _REPAIR_3_COMMIT, _REPAIR_3_TREE),
     (_REPAIR_4_BRANCH, _REPAIR_4_COMMIT, _REPAIR_4_TREE),
     (_REPAIR_5_BRANCH, _REPAIR_5_COMMIT, _REPAIR_5_TREE),
+    (_REPAIR_6_BRANCH, _REPAIR_6_COMMIT, _REPAIR_6_TREE),
     (REPAIR_BASE_BRANCH, REPAIR_BASE_COMMIT, REPAIR_BASE_TREE),
 )
 _REPAIR_PARENT_CHAIN = (
@@ -64,7 +68,8 @@ _REPAIR_PARENT_CHAIN = (
     (_REPAIR_3_COMMIT, _REPAIR_2_COMMIT),
     (_REPAIR_4_COMMIT, _REPAIR_3_COMMIT),
     (_REPAIR_5_COMMIT, _REPAIR_4_COMMIT),
-    (REPAIR_BASE_COMMIT, _REPAIR_5_COMMIT),
+    (_REPAIR_6_COMMIT, _REPAIR_5_COMMIT),
+    (REPAIR_BASE_COMMIT, _REPAIR_6_COMMIT),
 )
 REJECTED_CANDIDATE_COMMITS = {
     _ORIGINAL_COMMIT,
@@ -72,6 +77,7 @@ REJECTED_CANDIDATE_COMMITS = {
     _REPAIR_3_COMMIT,
     _REPAIR_4_COMMIT,
     _REPAIR_5_COMMIT,
+    _REPAIR_6_COMMIT,
     REPAIR_BASE_COMMIT,
 }
 TOOL_COUNT = 24
@@ -259,7 +265,9 @@ _EXPECTED_NEGATIVE_CASES = [
     "migration_passive_fifo_nonblocking_artifact_rejection",
     "candidate_exact_one_commit_topology_and_predecessor_ref_drift",
     "pis004a_detached_successor_exact_topology",
+    "completed_review_single_disposition_topology_and_three_file_allowlist",
     "replacement_graft_and_inherited_git_topology_laundering",
+    "enterprise_e2_raw_git_topology_and_environment_laundering",
     "replacement_preserves_original_revocation_cause",
     "authority_anchor_and_review_lifecycle_gate_mutation",
     "safe_evidence_vocabulary_and_validation_error_redaction",
@@ -504,6 +512,11 @@ def _validate_base(value: object, failures: list[str]) -> None:
                 "branch": _REPAIR_5_BRANCH,
                 "commit": _REPAIR_5_COMMIT,
                 "tree": _REPAIR_5_TREE,
+            },
+            {
+                "branch": _REPAIR_6_BRANCH,
+                "commit": _REPAIR_6_COMMIT,
+                "tree": _REPAIR_6_TREE,
             },
             {
                 "branch": REPAIR_BASE_BRANCH,
@@ -1376,7 +1389,7 @@ def _candidate_identity_failures(
         or candidate_parents != (REPAIR_BASE_COMMIT,)
         or candidate_parent_tree != REPAIR_BASE_TREE
     ):
-        failures.append("PIS-005A candidate is not the exact direct child of repair-6")
+        failures.append("PIS-005A candidate is not the exact direct child of repair-7")
     if not predecessor_topology_valid:
         failures.append("PIS-005A accepted or rejected predecessor identity changed")
     return failures

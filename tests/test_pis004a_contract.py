@@ -146,6 +146,7 @@ def test_pis005a_successor_rejects_unrelated_detached_commit() -> None:
         "afd13f98440d4cd9c032b6a996db133bdf78055d",
         "22566cae4a1bc84dca20747d7bd1531d77d7f025",
         pis004a_check._PIS005A_REPAIR_5_COMMIT,  # noqa: SLF001
+        pis004a_check._PIS005A_REPAIR_6_COMMIT,  # noqa: SLF001
         pis004a_check.PIS005A_REPAIR_BASE_COMMIT,
     ],
 )
@@ -344,6 +345,208 @@ def test_pis005a_successor_pure_topology_negatives_fail_closed(
         )
     else:
         assert "PIS-004A exact PIS-005A successor identity is invalid" in failures
+
+
+def _completed_review_failures(**overrides: object) -> list[str]:
+    reviewed = "c" * 40
+    disposition = "d" * 40
+    disposition_tree = "e" * 40
+    values: dict[str, Any] = {
+        "current_branch": pis004a_check.PIS005A_SUCCESSOR_BRANCH,
+        "head_name": pis004a_check.PIS005A_SUCCESSOR_BRANCH,
+        "head_oid": disposition,
+        "head_tree": disposition_tree,
+        "local_successor_oid": disposition,
+        "local_successor_tree": disposition_tree,
+        "remote_successor_oid": disposition,
+        "remote_successor_tree": disposition_tree,
+        "porcelain": "",
+        "shallow_state": "false",
+        "contract_bindings_valid": True,
+        "successor_base_tree": pis004a_check.PIS005A_SUCCESSOR_BASE_TREE,
+        "repair_base_tree": pis004a_check.PIS005A_REPAIR_BASE_TREE,
+        "repair_base_remote_oid": pis004a_check.PIS005A_REPAIR_BASE_COMMIT,
+        "repair_base_is_ancestor": True,
+        "pis004a_remote_oid": pis004a_check.PIS004A_REVIEW_COMMIT,
+        "predecessor_topology_valid": True,
+        "reviewed_oid": reviewed,
+        "reviewed_tree": "f" * 40,
+        "observed_reviewed_tree": "f" * 40,
+        "reviewed_parents": (pis004a_check.PIS005A_REPAIR_BASE_COMMIT,),
+        "reviewed_parent_tree": pis004a_check.PIS005A_REPAIR_BASE_TREE,
+        "disposition_parents": (reviewed,),
+        "post_review_paths": set(pis004a_check.PIS005A_POST_REVIEW_PATHS),
+        "post_review_entries": {
+            ("M", relative)
+            for relative in pis004a_check.PIS005A_POST_REVIEW_PATHS
+        },
+    }
+    values.update(overrides)
+    return pis004a_check._pis005a_completed_review_checkout_failures(  # noqa: SLF001
+        **values
+    )
+
+
+@pytest.mark.parametrize(
+    ("current_branch", "head_name"),
+    [
+        (
+            pis004a_check.PIS005A_SUCCESSOR_BRANCH,
+            pis004a_check.PIS005A_SUCCESSOR_BRANCH,
+        ),
+        ("", "HEAD"),
+    ],
+)
+def test_completed_pis005a_review_accepts_exact_named_and_detached_disposition(
+    current_branch: str,
+    head_name: str,
+) -> None:
+    assert (
+        _completed_review_failures(
+            current_branch=current_branch,
+            head_name=head_name,
+        )
+        == []
+    )
+
+
+@pytest.mark.parametrize(
+    ("overrides", "expected_failure"),
+    [
+        (
+            {"disposition_parents": ("c" * 40, "a" * 40)},
+            "PIS-004A completed PIS-005A review topology is invalid",
+        ),
+        (
+            {"disposition_parents": ("a" * 40,)},
+            "PIS-004A completed PIS-005A review topology is invalid",
+        ),
+        (
+            {
+                "head_oid": "c" * 40,
+                "local_successor_oid": "c" * 40,
+                "remote_successor_oid": "c" * 40,
+                "disposition_parents": (pis004a_check.PIS005A_REPAIR_BASE_COMMIT,),
+            },
+            "PIS-004A completed PIS-005A review topology is invalid",
+        ),
+        (
+            {"observed_reviewed_tree": "0" * 40},
+            "PIS-004A completed PIS-005A review topology is invalid",
+        ),
+        (
+            {"reviewed_parents": ("a" * 40,)},
+            "PIS-004A completed PIS-005A review topology is invalid",
+        ),
+        (
+            {"local_successor_oid": "a" * 40},
+            (
+                "PIS-004A completed PIS-005A disposition does not match local, "
+                "fetched, HEAD, and tree identity"
+            ),
+        ),
+        (
+            {"remote_successor_oid": ""},
+            (
+                "PIS-004A completed PIS-005A disposition does not match local, "
+                "fetched, HEAD, and tree identity"
+            ),
+        ),
+        (
+            {"contract_bindings_valid": False},
+            "PIS-004A completed PIS-005A review topology is invalid",
+        ),
+        (
+            {"shallow_state": "true"},
+            "PIS-004A completed PIS-005A review checkout is shallow or unverifiable",
+        ),
+        (
+            {"porcelain": "?? untracked.txt"},
+            "PIS-004A completed PIS-005A review checkout is not clean",
+        ),
+    ],
+)
+def test_completed_pis005a_review_pure_identity_and_topology_negatives_fail_closed(
+    overrides: dict[str, object],
+    expected_failure: str,
+) -> None:
+    assert expected_failure in _completed_review_failures(**overrides)
+
+
+@pytest.mark.parametrize(
+    ("post_review_paths", "expected_failure"),
+    [
+        (
+            pis004a_check.PIS005A_POST_REVIEW_PATHS | {"Makefile"},
+            "PIS-004A PIS-005A review disposition changed forbidden paths: Makefile",
+        ),
+        (
+            pis004a_check.PIS005A_POST_REVIEW_PATHS
+            - {pis004a_check.PIS005A_CONTRACT_REL.as_posix()},
+            (
+                "PIS-004A PIS-005A review disposition inventory is incomplete: "
+                f"{pis004a_check.PIS005A_CONTRACT_REL.as_posix()}"
+            ),
+        ),
+        (
+            {
+                "docs/codex/production-identity-storage-pis-005a-independent-review-renamed.md",
+                *(
+                    pis004a_check.PIS005A_POST_REVIEW_PATHS
+                    - {
+                        "docs/codex/"
+                        "production-identity-storage-pis-005a-independent-review.md"
+                    }
+                ),
+            },
+            (
+                "PIS-004A PIS-005A review disposition changed forbidden paths: "
+                "docs/codex/production-identity-storage-pis-005a-independent-review-renamed.md"
+            ),
+        ),
+    ],
+)
+def test_completed_pis005a_review_pure_allowlist_negatives_fail_closed(
+    post_review_paths: set[str],
+    expected_failure: str,
+) -> None:
+    assert expected_failure in _completed_review_failures(
+        post_review_paths=post_review_paths
+    )
+
+
+def test_pending_and_completed_pis005a_topologies_are_not_interchangeable() -> None:
+    pending_failures = pis004a_check._pis005a_successor_checkout_failures(  # noqa: SLF001
+        current_branch=pis004a_check.PIS005A_SUCCESSOR_BRANCH,
+        head_name=pis004a_check.PIS005A_SUCCESSOR_BRANCH,
+        head_oid="d" * 40,
+        head_tree="e" * 40,
+        local_successor_oid="d" * 40,
+        local_successor_tree="e" * 40,
+        remote_successor_oid="d" * 40,
+        remote_successor_tree="e" * 40,
+        porcelain="",
+        shallow_state="false",
+        contract_bindings_valid=True,
+        successor_base_tree=pis004a_check.PIS005A_SUCCESSOR_BASE_TREE,
+        repair_base_tree=pis004a_check.PIS005A_REPAIR_BASE_TREE,
+        repair_base_remote_oid=pis004a_check.PIS005A_REPAIR_BASE_COMMIT,
+        repair_base_is_ancestor=True,
+        pis004a_remote_oid=pis004a_check.PIS004A_REVIEW_COMMIT,
+        head_parents=("c" * 40,),
+        head_parent_tree="f" * 40,
+    )
+
+    assert "PIS-004A exact PIS-005A successor identity is invalid" in pending_failures
+    assert (
+        "PIS-004A completed PIS-005A review topology is invalid"
+        in _completed_review_failures(
+            head_oid="c" * 40,
+            local_successor_oid="c" * 40,
+            remote_successor_oid="c" * 40,
+            disposition_parents=(pis004a_check.PIS005A_REPAIR_BASE_COMMIT,),
+        )
+    )
 
 
 @pytest.mark.parametrize(

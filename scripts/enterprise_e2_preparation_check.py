@@ -5,6 +5,8 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -26,9 +28,15 @@ PREPARATION_BRANCH = "codex/enterprise-e2-production-identity-prep"
 PIS004A_BRANCH = "codex/enterprise-e2-pis004a-review-repair"
 PIS004A_SOURCE_COMMIT = "e86f5a19e4e067d73141246f78304597e6cc28a0"
 PIS004A_SOURCE_TREE = "6dbbcf0bef3320dfdfa4142f2d30b798b01511d0"
-PIS005A_BRANCH = "codex/enterprise-e2-pis005a-review-repair-7"
+PIS005A_BRANCH = "codex/enterprise-e2-pis005a-review-repair-8"
 PIS005A_SOURCE_COMMIT = "83db1196213b0e4e7de5d97ab0fb37b934ca4ab7"
 PIS005A_SOURCE_TREE = "86731324feec59596146a1149cdde69f47dd58d0"
+PIS005A_REPAIR_BASE_BRANCH = "codex/enterprise-e2-pis005a-review-repair-7"
+PIS005A_REPAIR_BASE_COMMIT = "3c4060ca997089228debfff7c082f6fd5c96fb04"
+PIS005A_REPAIR_BASE_TREE = "b4ac2880aac3170c463ae9caf27c4206d25f81bf"
+PIS005A_CONTRACT_REL = Path(
+    "docs/codex/production-identity-storage-pis-005a-entry-and-implementation-contract.json"
+)
 PIS_WAIT_ACTION = (
     "await_external_operator_target_and_signed_receipt_inputs_before_separate_"
     "collection_action_authority"
@@ -93,6 +101,29 @@ ALLOWED_CHANGED_PATHS = {
     "tests/test_enterprise_e2_preparation.py",
     "tests/test_enterprise_e2_scale_fixture.py",
 }
+_UNSAFE_GIT_ENVIRONMENT_NAMES = {
+    "GIT_ALTERNATE_OBJECT_DIRECTORIES",
+    "GIT_CEILING_DIRECTORIES",
+    "GIT_COMMON_DIR",
+    "GIT_CONFIG",
+    "GIT_CONFIG_COUNT",
+    "GIT_CONFIG_GLOBAL",
+    "GIT_CONFIG_NOSYSTEM",
+    "GIT_CONFIG_PARAMETERS",
+    "GIT_CONFIG_SYSTEM",
+    "GIT_DIR",
+    "GIT_DISCOVERY_ACROSS_FILESYSTEM",
+    "GIT_GRAFT_FILE",
+    "GIT_IMPLICIT_WORK_TREE",
+    "GIT_INDEX_FILE",
+    "GIT_NAMESPACE",
+    "GIT_OBJECT_DIRECTORY",
+    "GIT_PREFIX",
+    "GIT_REPLACE_REF_BASE",
+    "GIT_SHALLOW_FILE",
+    "GIT_WORK_TREE",
+}
+_UNSAFE_GIT_ENVIRONMENT_PREFIXES = ("GIT_CONFIG_KEY_", "GIT_CONFIG_VALUE_")
 
 
 def main() -> int:
@@ -268,23 +299,28 @@ def _validate_repository(
     contract: dict[str, Any],
     failures: list[str],
 ) -> None:
+    failures.extend(_git_topology_metadata_failures(root))
     if not _git_ok(root, "cat-file", "-e", f"{BASE_COMMIT}^{{commit}}"):
         failures.append("E2 base commit is unavailable")
     elif not _git_ok(root, "merge-base", "--is-ancestor", BASE_COMMIT, "HEAD"):
         failures.append("E2 base commit is not an ancestor of HEAD")
     current_branch = _git_one(root, "branch", "--show-current")
-    if current_branch not in {PREPARATION_BRANCH, PIS004A_BRANCH, PIS005A_BRANCH}:
+    head_name = _git_one(root, "rev-parse", "--abbrev-ref", "HEAD")
+    checkout_lane = _checkout_lane(root, current_branch=current_branch, head_name=head_name)
+    if checkout_lane is None:
         failures.append("E2 preparation is not on its isolated branch")
-    elif current_branch == PIS004A_BRANCH and (
+    elif checkout_lane == PIS004A_BRANCH and (
         not _git_ok(root, "merge-base", "--is-ancestor", PIS004A_SOURCE_COMMIT, "HEAD")
         or _git_one(root, "rev-parse", f"{PIS004A_SOURCE_COMMIT}^{{tree}}") != PIS004A_SOURCE_TREE
     ):
         failures.append("E2 preparation descendant does not preserve its exact source")
-    elif current_branch == PIS005A_BRANCH and (
+    elif checkout_lane == PIS005A_BRANCH and (
         not _git_ok(root, "merge-base", "--is-ancestor", PIS005A_SOURCE_COMMIT, "HEAD")
         or _git_one(root, "rev-parse", f"{PIS005A_SOURCE_COMMIT}^{{tree}}") != PIS005A_SOURCE_TREE
     ):
         failures.append("E2 preparation PIS-005A descendant does not preserve its exact source")
+    if checkout_lane == PIS005A_BRANCH:
+        failures.extend(_pis005a_pending_checkout_failures(root))
 
     for relative, expected_hash in PROTECTED_E1_HASHES.items():
         path = root / relative
@@ -370,14 +406,14 @@ def _validate_repository(
         if target not in makefile:
             failures.append(f"Makefile is missing E2 target: {target}")
 
-    if current_branch == PREPARATION_BRANCH:
+    if checkout_lane == PREPARATION_BRANCH:
         unexpected = sorted(_changed_paths(root) - ALLOWED_CHANGED_PATHS)
         if unexpected:
             failures.append(
                 "E2 preparation changed paths outside its lane: " + ", ".join(unexpected)
             )
     elif (
-        current_branch in {PIS004A_BRANCH, PIS005A_BRANCH}
+        checkout_lane in {PIS004A_BRANCH, PIS005A_BRANCH}
         and not (
             root
             / "docs/codex/"
@@ -385,7 +421,7 @@ def _validate_repository(
         ).is_file()
     ):
         failures.append("E2 preparation descendant is missing its separate entry decision")
-    if current_branch == PIS005A_BRANCH and not (
+    if checkout_lane == PIS005A_BRANCH and not (
         root
         / "docs/codex/"
         "production-identity-storage-pis-005a-entry-and-implementation-contract.json"
@@ -401,6 +437,115 @@ def _work_package_ids(contract: dict[str, Any]) -> list[object]:
     if not isinstance(packages, list):
         return []
     return [item.get("id") for item in packages if isinstance(item, dict)]
+
+
+def _checkout_lane(
+    root: Path,
+    *,
+    current_branch: str,
+    head_name: str,
+) -> str | None:
+    allowed = (PREPARATION_BRANCH, PIS004A_BRANCH, PIS005A_BRANCH)
+    if current_branch in allowed:
+        return current_branch if head_name == current_branch else None
+    if current_branch != "" or head_name != "HEAD":
+        return None
+    head = _git_one(root, "rev-parse", "HEAD^{commit}")
+    for branch in allowed:
+        local = _git_one(root, "rev-parse", f"refs/heads/{branch}^{{commit}}")
+        remote = _git_one(
+            root,
+            "rev-parse",
+            f"refs/remotes/origin/{branch}^{{commit}}",
+        )
+        if head != "" and head == local == remote:
+            return branch
+    return None
+
+
+def _pis005a_pending_checkout_failures(root: Path) -> list[str]:
+    failures: list[str] = []
+    contract_failures: list[str] = []
+    contract = _load_json(root / PIS005A_CONTRACT_REL, contract_failures)
+    base = contract.get("base")
+    review = contract.get("independent_review")
+    if (
+        contract_failures
+        or contract.get("decision_id") != "PIS-005A"
+        or contract.get("status") != "candidate_independent_review_pending"
+        or not isinstance(base, dict)
+        or base.get("branch") != PIS005A_BRANCH
+        or base.get("repair_source_branch") != f"origin/{PIS005A_REPAIR_BASE_BRANCH}"
+        or base.get("repair_source_commit") != PIS005A_REPAIR_BASE_COMMIT
+        or base.get("repair_source_tree") != PIS005A_REPAIR_BASE_TREE
+        or not isinstance(review, dict)
+        or review.get("reviewed_candidate_commit") is not None
+        or review.get("reviewed_candidate_tree") is not None
+        or review.get("implementation_review_complete") is not False
+    ):
+        failures.append(
+            "E2 preparation PIS-005A checkout is not the exact pending repair-8 lifecycle"
+        )
+
+    head = _git_one(root, "rev-parse", "HEAD^{commit}")
+    head_tree = _git_one(root, "rev-parse", "HEAD^{tree}")
+    local = _git_one(root, "rev-parse", f"refs/heads/{PIS005A_BRANCH}^{{commit}}")
+    local_tree = _git_one(root, "rev-parse", f"refs/heads/{PIS005A_BRANCH}^{{tree}}")
+    remote = _git_one(
+        root,
+        "rev-parse",
+        f"refs/remotes/origin/{PIS005A_BRANCH}^{{commit}}",
+    )
+    remote_tree = _git_one(
+        root,
+        "rev-parse",
+        f"refs/remotes/origin/{PIS005A_BRANCH}^{{tree}}",
+    )
+    parents = tuple(_git_one(root, "show", "-s", "--format=%P", "HEAD").split())
+    parent_tree = (
+        _git_one(root, "rev-parse", f"{parents[0]}^{{tree}}")
+        if len(parents) == 1
+        else ""
+    )
+    repair_base_local = _git_one(
+        root,
+        "rev-parse",
+        f"refs/heads/{PIS005A_REPAIR_BASE_BRANCH}^{{commit}}",
+    )
+    repair_base_remote = _git_one(
+        root,
+        "rev-parse",
+        f"refs/remotes/origin/{PIS005A_REPAIR_BASE_BRANCH}^{{commit}}",
+    )
+    if (
+        head == ""
+        or local == ""
+        or remote == ""
+        or head != local
+        or head != remote
+        or head_tree != local_tree
+        or head_tree != remote_tree
+        or parents != (PIS005A_REPAIR_BASE_COMMIT,)
+        or parent_tree != PIS005A_REPAIR_BASE_TREE
+        or repair_base_local != PIS005A_REPAIR_BASE_COMMIT
+        or repair_base_remote != PIS005A_REPAIR_BASE_COMMIT
+        or _git_one(root, "rev-parse", f"{PIS005A_REPAIR_BASE_COMMIT}^{{tree}}")
+        != PIS005A_REPAIR_BASE_TREE
+    ):
+        failures.append("E2 preparation PIS-005A candidate identity or topology changed")
+    porcelain = _git_output_or_none(
+        root,
+        "status",
+        "--porcelain=v1",
+        "--untracked-files=all",
+    )
+    if porcelain is None:
+        failures.append("E2 preparation PIS-005A cleanliness is unavailable")
+    elif porcelain.strip():
+        failures.append("E2 preparation PIS-005A candidate is not clean")
+    if _git_one(root, "rev-parse", "--is-shallow-repository") != "false":
+        failures.append("E2 preparation PIS-005A checkout is shallow or unverifiable")
+    return failures
 
 
 def _changed_paths(root: Path) -> set[str]:
@@ -445,17 +590,165 @@ def _closed_object(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
     return result
 
 
-def _git_ok(root: Path, *args: str) -> bool:
-    return (
-        subprocess.run(
-            ["git", *args],
-            cwd=root,
-            check=False,
-            capture_output=True,
-            text=True,
-        ).returncode
-        == 0
+def _controlled_git_environment() -> dict[str, str]:
+    environment = {
+        key: os.environ[key]
+        for key in ("HOME", "LOGNAME", "SYSTEMROOT", "TMPDIR", "USER")
+        if key in os.environ
+    }
+    environment.update(
+        {
+            "GIT_CONFIG_GLOBAL": os.devnull,
+            "GIT_CONFIG_NOSYSTEM": "1",
+            "GIT_CONFIG_SYSTEM": os.devnull,
+            "GIT_NO_REPLACE_OBJECTS": "1",
+            "GIT_OPTIONAL_LOCKS": "0",
+            "LANG": "C",
+            "LC_ALL": "C",
+            "PATH": os.defpath,
+        }
     )
+    return environment
+
+
+def _git_command(root: Path, *args: str) -> list[str]:
+    executable = shutil.which("git", path=os.defpath)
+    if executable is None:
+        raise FileNotFoundError("system Git executable is unavailable")
+    return [
+        executable,
+        "--no-replace-objects",
+        "--no-optional-locks",
+        "-c",
+        "core.useReplaceRefs=false",
+        "-c",
+        "core.fsmonitor=false",
+        "-c",
+        "core.untrackedCache=false",
+        "-c",
+        f"core.hooksPath={os.devnull}",
+        "-C",
+        str(root),
+        *args,
+    ]
+
+
+def _unsafe_inherited_git_environment() -> tuple[str, ...]:
+    return tuple(
+        sorted(
+            name
+            for name in os.environ
+            if name in _UNSAFE_GIT_ENVIRONMENT_NAMES
+            or name.startswith(_UNSAFE_GIT_ENVIRONMENT_PREFIXES)
+        )
+    )
+
+
+def _metadata_path_present(path: Path) -> bool:
+    return path.exists() or path.is_symlink()
+
+
+def _replace_path_has_entries(path: Path) -> bool | None:
+    try:
+        return (path.is_dir() and any(path.iterdir())) or path.is_symlink()
+    except OSError:
+        return None
+
+
+def _git_topology_metadata_failures(root: Path) -> list[str]:
+    failures: list[str] = []
+    unsafe_environment = _unsafe_inherited_git_environment()
+    if unsafe_environment:
+        failures.append(
+            "E2 preparation inherited Git object or topology environment is unsafe: "
+            + ", ".join(unsafe_environment)
+        )
+
+    refs = _git_output_or_none(root, "for-each-ref", "--format=%(refname)")
+    git_directory = _git_output_or_none(
+        root,
+        "rev-parse",
+        "--path-format=absolute",
+        "--git-dir",
+    )
+    common_directory = _git_output_or_none(
+        root,
+        "rev-parse",
+        "--path-format=absolute",
+        "--git-common-dir",
+    )
+    resolved_graft = _git_output_or_none(
+        root,
+        "rev-parse",
+        "--path-format=absolute",
+        "--git-path",
+        "info/grafts",
+    )
+    resolved_shallow = _git_output_or_none(
+        root,
+        "rev-parse",
+        "--path-format=absolute",
+        "--git-path",
+        "shallow",
+    )
+    if (
+        refs is None
+        or git_directory is None
+        or common_directory is None
+        or resolved_graft is None
+        or resolved_shallow is None
+    ):
+        failures.append("E2 preparation Git topology metadata cannot be verified")
+        return failures
+
+    ref_names = refs.splitlines()
+    git_path = Path(git_directory.strip())
+    common_path = Path(common_directory.strip())
+    replace_entries = _replace_path_has_entries(common_path / "refs/replace")
+    if replace_entries is None:
+        failures.append("E2 preparation Git topology metadata cannot be verified")
+    elif (
+        any(
+            ref.startswith("refs/replace/") or "/refs/replace/" in ref
+            for ref in ref_names
+        )
+        or replace_entries
+    ):
+        failures.append("E2 preparation replacement-ref topology metadata is present")
+
+    graft_paths = {
+        Path(resolved_graft.strip()),
+        common_path / "info/grafts",
+        git_path / "info/grafts",
+    }
+    if any(_metadata_path_present(path) for path in graft_paths):
+        failures.append("E2 preparation legacy graft topology metadata is present")
+
+    shallow_paths = {
+        Path(resolved_shallow.strip()),
+        common_path / "shallow",
+        git_path / "shallow",
+    }
+    if any(_metadata_path_present(path) for path in shallow_paths):
+        failures.append("E2 preparation shallow topology metadata is present")
+    return failures
+
+
+def _git_ok(root: Path, *args: str) -> bool:
+    try:
+        return (
+            subprocess.run(
+                _git_command(root, *args),
+                cwd=root,
+                env=_controlled_git_environment(),
+                check=False,
+                capture_output=True,
+                text=True,
+            ).returncode
+            == 0
+        )
+    except OSError:
+        return False
 
 
 def _git_one(root: Path, *args: str) -> str:
@@ -463,14 +756,33 @@ def _git_one(root: Path, *args: str) -> str:
 
 
 def _git_output(root: Path, *args: str) -> str:
-    result = subprocess.run(
-        ["git", *args],
-        cwd=root,
-        check=False,
-        capture_output=True,
-        text=True,
-    )
+    try:
+        result = subprocess.run(
+            _git_command(root, *args),
+            cwd=root,
+            env=_controlled_git_environment(),
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+    except OSError:
+        return ""
     return result.stdout if result.returncode == 0 else ""
+
+
+def _git_output_or_none(root: Path, *args: str) -> str | None:
+    try:
+        result = subprocess.run(
+            _git_command(root, *args),
+            cwd=root,
+            env=_controlled_git_environment(),
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+    except OSError:
+        return None
+    return result.stdout if result.returncode == 0 else None
 
 
 def render_report(report: dict[str, Any]) -> str:

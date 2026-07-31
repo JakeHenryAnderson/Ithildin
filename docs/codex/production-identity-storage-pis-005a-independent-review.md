@@ -41,7 +41,7 @@ Current governed tool count: exactly `24`.
 ## Pending Review Procedure
 
 The exact implementation candidate is frozen and awaits independent review. The reviewer must fetch
-`origin/codex/enterprise-e2-pis005a-review-repair-7` into matching exact local and remote-tracking
+`origin/codex/enterprise-e2-pis005a-review-repair-8` into matching exact local and remote-tracking
 candidate refs, check out the exact candidate commit in a clean detached worktree, verify that both
 refs, detached `HEAD`, and the exact tree match, and run:
 
@@ -50,10 +50,10 @@ make production-identity-storage-pis-005a-check
 ```
 
 This is a fresh review of the entire repaired candidate, not a review limited to the repair diff.
-The external exact commit/tree/live-remote preflight freezes the pending repair-7 identity. A
-different structurally valid repair-6 child is a new candidate that requires its own preflight and
-independent review; it must not inherit or be relabeled with repair-7 review evidence.
-All six predecessor candidates are evidence only and remain rejected:
+The external exact commit/tree/live-remote preflight freezes the pending repair-8 identity. A
+different structurally valid repair-7 child is a new candidate that requires its own preflight and
+independent review; it must not inherit or be relabeled with repair-8 review evidence.
+All seven predecessor candidates are evidence only and remain rejected:
 
 - `codex/enterprise-e2-pis005a-node-identity`,
   `fce0a3668db5150cf0aa75de1fd914b296a2e099`, tree
@@ -72,7 +72,10 @@ All six predecessor candidates are evidence only and remain rejected:
   `6e4c4097680c97c77913ba10054dbb5e234abe4c`; and
 - `codex/enterprise-e2-pis005a-review-repair-6`,
   `735877b2bb387a50dfbd376d6d3d8c047fd49c8f`, tree
-  `04edcda705e8ab75b0a37eecb70dce7fafabe544`.
+  `04edcda705e8ab75b0a37eecb70dce7fafabe544`; and
+- `codex/enterprise-e2-pis005a-review-repair-7`,
+  `3c4060ca997089228debfff7c082f6fd5c96fb04`, tree
+  `b4ac2880aac3170c463ae9caf27c4206d25f81bf`.
 
 The repair-5 independent review returned `NO_GO` with `C0/H0/M0/L2`. Its arbitrary-descendant
 topology acceptance and blocking FIFO-open findings are repair inputs only, not a positive
@@ -82,6 +85,12 @@ The repair-6 independent review returned `NO_GO` with `C0/H0/M0/L1`. Historical 
 demonstrated that a same-tree extra descendant could move both candidate refs and then use a
 replacement object to make ordinary parent/tree/topology operations appear to describe repair-6.
 That finding is a repair input only, not a positive disposition for repair-6 or this new candidate.
+
+The repair-7 independent review returned `NO_GO` with `C0/H0/M0/L2`. L-06 identified that the
+cumulative PIS-004A verifier could validate only the pending candidate topology and therefore
+blocked the already-authorized three-file completed-review disposition. L-07 identified inherited
+Git and replacement/graft/shallow trust gaps in the E2 preparation checker. Both findings are
+repair inputs only, not a positive disposition for repair-7 or this new candidate.
 
 The fresh review must re-evaluate the entire candidate and independently verify every repair area:
 
@@ -106,12 +115,19 @@ The fresh review must re-evaluate the entire candidate and independently verify 
   snapshot, same-content-different-inode, and bounded passive-FIFO attack coverage without weakening
   the explicit active same-UID writer nonclaim;
 - exact PIS-004A gate recognition of the contract-bound named and detached PIS-005A successor,
-  requiring exact local and fetched candidate refs, a sole raw direct repair-6 parent with its exact
+  requiring exact local and fetched candidate refs, a sole raw direct repair-7 parent with its exact
   tree and refs, and unchanged accepted/rejected ancestry, with extra commits, merges, unrelated
   commits, missing refs, ref drift, and rejected predecessor topology failing closed;
+- the two-state PIS-004A lifecycle verifier: pending repair-8 must retain that exact one-commit
+  topology, while a completed review must be exactly one later disposition commit whose sole raw
+  parent is the independently reviewed repair-8 commit and whose complete diff is exactly the
+  contract, this review record, and the non-executable foundation status projection;
 - fail-closed rejection of replacement refs, redirected replacement namespaces, legacy grafts,
   shallow metadata, and inherited Git object/topology redirection, while every identity, tree,
   parent, diff, ref, and ancestry observation runs with replacement processing disabled;
+- the E2 preparation checker using the same raw Git controls for every branch, tree, ancestry, and
+  diff observation, accepting legitimate named, detached, and linked-worktree pending candidates
+  without treating a completed PIS-005A review as E2 entry authority;
 - persisted trust-anchor/application-key-ID revalidation and canonical request cross-binding;
 - durable ordinary enrollment expiry at the exact boundary;
 - strict older-than nonce pruning with restart, replay, and concurrency behavior; and
@@ -125,8 +141,15 @@ arbitrary database-directory write, and no runtime or automatic restore capabili
 The final record may be written only after the independent review reports zero open Critical,
 High, Medium, and Low findings. The post-review descendant may change only this record, the
 machine-readable review disposition, and the corresponding non-executable status projection in the
-PIS-005A foundation document. Executable documentation registries are already part of the reviewed
-candidate.
+PIS-005A foundation document. It must be one commit with the reviewed repair-8 commit as its sole
+raw parent, and its entire diff must contain exactly these three paths:
+
+- `docs/codex/production-identity-storage-pis-005a-entry-and-implementation-contract.json`;
+- `docs/codex/production-identity-storage-pis-005a-independent-review.md`; and
+- `docs/codex/production-identity-storage-pis-005a-node-workload-identity-foundation.md`.
+
+Executable documentation registries, checkers, tests, `Makefile`, and runtime files are already
+part of the reviewed candidate and require no disposition-commit edit.
 
 ## Authority And Stop Lines
 

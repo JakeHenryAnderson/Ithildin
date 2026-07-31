@@ -680,7 +680,7 @@ def test_candidate_checkout_rejects_exact_rejected_topology(
         review=None,
     )
 
-    assert "PIS-005A candidate is not the exact direct child of repair-6" in failures
+    assert "PIS-005A candidate is not the exact direct child of repair-7" in failures
 
 
 def test_candidate_identity_pure_arbitrary_agreeing_descendant_fails_closed() -> None:
@@ -704,7 +704,7 @@ def test_candidate_identity_pure_arbitrary_agreeing_descendant_fails_closed() ->
         porcelain="",
     )
 
-    assert "PIS-005A candidate is not the exact direct child of repair-6" in failures
+    assert "PIS-005A candidate is not the exact direct child of repair-7" in failures
 
 
 @pytest.mark.parametrize(
@@ -712,15 +712,15 @@ def test_candidate_identity_pure_arbitrary_agreeing_descendant_fails_closed() ->
     [
         (
             "extra_commit",
-            "PIS-005A candidate is not the exact direct child of repair-6",
+            "PIS-005A candidate is not the exact direct child of repair-7",
         ),
         (
             "same_tree_extra_commit",
-            "PIS-005A candidate is not the exact direct child of repair-6",
+            "PIS-005A candidate is not the exact direct child of repair-7",
         ),
         (
             "merge_parent",
-            "PIS-005A candidate is not the exact direct child of repair-6",
+            "PIS-005A candidate is not the exact direct child of repair-7",
         ),
         (
             "missing_detached_local_ref",
@@ -728,7 +728,7 @@ def test_candidate_identity_pure_arbitrary_agreeing_descendant_fails_closed() ->
         ),
         (
             "wrong_parent_tree",
-            "PIS-005A candidate is not the exact direct child of repair-6",
+            "PIS-005A candidate is not the exact direct child of repair-7",
         ),
         (
             "repair_base_ref_drift",
@@ -817,7 +817,7 @@ def test_candidate_checkout_real_repository_topology_reproductions_fail_closed(
     assert expected_failure in failures
 
 
-def test_full_report_builders_accept_clean_exact_named_and_detached_repair7(
+def test_full_report_builders_accept_clean_exact_named_and_detached_repair8(
     tmp_path: Path,
 ) -> None:
     repository = _initialize_full_report_candidate_repository(tmp_path)
@@ -835,6 +835,188 @@ def test_full_report_builders_accept_clean_exact_named_and_detached_repair7(
         pis004a_check.build_report(repository),
     ):
         assert report["valid"] is True, report["failures"]
+
+
+def test_full_report_builders_accept_exact_three_file_completed_review_disposition(
+    tmp_path: Path,
+) -> None:
+    repository = _initialize_full_report_candidate_repository(tmp_path)
+    _record_completed_review(repository)
+
+    for report in (
+        pis005a_check.build_report(repository),
+        pis004a_check.build_report(repository),
+    ):
+        assert report["valid"] is True, report["failures"]
+
+    _git(repository, "checkout", "-q", "--detach", "HEAD")
+
+    for report in (
+        pis005a_check.build_report(repository),
+        pis004a_check.build_report(repository),
+    ):
+        assert report["valid"] is True, report["failures"]
+
+
+@pytest.mark.parametrize(
+    "relative",
+    [
+        "README.md",
+        "Makefile",
+        "scripts/production_identity_storage_pis_004a_check.py",
+        "tests/test_pis004a_contract.py",
+        "apps/api/src/ithildin_api/enterprise_node_identity.py",
+    ],
+)
+def test_full_report_builders_reject_completed_review_with_any_fourth_file(
+    tmp_path: Path,
+    relative: str,
+) -> None:
+    repository = _initialize_full_report_candidate_repository(tmp_path)
+    _write_completed_review_files(repository)
+    extra = repository / relative
+    extra.write_text(
+        extra.read_text(encoding="utf-8") + "\n# forbidden disposition edit\n",
+        encoding="utf-8",
+    )
+    _commit_disposition(repository)
+
+    pis005a_failures = _failure_strings(pis005a_check.build_report(repository))
+    pis004a_failures = _failure_strings(pis004a_check.build_report(repository))
+
+    assert any(
+        failure.startswith("PIS-005A post-review record changed implementation paths:")
+        and relative in failure
+        for failure in pis005a_failures
+    )
+    assert (
+        f"PIS-004A PIS-005A review disposition changed forbidden paths: {relative}"
+        in pis004a_failures
+    )
+
+
+@pytest.mark.parametrize("mutation", ["deletion", "rename"])
+def test_full_report_builders_reject_completed_review_deletion_or_rename(
+    tmp_path: Path,
+    mutation: str,
+) -> None:
+    repository = _initialize_full_report_candidate_repository(tmp_path)
+    _write_completed_review_files(repository)
+    review_relative = pis005a_check.REVIEW_RECORD_REL.as_posix()
+    if mutation == "deletion":
+        (repository / review_relative).unlink()
+    else:
+        _git(
+            repository,
+            "mv",
+            review_relative,
+            "docs/codex/pis005a-review-renamed.md",
+        )
+    _commit_disposition(repository)
+
+    pis005a_report = pis005a_check.build_report(repository)
+    pis004a_report = pis004a_check.build_report(repository)
+
+    assert pis005a_report["valid"] is False
+    assert pis004a_report["valid"] is False
+    if mutation == "rename":
+        assert (
+            "PIS-004A PIS-005A review disposition changed forbidden paths: "
+            "docs/codex/pis005a-review-renamed.md"
+            in _failure_strings(pis004a_report)
+        )
+
+
+@pytest.mark.parametrize("mutation", ["two_descendants", "merge", "branch_movement"])
+def test_completed_review_full_report_rejects_nonexact_disposition_topology(
+    tmp_path: Path,
+    mutation: str,
+) -> None:
+    repository = _initialize_full_report_candidate_repository(tmp_path)
+    topology = _record_completed_review(repository)
+    if mutation == "two_descendants":
+        _git(repository, "commit", "--allow-empty", "-q", "-m", "second disposition")
+        _git(
+            repository,
+            "update-ref",
+            f"refs/remotes/origin/{pis005a_check.BRANCH}",
+            "HEAD",
+        )
+    elif mutation == "merge":
+        _git(
+            repository,
+            "checkout",
+            "-q",
+            "-b",
+            "disposition-side",
+            topology["candidate"],
+        )
+        side = repository / "docs/codex/disposition-side.md"
+        side.write_text("side\n", encoding="utf-8")
+        _git(repository, "add", side.relative_to(repository).as_posix())
+        _git(repository, "commit", "-q", "-m", "side disposition")
+        _git(repository, "checkout", "-q", pis005a_check.BRANCH)
+        _git(
+            repository,
+            "merge",
+            "-q",
+            "--no-ff",
+            "disposition-side",
+            "-m",
+            "merge disposition",
+        )
+        _git(
+            repository,
+            "update-ref",
+            f"refs/remotes/origin/{pis005a_check.BRANCH}",
+            "HEAD",
+        )
+    else:
+        _git(
+            repository,
+            "update-ref",
+            f"refs/remotes/origin/{pis005a_check.BRANCH}",
+            topology["candidate"],
+        )
+
+    failures = _failure_strings(pis004a_check.build_report(repository))
+
+    if mutation == "branch_movement":
+        assert (
+            "PIS-004A completed PIS-005A disposition does not match local, fetched, "
+            "HEAD, and tree identity"
+            in failures
+        )
+    else:
+        assert "PIS-004A completed PIS-005A review topology is invalid" in failures
+
+
+def test_pending_contract_rejects_disposition_topology_in_full_report(
+    tmp_path: Path,
+) -> None:
+    repository = _initialize_full_report_candidate_repository(tmp_path)
+    review_path = repository / pis005a_check.REVIEW_RECORD_REL
+    review_path.write_text(
+        review_path.read_text(encoding="utf-8") + "\npending topology drift\n",
+        encoding="utf-8",
+    )
+    _git(repository, "add", review_path.relative_to(repository).as_posix())
+    _git(repository, "commit", "-q", "-m", "unreviewed disposition descendant")
+    _git(
+        repository,
+        "update-ref",
+        f"refs/remotes/origin/{pis005a_check.BRANCH}",
+        "HEAD",
+    )
+
+    pis005a_failures = _failure_strings(pis005a_check.build_report(repository))
+    pis004a_failures = _failure_strings(pis004a_check.build_report(repository))
+
+    assert (
+        "PIS-005A candidate is not the exact direct child of repair-7"
+        in pis005a_failures
+    )
+    assert "PIS-004A exact PIS-005A successor identity is invalid" in pis004a_failures
 
 
 def test_full_report_builders_reject_confirmed_same_tree_replace_laundering(
@@ -866,7 +1048,7 @@ def test_full_report_builders_reject_confirmed_same_tree_replace_laundering(
     assert pis005a_report["valid"] is False
     assert "PIS-005A replacement-ref topology metadata is present" in pis005a_failures
     assert (
-        "PIS-005A candidate is not the exact direct child of repair-6"
+        "PIS-005A candidate is not the exact direct child of repair-7"
         in pis005a_failures
     )
     assert pis004a_report["valid"] is False
@@ -892,7 +1074,7 @@ def test_full_report_builders_reject_raw_same_tree_extra_descendant(
     pis004a_failures = _failure_strings(pis004a_report)
 
     assert (
-        "PIS-005A candidate is not the exact direct child of repair-6"
+        "PIS-005A candidate is not the exact direct child of repair-7"
         in pis005a_failures
     )
     assert "PIS-005A replacement-ref topology metadata is present" not in pis005a_failures
@@ -917,7 +1099,7 @@ def test_full_report_builders_reject_unrelated_replacement_ref(tmp_path: Path) -
 
     assert "PIS-005A replacement-ref topology metadata is present" in pis005a_failures
     assert (
-        "PIS-005A candidate is not the exact direct child of repair-6"
+        "PIS-005A candidate is not the exact direct child of repair-7"
         not in pis005a_failures
     )
     assert "PIS-004A replacement-ref topology metadata is present" in pis004a_failures
@@ -958,7 +1140,7 @@ def test_full_report_builders_reject_redirected_replacement_namespace(
         for failure in pis005a_failures
     )
     assert (
-        "PIS-005A candidate is not the exact direct child of repair-6"
+        "PIS-005A candidate is not the exact direct child of repair-7"
         in pis005a_failures
     )
     assert any(
@@ -1108,6 +1290,107 @@ def test_full_report_builders_reject_candidate_ref_absence_and_predecessor_drift
         assert "PIS-004A exact PIS-005A successor identity is invalid" in pis004a_failures
 
 
+def _write_completed_review_files(repository: Path) -> dict[str, str]:
+    candidate = _git(repository, "rev-parse", "HEAD^{commit}")
+    candidate_tree = _git(repository, "rev-parse", "HEAD^{tree}")
+    contract_path = repository / pis005a_check.CONTRACT_REL
+    contract = json.loads(contract_path.read_text(encoding="utf-8"))
+    contract["status"] = "candidate_independent_review_complete"
+    contract["next_action"] = "stop_before_separate_e2_node_005_entry_decision"
+    review = contract["independent_review"]
+    assert isinstance(review, dict)
+    review.update(
+        {
+            "reviewed_candidate_commit": candidate,
+            "reviewed_candidate_tree": candidate_tree,
+            "clean_detached_worktree_verified": True,
+            "remote_identity_verified": True,
+            "focused_gate_passed": True,
+            "critical_findings": 0,
+            "high_findings": 0,
+            "medium_findings": 0,
+            "low_findings": 0,
+            "open_findings": 0,
+            "implementation_review_complete": True,
+        }
+    )
+    contract_path.write_text(
+        json.dumps(contract, indent=2, ensure_ascii=False) + "\n",
+        encoding="utf-8",
+    )
+
+    review_path = repository / pis005a_check.REVIEW_RECORD_REL
+    review_path.write_text(
+        "\n".join(
+            (
+                "# PIS-005A Independent Implementation Review",
+                "",
+                "Status: independent implementation review complete; no open findings.",
+                f"Reviewed exact implementation commit: `{candidate}`.",
+                f"Reviewed exact tree: `{candidate_tree}`.",
+                "Review method: independent read-only Codex review in a clean detached worktree.",
+                "Candidate freeze complete: `true`.",
+                "Clean detached worktree verified: `true`.",
+                "Remote identity verified: `true`.",
+                "Focused gate passed: `true`.",
+                "Implementation review complete: `true`.",
+                "Human UAT complete: `false`.",
+                "Live remote transport authorized: `false`.",
+                "Release or promotion authorized: `false`.",
+                "Critical findings: `0`.",
+                "High findings: `0`.",
+                "Medium findings: `0`.",
+                "Low findings: `0`.",
+                "Open findings: `0`.",
+                "E2-NODE-005 status: blocked; separate entry decision required.",
+                "Current governed tool count: exactly `24`.",
+                "",
+                "The exact implementation candidate was independently reviewed "
+                "in a clean detached worktree.",
+                "",
+            )
+        ),
+        encoding="utf-8",
+    )
+
+    foundation_path = repository / pis005a_check.DOC_REL
+    foundation = foundation_path.read_text(encoding="utf-8").replace(
+        "Status: exact implementation candidate frozen; independent review pending.",
+        "Status: independent implementation review complete; no open findings.",
+        1,
+    )
+    foundation_path.write_text(
+        foundation
+        + "\n"
+        + f"Reviewed exact implementation commit: `{candidate}`.\n"
+        + f"Reviewed exact tree: `{candidate_tree}`.\n",
+        encoding="utf-8",
+    )
+    return {
+        "candidate": candidate,
+        "candidate_tree": candidate_tree,
+    }
+
+
+def _commit_disposition(repository: Path) -> str:
+    _git(repository, "add", "-A")
+    _git(repository, "commit", "-q", "-m", "record exact independent review")
+    disposition = _git(repository, "rev-parse", "HEAD^{commit}")
+    _git(
+        repository,
+        "update-ref",
+        f"refs/remotes/origin/{pis005a_check.BRANCH}",
+        disposition,
+    )
+    return disposition
+
+
+def _record_completed_review(repository: Path) -> dict[str, str]:
+    topology = _write_completed_review_files(repository)
+    topology["disposition"] = _commit_disposition(repository)
+    return topology
+
+
 def _initialize_full_report_candidate_repository(tmp_path: Path) -> Path:
     repository = tmp_path / "full-report-repository"
     git_executable = shutil.which("git", path=os.defpath)
@@ -1159,7 +1442,7 @@ def _initialize_full_report_candidate_repository(tmp_path: Path) -> Path:
             destination.unlink()
 
     _git(repository, "add", "-A")
-    _git(repository, "commit", "-q", "-m", "PIS-005A repair-7 full report fixture")
+    _git(repository, "commit", "-q", "-m", "PIS-005A repair-8 full report fixture")
     candidate = _git(repository, "rev-parse", "HEAD")
     for branch, commit, _tree in pis005a_check._PREDECESSOR_REFS:  # noqa: SLF001
         _git(repository, "update-ref", f"refs/heads/{branch}", commit)
@@ -1189,6 +1472,7 @@ def _initialize_exact_candidate_repository(
         pis005a_check._REPAIR_3_BRANCH,  # noqa: SLF001
         pis005a_check._REPAIR_4_BRANCH,  # noqa: SLF001
         pis005a_check._REPAIR_5_BRANCH,  # noqa: SLF001
+        pis005a_check._REPAIR_6_BRANCH,  # noqa: SLF001
         pis005a_check.REPAIR_BASE_BRANCH,
         pis005a_check.BRANCH,
     )
@@ -1200,6 +1484,7 @@ def _initialize_exact_candidate_repository(
         "repair-4",
         "repair-5",
         "repair-6",
+        "repair-7",
         "candidate",
     )
     history = repository / "history.txt"
@@ -1234,8 +1519,10 @@ def _initialize_exact_candidate_repository(
     monkeypatch.setattr(pis005a_check, "_REPAIR_4_TREE", trees[4])
     monkeypatch.setattr(pis005a_check, "_REPAIR_5_COMMIT", commits[5])
     monkeypatch.setattr(pis005a_check, "_REPAIR_5_TREE", trees[5])
-    monkeypatch.setattr(pis005a_check, "REPAIR_BASE_COMMIT", commits[6])
-    monkeypatch.setattr(pis005a_check, "REPAIR_BASE_TREE", trees[6])
+    monkeypatch.setattr(pis005a_check, "_REPAIR_6_COMMIT", commits[6])
+    monkeypatch.setattr(pis005a_check, "_REPAIR_6_TREE", trees[6])
+    monkeypatch.setattr(pis005a_check, "REPAIR_BASE_COMMIT", commits[7])
+    monkeypatch.setattr(pis005a_check, "REPAIR_BASE_TREE", trees[7])
     monkeypatch.setattr(
         pis005a_check,
         "_PREDECESSOR_REFS",
@@ -1244,14 +1531,14 @@ def _initialize_exact_candidate_repository(
     monkeypatch.setattr(
         pis005a_check,
         "_REPAIR_PARENT_CHAIN",
-        tuple((commits[index], commits[index - 1]) for index in range(2, 7)),
+        tuple((commits[index], commits[index - 1]) for index in range(2, 8)),
     )
-    monkeypatch.setattr(pis005a_check, "REJECTED_CANDIDATE_COMMITS", set(commits[1:7]))
+    monkeypatch.setattr(pis005a_check, "REJECTED_CANDIDATE_COMMITS", set(commits[1:8]))
     return {
-        "candidate": commits[7],
-        "candidate_tree": trees[7],
-        "repair_base": commits[6],
-        "repair_base_tree": trees[6],
+        "candidate": commits[8],
+        "candidate_tree": trees[8],
+        "repair_base": commits[7],
+        "repair_base_tree": trees[7],
     }
 
 
