@@ -8,11 +8,11 @@ Source commit: `e8e6a75ca3d76a233243f5e890091f3c95731da9`.
 
 Security prerequisite: `83db1196213b0e4e7de5d97ab0fb37b934ca4ab7`.
 
-Branch: `codex/enterprise-e2-pis005a-review-repair-6`.
+Branch: `codex/enterprise-e2-pis005a-review-repair-7`.
 
-Frozen repair source: branch `origin/codex/enterprise-e2-pis005a-review-repair-5`, commit
-`cedcf5d0bf3baeab12f54600a247a61a4671d7f9`, tree
-`6e4c4097680c97c77913ba10054dbb5e234abe4c`.
+Frozen repair source: branch `origin/codex/enterprise-e2-pis005a-review-repair-6`, commit
+`735877b2bb387a50dfbd376d6d3d8c047fd49c8f`, tree
+`04edcda705e8ab75b0a37eecb70dce7fafabe544`.
 
 Rejected predecessor evidence remains unchanged:
 
@@ -30,9 +30,12 @@ Rejected predecessor evidence remains unchanged:
   `44952292c183b4a481f15dc691e6c04e90e45d55`; and
 - branch `codex/enterprise-e2-pis005a-review-repair-5`, commit
   `cedcf5d0bf3baeab12f54600a247a61a4671d7f9`, tree
-  `6e4c4097680c97c77913ba10054dbb5e234abe4c`.
+  `6e4c4097680c97c77913ba10054dbb5e234abe4c`; and
+- branch `codex/enterprise-e2-pis005a-review-repair-6`, commit
+  `735877b2bb387a50dfbd376d6d3d8c047fd49c8f`, tree
+  `04edcda705e8ab75b0a37eecb70dce7fafabe544`.
 
-None of the five rejected exact candidates is relabeled or mutated by this fresh repair-6
+None of the six rejected exact candidates is relabeled or mutated by this fresh repair-7
 candidate.
 
 Current governed tool count: exactly `24`.
@@ -229,14 +232,15 @@ native/legacy restart classification, symlink/temp/permission/owner/link-count/c
 attacks, child-process crashes around commit, post-finalization same-UID mutation detection on the
 next restart, passive FIFO rejection with bounded startup completion, authority-anchor and
 review-lifecycle mutation, exact one-commit PIS-005A successor topology in named and detached modes,
-predecessor-ref drift, exact evidence vocabulary, validation-error redaction, and
-database/evidence canaries.
+raw-object replacement/graft rejection, inherited Git object-resolution environment sanitization,
+predecessor-ref drift, exact evidence vocabulary, validation-error redaction, and database/evidence
+canaries.
 
 After focused and broader checks pass, a separate reviewer should reproduce the exact pushed
 candidate in a clean detached worktree:
 
 ```sh
-git fetch origin refs/heads/codex/enterprise-e2-pis005a-review-repair-6:refs/heads/codex/enterprise-e2-pis005a-review-repair-6 refs/heads/codex/enterprise-e2-pis005a-review-repair-6:refs/remotes/origin/codex/enterprise-e2-pis005a-review-repair-6
+git fetch origin refs/heads/codex/enterprise-e2-pis005a-review-repair-7:refs/heads/codex/enterprise-e2-pis005a-review-repair-7 refs/heads/codex/enterprise-e2-pis005a-review-repair-7:refs/remotes/origin/codex/enterprise-e2-pis005a-review-repair-7
 git worktree add --detach /tmp/ithildin-pis005a-review <candidate_commit>
 cd /tmp/ithildin-pis005a-review
 make production-identity-storage-pis-005a-check
@@ -247,6 +251,9 @@ its own commit hash. The descendant review-record commit binds that exact candid
 tree, proves it is an ancestor, and is restricted to the contract, review record, status document,
 and no executable registration path. This avoids circular self-hashing while preventing any
 post-review implementation change from being hidden in the review-record commit.
+The external exact commit/tree/live-remote preflight freezes the pending repair-7 identity. Any
+separate structurally valid repair-6 child is a new candidate requiring its own preflight and fresh
+review rather than inheriting repair-7 review evidence.
 
 Automated checks and synthetic fixtures are evidence only. They do not establish live transport,
 private-key custody, production identity, human UAT, release acceptance, or production promotion.

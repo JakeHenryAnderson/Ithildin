@@ -144,6 +144,8 @@ def test_pis005a_successor_rejects_unrelated_detached_commit() -> None:
         "fce0a3668db5150cf0aa75de1fd914b296a2e099",
         "1542bd0469e18a0ae52cc48920f30b4e41518513",
         "afd13f98440d4cd9c032b6a996db133bdf78055d",
+        "22566cae4a1bc84dca20747d7bd1531d77d7f025",
+        pis004a_check._PIS005A_REPAIR_5_COMMIT,  # noqa: SLF001
         pis004a_check.PIS005A_REPAIR_BASE_COMMIT,
     ],
 )

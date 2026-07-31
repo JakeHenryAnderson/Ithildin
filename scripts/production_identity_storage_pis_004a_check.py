@@ -5,6 +5,8 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
+import shutil
 import subprocess
 import tomllib
 from pathlib import Path
@@ -26,12 +28,12 @@ PIS005A_CONTRACT_REL = Path(
 SOURCE_COMMIT = "e86f5a19e4e067d73141246f78304597e6cc28a0"
 SOURCE_TREE = "6dbbcf0bef3320dfdfa4142f2d30b798b01511d0"
 BRANCH = "codex/enterprise-e2-pis004a-review-repair"
-PIS005A_SUCCESSOR_BRANCH = "codex/enterprise-e2-pis005a-review-repair-6"
+PIS005A_SUCCESSOR_BRANCH = "codex/enterprise-e2-pis005a-review-repair-7"
 PIS005A_SUCCESSOR_BASE_COMMIT = "83db1196213b0e4e7de5d97ab0fb37b934ca4ab7"
 PIS005A_SUCCESSOR_BASE_TREE = "86731324feec59596146a1149cdde69f47dd58d0"
-PIS005A_REPAIR_BASE_BRANCH = "codex/enterprise-e2-pis005a-review-repair-5"
-PIS005A_REPAIR_BASE_COMMIT = "cedcf5d0bf3baeab12f54600a247a61a4671d7f9"
-PIS005A_REPAIR_BASE_TREE = "6e4c4097680c97c77913ba10054dbb5e234abe4c"
+PIS005A_REPAIR_BASE_BRANCH = "codex/enterprise-e2-pis005a-review-repair-6"
+PIS005A_REPAIR_BASE_COMMIT = "735877b2bb387a50dfbd376d6d3d8c047fd49c8f"
+PIS005A_REPAIR_BASE_TREE = "04edcda705e8ab75b0a37eecb70dce7fafabe544"
 _PIS005A_ORIGINAL_BRANCH = "codex/enterprise-e2-pis005a-node-identity"
 _PIS005A_ORIGINAL_COMMIT = "fce0a3668db5150cf0aa75de1fd914b296a2e099"
 _PIS005A_ORIGINAL_TREE = "331adb70f2c2c24def540c3576fc6876e33c478c"
@@ -44,6 +46,9 @@ _PIS005A_REPAIR_3_TREE = "49e958caeba4f3bce51feaa4e842f8f622c00d4a"
 _PIS005A_REPAIR_4_BRANCH = "codex/enterprise-e2-pis005a-review-repair-4"
 _PIS005A_REPAIR_4_COMMIT = "22566cae4a1bc84dca20747d7bd1531d77d7f025"
 _PIS005A_REPAIR_4_TREE = "44952292c183b4a481f15dc691e6c04e90e45d55"
+_PIS005A_REPAIR_5_BRANCH = "codex/enterprise-e2-pis005a-review-repair-5"
+_PIS005A_REPAIR_5_COMMIT = "cedcf5d0bf3baeab12f54600a247a61a4671d7f9"
+_PIS005A_REPAIR_5_TREE = "6e4c4097680c97c77913ba10054dbb5e234abe4c"
 _PIS005A_PREDECESSOR_REFS = (
     (
         BRANCH,
@@ -54,19 +59,22 @@ _PIS005A_PREDECESSOR_REFS = (
     (_PIS005A_REPAIR_2_BRANCH, _PIS005A_REPAIR_2_COMMIT, _PIS005A_REPAIR_2_TREE),
     (_PIS005A_REPAIR_3_BRANCH, _PIS005A_REPAIR_3_COMMIT, _PIS005A_REPAIR_3_TREE),
     (_PIS005A_REPAIR_4_BRANCH, _PIS005A_REPAIR_4_COMMIT, _PIS005A_REPAIR_4_TREE),
+    (_PIS005A_REPAIR_5_BRANCH, _PIS005A_REPAIR_5_COMMIT, _PIS005A_REPAIR_5_TREE),
     (PIS005A_REPAIR_BASE_BRANCH, PIS005A_REPAIR_BASE_COMMIT, PIS005A_REPAIR_BASE_TREE),
 )
 _PIS005A_REPAIR_PARENT_CHAIN = (
     (_PIS005A_REPAIR_2_COMMIT, _PIS005A_ORIGINAL_COMMIT),
     (_PIS005A_REPAIR_3_COMMIT, _PIS005A_REPAIR_2_COMMIT),
     (_PIS005A_REPAIR_4_COMMIT, _PIS005A_REPAIR_3_COMMIT),
-    (PIS005A_REPAIR_BASE_COMMIT, _PIS005A_REPAIR_4_COMMIT),
+    (_PIS005A_REPAIR_5_COMMIT, _PIS005A_REPAIR_4_COMMIT),
+    (PIS005A_REPAIR_BASE_COMMIT, _PIS005A_REPAIR_5_COMMIT),
 )
 PIS005A_REJECTED_COMMITS = {
     _PIS005A_ORIGINAL_COMMIT,
     _PIS005A_REPAIR_2_COMMIT,
     _PIS005A_REPAIR_3_COMMIT,
     _PIS005A_REPAIR_4_COMMIT,
+    _PIS005A_REPAIR_5_COMMIT,
     PIS005A_REPAIR_BASE_COMMIT,
 }
 PIS004A_REVIEW_COMMIT = "e8e6a75ca3d76a233243f5e890091f3c95731da9"
@@ -77,6 +85,29 @@ REPAIR_BASELINE_COMMIT = "0c40e553a75ca8c94640c2d34a110f3ce05bb792"
 PIS004A_SCHEMA_FINGERPRINT = (
     "sha256:ca52764e2c4544446f0a1379abc60ec6d74a9320222509974d1cb35c1c955114"
 )
+_UNSAFE_GIT_ENVIRONMENT_NAMES = {
+    "GIT_ALTERNATE_OBJECT_DIRECTORIES",
+    "GIT_CEILING_DIRECTORIES",
+    "GIT_COMMON_DIR",
+    "GIT_CONFIG",
+    "GIT_CONFIG_COUNT",
+    "GIT_CONFIG_GLOBAL",
+    "GIT_CONFIG_NOSYSTEM",
+    "GIT_CONFIG_PARAMETERS",
+    "GIT_CONFIG_SYSTEM",
+    "GIT_DIR",
+    "GIT_DISCOVERY_ACROSS_FILESYSTEM",
+    "GIT_GRAFT_FILE",
+    "GIT_IMPLICIT_WORK_TREE",
+    "GIT_INDEX_FILE",
+    "GIT_NAMESPACE",
+    "GIT_OBJECT_DIRECTORY",
+    "GIT_PREFIX",
+    "GIT_REPLACE_REF_BASE",
+    "GIT_SHALLOW_FILE",
+    "GIT_WORK_TREE",
+}
+_UNSAFE_GIT_ENVIRONMENT_PREFIXES = ("GIT_CONFIG_KEY_", "GIT_CONFIG_VALUE_")
 PIS_WAIT_ACTION = (
     "await_external_operator_target_and_signed_receipt_inputs_before_separate_"
     "collection_action_authority"
@@ -664,6 +695,7 @@ def _validate_repository(
     contract: dict[str, Any],
     failures: list[str],
 ) -> None:
+    failures.extend(_git_topology_metadata_failures(root))
     if expected_pis004a_schema_fingerprint() != PIS004A_SCHEMA_FINGERPRINT:
         failures.append("PIS-004A schema fingerprint does not match the exact migration DDL")
     current_branch = _git_one(root, "branch", "--show-current")
@@ -1331,17 +1363,165 @@ def _closed_object(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
     return result
 
 
-def _git_ok(root: Path, *args: str) -> bool:
-    return (
-        subprocess.run(
-            ["git", *args],
-            cwd=root,
-            check=False,
-            capture_output=True,
-            text=True,
-        ).returncode
-        == 0
+def _controlled_git_environment() -> dict[str, str]:
+    environment = {
+        key: os.environ[key]
+        for key in ("HOME", "LOGNAME", "SYSTEMROOT", "TMPDIR", "USER")
+        if key in os.environ
+    }
+    environment.update(
+        {
+            "GIT_CONFIG_GLOBAL": os.devnull,
+            "GIT_CONFIG_NOSYSTEM": "1",
+            "GIT_CONFIG_SYSTEM": os.devnull,
+            "GIT_NO_REPLACE_OBJECTS": "1",
+            "GIT_OPTIONAL_LOCKS": "0",
+            "LANG": "C",
+            "LC_ALL": "C",
+            "PATH": os.defpath,
+        }
     )
+    return environment
+
+
+def _git_command(root: Path, *args: str) -> list[str]:
+    executable = shutil.which("git", path=os.defpath)
+    if executable is None:
+        raise FileNotFoundError("system Git executable is unavailable")
+    return [
+        executable,
+        "--no-replace-objects",
+        "--no-optional-locks",
+        "-c",
+        "core.useReplaceRefs=false",
+        "-c",
+        "core.fsmonitor=false",
+        "-c",
+        "core.untrackedCache=false",
+        "-c",
+        f"core.hooksPath={os.devnull}",
+        "-C",
+        str(root),
+        *args,
+    ]
+
+
+def _unsafe_inherited_git_environment() -> tuple[str, ...]:
+    return tuple(
+        sorted(
+            name
+            for name in os.environ
+            if name in _UNSAFE_GIT_ENVIRONMENT_NAMES
+            or name.startswith(_UNSAFE_GIT_ENVIRONMENT_PREFIXES)
+        )
+    )
+
+
+def _metadata_path_present(path: Path) -> bool:
+    return path.exists() or path.is_symlink()
+
+
+def _replace_path_has_entries(path: Path) -> bool | None:
+    try:
+        return (path.is_dir() and any(path.iterdir())) or path.is_symlink()
+    except OSError:
+        return None
+
+
+def _git_topology_metadata_failures(root: Path) -> list[str]:
+    failures: list[str] = []
+    unsafe_environment = _unsafe_inherited_git_environment()
+    if unsafe_environment:
+        failures.append(
+            "PIS-004A inherited Git object or topology environment is unsafe: "
+            + ", ".join(unsafe_environment)
+        )
+
+    refs = _git_output_or_none(root, "for-each-ref", "--format=%(refname)")
+    git_directory = _git_output_or_none(
+        root,
+        "rev-parse",
+        "--path-format=absolute",
+        "--git-dir",
+    )
+    common_directory = _git_output_or_none(
+        root,
+        "rev-parse",
+        "--path-format=absolute",
+        "--git-common-dir",
+    )
+    resolved_graft = _git_output_or_none(
+        root,
+        "rev-parse",
+        "--path-format=absolute",
+        "--git-path",
+        "info/grafts",
+    )
+    resolved_shallow = _git_output_or_none(
+        root,
+        "rev-parse",
+        "--path-format=absolute",
+        "--git-path",
+        "shallow",
+    )
+    if (
+        refs is None
+        or git_directory is None
+        or common_directory is None
+        or resolved_graft is None
+        or resolved_shallow is None
+    ):
+        failures.append("PIS-004A Git topology metadata cannot be verified")
+        return failures
+
+    ref_names = refs.splitlines()
+    git_path = Path(git_directory.strip())
+    common_path = Path(common_directory.strip())
+    replace_entries = _replace_path_has_entries(common_path / "refs/replace")
+    if replace_entries is None:
+        failures.append("PIS-004A Git topology metadata cannot be verified")
+    elif (
+        any(
+            ref.startswith("refs/replace/") or "/refs/replace/" in ref
+            for ref in ref_names
+        )
+        or replace_entries
+    ):
+        failures.append("PIS-004A replacement-ref topology metadata is present")
+
+    graft_paths = {
+        Path(resolved_graft.strip()),
+        common_path / "info/grafts",
+        git_path / "info/grafts",
+    }
+    if any(_metadata_path_present(path) for path in graft_paths):
+        failures.append("PIS-004A legacy graft topology metadata is present")
+
+    shallow_paths = {
+        Path(resolved_shallow.strip()),
+        common_path / "shallow",
+        git_path / "shallow",
+    }
+    if any(_metadata_path_present(path) for path in shallow_paths):
+        failures.append("PIS-004A shallow topology metadata is present")
+    return failures
+
+
+def _git_ok(root: Path, *args: str) -> bool:
+    try:
+        return (
+            subprocess.run(
+                _git_command(root, *args),
+                cwd=root,
+                env=_controlled_git_environment(),
+                check=False,
+                capture_output=True,
+                text=True,
+            ).returncode
+            == 0
+        )
+    except OSError:
+        return False
 
 
 def _git_one(root: Path, *args: str) -> str:
@@ -1349,24 +1529,32 @@ def _git_one(root: Path, *args: str) -> str:
 
 
 def _git_output(root: Path, *args: str) -> str:
-    result = subprocess.run(
-        ["git", *args],
-        cwd=root,
-        check=False,
-        capture_output=True,
-        text=True,
-    )
+    try:
+        result = subprocess.run(
+            _git_command(root, *args),
+            cwd=root,
+            env=_controlled_git_environment(),
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+    except OSError:
+        return ""
     return result.stdout if result.returncode == 0 else ""
 
 
 def _git_output_or_none(root: Path, *args: str) -> str | None:
-    result = subprocess.run(
-        ["git", *args],
-        cwd=root,
-        check=False,
-        capture_output=True,
-        text=True,
-    )
+    try:
+        result = subprocess.run(
+            _git_command(root, *args),
+            cwd=root,
+            env=_controlled_git_environment(),
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+    except OSError:
+        return None
     return result.stdout if result.returncode == 0 else None
 
 
