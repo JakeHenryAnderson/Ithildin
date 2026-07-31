@@ -8,7 +8,11 @@ Source commit: `e8e6a75ca3d76a233243f5e890091f3c95731da9`.
 
 Security prerequisite: `83db1196213b0e4e7de5d97ab0fb37b934ca4ab7`.
 
-Branch: `codex/enterprise-e2-pis005a-review-repair-3`.
+Branch: `codex/enterprise-e2-pis005a-review-repair-4`.
+
+Frozen repair source: branch `origin/codex/enterprise-e2-pis005a-review-repair-3`, commit
+`afd13f98440d4cd9c032b6a996db133bdf78055d`, tree
+`49e958caeba4f3bce51feaa4e842f8f622c00d4a`.
 
 Rejected predecessor evidence remains unchanged:
 
@@ -17,9 +21,13 @@ Rejected predecessor evidence remains unchanged:
   `331adb70f2c2c24def540c3576fc6876e33c478c`; and
 - branch `codex/enterprise-e2-pis005a-review-repair-2`, commit
   `1542bd0469e18a0ae52cc48920f30b4e41518513`, tree
-  `ba9a40e929ff330c15c6c23766006eb1c26878ef`.
+  `ba9a40e929ff330c15c6c23766006eb1c26878ef`; and
+- branch `codex/enterprise-e2-pis005a-review-repair-3`, commit
+  `afd13f98440d4cd9c032b6a996db133bdf78055d`, tree
+  `49e958caeba4f3bce51feaa4e842f8f622c00d4a`.
 
-Neither rejected exact candidate is relabeled or mutated by this third candidate.
+None of the three rejected exact candidates is relabeled or mutated by this fresh repair-4
+candidate.
 
 Current governed tool count: exactly `24`.
 
@@ -131,16 +139,57 @@ PIS-005A moves the coordinated local SQLite schema to version `7` and minimum wr
 only exact `node_workload_*` objects. Existing `nodes`, `node_nonces`, and other local-preview
 tables are not silently promoted into enterprise identity authority.
 
-Migration from schema 6 takes a private verified pre-v7 backup before the atomic schema change.
-The source logical digest is derived from the already locked connection, and a temporary backup
-must match that locked snapshot before it can be promoted or receive a receipt. The compared
-database remains bound through one open file descriptor across private-permission enforcement,
-fsync, atomic promotion, exact inode verification, receipt digest construction, and a final
-post-receipt identity and byte check. Temporary-path or promoted-path substitution fails before
-the schema transaction can commit and removes the unblessed backup and receipt. The migration
-verifies exact table and index SQL, columns, constraints, unexpected prefixed objects, and foreign
-keys. Older writers fail closed on schema 7. Replacement completion has its own timestamp while
-the original `operator_revoked`, `key_compromise`, or `scope_revoked` cause remains immutable.
+Every backup-requiring migration path uses one caller-owned `BackupGuard`, including the shared
+pre-v4 path and the PIS-005A pre-v7 path. After `BEGIN IMMEDIATE` and source validation, the guard
+holds the database-directory descriptor plus verified backup and receipt descriptors until after
+SQLite commit classification, postcommit verification or bounded repair, directory fsync, and
+finalization. The migration owner retains the SQLite connection but cannot issue `COMMIT` for a
+guarded path.
+
+The guard derives the source logical digest from the already locked connection. It creates a
+unique private `0600` no-follow temporary backup, verifies its bytes, logical state, integrity,
+ownership, permissions, link count, and device/inode identity through the held descriptor, then
+publishes two no-clobber hardlink names: the canonical backup and a hidden content-addressed
+SHA-256 anchor. The canonical and anchor names must resolve to that same verified inode with the
+exact expected link count. It applies the same dual-name protocol to the exact canonical receipt
+JSON. The receipt binds the verified backup device and inode so the committed restart state can
+distinguish an exact surviving object from an equivalent-byte replacement after process restart.
+The receipt remains a precommit backup-verification receipt and is never rewritten with a committed
+flag.
+
+The guard binds that exact receipt JSON in the existing `app_metadata` table inside the migration
+transaction. Shared pre-v4 migration uses key `migration_backup_receipt_pre_v4_v1`; pre-v7 uses
+`migration_backup_receipt_pre_v7_v1`. Native target-schema databases have no marker, while migrated
+target-schema databases must carry the exact marker. The guard rechecks all held descriptors,
+aliases, receipt fields, source provenance, and marker equality immediately before owning
+`COMMIT`. Commit failure is classified as either a known precommit `DatabaseBackupError`, an
+ambiguous `DatabaseMigrationOutcomeUnknown`, or a committed-but-not-finalized
+`DatabaseBackupRecoveryRequired`; a postcommit failure is never described as rolled back.
+
+Restart classification is descriptor-based. Old schema with no marker can create or safely reuse
+a locked-source-matching backup, finish a missing receipt, or adopt verified repair-3 schema-6
+prepared artifacts, upgrading a verified repair-3 receipt to the self-describing repair-4 receipt
+before retry. Old schema with a marker fails. A native target schema with no marker and no
+artifacts is normal. A target schema with an exact marker and valid dual aliases is committed and
+valid. If exactly one alias is substituted or missing, the guard can restore only a hardlink to
+the held surviving verified inode, fsync the directory, then fail startup once with recovery
+required; the next startup verifies the committed state. An invalid receipt projection can be
+restored exactly from the transaction marker and a surviving verified receipt alias. If no backup
+alias still names the verified object, equivalent bytes are not copied and blessed as exact-object
+continuity: startup halts for recovery. Target schema without a marker plus legacy repair-3
+artifacts is ambiguous and is not auto-blessed. Competing content-addressed anchors fail closed.
+
+The database directory must be a real, current-user-owned, private directory that is neither a
+symlink nor group/world writable. Required no-follow, descriptor-relative, and hardlink semantics
+must be supported or migration fails closed. Anchors are integrity and recovery aliases, not an
+immutability claim. The protocol does not claim an atomic filesystem-plus-SQLite commit and does
+not continuously protect against an indefinitely active same-UID actor with arbitrary write access
+to the database directory. There is no runtime or automatic restore capability.
+
+The migration continues to verify exact table and index SQL, columns, constraints, unexpected
+prefixed objects, and foreign keys. Older writers fail closed on schema 7. Replacement completion
+has its own timestamp while the original `operator_revoked`, `key_compromise`, or `scope_revoked`
+cause remains immutable.
 
 The historical Attempt 008 reconciliation projection recognizes schema 7 only when both the
 PIS-004A and PIS-005A fingerprints verify exactly and all six `node_workload_*` tables are empty.
@@ -167,15 +216,19 @@ certificate-profile drift, inner/outer certificate algorithm mismatch, wrong pro
 cloned keys, scope/generation mismatch, signature and request-digest mismatch, timestamp and nonce
 replay, concurrent enrollment and request replay, lock-boundary expiry, revocation races,
 replacement expiry/retry and concurrent issuance, replace-not-restore behavior, exact migration
-DDL/constraint drift, interruption/backup/old-writer behavior, authority-anchor and review-lifecycle
-mutation, temporary and post-promotion backup-object substitution, detached PIS-005A successor
-topology, exact evidence vocabulary, validation-error redaction, and database/evidence canaries.
+DDL/constraint drift, interruption/backup/old-writer behavior, every precommit/commit/finalization
+window, dual-name canonical/anchor substitution and bounded exact-inode recovery, source and
+backup/receipt snapshot mismatch, same-content different-inode substitution, marker/receipt and
+native/legacy restart classification, symlink/temp/permission/owner/link-count/competing-anchor
+attacks, child-process crashes around commit, post-finalization same-UID mutation detection on the
+next restart, authority-anchor and review-lifecycle mutation, detached PIS-005A successor topology,
+exact evidence vocabulary, validation-error redaction, and database/evidence canaries.
 
 After focused and broader checks pass, a separate reviewer should reproduce the exact pushed
 candidate in a clean detached worktree:
 
 ```sh
-git fetch origin refs/heads/codex/enterprise-e2-pis005a-review-repair-3:refs/remotes/origin/codex/enterprise-e2-pis005a-review-repair-3
+git fetch origin refs/heads/codex/enterprise-e2-pis005a-review-repair-4:refs/remotes/origin/codex/enterprise-e2-pis005a-review-repair-4
 git worktree add --detach /tmp/ithildin-pis005a-review <candidate_commit>
 cd /tmp/ithildin-pis005a-review
 make production-identity-storage-pis-005a-check
@@ -196,7 +249,9 @@ PIS-005A is not a live TLS listener, live mTLS, certificate issuance or CA priva
 Node private-key custody or non-exportability, remote Node transport, production identity, remote
 administration, multi-tenant hosting, runtime PostgreSQL, enterprise RBAC, effect execution,
 supported scale or performance certification, human UAT completion, release acceptance, or
-production promotion.
+production promotion. It also does not claim atomic filesystem-plus-SQLite commit, immutable backup
+anchors, continuous protection against an indefinitely active same-UID database-directory writer,
+or automatic database restore.
 
 ## Explicit next stop
 

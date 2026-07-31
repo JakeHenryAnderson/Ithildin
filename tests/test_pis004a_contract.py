@@ -123,11 +123,21 @@ def test_pis005a_successor_rejects_unrelated_detached_commit() -> None:
     )
 
 
-def test_pis005a_successor_rejects_rejected_predecessor_and_contract_drift() -> None:
+@pytest.mark.parametrize(
+    "rejected_predecessor",
+    [
+        "fce0a3668db5150cf0aa75de1fd914b296a2e099",
+        "1542bd0469e18a0ae52cc48920f30b4e41518513",
+        "afd13f98440d4cd9c032b6a996db133bdf78055d",
+    ],
+)
+def test_pis005a_successor_rejects_rejected_predecessor_and_contract_drift(
+    rejected_predecessor: str,
+) -> None:
     failures = pis004a_check._pis005a_successor_checkout_failures(  # noqa: SLF001
         current_branch="",
         head_name="HEAD",
-        head_oid="fce0a3668db5150cf0aa75de1fd914b296a2e099",
+        head_oid=rejected_predecessor,
         remote_successor_oid="c" * 40,
         porcelain="",
         contract_bindings_valid=False,

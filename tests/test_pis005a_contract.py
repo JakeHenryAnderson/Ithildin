@@ -86,6 +86,23 @@ def test_contract_rejects_secret_persistence_or_automatic_down_migration() -> No
     assert "PIS-005A persistence or rollback boundary is invalid" in failures
 
 
+def test_contract_rejects_weakened_migration_guard_or_atomicity_overclaim() -> None:
+    contract = copy.deepcopy(_contract())
+    persistence = contract["persistence"]
+    assert isinstance(persistence, dict)
+    persistence["migration_backup_guard_owns_commit"] = False
+    persistence["pre_migration_backup_device_inode_receipt_binding_required"] = False
+    persistence["migration_commit_marker_keys"] = ["migration_backup_receipt_pre_v7_v1"]
+    persistence["atomic_filesystem_and_sqlite_commit_claimed"] = True
+    persistence[
+        "continuous_protection_against_indefinitely_active_same_uid_directory_writer_claimed"
+    ] = True
+
+    failures = pis005a_check.validate_contract(contract)
+
+    assert "PIS-005A persistence or rollback boundary is invalid" in failures
+
+
 def test_contract_keeps_live_remote_ticket_blocked() -> None:
     contract = copy.deepcopy(_contract())
     work_packages = contract["work_packages"]

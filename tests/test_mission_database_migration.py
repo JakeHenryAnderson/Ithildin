@@ -10,14 +10,18 @@ import sys
 from pathlib import Path
 from types import ModuleType
 
+import ithildin_api.database_migration_backup as migration_backup
 import ithildin_api.trusted_host_promotion_v2_migration as migration
 import pytest
 from ithildin_api.database import initialize_database
 from ithildin_api.database_migration_backup import (
+    PRE_V4_MARKER_KEY,
     DatabaseBackupError,
+    content_addressed_anchor_path,
     pre_v4_backup_paths,
 )
 from ithildin_api.trusted_host_promotion_v2_migration import DatabaseMigrationError
+from ithildin_schemas import canonical_json
 
 V3_BASELINE_COMMIT = "3967046333fcf70e9ad218284c232a162e1ec15f"
 MISSION_TABLES = (
@@ -120,6 +124,23 @@ def test_v3_upgrade_creates_private_backup_receipt_and_restore_only_copy(
         }
     assert backup_metadata["schema_version"] == "3"
     assert not (set(MISSION_TABLES) & backup_tables)
+    backup_anchor = content_addressed_anchor_path(
+        backup_path,
+        str(receipt["backup_sha256"]),
+    )
+    receipt_anchor = content_addressed_anchor_path(
+        receipt_path,
+        migration_backup._bytes_digest(receipt_path.read_bytes()),  # noqa: SLF001
+    )
+    assert backup_path.stat().st_ino == backup_anchor.stat().st_ino
+    assert receipt_path.stat().st_ino == receipt_anchor.stat().st_ino
+    with sqlite3.connect(db_path) as connection:
+        marker = connection.execute(
+            "SELECT value FROM app_metadata WHERE key = ?",
+            (PRE_V4_MARKER_KEY,),
+        ).fetchone()
+    assert marker == (receipt_path.read_text(encoding="utf-8").rstrip("\n"),)
+    initialize_database(db_path)
 
 
 def test_interrupted_v3_upgrade_rolls_back_and_reuses_exact_backup(
@@ -189,7 +210,7 @@ def test_backup_receipt_tamper_blocks_retry(tmp_path: Path) -> None:
     _, receipt_path = pre_v4_backup_paths(db_path)
     receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
     receipt["source_schema_version"] = "2"
-    receipt_path.write_text(json.dumps(receipt), encoding="utf-8")
+    receipt_path.write_text(canonical_json(receipt) + "\n", encoding="utf-8")
     receipt_path.chmod(0o600)
 
     with pytest.raises(DatabaseBackupError, match="source_schema_version mismatch"):

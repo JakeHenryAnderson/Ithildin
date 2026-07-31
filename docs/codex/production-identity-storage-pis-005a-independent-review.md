@@ -41,7 +41,7 @@ Current governed tool count: exactly `24`.
 ## Pending Review Procedure
 
 The exact implementation candidate is frozen and awaits independent review. The reviewer must fetch
-`origin/codex/enterprise-e2-pis005a-review-repair-3`, check out the exact candidate commit in a clean
+`origin/codex/enterprise-e2-pis005a-review-repair-4`, check out the exact candidate commit in a clean
 detached worktree, verify that the fetched remote identity, detached `HEAD`, and exact tree match,
 and run:
 
@@ -50,25 +50,50 @@ make production-identity-storage-pis-005a-check
 ```
 
 This is a fresh review of the entire repaired candidate, not a review limited to the repair diff.
-Both predecessor candidates are evidence only and remain rejected:
+All three predecessor candidates are evidence only and remain rejected:
 
 - `codex/enterprise-e2-pis005a-node-identity`,
   `fce0a3668db5150cf0aa75de1fd914b296a2e099`, tree
   `331adb70f2c2c24def540c3576fc6876e33c478c`; and
 - `codex/enterprise-e2-pis005a-review-repair-2`,
   `1542bd0469e18a0ae52cc48920f30b4e41518513`, tree
-  `ba9a40e929ff330c15c6c23766006eb1c26878ef`.
+  `ba9a40e929ff330c15c6c23766006eb1c26878ef`; and
+- `codex/enterprise-e2-pis005a-review-repair-3`,
+  `afd13f98440d4cd9c032b6a996db133bdf78055d`, tree
+  `49e958caeba4f3bce51feaa4e842f8f622c00d4a`.
 
 The fresh review must re-evaluate the entire candidate and independently verify every repair area:
 
-- locked-source backup provenance, stable verified-object binding, pre-promotion pathname
-  substitution rejection, post-promotion inode/byte revalidation, and safe cleanup;
+- caller-owned guard coverage for every shared pre-v4 and PIS-005A pre-v7 backup-requiring path,
+  with no direct owner `COMMIT` while a guard exists;
+- locked-source provenance and dual no-clobber canonical/content-addressed hardlink publication for
+  both backup and receipt, with stable descriptors retained through finalization and exact backup
+  device/inode identity carried in the precommit receipt for self-describing restart verification;
+- exact precommit receipt marker binding in existing `app_metadata`, commit ownership and outcome
+  classification, and no postcommit failure reported as rolled back;
+- descriptor-based restart classification, safe adoption of verified repair-3 schema-6 prepared
+  artifacts, native target-schema distinction, legacy target-without-marker ambiguity, and
+  competing-anchor rejection;
+- bounded one-alias exact-inode repair, exact receipt projection restoration, repair-3 receipt
+  upgrade before retry, and halt when neither backup alias preserves the receipt-bound exact-object
+  continuity even if equivalent bytes survive on a different inode;
+- deterministic substitution and crash coverage at helper-return/pre-DDL, during DDL,
+  post-schema/precommit, after the final precommit check, during commit, and
+  postcommit/pre-finalize;
+- trusted/private/non-symlink directory enforcement plus unsupported no-follow/hardlink failure,
+  permission, ownership, link-count, symlink, temp, canonical, anchor, marker, receipt, in-place,
+  snapshot, and same-content-different-inode attack coverage;
 - exact PIS-004A gate recognition of the contract-bound named and detached PIS-005A successor,
   with unrelated and rejected predecessor topology failing closed;
 - persisted trust-anchor/application-key-ID revalidation and canonical request cross-binding;
 - durable ordinary enrollment expiry at the exact boundary;
 - strict older-than nonce pruning with restart, replay, and concurrency behavior; and
 - immutable original revocation cause with separately recorded replacement completion.
+
+The reviewer must also verify the explicit residual nonclaims: the protocol is not an atomic
+filesystem-plus-SQLite commit, content-addressed anchors are recovery aliases rather than immutable
+objects, the protocol does not continuously defeat an indefinitely active same-UID actor with
+arbitrary database-directory write, and no runtime or automatic restore capability exists.
 
 The final record may be written only after the independent review reports zero open Critical,
 High, Medium, and Low findings. The post-review descendant may change only this record, the

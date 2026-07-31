@@ -25,7 +25,7 @@ NEXT_TICKET_REL = Path(
     "docs/codex/production-identity-storage-pis-005a-remote-transport-next-ticket.md"
 )
 REVIEW_RECORD_REL = Path("docs/codex/production-identity-storage-pis-005a-independent-review.md")
-BRANCH = "codex/enterprise-e2-pis005a-review-repair-3"
+BRANCH = "codex/enterprise-e2-pis005a-review-repair-4"
 SOURCE_COMMIT = "e8e6a75ca3d76a233243f5e890091f3c95731da9"
 SOURCE_TREE = "1a5a6c818bf3fd5e17bcffedaae4cf5497e1e6f2"
 SECURITY_PREREQUISITE_COMMIT = "83db1196213b0e4e7de5d97ab0fb37b934ca4ab7"
@@ -182,7 +182,12 @@ _EXPECTED_NEGATIVE_CASES = [
     "migration_exact_ddl_constraint_index_and_foreign_key_drift",
     "migration_interruption_backup_reuse_and_old_writer_refusal",
     "migration_locked_source_substituted_backup_provenance_mismatch",
-    "migration_verified_backup_object_path_and_post_promotion_substitution",
+    "migration_guard_timing_windows_and_commit_outcome_classification",
+    "migration_dual_alias_canonical_anchor_substitution_and_exact_repair",
+    "migration_marker_receipt_native_legacy_restart_state_classification",
+    "migration_symlink_temp_permission_owner_link_count_and_competing_anchor_attacks",
+    "migration_child_process_precommit_and_postcommit_crash_schedules",
+    "migration_post_finalization_same_uid_mutation_detected_on_restart_nonclaim",
     "pis004a_detached_successor_exact_topology",
     "replacement_preserves_original_revocation_cause",
     "authority_anchor_and_review_lifecycle_gate_mutation",
@@ -202,6 +207,10 @@ _EXPECTED_NONCLAIMS = [
     "enterprise RBAC",
     "effect execution authority",
     "supported scale or performance certification",
+    "atomic filesystem and SQLite commit",
+    "continuous protection against an indefinitely active same-UID database-directory writer",
+    "immutable backup anchors",
+    "automatic database restore",
     "human UAT completion",
     "release acceptance",
     "production promotion",
@@ -395,7 +404,27 @@ def _validate_base(value: object, failures: list[str]) -> None:
         "canonical_key_prerequisite_tree": SECURITY_PREREQUISITE_TREE,
         "implementation_baseline_commit": SECURITY_PREREQUISITE_COMMIT,
         "implementation_baseline_tree": SECURITY_PREREQUISITE_TREE,
+        "repair_source_branch": "origin/codex/enterprise-e2-pis005a-review-repair-3",
+        "repair_source_commit": "afd13f98440d4cd9c032b6a996db133bdf78055d",
+        "repair_source_tree": "49e958caeba4f3bce51feaa4e842f8f622c00d4a",
         "branch": BRANCH,
+        "rejected_predecessors": [
+            {
+                "branch": "codex/enterprise-e2-pis005a-node-identity",
+                "commit": "fce0a3668db5150cf0aa75de1fd914b296a2e099",
+                "tree": "331adb70f2c2c24def540c3576fc6876e33c478c",
+            },
+            {
+                "branch": "codex/enterprise-e2-pis005a-review-repair-2",
+                "commit": "1542bd0469e18a0ae52cc48920f30b4e41518513",
+                "tree": "ba9a40e929ff330c15c6c23766006eb1c26878ef",
+            },
+            {
+                "branch": "codex/enterprise-e2-pis005a-review-repair-3",
+                "commit": "afd13f98440d4cd9c032b6a996db133bdf78055d",
+                "tree": "49e958caeba4f3bce51feaa4e842f8f622c00d4a",
+            },
+        ],
         "e1_human_uat_complete": False,
     }
     if base != expected:
@@ -523,11 +552,41 @@ def _validate_persistence(value: object, failures: list[str]) -> None:
         "schema_fingerprint_status": "exact_ddl_bound",
         "schema_fingerprint_domain": "ITHILDIN-PIS005A-SCHEMA-V1",
         "minimum_writer_after_activation": "7",
-        "migration_mode": "atomic_offline_local_startup",
+        "migration_mode": (
+            "sqlite_transactional_offline_local_startup_with_separate_durable_artifact_protocol"
+        ),
         "pre_migration_backup_required": True,
+        "pre_migration_backup_caller_owned_guard_required": True,
         "pre_migration_backup_locked_source_logical_match_required": True,
-        "pre_migration_backup_stable_object_binding_required": True,
-        "pre_migration_backup_post_promotion_identity_revalidation_required": True,
+        "pre_migration_backup_stable_descriptor_lifetime_through_finalization_required": True,
+        "pre_migration_backup_dual_hardlink_aliases_required": True,
+        "pre_migration_backup_canonical_anchor_same_inode_required": True,
+        "pre_migration_backup_device_inode_receipt_binding_required": True,
+        "pre_migration_backup_no_clobber_initial_publication_required": True,
+        "pre_migration_receipt_precommit_only": True,
+        "migration_commit_marker_table": "app_metadata",
+        "migration_commit_marker_keys": [
+            "migration_backup_receipt_pre_v4_v1",
+            "migration_backup_receipt_pre_v7_v1",
+        ],
+        "migration_backup_guard_owns_commit": True,
+        "migration_outcome_error_classes": [
+            "DatabaseBackupError",
+            "DatabaseMigrationOutcomeUnknown",
+            "DatabaseBackupRecoveryRequired",
+        ],
+        "database_directory_trust": (
+            "current_user_owned_real_directory_not_group_or_world_writable"
+        ),
+        "unsupported_no_follow_or_hardlink_semantics_fail_closed": True,
+        "postcommit_exact_inode_one_alias_repair_allowed": True,
+        "backup_equivalent_byte_copy_auto_recovery_allowed": False,
+        "receipt_projection_restore_from_exact_marker_allowed": True,
+        "committed_restart_self_describing_exact_object_identity_required": True,
+        "atomic_filesystem_and_sqlite_commit_claimed": False,
+        "continuous_protection_against_indefinitely_active_same_uid_directory_writer_claimed": (
+            False
+        ),
         "automatic_down_migration_allowed": False,
         "new_object_prefix": "node_workload_",
         "table_inventory": [
@@ -678,8 +737,8 @@ def _validate_candidate_procedure(value: object, failures: list[str]) -> None:
     expected = {
         "focused_command": "make production-identity-storage-pis-005a-check",
         "independent_review_template": (
-            "git fetch origin refs/heads/codex/enterprise-e2-pis005a-review-repair-3:"
-            "refs/remotes/origin/codex/enterprise-e2-pis005a-review-repair-3 && "
+            "git fetch origin refs/heads/codex/enterprise-e2-pis005a-review-repair-4:"
+            "refs/remotes/origin/codex/enterprise-e2-pis005a-review-repair-4 && "
             "git worktree add --detach /tmp/ithildin-pis005a-review <candidate_commit> && "
             "cd /tmp/ithildin-pis005a-review && "
             "make production-identity-storage-pis-005a-check"

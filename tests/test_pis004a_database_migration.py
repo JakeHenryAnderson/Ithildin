@@ -23,6 +23,7 @@ from ithildin_api.node_configuration_trust import (
 from ithildin_api.nodes import NodeStore
 from ithildin_api.trusted_host_promotion_v2_migration import DatabaseMigrationError
 from ithildin_audit_core import AuditWriter
+from ithildin_schemas import canonical_json
 
 from scripts import (
     local_v1_lv1_003_o4_attempt008_node_identity_reconciliation as node_reconciliation,
@@ -421,7 +422,7 @@ def test_pre_v7_receipt_tamper_blocks_retry(
     _, receipt_path = pre_v7_backup_paths(db_path)
     receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
     receipt["migration_target_schema_version"] = "6"
-    receipt_path.write_text(json.dumps(receipt), encoding="utf-8")
+    receipt_path.write_text(canonical_json(receipt) + "\n", encoding="utf-8")
     receipt_path.chmod(0o600)
 
     with pytest.raises(DatabaseBackupError, match="migration_target_schema_version mismatch"):
@@ -461,49 +462,70 @@ def _assert_attempt008_schema_rejected(connection: sqlite3.Connection) -> None:
 
 
 def _load_v4_migration(tmp_path: Path) -> ModuleType:
-    source = subprocess.run(
-        [
-            "git",
-            "show",
-            f"{V4_SOURCE_COMMIT}:apps/api/src/ithildin_api/trusted_host_promotion_v2_migration.py",
-        ],
-        check=True,
-        capture_output=True,
-    ).stdout
-    module_path = tmp_path / "frozen_v4_migration.py"
-    module_path.write_bytes(source)
-    spec = importlib.util.spec_from_file_location("ithildin_frozen_v4_migration", module_path)
-    assert spec is not None and spec.loader is not None
-    module = importlib.util.module_from_spec(spec)
-    sys.modules[spec.name] = module
-    try:
-        spec.loader.exec_module(module)
-    finally:
-        sys.modules.pop(spec.name, None)
-    return module
+    return _load_frozen_migration(
+        tmp_path,
+        commit=V4_SOURCE_COMMIT,
+        module_name="ithildin_frozen_v4_migration",
+    )
 
 
 def _load_v5_migration(tmp_path: Path) -> ModuleType:
+    return _load_frozen_migration(
+        tmp_path,
+        commit=V5_SOURCE_COMMIT,
+        module_name="ithildin_frozen_v5_migration",
+    )
+
+
+def _load_frozen_migration(
+    tmp_path: Path,
+    *,
+    commit: str,
+    module_name: str,
+) -> ModuleType:
     source = subprocess.run(
         [
             "git",
             "show",
-            f"{V5_SOURCE_COMMIT}:apps/api/src/ithildin_api/trusted_host_promotion_v2_migration.py",
+            f"{commit}:apps/api/src/ithildin_api/trusted_host_promotion_v2_migration.py",
         ],
         check=True,
         capture_output=True,
     ).stdout
-    module_path = tmp_path / "frozen_v5_migration.py"
-    module_path.write_bytes(source)
-    spec = importlib.util.spec_from_file_location(
-        "ithildin_frozen_v5_migration",
-        module_path,
+    backup_source = subprocess.run(
+        [
+            "git",
+            "show",
+            f"{commit}:apps/api/src/ithildin_api/database_migration_backup.py",
+        ],
+        check=True,
+        capture_output=True,
+    ).stdout
+    backup_module_path = tmp_path / f"{module_name}_database_migration_backup.py"
+    backup_module_path.write_bytes(backup_source)
+    backup_spec = importlib.util.spec_from_file_location(
+        f"{module_name}_database_migration_backup",
+        backup_module_path,
     )
+    assert backup_spec is not None and backup_spec.loader is not None
+    backup_module = importlib.util.module_from_spec(backup_spec)
+    sys.modules[backup_spec.name] = backup_module
+    try:
+        backup_spec.loader.exec_module(backup_module)
+    finally:
+        sys.modules.pop(backup_spec.name, None)
+
+    module_path = tmp_path / f"{module_name}.py"
+    module_path.write_bytes(source)
+    spec = importlib.util.spec_from_file_location(module_name, module_path)
     assert spec is not None and spec.loader is not None
     module = importlib.util.module_from_spec(spec)
     sys.modules[spec.name] = module
+    current_backup_module = sys.modules["ithildin_api.database_migration_backup"]
+    sys.modules["ithildin_api.database_migration_backup"] = backup_module
     try:
         spec.loader.exec_module(module)
     finally:
+        sys.modules["ithildin_api.database_migration_backup"] = current_backup_module
         sys.modules.pop(spec.name, None)
     return module

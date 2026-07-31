@@ -7,9 +7,14 @@ import sqlite3
 from pathlib import Path
 
 from ithildin_api.database_migration_backup import (
+    BackupGuard,
     DatabaseBackupError,
-    ensure_pre_v4_backup,
-    ensure_pre_v7_backup,
+    DatabaseBackupRecoveryRequired,
+    DatabaseMigrationOutcomeUnknown,
+    prepare_committed_backup_guard,
+    prepare_pre_v4_backup_guard,
+    prepare_pre_v7_backup_guard,
+    require_no_migration_marker,
 )
 
 DATABASE_SCHEMA_VERSION = "7"
@@ -545,6 +550,7 @@ def initialize_or_migrate_database(db_path: Path) -> None:
 
     db_path.parent.mkdir(parents=True, exist_ok=True)
     connection = sqlite3.connect(db_path, isolation_level=None)
+    guard: BackupGuard | None = None
     try:
         connection.execute("PRAGMA foreign_keys = OFF")
         connection.execute("BEGIN IMMEDIATE")
@@ -552,48 +558,55 @@ def initialize_or_migrate_database(db_path: Path) -> None:
         minimum_writer = _metadata_value(connection, "minimum_writer_version")
         _validate_version_metadata(current=current, minimum_writer=minimum_writer)
         had_user_tables = _has_user_tables(connection)
-        if current in {"4", "5", "6"}:
-            ensure_pre_v7_backup(
-                locked_source=connection,
-                db_path=db_path,
-                source_schema_version=current,
-                source_minimum_writer_version=minimum_writer,
-            )
-        elif current != DATABASE_SCHEMA_VERSION and (current is not None or had_user_tables):
-            ensure_pre_v4_backup(
-                locked_source=connection,
-                db_path=db_path,
-                source_schema_version=current or "unversioned",
-                source_minimum_writer_version=minimum_writer,
-            )
-        _create_metadata_table(connection)
 
         if current == DATABASE_SCHEMA_VERSION:
             _verify_v2_schema(connection)
             _verify_mission_schema(connection)
             verify_pis004a_schema(connection)
             verify_pis005a_schema(connection)
-        elif current == "6":
-            _verify_v2_schema(connection)
-            _verify_mission_schema(connection)
-            verify_pis004a_schema(connection)
+            guard = prepare_committed_backup_guard(
+                locked_source=connection,
+                db_path=db_path,
+            )
+            if guard is None:
+                connection.execute("COMMIT")
+            else:
+                guard.verify_committed_restart(connection)
+            return
+
+        require_no_migration_marker(connection)
+        _validate_source_before_migration(connection, current=current)
+        if current in {"4", "5", "6"}:
+            guard = prepare_pre_v7_backup_guard(
+                locked_source=connection,
+                db_path=db_path,
+                source_schema_version=current,
+                source_minimum_writer_version=minimum_writer,
+            )
+        elif current != DATABASE_SCHEMA_VERSION and (current is not None or had_user_tables):
+            guard = prepare_pre_v4_backup_guard(
+                locked_source=connection,
+                db_path=db_path,
+                source_schema_version=current or "unversioned",
+                source_minimum_writer_version=minimum_writer,
+            )
+        if guard is not None:
+            guard.mark_migrating()
+        _create_metadata_table(connection)
+
+        if current == "6":
             _migrate_v6_to_v7(connection)
         elif current == "5":
-            _verify_pis004a_v5_schema(connection)
             _migrate_v5_to_v6(connection)
             _migrate_v6_to_v7(connection)
         elif current == "4":
-            _verify_v2_schema(connection)
-            _verify_mission_schema(connection)
             _migrate_v4_to_v6(connection)
             _migrate_v6_to_v7(connection)
         elif current == "3":
-            _verify_v2_schema(connection)
             _migrate_v3_to_v4(connection)
             _migrate_v4_to_v6(connection)
             _migrate_v6_to_v7(connection)
         elif current == "2":
-            _verify_v2_schema(connection, require_placement_states=False)
             _migrate_v2_to_v3(connection)
             _migrate_v3_to_v4(connection)
             _migrate_v4_to_v6(connection)
@@ -612,13 +625,47 @@ def initialize_or_migrate_database(db_path: Path) -> None:
         _verify_mission_schema(connection)
         verify_pis004a_schema(connection)
         verify_pis005a_schema(connection)
-        connection.execute("COMMIT")
+        if guard is None:
+            connection.execute("COMMIT")
+        else:
+            guard.bind_commit_marker(connection)
+            guard.commit_transaction(connection)
+    except DatabaseBackupRecoveryRequired:
+        if connection.in_transaction:
+            connection.execute("ROLLBACK")
+        raise
+    except DatabaseMigrationOutcomeUnknown:
+        raise
     except (DatabaseBackupError, DatabaseMigrationError, sqlite3.DatabaseError):
         if connection.in_transaction:
             connection.execute("ROLLBACK")
         raise
     finally:
+        if guard is not None:
+            guard.close()
         connection.close()
+
+
+def _validate_source_before_migration(
+    connection: sqlite3.Connection,
+    *,
+    current: str | None,
+) -> None:
+    """Validate the locked source before preparing its durable backup guard."""
+
+    if current == "6":
+        _verify_v2_schema(connection)
+        _verify_mission_schema(connection)
+        verify_pis004a_schema(connection)
+    elif current == "5":
+        _verify_pis004a_v5_schema(connection)
+    elif current == "4":
+        _verify_v2_schema(connection)
+        _verify_mission_schema(connection)
+    elif current == "3":
+        _verify_v2_schema(connection)
+    elif current == "2":
+        _verify_v2_schema(connection, require_placement_states=False)
 
 
 def verify_database_v2(db_path: Path) -> None:
