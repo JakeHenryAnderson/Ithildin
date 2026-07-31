@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -22,8 +23,9 @@ from scripts import production_identity_storage_pis_005a_check as pis005a_check
 ROOT = Path(__file__).resolve().parents[1]
 RECORD_REL = Path("docs/codex/e2-lineage-reconciliation-checkpoint.json")
 DOC_REL = Path("docs/codex/e2-lineage-reconciliation-checkpoint.md")
-BRANCH = "codex/e2-control-tower-lineage-reconciliation-repair-1"
+BRANCH = "codex/e2-control-tower-lineage-reconciliation-repair-2"
 REJECTED_BRANCH = "codex/e2-control-tower-lineage-reconciliation"
+REPAIR_1_BRANCH = "codex/e2-control-tower-lineage-reconciliation-repair-1"
 
 MAIN_COMMIT = "cc4de49be0ac7915b33c412fc9b06128fa690a26"
 MAIN_TREE = "139d2036f8da6f2e806f11bdbcc9d6451c34e94b"
@@ -46,6 +48,8 @@ M_COMMIT = "b06e8399674f17c188f6502c320a6d2746d24532"
 M_TREE = "855dbd27cc6cc9788a955ff7a6a10e12583c3332"
 REJECTED_COMMIT = "51c625a3f3538308c356747e170c9f79f83df41f"
 REJECTED_TREE = "99329bbf0e0da7b40d6a1e0ba9ba7dac8557a7ad"
+REPAIR_1_COMMIT = "10ae0aa7e513edc6bb34cfa26eb5ee8dc1e51f72"
+REPAIR_1_TREE = "0ced465af50d35cca92ca9413c54dfb5fd64c478"
 
 PROTECTED_REFS = {
     "main": MAIN_COMMIT,
@@ -76,6 +80,7 @@ PROTECTED_REFS = {
     "codex/enterprise-e2-pis005a-review-repair-8": REPAIR_8_COMMIT,
     "codex/enterprise-e2-pis005a-review-repair-9": DISPOSITION_COMMIT,
     REJECTED_BRANCH: REJECTED_COMMIT,
+    REPAIR_1_BRANCH: REPAIR_1_COMMIT,
 }
 
 EXPECTED_FROZEN_GATE_LABELS = (
@@ -129,12 +134,13 @@ R_PATHS = {
     "scripts/review_docs.py": "M",
     "tests/test_e2_lineage_reconciliation_check.py": "A",
 }
-REPAIR_PATHS = {
+REPAIR_1_PATHS = {
     "docs/codex/e2-lineage-reconciliation-checkpoint.json": "M",
     "docs/codex/e2-lineage-reconciliation-checkpoint.md": "M",
     "scripts/e2_lineage_reconciliation_check.py": "M",
     "tests/test_e2_lineage_reconciliation_check.py": "M",
 }
+REPAIR_2_PATHS = dict(REPAIR_1_PATHS)
 
 EXPECTED_RECORD: dict[str, Any] = {
     "schema_version": "1",
@@ -205,12 +211,29 @@ EXPECTED_RECORD: dict[str, Any] = {
             },
             "finding": "H-01_production_cli_mandatory_control_bypass",
         },
+        "rejected_repair_1_candidate": {
+            "branch": REPAIR_1_BRANCH,
+            "commit": REPAIR_1_COMMIT,
+            "tree": REPAIR_1_TREE,
+            "sole_parent": REJECTED_COMMIT,
+            "review_status": "rejected_after_high_finding",
+            "review_findings": {
+                "critical": 0,
+                "high": 1,
+                "medium": 0,
+                "low": 0,
+            },
+            "finding": "H-01_inherited_pytest_execution_control_bypass",
+        },
         "reconciliation_candidate": {
             "branch": BRANCH,
             "commit_binding": "checked_out_local_branch_tip",
             "tree_binding": "checked_out_commit_tree",
-            "sole_parent": REJECTED_COMMIT,
-            "repair_status": "H-01_repaired_pending_fresh_independent_review",
+            "sole_parent": REPAIR_1_COMMIT,
+            "repair_status": (
+                "H-01_explicit_and_inherited_execution_control_repaired_"
+                "pending_fresh_independent_review"
+            ),
         },
     },
     "protected_refs": PROTECTED_REFS,
@@ -323,6 +346,7 @@ def _fixed_identity_failures(root: Path) -> list[str]:
         F_COMMIT: (F_TREE, DISPOSITION_COMMIT),
         M_COMMIT: (M_TREE, f"{F_COMMIT} {PRODUCT_COMMIT}"),
         REJECTED_COMMIT: (REJECTED_TREE, M_COMMIT),
+        REPAIR_1_COMMIT: (REPAIR_1_TREE, REJECTED_COMMIT),
     }
     for commit, identity in expected.items():
         if _identity(root, commit) != identity:
@@ -346,6 +370,8 @@ def _fixed_identity_failures(root: Path) -> list[str]:
         failures.append("integration merge first-parent inventory changed")
     if _changed_entries(root, M_COMMIT, REJECTED_COMMIT) != R_PATHS:
         failures.append("rejected reconciliation candidate inventory changed")
+    if _changed_entries(root, REJECTED_COMMIT, REPAIR_1_COMMIT) != REPAIR_1_PATHS:
+        failures.append("rejected repair-1 candidate inventory changed")
     if _changed_entries(root, REVIEWED_COMMIT, DISPOSITION_COMMIT) != {
         relative: "M" for relative in FROZEN_PIS_REVIEW_DOCS
     }:
@@ -410,9 +436,9 @@ def validate_git_bindings(root: Path) -> dict[str, Any]:
     parents = _git_or_none(root, "show", "-s", "--format=%P", "HEAD")
     branch = _git_or_none(root, "symbolic-ref", "--short", "HEAD")
     local = _git_or_none(root, "rev-parse", f"refs/heads/{BRANCH}^{{commit}}")
-    if not head or branch != BRANCH or local != head or parents != REJECTED_COMMIT:
+    if not head or branch != BRANCH or local != head or parents != REPAIR_1_COMMIT:
         failures.append("reconciliation candidate branch, identity, or sole parent is invalid")
-    if head and _changed_entries(root, REJECTED_COMMIT, head) != REPAIR_PATHS:
+    if head and _changed_entries(root, REPAIR_1_COMMIT, head) != REPAIR_2_PATHS:
         failures.append("reconciliation candidate path inventory is invalid")
     status = _git_or_none(root, "status", "--porcelain=v1", "--untracked-files=all")
     if status is None or status:
@@ -573,27 +599,126 @@ def validate_navigation(root: Path) -> list[str]:
     return failures
 
 
+def _controlled_subprocess_environment(
+    runtime_root: Path, *, pythonpath: Path | None = None
+) -> dict[str, str]:
+    temporary = runtime_root / "tmp"
+    temporary.mkdir()
+    environment = {
+        "HOME": str(runtime_root),
+        "LANG": "C",
+        "LC_ALL": "C",
+        "PATH": os.defpath,
+        "PYTHONDONTWRITEBYTECODE": "1",
+        "PYTHONHASHSEED": "0",
+        "PYTHONNOUSERSITE": "1",
+        "PYTEST_DISABLE_PLUGIN_AUTOLOAD": "1",
+        "TMPDIR": str(temporary),
+    }
+    if pythonpath is not None:
+        environment["PYTHONPATH"] = str(pythonpath.resolve(strict=True))
+    return environment
+
+
+def _controlled_launcher_environment() -> dict[str, str]:
+    return {
+        "LANG": "C",
+        "LC_ALL": "C",
+        "PATH": os.defpath,
+        "PYTHONDONTWRITEBYTECODE": "1",
+        "PYTHONHASHSEED": "0",
+        "PYTHONNOUSERSITE": "1",
+        "PYTEST_DISABLE_PLUGIN_AUTOLOAD": "1",
+    }
+
+
+def _failed_command_result(summary: str, *, exit_code: int | None) -> dict[str, Any]:
+    return {"status": "failed", "exit_code": exit_code, "summary": summary}
+
+
 def _run_command(
-    command: list[str], cwd: Path, *, environment: dict[str, str] | None = None
-) -> tuple[bool, str]:
-    try:
-        result = subprocess.run(
-            command,
-            cwd=cwd,
-            env=environment,
-            check=False,
-            capture_output=True,
-            text=True,
-            timeout=1_800,
+    command: list[str], cwd: Path, *, pythonpath: Path | None = None
+) -> tuple[dict[str, Any], str]:
+    with tempfile.TemporaryDirectory(prefix="ithildin-e2-runtime-") as temporary:
+        environment = _controlled_subprocess_environment(
+            Path(temporary), pythonpath=pythonpath
         )
-    except (OSError, subprocess.TimeoutExpired) as exc:
-        return False, str(exc)
+        try:
+            result = subprocess.run(
+                command,
+                cwd=cwd,
+                env=environment,
+                check=False,
+                capture_output=True,
+                text=True,
+                timeout=1_800,
+            )
+        except subprocess.TimeoutExpired as exc:
+            return _failed_command_result(str(exc), exit_code=None), str(exc)
+        except OSError as exc:
+            return _failed_command_result(str(exc), exit_code=None), str(exc)
     output = "\n".join(part for part in (result.stdout, result.stderr) if part).strip()
     summary = output.splitlines()[-1] if output else "no output"
     if result.returncode != 0:
         tail = "\n".join(output.splitlines()[-40:])
-        return False, tail or f"exit code {result.returncode}"
-    return True, summary
+        return (
+            _failed_command_result(
+                tail or f"exit code {result.returncode}", exit_code=result.returncode
+            ),
+            output,
+        )
+    return {"status": "passed", "exit_code": 0, "summary": summary}, output
+
+
+_MATRIX_SUCCESS = re.compile(
+    r"93 passed in [0-9]+(?:\.[0-9]+)?s(?: \([^\r\n]+\))?"
+)
+_MATRIX_FORBIDDEN_RESULTS = (
+    "collected",
+    "deselected",
+    "skipped",
+    "xfailed",
+    "xpassed",
+    "warning",
+    "no tests ran",
+    "failed",
+    "error",
+)
+
+
+def _matrix_pass_count(result: dict[str, Any], output: str) -> int | None:
+    if (
+        set(result) != {"status", "exit_code", "summary"}
+        or result.get("status") != "passed"
+        or result.get("exit_code") != 0
+    ):
+        return None
+    summary = result.get("summary")
+    if not isinstance(summary, str) or _MATRIX_SUCCESS.fullmatch(summary) is None:
+        return None
+    lowered = output.lower()
+    if any(forbidden in lowered for forbidden in _MATRIX_FORBIDDEN_RESULTS):
+        return None
+    return 93
+
+
+def _matrix_command(test_path: Path, disposition_root: Path) -> list[str]:
+    return [
+        sys.executable,
+        "-m",
+        "pytest",
+        str(test_path),
+        "--rootdir",
+        str(disposition_root),
+        "-c",
+        os.devnull,
+        "-o",
+        "addopts=",
+        "-p",
+        "no:cacheprovider",
+        "--color=no",
+        "-q",
+    ]
 
 
 @contextmanager
@@ -651,21 +776,29 @@ def _isolated_named_checkout(
         yield checkout
 
 
-def run_frozen_gates(root: Path) -> tuple[list[str], dict[str, str]]:
+def run_frozen_gates(root: Path) -> tuple[list[str], dict[str, dict[str, Any]]]:
     failures: list[str] = []
-    summaries: dict[str, str] = {}
+    summaries: dict[str, dict[str, Any]] = {}
 
     def run(
         label: str,
         command: list[str],
         cwd: Path,
         *,
-        env: dict[str, str] | None = None,
+        pythonpath: Path | None = None,
     ) -> None:
-        passed, summary = _run_command(command, cwd, environment=env)
-        summaries[label] = summary
-        if not passed:
-            failures.append(f"{label} failed:\n{summary}")
+        result, output = _run_command(command, cwd, pythonpath=pythonpath)
+        if label == "complete_repaired_pis_fixture_matrix":
+            passed_test_count = _matrix_pass_count(result, output)
+            result["passed_test_count"] = passed_test_count
+            if passed_test_count != 93:
+                result["status"] = "failed"
+                failures.append(
+                    f"{label} did not prove exactly 93 passing tests:\n{result['summary']}"
+                )
+        summaries[label] = result
+        if result["status"] != "passed":
+            failures.append(f"{label} failed:\n{result['summary']}")
 
     try:
         with _detached_worktree(root, PRODUCT_COMMIT) as product_root:
@@ -676,7 +809,7 @@ def run_frozen_gates(root: Path) -> tuple[list[str], dict[str, str]]:
             )
     except RuntimeError as exc:
         label = "exact_product_checkpoint"
-        summaries[label] = f"not executed: {exc}"
+        summaries[label] = _failed_command_result(f"not executed: {exc}", exit_code=None)
         failures.append(f"{label} failed:\n{exc}")
 
     disposition_labels = (
@@ -703,28 +836,20 @@ def run_frozen_gates(root: Path) -> tuple[list[str], dict[str, str]]:
                 test_path.write_bytes(
                     _git_blob(root, F_COMMIT, "tests/test_pis005a_contract.py")
                 )
-                environment = os.environ.copy()
-                environment["PYTHONPATH"] = str(disposition_root)
                 run(
                     "complete_repaired_pis_fixture_matrix",
-                    [
-                        sys.executable,
-                        "-m",
-                        "pytest",
-                        str(test_path),
-                        "--rootdir",
-                        str(disposition_root),
-                        "-p",
-                        "no:cacheprovider",
-                        "-q",
-                    ],
+                    _matrix_command(test_path, disposition_root),
                     disposition_root,
-                    env=environment,
+                    pythonpath=disposition_root,
                 )
     except (OSError, RuntimeError) as exc:
         for label in disposition_labels:
             if label not in summaries:
-                summaries[label] = f"not executed: {exc}"
+                summaries[label] = _failed_command_result(
+                    f"not executed: {exc}", exit_code=None
+                )
+                if label == "complete_repaired_pis_fixture_matrix":
+                    summaries[label]["passed_test_count"] = None
                 failures.append(f"{label} failed:\n{exc}")
 
     try:
@@ -740,16 +865,37 @@ def run_frozen_gates(root: Path) -> tuple[list[str], dict[str, str]]:
             )
     except RuntimeError as exc:
         label = "exact_e2_preparation"
-        summaries[label] = f"not executed: {exc}"
+        summaries[label] = _failed_command_result(f"not executed: {exc}", exit_code=None)
         failures.append(f"{label} failed:\n{exc}")
     return failures, summaries
 
 
-def _frozen_evidence_failures(summaries: dict[str, str]) -> list[str]:
-    if set(summaries) != set(EXPECTED_FROZEN_GATE_LABELS):
-        return ["frozen gate summary inventory is missing, partial, or extra"]
-    if any(not isinstance(summary, str) or not summary.strip() for summary in summaries.values()):
-        return ["frozen gate summary inventory contains an empty or invalid result"]
+def _frozen_evidence_failures(summaries: dict[str, dict[str, Any]]) -> list[str]:
+    if tuple(summaries) != EXPECTED_FROZEN_GATE_LABELS:
+        return ["frozen gate summary inventory is missing, partial, extra, or reordered"]
+    failures: list[str] = []
+    for label, result in summaries.items():
+        expected_keys = {"status", "exit_code", "summary"}
+        if label == "complete_repaired_pis_fixture_matrix":
+            expected_keys.add("passed_test_count")
+        if (
+            not isinstance(result, dict)
+            or set(result) != expected_keys
+            or result.get("status") != "passed"
+            or result.get("exit_code") != 0
+            or not isinstance(result.get("summary"), str)
+            or not result["summary"].strip()
+        ):
+            failures.append(f"frozen gate result is missing, malformed, or failed: {label}")
+    matrix = summaries.get("complete_repaired_pis_fixture_matrix", {})
+    if (
+        not isinstance(matrix, dict)
+        or matrix.get("passed_test_count") != 93
+        or _MATRIX_SUCCESS.fullmatch(str(matrix.get("summary", ""))) is None
+    ):
+        failures.append("repaired PIS matrix does not prove exactly 93 passing tests")
+    if failures:
+        return failures
     return []
 
 
@@ -834,7 +980,10 @@ def render_report(report: dict[str, Any]) -> str:
     summaries = report["frozen_gate_summaries"]
     if summaries:
         lines.append("frozen_gate_summaries:")
-        lines.extend(f"- {label}: {summary}" for label, summary in summaries.items())
+        lines.extend(
+            f"- {label}: {result['status']}; {result['summary']}"
+            for label, result in summaries.items()
+        )
     if report["failures"]:
         lines.append("failures:")
         lines.extend(f"- {failure}" for failure in report["failures"])
@@ -846,9 +995,15 @@ def main() -> int:
     parser.add_argument("--json", action="store_true")
     args = parser.parse_args()
     report = build_authoritative_report(ROOT)
-    print(json.dumps(report, indent=2, sort_keys=True) if args.json else render_report(report))
+    print(json.dumps(report, indent=2) if args.json else render_report(report))
     return 0 if report["valid"] else 1
 
 
 if __name__ == "__main__":
+    if not sys.flags.isolated:
+        os.execve(
+            sys.executable,
+            [sys.executable, "-I", str(Path(__file__).resolve()), *sys.argv[1:]],
+            _controlled_launcher_environment(),
+        )
     raise SystemExit(main())

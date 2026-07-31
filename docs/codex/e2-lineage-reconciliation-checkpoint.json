@@ -78,12 +78,26 @@
       },
       "finding": "H-01_production_cli_mandatory_control_bypass"
     },
-    "reconciliation_candidate": {
+    "rejected_repair_1_candidate": {
       "branch": "codex/e2-control-tower-lineage-reconciliation-repair-1",
+      "commit": "10ae0aa7e513edc6bb34cfa26eb5ee8dc1e51f72",
+      "tree": "0ced465af50d35cca92ca9413c54dfb5fd64c478",
+      "sole_parent": "51c625a3f3538308c356747e170c9f79f83df41f",
+      "review_status": "rejected_after_high_finding",
+      "review_findings": {
+        "critical": 0,
+        "high": 1,
+        "medium": 0,
+        "low": 0
+      },
+      "finding": "H-01_inherited_pytest_execution_control_bypass"
+    },
+    "reconciliation_candidate": {
+      "branch": "codex/e2-control-tower-lineage-reconciliation-repair-2",
       "commit_binding": "checked_out_local_branch_tip",
       "tree_binding": "checked_out_commit_tree",
-      "sole_parent": "51c625a3f3538308c356747e170c9f79f83df41f",
-      "repair_status": "H-01_repaired_pending_fresh_independent_review"
+      "sole_parent": "10ae0aa7e513edc6bb34cfa26eb5ee8dc1e51f72",
+      "repair_status": "H-01_explicit_and_inherited_execution_control_repaired_pending_fresh_independent_review"
     }
   },
   "protected_refs": {
@@ -100,7 +114,8 @@
     "codex/enterprise-e2-pis005a-review-repair-7": "3c4060ca997089228debfff7c082f6fd5c96fb04",
     "codex/enterprise-e2-pis005a-review-repair-8": "88f9717198709bfa7b5d520bb4aa41c427543042",
     "codex/enterprise-e2-pis005a-review-repair-9": "afb81bdc023a300ba49d48d5fddcc8babbf44575",
-    "codex/e2-control-tower-lineage-reconciliation": "51c625a3f3538308c356747e170c9f79f83df41f"
+    "codex/e2-control-tower-lineage-reconciliation": "51c625a3f3538308c356747e170c9f79f83df41f",
+    "codex/e2-control-tower-lineage-reconciliation-repair-1": "10ae0aa7e513edc6bb34cfa26eb5ee8dc1e51f72"
   },
   "product_acceptance": {
     "personal_technical_preview_continuation_accepted": true,

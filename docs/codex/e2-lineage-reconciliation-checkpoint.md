@@ -35,8 +35,15 @@ review disposition is layered over that historical snapshot as current PIS statu
   `codex/e2-control-tower-lineage-reconciliation`. Its independent review stopped at
   `C0/H1/M0/L0` after H-01 proved the production CLI could emit valid evidence while bypassing
   mandatory frozen gates and live-ref verification. No review disposition was created.
-- This fresh repair candidate `R1` is the checked-out tip of
-  `codex/e2-control-tower-lineage-reconciliation-repair-1`. Its sole raw parent must be exact `R0`;
+- Rejected repair-1 candidate `R1`: commit
+  `10ae0aa7e513edc6bb34cfa26eb5ee8dc1e51f72`, tree
+  `0ced465af50d35cca92ca9413c54dfb5fd64c478`, sole raw parent `R0`, preserved at
+  `codex/e2-control-tower-lineage-reconciliation-repair-1`. Its independent review stopped at
+  `C0/H1/M0/L0` after H-01 proved caller-controlled pytest settings could collect rather than
+  execute the mandatory matrix while the production CLI emitted authoritative valid evidence.
+  No review disposition was created.
+- This fresh repair-2 candidate `R2` is the checked-out tip of
+  `codex/e2-control-tower-lineage-reconciliation-repair-2`. Its sole raw parent must be exact `R1`;
   the checker reports its exact commit and tree at validation time. This avoids an impossible
   self-referential commit hash while binding the pending candidate to one exact local branch tip.
 
@@ -44,7 +51,7 @@ The source refs for `main`, the product checkpoint, E2 preparation, PIS-004A, ev
 PIS-005A predecessor, and the repair-9 disposition remain pinned in the
 [closed machine-readable record](e2-lineage-reconciliation-checkpoint.json). The reconciliation
 checker compares local, tracking, and live remote identities and fails closed on movement. The
-rejected `R0` branch is itself protected evidence and may not move.
+rejected `R0` and `R1` branches are themselves protected evidence and may not move.
 
 ## Preserved Acceptance And Authority
 
@@ -71,12 +78,15 @@ make e2-lineage-reconciliation-check
 
 The target validates the closed record, exact source commits and trees, raw-parent order, protected
 local/tracking/live refs, clean non-shallow state, unsafe Git metadata and redirects, byte-exact
-product artifacts, frozen PIS review documents, the `F`/`M`/`R0`/`R1` path inventories, 24-tool and
-Gateway ceilings, and all authority nonclaims. The production CLI has no switch, alias, environment
-setting, configuration field, JSON mode, quiet mode, or alternate entry path that can suppress
-mandatory live-ref or frozen-gate validation while producing valid evidence. Unknown arguments are
-rejected before a report is built. A valid JSON report must explicitly contain verified live-ref
-evidence and this closed, nonempty five-result frozen-gate inventory:
+product artifacts, frozen PIS review documents, the `F`/`M`/`R0`/`R1`/`R2` path inventories,
+24-tool and Gateway ceilings, and all authority nonclaims. The production CLI has no switch, alias,
+inherited execution-control input, configuration field, JSON mode, quiet mode, or alternate entry
+path that can suppress mandatory live-ref or frozen-gate validation while producing valid evidence.
+Unknown arguments are rejected before a report is built. Every frozen subprocess receives a closed
+environment rather than the caller's environment. The pytest matrix additionally disables plugin
+autoloading, receives only the exact frozen-D `PYTHONPATH`, and neutralizes configuration addopts.
+A valid JSON report must explicitly contain verified live-ref evidence and this closed, nonempty
+five-result frozen-gate inventory:
 
 - exact product checkpoint at `P`;
 - exact PIS-005A report at `D`;
@@ -84,8 +94,10 @@ evidence and this closed, nonempty five-result frozen-gate inventory:
 - complete repaired PIS fixture and attack matrix from exact `F` and `D`;
 - exact named E2 preparation checkpoint.
 
-Missing, empty, partial, or extra evidence makes the report invalid. The checker uses
-safe temporary detached worktrees to:
+Each result is a closed object containing status, exit code, and summary. The matrix result must
+also prove exactly `93` passing tests; collection-only, zero-test, skipped, deselected,
+xfailed/xpassed, warning-only, malformed, missing, partial, extra, reordered, or merely nonempty
+output is invalid. The checker uses safe temporary detached worktrees to:
 
 - validate the product checkpoint at exact `P`;
 - run both PIS report builders at exact `D`;
@@ -105,8 +117,8 @@ run or claim success for `make release-check` or `make review-candidate`.
 
 ## Next Step
 
-Obtain a complete fresh independent read-only review of the entire exact clean `R1` commit and tree,
-including the H-01 repair and all previously uncompleted review areas. H-01 is
+Obtain a complete fresh independent read-only review of the entire exact clean `R2` commit and tree,
+including both H-01 repairs and every review area not reached after the repair-1 High stop. H-01 is
 implementation-repaired but remains independent-review pending. Only a separate zero-finding
 disposition may create the reviewed reconciliation baseline for a later, separately authorized
 E2-ID-005A implementation lane.
