@@ -76,7 +76,7 @@ def test_e2_contract_rejects_scale_overclaim_or_work_package_reordering() -> Non
 
 
 @pytest.mark.parametrize("checkout_mode", ["named", "detached", "linked"])
-def test_e2_full_report_accepts_clean_exact_pending_repair8_checkout(
+def test_e2_full_report_accepts_clean_exact_pending_repair9_checkout(
     tmp_path: Path,
     checkout_mode: str,
 ) -> None:
@@ -346,7 +346,7 @@ def test_e2_completed_review_does_not_become_entry_authority(
 
     assert report["valid"] is False
     assert (
-        "E2 preparation PIS-005A checkout is not the exact pending repair-8 lifecycle"
+        "E2 preparation PIS-005A checkout is not the exact pending repair-9 lifecycle"
         in _failures(report)
     )
     assert report["status"] == "preparation_complete_implementation_not_authorized"
@@ -369,7 +369,6 @@ def _initialize_e2_candidate_repository(tmp_path: Path) -> Path:
             git_executable,
             "clone",
             "--quiet",
-            "--shared",
             str(enterprise_e2_preparation_check.ROOT),
             str(repository),
         ],
@@ -418,7 +417,7 @@ def _initialize_e2_candidate_repository(tmp_path: Path) -> Path:
             destination.unlink()
 
     _git(repository, "add", "-A")
-    _git(repository, "commit", "-q", "-m", "PIS-005A repair-8 E2 fixture")
+    _git(repository, "commit", "-q", "-m", "PIS-005A repair-9 E2 fixture")
     candidate = _git(repository, "rev-parse", "HEAD")
     _git(
         repository,

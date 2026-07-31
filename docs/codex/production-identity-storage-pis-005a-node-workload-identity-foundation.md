@@ -8,11 +8,11 @@ Source commit: `e8e6a75ca3d76a233243f5e890091f3c95731da9`.
 
 Security prerequisite: `83db1196213b0e4e7de5d97ab0fb37b934ca4ab7`.
 
-Branch: `codex/enterprise-e2-pis005a-review-repair-8`.
+Branch: `codex/enterprise-e2-pis005a-review-repair-9`.
 
-Frozen repair source: branch `origin/codex/enterprise-e2-pis005a-review-repair-7`, commit
-`3c4060ca997089228debfff7c082f6fd5c96fb04`, tree
-`b4ac2880aac3170c463ae9caf27c4206d25f81bf`.
+Frozen repair source: branch `origin/codex/enterprise-e2-pis005a-review-repair-8`, commit
+`88f9717198709bfa7b5d520bb4aa41c427543042`, tree
+`4963c5a5bef659d52ba7490a8c311991c9168e1b`.
 
 Rejected predecessor evidence remains unchanged:
 
@@ -36,9 +36,12 @@ Rejected predecessor evidence remains unchanged:
   `04edcda705e8ab75b0a37eecb70dce7fafabe544`; and
 - branch `codex/enterprise-e2-pis005a-review-repair-7`, commit
   `3c4060ca997089228debfff7c082f6fd5c96fb04`, tree
-  `b4ac2880aac3170c463ae9caf27c4206d25f81bf`.
+  `b4ac2880aac3170c463ae9caf27c4206d25f81bf`; and
+- branch `codex/enterprise-e2-pis005a-review-repair-8`, commit
+  `88f9717198709bfa7b5d520bb4aa41c427543042`, tree
+  `4963c5a5bef659d52ba7490a8c311991c9168e1b`.
 
-None of the seven rejected exact candidates is relabeled or mutated by this fresh repair-8
+None of the eight rejected exact candidates is relabeled or mutated by this fresh repair-9
 candidate.
 
 Current governed tool count: exactly `24`.
@@ -243,7 +246,7 @@ After focused and broader checks pass, a separate reviewer should reproduce the 
 candidate in a clean detached worktree:
 
 ```sh
-git fetch origin refs/heads/codex/enterprise-e2-pis005a-review-repair-8:refs/heads/codex/enterprise-e2-pis005a-review-repair-8 refs/heads/codex/enterprise-e2-pis005a-review-repair-8:refs/remotes/origin/codex/enterprise-e2-pis005a-review-repair-8
+git fetch origin refs/heads/codex/enterprise-e2-pis005a-review-repair-9:refs/heads/codex/enterprise-e2-pis005a-review-repair-9 refs/heads/codex/enterprise-e2-pis005a-review-repair-9:refs/remotes/origin/codex/enterprise-e2-pis005a-review-repair-9
 git worktree add --detach /tmp/ithildin-pis005a-review <candidate_commit>
 cd /tmp/ithildin-pis005a-review
 make production-identity-storage-pis-005a-check
@@ -253,13 +256,13 @@ The pushed review candidate records `candidate_independent_review_pending` witho
 its own commit hash. The descendant review-record commit binds that exact candidate commit and
 tree, proves it is an ancestor, and is restricted to the contract, review record, status document,
 and no executable registration path. The disposition is exactly one commit whose sole raw parent
-is the reviewed repair-8 commit, and its full diff is exactly those three documentation files; it
+is the reviewed repair-9 commit, and its full diff is exactly those three documentation files; it
 does not edit a checker, test, `Makefile`, registry, or runtime path. This avoids circular
 self-hashing while preventing any
 post-review implementation change from being hidden in the review-record commit.
-The external exact commit/tree/live-remote preflight freezes the pending repair-8 identity. Any
-separate structurally valid repair-7 child is a new candidate requiring its own preflight and fresh
-review rather than inheriting repair-8 review evidence.
+The external exact commit/tree/live-remote preflight freezes the pending repair-9 identity. Any
+separate structurally valid repair-8 child is a new candidate requiring its own preflight and fresh
+review rather than inheriting repair-9 review evidence.
 
 Automated checks and synthetic fixtures are evidence only. They do not establish live transport,
 private-key custody, production identity, human UAT, release acceptance, or production promotion.

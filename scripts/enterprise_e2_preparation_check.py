@@ -6,7 +6,6 @@ import argparse
 import hashlib
 import json
 import os
-import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -16,6 +15,7 @@ if __package__ in {None, ""}:
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from scripts import enterprise_e2_scale_fixture
+from scripts import production_identity_storage_pis_005a_check as pis005a_check
 
 ROOT = Path(__file__).resolve().parents[1]
 CONTRACT_REL = Path("docs/codex/enterprise-e2-preparation-contract.json")
@@ -28,12 +28,12 @@ PREPARATION_BRANCH = "codex/enterprise-e2-production-identity-prep"
 PIS004A_BRANCH = "codex/enterprise-e2-pis004a-review-repair"
 PIS004A_SOURCE_COMMIT = "e86f5a19e4e067d73141246f78304597e6cc28a0"
 PIS004A_SOURCE_TREE = "6dbbcf0bef3320dfdfa4142f2d30b798b01511d0"
-PIS005A_BRANCH = "codex/enterprise-e2-pis005a-review-repair-8"
+PIS005A_BRANCH = "codex/enterprise-e2-pis005a-review-repair-9"
 PIS005A_SOURCE_COMMIT = "83db1196213b0e4e7de5d97ab0fb37b934ca4ab7"
 PIS005A_SOURCE_TREE = "86731324feec59596146a1149cdde69f47dd58d0"
-PIS005A_REPAIR_BASE_BRANCH = "codex/enterprise-e2-pis005a-review-repair-7"
-PIS005A_REPAIR_BASE_COMMIT = "3c4060ca997089228debfff7c082f6fd5c96fb04"
-PIS005A_REPAIR_BASE_TREE = "b4ac2880aac3170c463ae9caf27c4206d25f81bf"
+PIS005A_REPAIR_BASE_BRANCH = "codex/enterprise-e2-pis005a-review-repair-8"
+PIS005A_REPAIR_BASE_COMMIT = "88f9717198709bfa7b5d520bb4aa41c427543042"
+PIS005A_REPAIR_BASE_TREE = "4963c5a5bef659d52ba7490a8c311991c9168e1b"
 PIS005A_CONTRACT_REL = Path(
     "docs/codex/production-identity-storage-pis-005a-entry-and-implementation-contract.json"
 )
@@ -484,7 +484,7 @@ def _pis005a_pending_checkout_failures(root: Path) -> list[str]:
         or review.get("implementation_review_complete") is not False
     ):
         failures.append(
-            "E2 preparation PIS-005A checkout is not the exact pending repair-8 lifecycle"
+            "E2 preparation PIS-005A checkout is not the exact pending repair-9 lifecycle"
         )
 
     head = _git_one(root, "rev-parse", "HEAD^{commit}")
@@ -551,9 +551,9 @@ def _pis005a_pending_checkout_failures(root: Path) -> list[str]:
 def _changed_paths(root: Path) -> set[str]:
     paths: set[str] = set()
     for args in (
-        ("diff", "--name-only", f"{BASE_COMMIT}..HEAD"),
-        ("diff", "--name-only"),
-        ("diff", "--cached", "--name-only"),
+        ("diff", "--no-ext-diff", "--name-only", f"{BASE_COMMIT}..HEAD"),
+        ("diff", "--no-ext-diff", "--name-only"),
+        ("diff", "--no-ext-diff", "--cached", "--name-only"),
         ("ls-files", "--others", "--exclude-standard"),
     ):
         output = _git_output(root, *args)
@@ -612,25 +612,7 @@ def _controlled_git_environment() -> dict[str, str]:
 
 
 def _git_command(root: Path, *args: str) -> list[str]:
-    executable = shutil.which("git", path=os.defpath)
-    if executable is None:
-        raise FileNotFoundError("system Git executable is unavailable")
-    return [
-        executable,
-        "--no-replace-objects",
-        "--no-optional-locks",
-        "-c",
-        "core.useReplaceRefs=false",
-        "-c",
-        "core.fsmonitor=false",
-        "-c",
-        "core.untrackedCache=false",
-        "-c",
-        f"core.hooksPath={os.devnull}",
-        "-C",
-        str(root),
-        *args,
-    ]
+    return pis005a_check._git_command(root, *args)  # noqa: SLF001
 
 
 def _unsafe_inherited_git_environment() -> tuple[str, ...]:
@@ -657,6 +639,10 @@ def _replace_path_has_entries(path: Path) -> bool | None:
 
 def _git_topology_metadata_failures(root: Path) -> list[str]:
     failures: list[str] = []
+    if pis005a_check._repository_binding_failures(root):  # noqa: SLF001
+        failures.append(
+            "E2 preparation repository-local Git redirection or worktree binding is unsafe"
+        )
     unsafe_environment = _unsafe_inherited_git_environment()
     if unsafe_environment:
         failures.append(

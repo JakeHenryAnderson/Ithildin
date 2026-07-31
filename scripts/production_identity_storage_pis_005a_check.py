@@ -27,14 +27,14 @@ NEXT_TICKET_REL = Path(
     "docs/codex/production-identity-storage-pis-005a-remote-transport-next-ticket.md"
 )
 REVIEW_RECORD_REL = Path("docs/codex/production-identity-storage-pis-005a-independent-review.md")
-BRANCH = "codex/enterprise-e2-pis005a-review-repair-8"
+BRANCH = "codex/enterprise-e2-pis005a-review-repair-9"
 SOURCE_COMMIT = "e8e6a75ca3d76a233243f5e890091f3c95731da9"
 SOURCE_TREE = "1a5a6c818bf3fd5e17bcffedaae4cf5497e1e6f2"
 SECURITY_PREREQUISITE_COMMIT = "83db1196213b0e4e7de5d97ab0fb37b934ca4ab7"
 SECURITY_PREREQUISITE_TREE = "86731324feec59596146a1149cdde69f47dd58d0"
-REPAIR_BASE_BRANCH = "codex/enterprise-e2-pis005a-review-repair-7"
-REPAIR_BASE_COMMIT = "3c4060ca997089228debfff7c082f6fd5c96fb04"
-REPAIR_BASE_TREE = "b4ac2880aac3170c463ae9caf27c4206d25f81bf"
+REPAIR_BASE_BRANCH = "codex/enterprise-e2-pis005a-review-repair-8"
+REPAIR_BASE_COMMIT = "88f9717198709bfa7b5d520bb4aa41c427543042"
+REPAIR_BASE_TREE = "4963c5a5bef659d52ba7490a8c311991c9168e1b"
 _ORIGINAL_BRANCH = "codex/enterprise-e2-pis005a-node-identity"
 _ORIGINAL_COMMIT = "fce0a3668db5150cf0aa75de1fd914b296a2e099"
 _ORIGINAL_TREE = "331adb70f2c2c24def540c3576fc6876e33c478c"
@@ -53,6 +53,9 @@ _REPAIR_5_TREE = "6e4c4097680c97c77913ba10054dbb5e234abe4c"
 _REPAIR_6_BRANCH = "codex/enterprise-e2-pis005a-review-repair-6"
 _REPAIR_6_COMMIT = "735877b2bb387a50dfbd376d6d3d8c047fd49c8f"
 _REPAIR_6_TREE = "04edcda705e8ab75b0a37eecb70dce7fafabe544"
+_REPAIR_7_BRANCH = "codex/enterprise-e2-pis005a-review-repair-7"
+_REPAIR_7_COMMIT = "3c4060ca997089228debfff7c082f6fd5c96fb04"
+_REPAIR_7_TREE = "b4ac2880aac3170c463ae9caf27c4206d25f81bf"
 _PREDECESSOR_REFS = (
     ("codex/enterprise-e2-pis004a-review-repair", SOURCE_COMMIT, SOURCE_TREE),
     (_ORIGINAL_BRANCH, _ORIGINAL_COMMIT, _ORIGINAL_TREE),
@@ -61,6 +64,7 @@ _PREDECESSOR_REFS = (
     (_REPAIR_4_BRANCH, _REPAIR_4_COMMIT, _REPAIR_4_TREE),
     (_REPAIR_5_BRANCH, _REPAIR_5_COMMIT, _REPAIR_5_TREE),
     (_REPAIR_6_BRANCH, _REPAIR_6_COMMIT, _REPAIR_6_TREE),
+    (_REPAIR_7_BRANCH, _REPAIR_7_COMMIT, _REPAIR_7_TREE),
     (REPAIR_BASE_BRANCH, REPAIR_BASE_COMMIT, REPAIR_BASE_TREE),
 )
 _REPAIR_PARENT_CHAIN = (
@@ -69,7 +73,8 @@ _REPAIR_PARENT_CHAIN = (
     (_REPAIR_4_COMMIT, _REPAIR_3_COMMIT),
     (_REPAIR_5_COMMIT, _REPAIR_4_COMMIT),
     (_REPAIR_6_COMMIT, _REPAIR_5_COMMIT),
-    (REPAIR_BASE_COMMIT, _REPAIR_6_COMMIT),
+    (_REPAIR_7_COMMIT, _REPAIR_6_COMMIT),
+    (REPAIR_BASE_COMMIT, _REPAIR_7_COMMIT),
 )
 REJECTED_CANDIDATE_COMMITS = {
     _ORIGINAL_COMMIT,
@@ -78,6 +83,7 @@ REJECTED_CANDIDATE_COMMITS = {
     _REPAIR_4_COMMIT,
     _REPAIR_5_COMMIT,
     _REPAIR_6_COMMIT,
+    _REPAIR_7_COMMIT,
     REPAIR_BASE_COMMIT,
 }
 TOOL_COUNT = 24
@@ -517,6 +523,11 @@ def _validate_base(value: object, failures: list[str]) -> None:
                 "branch": _REPAIR_6_BRANCH,
                 "commit": _REPAIR_6_COMMIT,
                 "tree": _REPAIR_6_TREE,
+            },
+            {
+                "branch": _REPAIR_7_BRANCH,
+                "commit": _REPAIR_7_COMMIT,
+                "tree": _REPAIR_7_TREE,
             },
             {
                 "branch": REPAIR_BASE_BRANCH,
@@ -969,14 +980,60 @@ def _controlled_git_environment() -> dict[str, str]:
     return environment
 
 
+def _canonical_repository_layout(root: Path) -> tuple[Path, Path, Path] | None:
+    try:
+        canonical_root = root.resolve(strict=True)
+        marker = canonical_root / ".git"
+        if marker.is_symlink():
+            return None
+        if marker.is_dir():
+            git_directory = marker.resolve(strict=True)
+        elif marker.is_file():
+            marker_lines = marker.read_text(encoding="utf-8").splitlines()
+            if len(marker_lines) != 1 or not marker_lines[0].startswith("gitdir: "):
+                return None
+            git_value = Path(marker_lines[0].removeprefix("gitdir: "))
+            if not git_value.is_absolute():
+                git_value = marker.parent / git_value
+            git_directory = git_value.resolve(strict=True)
+        else:
+            return None
+        if not git_directory.is_dir():
+            return None
+        common_marker = git_directory / "commondir"
+        if common_marker.is_symlink():
+            return None
+        if common_marker.exists():
+            common_lines = common_marker.read_text(encoding="utf-8").splitlines()
+            if len(common_lines) != 1 or not common_lines[0]:
+                return None
+            common_value = Path(common_lines[0])
+            if not common_value.is_absolute():
+                common_value = git_directory / common_value
+            common_directory = common_value.resolve(strict=True)
+        else:
+            common_directory = git_directory
+        if not common_directory.is_dir():
+            return None
+    except (OSError, RuntimeError, UnicodeError):
+        return None
+    return canonical_root, git_directory, common_directory
+
+
 def _git_command(root: Path, *arguments: str) -> list[str]:
     executable = shutil.which("git", path=os.defpath)
     if executable is None:
         raise FileNotFoundError("system Git executable is unavailable")
+    layout = _canonical_repository_layout(root)
+    if layout is None:
+        raise FileNotFoundError("repository layout is unavailable or unsafe")
+    canonical_root, git_directory, _common_directory = layout
     return [
         executable,
         "--no-replace-objects",
         "--no-optional-locks",
+        f"--git-dir={git_directory}",
+        f"--work-tree={canonical_root}",
         "-c",
         "core.useReplaceRefs=false",
         "-c",
@@ -986,7 +1043,7 @@ def _git_command(root: Path, *arguments: str) -> list[str]:
         "-c",
         f"core.hooksPath={os.devnull}",
         "-C",
-        str(root),
+        str(canonical_root),
         *arguments,
     ]
 
@@ -1060,8 +1117,186 @@ def _replace_path_has_entries(path: Path) -> bool | None:
         return None
 
 
+def _local_config_entries(
+    root: Path,
+    path: Path,
+) -> list[tuple[str, str]] | None:
+    if path.is_symlink() or (path.exists() and not path.is_file()):
+        return None
+    if not path.exists():
+        return []
+    executable = shutil.which("git", path=os.defpath)
+    if executable is None:
+        return None
+    try:
+        result = subprocess.run(
+            [
+                executable,
+                "config",
+                "--file",
+                str(path),
+                "--no-includes",
+                "--null",
+                "--list",
+            ],
+            cwd=root,
+            env=_controlled_git_environment(),
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+    except OSError:
+        return None
+    if result.returncode != 0:
+        return None
+    entries: list[tuple[str, str]] = []
+    for record in result.stdout.split("\0"):
+        if not record:
+            continue
+        key, separator, value = record.partition("\n")
+        if not separator or not key:
+            return None
+        entries.append((key.casefold(), value))
+    return entries
+
+
+def _unbound_worktree(root: Path) -> Path | None:
+    executable = shutil.which("git", path=os.defpath)
+    if executable is None:
+        return None
+    try:
+        result = subprocess.run(
+            [
+                executable,
+                "--no-replace-objects",
+                "--no-optional-locks",
+                "-c",
+                "core.useReplaceRefs=false",
+                "-C",
+                str(root),
+                "rev-parse",
+                "--show-toplevel",
+            ],
+            cwd=root,
+            env=_controlled_git_environment(),
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        if result.returncode != 0:
+            return None
+        return Path(result.stdout.strip()).resolve(strict=True)
+    except (OSError, RuntimeError, UnicodeError):
+        return None
+
+
+def _repository_binding_failures(root: Path) -> list[str]:
+    failure = "PIS-005A repository-local Git redirection or worktree binding is unsafe"
+    layout = _canonical_repository_layout(root)
+    if layout is None:
+        return [failure]
+    canonical_root, git_directory, common_directory = layout
+    marker = canonical_root / ".git"
+    if marker.is_file():
+        backlink = git_directory / "gitdir"
+        try:
+            backlink_lines = backlink.read_text(encoding="utf-8").splitlines()
+            backlink_value = Path(backlink_lines[0]) if len(backlink_lines) == 1 else None
+            if (
+                backlink.is_symlink()
+                or backlink_value is None
+                or backlink_value.resolve(strict=True) != marker.resolve(strict=True)
+                or git_directory.parent.name != "worktrees"
+                or git_directory.parent.parent.resolve(strict=True) != common_directory
+            ):
+                return [failure]
+        except (OSError, RuntimeError, UnicodeError):
+            return [failure]
+    elif git_directory != common_directory:
+        return [failure]
+    if any(
+        _metadata_path_present(path)
+        for path in {
+            common_directory / "objects/info/alternates",
+            git_directory / "objects/info/alternates",
+        }
+    ):
+        return [failure]
+
+    common_config = common_directory / "config"
+    worktree_config = git_directory / "config.worktree"
+    if not common_config.is_file():
+        return [failure]
+    common_entries = _local_config_entries(canonical_root, common_config)
+    worktree_entries = _local_config_entries(canonical_root, worktree_config)
+    if common_entries is None or worktree_entries is None:
+        return [failure]
+
+    common_values: dict[str, list[str]] = {}
+    for key, value in common_entries:
+        common_values.setdefault(key, []).append(value.casefold())
+    worktree_values: dict[str, list[str]] = {}
+    for key, value in worktree_entries:
+        worktree_values.setdefault(key, []).append(value.casefold())
+
+    unsafe_exact = {
+        "core.alternaterefscommand",
+        "core.attributesfile",
+        "core.excludesfile",
+        "core.sparsecheckout",
+        "core.sparsecheckoutcone",
+        "core.sshcommand",
+        "core.worktree",
+        "diff.external",
+    }
+    unsafe_prefixes = (
+        "include.",
+        "includeif.",
+        "objects.",
+        "refs.",
+        "worktreeconfig.",
+    )
+    all_entries = (*common_entries, *worktree_entries)
+    if any(
+        key in unsafe_exact or key.startswith(unsafe_prefixes)
+        for key, _value in all_entries
+    ):
+        return [failure]
+    if any(
+        key.startswith(("core.", "extensions.", "diff.", "filter."))
+        for key in worktree_values
+    ):
+        return [failure]
+    if common_values.get("core.bare") not in (None, ["false"]):
+        return [failure]
+    if common_values.get("core.repositoryformatversion") not in (None, ["0"]):
+        return [failure]
+    extension_values = common_values.get("extensions.worktreeconfig")
+    if extension_values is not None and (
+        extension_values != ["true"] or not worktree_config.is_file()
+    ):
+        return [failure]
+    if any(
+        key.startswith("extensions.") and key != "extensions.worktreeconfig"
+        for key in common_values
+    ):
+        return [failure]
+
+    bound_top = _git_or_none(root, "rev-parse", "--show-toplevel")
+    unbound_top = _unbound_worktree(canonical_root)
+    try:
+        bound_path = (
+            Path(bound_top).resolve(strict=True) if bound_top is not None else None
+        )
+    except (OSError, RuntimeError):
+        bound_path = None
+    if bound_path != canonical_root or unbound_top != canonical_root:
+        return [failure]
+    return []
+
+
 def _git_topology_metadata_failures(root: Path) -> list[str]:
-    failures: list[str] = []
+    failures = _repository_binding_failures(root)
     unsafe_environment = _unsafe_inherited_git_environment()
     if unsafe_environment:
         failures.append(
@@ -1142,9 +1377,9 @@ def _git_topology_metadata_failures(root: Path) -> list[str]:
 def _changed_paths(root: Path) -> set[str]:
     paths: set[str] = set()
     for arguments in (
-        ("diff", "--name-only", f"{SECURITY_PREREQUISITE_COMMIT}..HEAD"),
-        ("diff", "--name-only"),
-        ("diff", "--cached", "--name-only"),
+        ("diff", "--no-ext-diff", "--name-only", f"{SECURITY_PREREQUISITE_COMMIT}..HEAD"),
+        ("diff", "--no-ext-diff", "--name-only"),
+        ("diff", "--no-ext-diff", "--cached", "--name-only"),
         ("ls-files", "--others", "--exclude-standard"),
     ):
         output = _git(root, *arguments)
@@ -1155,14 +1390,38 @@ def _changed_paths(root: Path) -> set[str]:
 def _post_review_changed_paths(root: Path, reviewed_candidate_commit: str) -> set[str]:
     paths: set[str] = set()
     for arguments in (
-        ("diff", "--name-only", f"{reviewed_candidate_commit}..HEAD"),
-        ("diff", "--name-only"),
-        ("diff", "--cached", "--name-only"),
+        ("diff", "--no-ext-diff", "--name-only", f"{reviewed_candidate_commit}..HEAD"),
+        ("diff", "--no-ext-diff", "--name-only"),
+        ("diff", "--no-ext-diff", "--cached", "--name-only"),
         ("ls-files", "--others", "--exclude-standard"),
     ):
         output = _git(root, *arguments)
         paths.update(line for line in output.splitlines() if line)
     return paths
+
+
+def _commit_changed_entries(
+    root: Path,
+    commit: str,
+) -> list[tuple[str, str]] | None:
+    output = _git_or_none(
+        root,
+        "diff-tree",
+        "--no-commit-id",
+        "--name-status",
+        "--no-renames",
+        "-r",
+        commit,
+    )
+    if output is None:
+        return None
+    entries: list[tuple[str, str]] = []
+    for line in output.splitlines():
+        status, separator, relative = line.partition("\t")
+        if not separator or not status or not relative:
+            return None
+        entries.append((status, relative))
+    return entries
 
 
 def _observed_tool_count(root: Path) -> int | None:
@@ -1316,6 +1575,36 @@ def _candidate_checkout_failures(
                     "PIS-005A reviewed candidate is unavailable or not an ancestor of HEAD"
                 )
             else:
+                disposition_parent_line = _git_or_none(
+                    root,
+                    "show",
+                    "-s",
+                    "--format=%P",
+                    "HEAD",
+                )
+                disposition_parents = (
+                    tuple(disposition_parent_line.split())
+                    if disposition_parent_line is not None
+                    else None
+                )
+                if disposition_parents != (reviewed_commit,):
+                    failures.append(
+                        "PIS-005A completed review must have exactly one disposition "
+                        "commit whose sole raw parent is the reviewed candidate"
+                    )
+                disposition_entries = _commit_changed_entries(root, head)
+                expected_entries = {
+                    ("M", relative) for relative in _EXPECTED_POST_REVIEW_PATHS
+                }
+                if (
+                    disposition_entries is None
+                    or len(disposition_entries) != len(expected_entries)
+                    or set(disposition_entries) != expected_entries
+                ):
+                    failures.append(
+                        "PIS-005A completed review disposition must modify exactly the "
+                        "three existing review files without deletion or rename"
+                    )
                 post_review_paths = _post_review_changed_paths(root, reviewed_commit)
                 if post_review_paths != _EXPECTED_POST_REVIEW_PATHS:
                     unexpected = sorted(post_review_paths - _EXPECTED_POST_REVIEW_PATHS)
@@ -1389,7 +1678,7 @@ def _candidate_identity_failures(
         or candidate_parents != (REPAIR_BASE_COMMIT,)
         or candidate_parent_tree != REPAIR_BASE_TREE
     ):
-        failures.append("PIS-005A candidate is not the exact direct child of repair-7")
+        failures.append("PIS-005A candidate is not the exact direct child of repair-8")
     if not predecessor_topology_valid:
         failures.append("PIS-005A accepted or rejected predecessor identity changed")
     return failures

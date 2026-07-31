@@ -6,7 +6,6 @@ import argparse
 import hashlib
 import json
 import os
-import shutil
 import subprocess
 import sys
 import tomllib
@@ -34,12 +33,12 @@ PIS005A_CONTRACT_REL = Path(
 SOURCE_COMMIT = "e86f5a19e4e067d73141246f78304597e6cc28a0"
 SOURCE_TREE = "6dbbcf0bef3320dfdfa4142f2d30b798b01511d0"
 BRANCH = "codex/enterprise-e2-pis004a-review-repair"
-PIS005A_SUCCESSOR_BRANCH = "codex/enterprise-e2-pis005a-review-repair-8"
+PIS005A_SUCCESSOR_BRANCH = "codex/enterprise-e2-pis005a-review-repair-9"
 PIS005A_SUCCESSOR_BASE_COMMIT = "83db1196213b0e4e7de5d97ab0fb37b934ca4ab7"
 PIS005A_SUCCESSOR_BASE_TREE = "86731324feec59596146a1149cdde69f47dd58d0"
-PIS005A_REPAIR_BASE_BRANCH = "codex/enterprise-e2-pis005a-review-repair-7"
-PIS005A_REPAIR_BASE_COMMIT = "3c4060ca997089228debfff7c082f6fd5c96fb04"
-PIS005A_REPAIR_BASE_TREE = "b4ac2880aac3170c463ae9caf27c4206d25f81bf"
+PIS005A_REPAIR_BASE_BRANCH = "codex/enterprise-e2-pis005a-review-repair-8"
+PIS005A_REPAIR_BASE_COMMIT = "88f9717198709bfa7b5d520bb4aa41c427543042"
+PIS005A_REPAIR_BASE_TREE = "4963c5a5bef659d52ba7490a8c311991c9168e1b"
 _PIS005A_ORIGINAL_BRANCH = "codex/enterprise-e2-pis005a-node-identity"
 _PIS005A_ORIGINAL_COMMIT = "fce0a3668db5150cf0aa75de1fd914b296a2e099"
 _PIS005A_ORIGINAL_TREE = "331adb70f2c2c24def540c3576fc6876e33c478c"
@@ -58,6 +57,9 @@ _PIS005A_REPAIR_5_TREE = "6e4c4097680c97c77913ba10054dbb5e234abe4c"
 _PIS005A_REPAIR_6_BRANCH = "codex/enterprise-e2-pis005a-review-repair-6"
 _PIS005A_REPAIR_6_COMMIT = "735877b2bb387a50dfbd376d6d3d8c047fd49c8f"
 _PIS005A_REPAIR_6_TREE = "04edcda705e8ab75b0a37eecb70dce7fafabe544"
+_PIS005A_REPAIR_7_BRANCH = "codex/enterprise-e2-pis005a-review-repair-7"
+_PIS005A_REPAIR_7_COMMIT = "3c4060ca997089228debfff7c082f6fd5c96fb04"
+_PIS005A_REPAIR_7_TREE = "b4ac2880aac3170c463ae9caf27c4206d25f81bf"
 _PIS005A_PREDECESSOR_REFS = (
     (
         BRANCH,
@@ -70,6 +72,7 @@ _PIS005A_PREDECESSOR_REFS = (
     (_PIS005A_REPAIR_4_BRANCH, _PIS005A_REPAIR_4_COMMIT, _PIS005A_REPAIR_4_TREE),
     (_PIS005A_REPAIR_5_BRANCH, _PIS005A_REPAIR_5_COMMIT, _PIS005A_REPAIR_5_TREE),
     (_PIS005A_REPAIR_6_BRANCH, _PIS005A_REPAIR_6_COMMIT, _PIS005A_REPAIR_6_TREE),
+    (_PIS005A_REPAIR_7_BRANCH, _PIS005A_REPAIR_7_COMMIT, _PIS005A_REPAIR_7_TREE),
     (PIS005A_REPAIR_BASE_BRANCH, PIS005A_REPAIR_BASE_COMMIT, PIS005A_REPAIR_BASE_TREE),
 )
 _PIS005A_REPAIR_PARENT_CHAIN = (
@@ -78,7 +81,8 @@ _PIS005A_REPAIR_PARENT_CHAIN = (
     (_PIS005A_REPAIR_4_COMMIT, _PIS005A_REPAIR_3_COMMIT),
     (_PIS005A_REPAIR_5_COMMIT, _PIS005A_REPAIR_4_COMMIT),
     (_PIS005A_REPAIR_6_COMMIT, _PIS005A_REPAIR_5_COMMIT),
-    (PIS005A_REPAIR_BASE_COMMIT, _PIS005A_REPAIR_6_COMMIT),
+    (_PIS005A_REPAIR_7_COMMIT, _PIS005A_REPAIR_6_COMMIT),
+    (PIS005A_REPAIR_BASE_COMMIT, _PIS005A_REPAIR_7_COMMIT),
 )
 PIS005A_REJECTED_COMMITS = {
     _PIS005A_ORIGINAL_COMMIT,
@@ -87,6 +91,7 @@ PIS005A_REJECTED_COMMITS = {
     _PIS005A_REPAIR_4_COMMIT,
     _PIS005A_REPAIR_5_COMMIT,
     _PIS005A_REPAIR_6_COMMIT,
+    _PIS005A_REPAIR_7_COMMIT,
     PIS005A_REPAIR_BASE_COMMIT,
 }
 PIS005A_POST_REVIEW_PATHS = {
@@ -1433,9 +1438,9 @@ def _require_keys(
 def _changed_paths(root: Path) -> set[str]:
     paths: set[str] = set()
     for args in (
-        ("diff", "--name-only", f"{SOURCE_COMMIT}..HEAD"),
-        ("diff", "--name-only"),
-        ("diff", "--cached", "--name-only"),
+        ("diff", "--no-ext-diff", "--name-only", f"{SOURCE_COMMIT}..HEAD"),
+        ("diff", "--no-ext-diff", "--name-only"),
+        ("diff", "--no-ext-diff", "--cached", "--name-only"),
         ("ls-files", "--others", "--exclude-standard"),
     ):
         paths.update(line for line in _git_output(root, *args).splitlines() if line)
@@ -1445,9 +1450,9 @@ def _changed_paths(root: Path) -> set[str]:
 def _post_review_changed_paths(root: Path) -> set[str]:
     paths: set[str] = set()
     for args in (
-        ("diff", "--name-only", f"{REVIEWED_CANDIDATE_COMMIT}..HEAD"),
-        ("diff", "--name-only"),
-        ("diff", "--cached", "--name-only"),
+        ("diff", "--no-ext-diff", "--name-only", f"{REVIEWED_CANDIDATE_COMMIT}..HEAD"),
+        ("diff", "--no-ext-diff", "--name-only"),
+        ("diff", "--no-ext-diff", "--cached", "--name-only"),
         ("ls-files", "--others", "--exclude-standard"),
     ):
         paths.update(line for line in _git_output(root, *args).splitlines() if line)
@@ -1460,6 +1465,7 @@ def _post_review_changed_paths_at(root: Path, revision: str) -> set[str]:
         for line in _git_output(
             root,
             "diff",
+            "--no-ext-diff",
             "--name-only",
             f"{REVIEWED_CANDIDATE_COMMIT}..{revision}",
         ).splitlines()
@@ -1473,9 +1479,9 @@ def _pis005a_post_review_changed_paths(
 ) -> set[str]:
     paths: set[str] = set()
     for args in (
-        ("diff", "--name-only", f"{reviewed_candidate_commit}..HEAD"),
-        ("diff", "--name-only"),
-        ("diff", "--cached", "--name-only"),
+        ("diff", "--no-ext-diff", "--name-only", f"{reviewed_candidate_commit}..HEAD"),
+        ("diff", "--no-ext-diff", "--name-only"),
+        ("diff", "--no-ext-diff", "--cached", "--name-only"),
         ("ls-files", "--others", "--exclude-standard"),
     ):
         paths.update(line for line in _git_output(root, *args).splitlines() if line)
@@ -1490,6 +1496,7 @@ def _pis005a_post_review_changed_entries(
     output = _git_output(
         root,
         "diff",
+        "--no-ext-diff",
         "--no-renames",
         "--name-status",
         f"{reviewed_candidate_commit}..HEAD",
@@ -1565,25 +1572,7 @@ def _controlled_git_environment() -> dict[str, str]:
 
 
 def _git_command(root: Path, *args: str) -> list[str]:
-    executable = shutil.which("git", path=os.defpath)
-    if executable is None:
-        raise FileNotFoundError("system Git executable is unavailable")
-    return [
-        executable,
-        "--no-replace-objects",
-        "--no-optional-locks",
-        "-c",
-        "core.useReplaceRefs=false",
-        "-c",
-        "core.fsmonitor=false",
-        "-c",
-        "core.untrackedCache=false",
-        "-c",
-        f"core.hooksPath={os.devnull}",
-        "-C",
-        str(root),
-        *args,
-    ]
+    return pis005a_check._git_command(root, *args)  # noqa: SLF001
 
 
 def _unsafe_inherited_git_environment() -> tuple[str, ...]:
@@ -1610,6 +1599,10 @@ def _replace_path_has_entries(path: Path) -> bool | None:
 
 def _git_topology_metadata_failures(root: Path) -> list[str]:
     failures: list[str] = []
+    if pis005a_check._repository_binding_failures(root):  # noqa: SLF001
+        failures.append(
+            "PIS-004A repository-local Git redirection or worktree binding is unsafe"
+        )
     unsafe_environment = _unsafe_inherited_git_environment()
     if unsafe_environment:
         failures.append(

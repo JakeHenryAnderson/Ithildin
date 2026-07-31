@@ -41,7 +41,7 @@ Current governed tool count: exactly `24`.
 ## Pending Review Procedure
 
 The exact implementation candidate is frozen and awaits independent review. The reviewer must fetch
-`origin/codex/enterprise-e2-pis005a-review-repair-8` into matching exact local and remote-tracking
+`origin/codex/enterprise-e2-pis005a-review-repair-9` into matching exact local and remote-tracking
 candidate refs, check out the exact candidate commit in a clean detached worktree, verify that both
 refs, detached `HEAD`, and the exact tree match, and run:
 
@@ -50,10 +50,10 @@ make production-identity-storage-pis-005a-check
 ```
 
 This is a fresh review of the entire repaired candidate, not a review limited to the repair diff.
-The external exact commit/tree/live-remote preflight freezes the pending repair-8 identity. A
-different structurally valid repair-7 child is a new candidate that requires its own preflight and
-independent review; it must not inherit or be relabeled with repair-8 review evidence.
-All seven predecessor candidates are evidence only and remain rejected:
+The external exact commit/tree/live-remote preflight freezes the pending repair-9 identity. A
+different structurally valid repair-8 child is a new candidate that requires its own preflight and
+independent review; it must not inherit or be relabeled with repair-9 review evidence.
+All eight predecessor candidates are evidence only and remain rejected:
 
 - `codex/enterprise-e2-pis005a-node-identity`,
   `fce0a3668db5150cf0aa75de1fd914b296a2e099`, tree
@@ -75,7 +75,10 @@ All seven predecessor candidates are evidence only and remain rejected:
   `04edcda705e8ab75b0a37eecb70dce7fafabe544`; and
 - `codex/enterprise-e2-pis005a-review-repair-7`,
   `3c4060ca997089228debfff7c082f6fd5c96fb04`, tree
-  `b4ac2880aac3170c463ae9caf27c4206d25f81bf`.
+  `b4ac2880aac3170c463ae9caf27c4206d25f81bf`; and
+- `codex/enterprise-e2-pis005a-review-repair-8`,
+  `88f9717198709bfa7b5d520bb4aa41c427543042`, tree
+  `4963c5a5bef659d52ba7490a8c311991c9168e1b`.
 
 The repair-5 independent review returned `NO_GO` with `C0/H0/M0/L2`. Its arbitrary-descendant
 topology acceptance and blocking FIFO-open findings are repair inputs only, not a positive
@@ -91,6 +94,13 @@ cumulative PIS-004A verifier could validate only the pending candidate topology 
 blocked the already-authorized three-file completed-review disposition. L-07 identified inherited
 Git and replacement/graft/shallow trust gaps in the E2 preparation checker. Both findings are
 repair inputs only, not a positive disposition for repair-7 or this new candidate.
+
+The repair-8 independent review returned `NO_GO` with `C0/H0/M0/L2`. Reopened L-06 demonstrated
+that PIS-005A accepted an additional empty or same-tree descendant after a legitimate three-file
+review disposition even though PIS-004A rejected it. Reopened L-07 demonstrated that repository-
+local `core.worktree` could redirect all three checkers away from a contaminated supplied review
+root. Both findings are repair inputs only, not a positive disposition for repair-8 or this new
+candidate.
 
 The fresh review must re-evaluate the entire candidate and independently verify every repair area:
 
@@ -115,12 +125,12 @@ The fresh review must re-evaluate the entire candidate and independently verify 
   snapshot, same-content-different-inode, and bounded passive-FIFO attack coverage without weakening
   the explicit active same-UID writer nonclaim;
 - exact PIS-004A gate recognition of the contract-bound named and detached PIS-005A successor,
-  requiring exact local and fetched candidate refs, a sole raw direct repair-7 parent with its exact
+  requiring exact local and fetched candidate refs, a sole raw direct repair-8 parent with its exact
   tree and refs, and unchanged accepted/rejected ancestry, with extra commits, merges, unrelated
   commits, missing refs, ref drift, and rejected predecessor topology failing closed;
-- the two-state PIS-004A lifecycle verifier: pending repair-8 must retain that exact one-commit
+- both lifecycle verifiers: pending repair-9 must retain that exact one-commit
   topology, while a completed review must be exactly one later disposition commit whose sole raw
-  parent is the independently reviewed repair-8 commit and whose complete diff is exactly the
+  parent is the independently reviewed repair-9 commit and whose complete diff is exactly the
   contract, this review record, and the non-executable foundation status projection;
 - fail-closed rejection of replacement refs, redirected replacement namespaces, legacy grafts,
   shallow metadata, and inherited Git object/topology redirection, while every identity, tree,
@@ -128,6 +138,9 @@ The fresh review must re-evaluate the entire candidate and independently verify 
 - the E2 preparation checker using the same raw Git controls for every branch, tree, ancestry, and
   diff observation, accepting legitimate named, detached, and linked-worktree pending candidates
   without treating a completed PIS-005A review as E2 entry authority;
+- all three checkers binding Git observations to the canonical supplied root and failing closed on
+  repository-local worktree, include, per-worktree-config, or equivalent interpretation redirects
+  without rejecting an ordinary safe linked worktree;
 - persisted trust-anchor/application-key-ID revalidation and canonical request cross-binding;
 - durable ordinary enrollment expiry at the exact boundary;
 - strict older-than nonce pruning with restart, replay, and concurrency behavior; and
@@ -141,7 +154,7 @@ arbitrary database-directory write, and no runtime or automatic restore capabili
 The final record may be written only after the independent review reports zero open Critical,
 High, Medium, and Low findings. The post-review descendant may change only this record, the
 machine-readable review disposition, and the corresponding non-executable status projection in the
-PIS-005A foundation document. It must be one commit with the reviewed repair-8 commit as its sole
+PIS-005A foundation document. It must be one commit with the reviewed repair-9 commit as its sole
 raw parent, and its entire diff must contain exactly these three paths:
 
 - `docs/codex/production-identity-storage-pis-005a-entry-and-implementation-contract.json`;
