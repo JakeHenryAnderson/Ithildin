@@ -13,7 +13,7 @@
     "canonical_key_prerequisite_tree": "86731324feec59596146a1149cdde69f47dd58d0",
     "implementation_baseline_commit": "83db1196213b0e4e7de5d97ab0fb37b934ca4ab7",
     "implementation_baseline_tree": "86731324feec59596146a1149cdde69f47dd58d0",
-    "branch": "codex/enterprise-e2-pis005a-review-repair-2",
+    "branch": "codex/enterprise-e2-pis005a-review-repair-3",
     "e1_human_uat_complete": false
   },
   "standing_authority": {
@@ -182,6 +182,8 @@
     "migration_mode": "atomic_offline_local_startup",
     "pre_migration_backup_required": true,
     "pre_migration_backup_locked_source_logical_match_required": true,
+    "pre_migration_backup_stable_object_binding_required": true,
+    "pre_migration_backup_post_promotion_identity_revalidation_required": true,
     "automatic_down_migration_allowed": false,
     "new_object_prefix": "node_workload_",
     "table_inventory": [
@@ -321,6 +323,7 @@
   "validation": {
     "make_target": "production-identity-storage-pis-005a-check",
     "focused_tests": [
+      "tests/test_pis004a_contract.py",
       "tests/test_pis005a_contract.py",
       "tests/test_pis005a_database_migration.py",
       "tests/test_pis005a_enrollment.py",
@@ -352,6 +355,8 @@
       "migration_exact_ddl_constraint_index_and_foreign_key_drift",
       "migration_interruption_backup_reuse_and_old_writer_refusal",
       "migration_locked_source_substituted_backup_provenance_mismatch",
+      "migration_verified_backup_object_path_and_post_promotion_substitution",
+      "pis004a_detached_successor_exact_topology",
       "replacement_preserves_original_revocation_cause",
       "authority_anchor_and_review_lifecycle_gate_mutation",
       "safe_evidence_vocabulary_and_validation_error_redaction",
@@ -367,7 +372,7 @@
   },
   "candidate_procedure": {
     "focused_command": "make production-identity-storage-pis-005a-check",
-    "independent_review_template": "git fetch origin refs/heads/codex/enterprise-e2-pis005a-review-repair-2:refs/remotes/origin/codex/enterprise-e2-pis005a-review-repair-2 && git worktree add --detach /tmp/ithildin-pis005a-review <candidate_commit> && cd /tmp/ithildin-pis005a-review && make production-identity-storage-pis-005a-check",
+    "independent_review_template": "git fetch origin refs/heads/codex/enterprise-e2-pis005a-review-repair-3:refs/remotes/origin/codex/enterprise-e2-pis005a-review-repair-3 && git worktree add --detach /tmp/ithildin-pis005a-review <candidate_commit> && cd /tmp/ithildin-pis005a-review && make production-identity-storage-pis-005a-check",
     "candidate_must_be_clean": true,
     "independent_review_required": true,
     "release_or_promotion_authorized_by_candidate": false

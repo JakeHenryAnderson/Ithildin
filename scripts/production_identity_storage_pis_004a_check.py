@@ -20,12 +20,18 @@ CONTRACT_REL = Path(
 )
 DOC_REL = Path("docs/codex/production-identity-storage-pis-004a-local-identity-foundation.md")
 REVIEW_RECORD_REL = Path("docs/codex/production-identity-storage-pis-004a-independent-review.md")
+PIS005A_CONTRACT_REL = Path(
+    "docs/codex/production-identity-storage-pis-005a-entry-and-implementation-contract.json"
+)
 SOURCE_COMMIT = "e86f5a19e4e067d73141246f78304597e6cc28a0"
 SOURCE_TREE = "6dbbcf0bef3320dfdfa4142f2d30b798b01511d0"
 BRANCH = "codex/enterprise-e2-pis004a-review-repair"
-PIS005A_SUCCESSOR_BRANCH = "codex/enterprise-e2-pis005a-review-repair-2"
+PIS005A_SUCCESSOR_BRANCH = "codex/enterprise-e2-pis005a-review-repair-3"
 PIS005A_SUCCESSOR_BASE_COMMIT = "83db1196213b0e4e7de5d97ab0fb37b934ca4ab7"
 PIS005A_SUCCESSOR_BASE_TREE = "86731324feec59596146a1149cdde69f47dd58d0"
+PIS005A_REPAIR_BASE_COMMIT = "1542bd0469e18a0ae52cc48920f30b4e41518513"
+PIS005A_REPAIR_BASE_TREE = "ba9a40e929ff330c15c6c23766006eb1c26878ef"
+PIS004A_REVIEW_COMMIT = "e8e6a75ca3d76a233243f5e890091f3c95731da9"
 REVIEWED_CANDIDATE_COMMIT = "ff358753c50037c2bc936b761f249cf5c9115749"
 REVIEWED_CANDIDATE_TREE = "0fff4fe145ca0b2b9db8fa874396486bba5eb6c7"
 REVIEWED_CANDIDATE_PARENT = "68b96608fd3c0014f93d0c89d52c75e1e251b1f9"
@@ -624,22 +630,24 @@ def _validate_repository(
         failures.append("PIS-004A schema fingerprint does not match the exact migration DDL")
     current_branch = _git_one(root, "branch", "--show-current")
     head_name = _git_one(root, "rev-parse", "--abbrev-ref", "HEAD")
-    pis005a_successor = current_branch == PIS005A_SUCCESSOR_BRANCH
-    if pis005a_successor:
-        if (
-            _git_one(root, "rev-parse", f"{PIS005A_SUCCESSOR_BASE_COMMIT}^{{tree}}")
-            != PIS005A_SUCCESSOR_BASE_TREE
-            or not _git_ok(
-                root,
-                "merge-base",
-                "--is-ancestor",
-                PIS005A_SUCCESSOR_BASE_COMMIT,
-                "HEAD",
-            )
-            or _git_one(root, "rev-parse", f"refs/remotes/origin/{BRANCH}^{{commit}}")
-            != "e8e6a75ca3d76a233243f5e890091f3c95731da9"
-        ):
-            failures.append("PIS-004A exact PIS-005A successor identity is invalid")
+    successor_failures = _pis005a_successor_context_failures(
+        root,
+        current_branch=current_branch,
+        head_name=head_name,
+    )
+    pis005a_successor = not successor_failures
+    possible_pis005a_successor = current_branch == PIS005A_SUCCESSOR_BRANCH or (
+        current_branch == ""
+        and _git_ok(
+            root,
+            "merge-base",
+            "--is-ancestor",
+            PIS005A_REPAIR_BASE_COMMIT,
+            "HEAD",
+        )
+    )
+    if possible_pis005a_successor:
+        failures.extend(successor_failures)
     else:
         failures.extend(
             _candidate_checkout_failures(
@@ -814,6 +822,134 @@ def _candidate_checkout_failures(
     elif porcelain.strip():
         checkout_failures.append("PIS-004A candidate worktree is not clean")
     return checkout_failures
+
+
+def _pis005a_successor_context_failures(
+    root: Path,
+    *,
+    current_branch: str,
+    head_name: str,
+) -> list[str]:
+    contract_failures: list[str] = []
+    contract = _load_json(root / PIS005A_CONTRACT_REL, contract_failures)
+    base = contract.get("base")
+    candidate = contract.get("candidate_procedure")
+    review = contract.get("independent_review")
+    authority = contract.get("authority")
+    expected_review_template = (
+        f"git fetch origin refs/heads/{PIS005A_SUCCESSOR_BRANCH}:"
+        f"refs/remotes/origin/{PIS005A_SUCCESSOR_BRANCH} && "
+        "git worktree add --detach /tmp/ithildin-pis005a-review "
+        "<candidate_commit> && cd /tmp/ithildin-pis005a-review && "
+        "make production-identity-storage-pis-005a-check"
+    )
+    contract_bindings_valid = (
+        not contract_failures
+        and contract.get("decision_id") == "PIS-005A"
+        and contract.get("status") == "candidate_independent_review_pending"
+        and isinstance(base, dict)
+        and base.get("source_commit") == PIS004A_REVIEW_COMMIT
+        and base.get("source_tree") == "1a5a6c818bf3fd5e17bcffedaae4cf5497e1e6f2"
+        and base.get("pis004a_reviewed_candidate_commit") == REVIEWED_CANDIDATE_COMMIT
+        and base.get("pis004a_reviewed_candidate_tree") == REVIEWED_CANDIDATE_TREE
+        and base.get("canonical_key_prerequisite_commit") == PIS005A_SUCCESSOR_BASE_COMMIT
+        and base.get("canonical_key_prerequisite_tree") == PIS005A_SUCCESSOR_BASE_TREE
+        and base.get("implementation_baseline_commit") == PIS005A_SUCCESSOR_BASE_COMMIT
+        and base.get("implementation_baseline_tree") == PIS005A_SUCCESSOR_BASE_TREE
+        and base.get("branch") == PIS005A_SUCCESSOR_BRANCH
+        and isinstance(candidate, dict)
+        and candidate.get("independent_review_template") == expected_review_template
+        and candidate.get("candidate_must_be_clean") is True
+        and candidate.get("independent_review_required") is True
+        and candidate.get("release_or_promotion_authorized_by_candidate") is False
+        and isinstance(review, dict)
+        and review.get("implementation_review_complete") is False
+        and review.get("reviewed_candidate_commit") is None
+        and isinstance(authority, dict)
+        and authority.get("new_governed_tool_allowed") is False
+        and authority.get("production_identity_allowed") is False
+        and authority.get("runtime_postgres_allowed") is False
+        and authority.get("remote_transport_allowed") is False
+    )
+    return _pis005a_successor_checkout_failures(
+        current_branch=current_branch,
+        head_name=head_name,
+        head_oid=_git_one(root, "rev-parse", "HEAD"),
+        remote_successor_oid=_git_one(
+            root,
+            "rev-parse",
+            f"refs/remotes/origin/{PIS005A_SUCCESSOR_BRANCH}^{{commit}}",
+        ),
+        porcelain=_git_output_or_none(
+            root,
+            "status",
+            "--porcelain=v1",
+            "--untracked-files=all",
+        ),
+        contract_bindings_valid=contract_bindings_valid,
+        successor_base_tree=_git_one(
+            root,
+            "rev-parse",
+            f"{PIS005A_SUCCESSOR_BASE_COMMIT}^{{tree}}",
+        ),
+        repair_base_tree=_git_one(
+            root,
+            "rev-parse",
+            f"{PIS005A_REPAIR_BASE_COMMIT}^{{tree}}",
+        ),
+        repair_base_is_ancestor=_git_ok(
+            root,
+            "merge-base",
+            "--is-ancestor",
+            PIS005A_REPAIR_BASE_COMMIT,
+            "HEAD",
+        ),
+        pis004a_remote_oid=_git_one(
+            root,
+            "rev-parse",
+            f"refs/remotes/origin/{BRANCH}^{{commit}}",
+        ),
+    )
+
+
+def _pis005a_successor_checkout_failures(
+    *,
+    current_branch: str,
+    head_name: str,
+    head_oid: str,
+    remote_successor_oid: str,
+    porcelain: str | None,
+    contract_bindings_valid: bool,
+    successor_base_tree: str,
+    repair_base_tree: str,
+    repair_base_is_ancestor: bool,
+    pis004a_remote_oid: str,
+) -> list[str]:
+    failures: list[str] = []
+    if (
+        not contract_bindings_valid
+        or successor_base_tree != PIS005A_SUCCESSOR_BASE_TREE
+        or repair_base_tree != PIS005A_REPAIR_BASE_TREE
+        or not repair_base_is_ancestor
+        or pis004a_remote_oid != PIS004A_REVIEW_COMMIT
+    ):
+        failures.append("PIS-004A exact PIS-005A successor identity is invalid")
+    if current_branch == PIS005A_SUCCESSOR_BRANCH:
+        if head_name != PIS005A_SUCCESSOR_BRANCH:
+            failures.append("PIS-004A named PIS-005A successor identity is inconsistent")
+        return failures
+    if current_branch != "" or head_name != "HEAD":
+        failures.append("PIS-004A is not on the exact PIS-005A successor branch or detached")
+        return failures
+    if remote_successor_oid == "" or head_oid != remote_successor_oid:
+        failures.append(
+            "PIS-004A detached PIS-005A successor does not match the fetched branch tip"
+        )
+    if porcelain is None:
+        failures.append("PIS-004A detached PIS-005A successor cleanliness is unavailable")
+    elif porcelain.strip():
+        failures.append("PIS-004A detached PIS-005A successor is not clean")
+    return failures
 
 
 def _validate_dependency_lock(root: Path, failures: list[str]) -> None:

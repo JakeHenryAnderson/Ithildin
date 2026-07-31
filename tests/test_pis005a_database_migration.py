@@ -24,6 +24,7 @@ from ithildin_api.node_configuration_trust import (
 from ithildin_api.nodes import NodeStore
 from ithildin_api.trusted_host_promotion_v2_migration import DatabaseMigrationError
 from ithildin_audit_core import AuditWriter
+from ithildin_schemas import JsonObject
 
 from scripts import (
     local_v1_lv1_003_o4_attempt008_node_identity_reconciliation as reconciliation,
@@ -233,6 +234,76 @@ def test_substituted_integrity_valid_backup_is_never_blessed(
         ).fetchone() == (1,)
 
 
+def test_temporary_backup_path_substitution_after_comparison_fails_closed(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    db_path = tmp_path / "ithildin.sqlite3"
+    substituted_path = tmp_path / "substituted.sqlite3"
+    frozen = _load_schema_six_migration(tmp_path)
+    frozen.initialize_or_migrate_database(db_path)
+    _create_distinct_schema_six_database(substituted_path, frozen)
+    original_logical_digest_bytes = migration_backup._logical_digest_bytes  # noqa: SLF001
+    substitution_observed = False
+
+    def compare_then_substitute(payload: bytes) -> str:
+        nonlocal substitution_observed
+        digest = original_logical_digest_bytes(payload)
+        if not substitution_observed:
+            backup_path, _ = pre_v7_backup_paths(db_path)
+            temporary_paths = tuple(tmp_path.glob(f".{backup_path.name}.*.tmp"))
+            assert len(temporary_paths) == 1
+            substituted_path.replace(temporary_paths[0])
+            substitution_observed = True
+        return digest
+
+    monkeypatch.setattr(
+        migration_backup,
+        "_logical_digest_bytes",
+        compare_then_substitute,
+    )
+
+    with pytest.raises(
+        DatabaseBackupError,
+        match="verified pre-migration backup object was substituted",
+    ):
+        initialize_database(db_path)
+
+    assert substitution_observed is True
+    _assert_schema_six_without_blessed_backup(db_path)
+
+
+def test_promoted_backup_path_substitution_before_receipt_return_fails_closed(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    db_path = tmp_path / "ithildin.sqlite3"
+    substituted_path = tmp_path / "substituted.sqlite3"
+    frozen = _load_schema_six_migration(tmp_path)
+    frozen.initialize_or_migrate_database(db_path)
+    _create_distinct_schema_six_database(substituted_path, frozen)
+    backup_path, _ = pre_v7_backup_paths(db_path)
+    original_write_receipt = migration_backup._write_receipt  # noqa: SLF001
+
+    def substitute_before_receipt_return(path: Path, receipt: JsonObject) -> None:
+        substituted_path.replace(backup_path)
+        original_write_receipt(path, receipt)
+
+    monkeypatch.setattr(
+        migration_backup,
+        "_write_receipt",
+        substitute_before_receipt_return,
+    )
+
+    with pytest.raises(
+        DatabaseBackupError,
+        match="verified pre-migration backup object was substituted",
+    ):
+        initialize_database(db_path)
+
+    _assert_schema_six_without_blessed_backup(db_path)
+
+
 @pytest.mark.parametrize(
     ("mutation", "message"),
     [
@@ -416,3 +487,41 @@ def _load_schema_six_migration(tmp_path: Path) -> ModuleType:
     finally:
         sys.modules.pop(spec.name, None)
     return module
+
+
+def _create_distinct_schema_six_database(path: Path, frozen: ModuleType) -> None:
+    frozen.initialize_or_migrate_database(path)
+    with sqlite3.connect(path) as connection:
+        connection.execute(
+            """
+            INSERT INTO identity_organizations (
+                organization_id, enabled, created_at, updated_at
+            ) VALUES (?, 1, ?, ?)
+            """,
+            (
+                "org_00000000000000000000000000000001",
+                "2026-07-30T12:00:00+00:00",
+                "2026-07-30T12:00:00+00:00",
+            ),
+        )
+        connection.commit()
+        assert connection.execute("PRAGMA integrity_check").fetchone() == ("ok",)
+
+
+def _assert_schema_six_without_blessed_backup(db_path: Path) -> None:
+    backup_path, receipt_path = pre_v7_backup_paths(db_path)
+    assert not backup_path.exists()
+    assert not receipt_path.exists()
+    assert not tuple(db_path.parent.glob(f".{backup_path.name}.*.tmp"))
+    with sqlite3.connect(db_path) as connection:
+        assert dict(connection.execute("SELECT key, value FROM app_metadata")) == {
+            "schema_version": "6",
+            "minimum_writer_version": "6",
+        }
+        assert connection.execute(
+            """
+            SELECT count(*) FROM sqlite_master
+            WHERE lower(name) GLOB 'node_workload_*'
+               OR lower(tbl_name) GLOB 'node_workload_*'
+            """
+        ).fetchone() == (0,)

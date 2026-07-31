@@ -8,13 +8,18 @@ Source commit: `e8e6a75ca3d76a233243f5e890091f3c95731da9`.
 
 Security prerequisite: `83db1196213b0e4e7de5d97ab0fb37b934ca4ab7`.
 
-Branch: `codex/enterprise-e2-pis005a-review-repair-2`.
+Branch: `codex/enterprise-e2-pis005a-review-repair-3`.
 
-Rejected predecessor evidence remains unchanged: branch
-`codex/enterprise-e2-pis005a-node-identity`, commit
-`fce0a3668db5150cf0aa75de1fd914b296a2e099`, tree
-`331adb70f2c2c24def540c3576fc6876e33c478c`. That exact candidate was rejected with
-`Critical 0 / High 1 / Medium 1 / Low 3`; this repair candidate does not relabel or mutate it.
+Rejected predecessor evidence remains unchanged:
+
+- branch `codex/enterprise-e2-pis005a-node-identity`, commit
+  `fce0a3668db5150cf0aa75de1fd914b296a2e099`, tree
+  `331adb70f2c2c24def540c3576fc6876e33c478c`; and
+- branch `codex/enterprise-e2-pis005a-review-repair-2`, commit
+  `1542bd0469e18a0ae52cc48920f30b4e41518513`, tree
+  `ba9a40e929ff330c15c6c23766006eb1c26878ef`.
+
+Neither rejected exact candidate is relabeled or mutated by this third candidate.
 
 Current governed tool count: exactly `24`.
 
@@ -128,7 +133,11 @@ tables are not silently promoted into enterprise identity authority.
 
 Migration from schema 6 takes a private verified pre-v7 backup before the atomic schema change.
 The source logical digest is derived from the already locked connection, and a temporary backup
-must match that locked snapshot before it can be promoted or receive a receipt. The migration
+must match that locked snapshot before it can be promoted or receive a receipt. The compared
+database remains bound through one open file descriptor across private-permission enforcement,
+fsync, atomic promotion, exact inode verification, receipt digest construction, and a final
+post-receipt identity and byte check. Temporary-path or promoted-path substitution fails before
+the schema transaction can commit and removes the unblessed backup and receipt. The migration
 verifies exact table and index SQL, columns, constraints, unexpected prefixed objects, and foreign
 keys. Older writers fail closed on schema 7. Replacement completion has its own timestamp while
 the original `operator_revoked`, `key_compromise`, or `scope_revoked` cause remains immutable.
@@ -159,13 +168,14 @@ cloned keys, scope/generation mismatch, signature and request-digest mismatch, t
 replay, concurrent enrollment and request replay, lock-boundary expiry, revocation races,
 replacement expiry/retry and concurrent issuance, replace-not-restore behavior, exact migration
 DDL/constraint drift, interruption/backup/old-writer behavior, authority-anchor and review-lifecycle
-mutation, exact evidence vocabulary, validation-error redaction, and database/evidence canaries.
+mutation, temporary and post-promotion backup-object substitution, detached PIS-005A successor
+topology, exact evidence vocabulary, validation-error redaction, and database/evidence canaries.
 
 After focused and broader checks pass, a separate reviewer should reproduce the exact pushed
 candidate in a clean detached worktree:
 
 ```sh
-git fetch origin refs/heads/codex/enterprise-e2-pis005a-review-repair-2:refs/remotes/origin/codex/enterprise-e2-pis005a-review-repair-2
+git fetch origin refs/heads/codex/enterprise-e2-pis005a-review-repair-3:refs/remotes/origin/codex/enterprise-e2-pis005a-review-repair-3
 git worktree add --detach /tmp/ithildin-pis005a-review <candidate_commit>
 cd /tmp/ithildin-pis005a-review
 make production-identity-storage-pis-005a-check

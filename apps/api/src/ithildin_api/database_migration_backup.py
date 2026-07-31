@@ -142,18 +142,32 @@ def _ensure_pre_migration_backup(
         )
 
     temporary = backup_path.with_name(f".{backup_path.name}.{uuid4().hex}.tmp")
+    descriptor: int | None = None
+    backup_created = False
     try:
         _create_backup(db_path, temporary)
-        if _logical_digest(temporary) != source_logical_digest:
+        descriptor = _open_stable_backup_descriptor(temporary)
+        os.fchmod(descriptor, 0o600)
+        temporary_payload = _read_descriptor(descriptor)
+        if _logical_digest_bytes(temporary_payload) != source_logical_digest:
             raise DatabaseBackupError(
                 "temporary pre-migration backup does not match the locked source database"
             )
-        os.chmod(temporary, 0o600)
-        _fsync_file(temporary)
+        _require_private_regular_descriptor(descriptor)
+        os.fsync(descriptor)
+        verified_status = os.fstat(descriptor)
         os.replace(temporary, backup_path)
+        backup_created = True
+        _require_path_matches_descriptor(backup_path, verified_status)
         _fsync_directory(backup_path.parent)
+        promoted_payload = _read_descriptor(descriptor)
+        if promoted_payload != temporary_payload:
+            raise DatabaseBackupError(
+                "verified pre-migration backup object changed during promotion"
+            )
         receipt = _build_receipt(
             backup_path=backup_path,
+            backup_sha256=_bytes_digest(promoted_payload),
             source_schema_version=source_schema_version,
             source_minimum_writer_version=source_minimum_writer_version,
             source_logical_digest=source_logical_digest,
@@ -161,10 +175,27 @@ def _ensure_pre_migration_backup(
             now=now,
         )
         _write_receipt(receipt_path, receipt)
+        _require_path_matches_descriptor(backup_path, verified_status)
+        if _read_descriptor(descriptor) != promoted_payload:
+            raise DatabaseBackupError(
+                "verified pre-migration backup object changed after promotion"
+            )
         return receipt
+    except DatabaseBackupError:
+        if backup_created:
+            receipt_path.unlink(missing_ok=True)
+            backup_path.unlink(missing_ok=True)
+            _fsync_directory(backup_path.parent)
+        raise
     except (OSError, sqlite3.DatabaseError, ValueError) as exc:
+        if backup_created:
+            receipt_path.unlink(missing_ok=True)
+            backup_path.unlink(missing_ok=True)
+            _fsync_directory(backup_path.parent)
         raise DatabaseBackupError("pre-migration backup creation failed") from exc
     finally:
+        if descriptor is not None:
+            os.close(descriptor)
         temporary.unlink(missing_ok=True)
 
 
@@ -249,6 +280,7 @@ def _create_backup(source_path: Path, destination_path: Path) -> None:
 def _build_receipt(
     *,
     backup_path: Path,
+    backup_sha256: str | None = None,
     source_schema_version: str,
     source_minimum_writer_version: str | None,
     source_logical_digest: str,
@@ -262,7 +294,7 @@ def _build_receipt(
         "source_minimum_writer_version": source_minimum_writer_version,
         "source_logical_sha256": source_logical_digest,
         "backup_filename": backup_path.name,
-        "backup_sha256": _file_digest(backup_path),
+        "backup_sha256": backup_sha256 or _file_digest(backup_path),
         "created_at": (now or datetime.now(UTC)).isoformat(),
         "downgrade_posture": "restore_only",
     }
@@ -349,6 +381,17 @@ def _logical_digest(path: Path) -> str:
         raise DatabaseBackupError("database backup source is invalid") from exc
 
 
+def _logical_digest_bytes(payload: bytes) -> str:
+    connection = sqlite3.connect(":memory:")
+    try:
+        connection.deserialize(payload)
+        return _logical_digest_connection(connection)
+    except sqlite3.DatabaseError as exc:
+        raise DatabaseBackupError("database backup source is invalid") from exc
+    finally:
+        connection.close()
+
+
 def _logical_digest_connection(connection: sqlite3.Connection) -> str:
     """Digest one SQLite connection's locked logical snapshot."""
 
@@ -362,6 +405,10 @@ def _logical_digest_connection(connection: sqlite3.Connection) -> str:
     return f"sha256:{hashlib.sha256(dump).hexdigest()}"
 
 
+def _bytes_digest(payload: bytes) -> str:
+    return f"sha256:{hashlib.sha256(payload).hexdigest()}"
+
+
 def _file_digest(path: Path) -> str:
     digest = hashlib.sha256()
     with path.open("rb") as handle:
@@ -370,20 +417,45 @@ def _file_digest(path: Path) -> str:
     return f"sha256:{digest.hexdigest()}"
 
 
-def _require_private_regular_file(path: Path) -> None:
-    file_status = path.lstat()
+def _open_stable_backup_descriptor(path: Path) -> int:
+    flags = os.O_RDONLY
+    flags |= getattr(os, "O_CLOEXEC", 0)
+    flags |= getattr(os, "O_NOFOLLOW", 0)
+    return os.open(path, flags)
+
+
+def _read_descriptor(descriptor: int) -> bytes:
+    os.lseek(descriptor, 0, os.SEEK_SET)
+    chunks: list[bytes] = []
+    while chunk := os.read(descriptor, 1024 * 1024):
+        chunks.append(chunk)
+    return b"".join(chunks)
+
+
+def _require_private_regular_descriptor(descriptor: int) -> None:
+    file_status = os.fstat(descriptor)
     if not stat.S_ISREG(file_status.st_mode):
         raise DatabaseBackupError("pre-migration backup artifact must be a regular file")
     if stat.S_IMODE(file_status.st_mode) & 0o077:
         raise DatabaseBackupError("pre-migration backup artifact permissions must be 0600")
 
 
-def _fsync_file(path: Path) -> None:
-    descriptor = os.open(path, os.O_RDONLY)
-    try:
-        os.fsync(descriptor)
-    finally:
-        os.close(descriptor)
+def _require_path_matches_descriptor(path: Path, descriptor_status: os.stat_result) -> None:
+    path_status = path.stat(follow_symlinks=False)
+    if (
+        not stat.S_ISREG(path_status.st_mode)
+        or path_status.st_dev != descriptor_status.st_dev
+        or path_status.st_ino != descriptor_status.st_ino
+    ):
+        raise DatabaseBackupError("verified pre-migration backup object was substituted")
+
+
+def _require_private_regular_file(path: Path) -> None:
+    file_status = path.lstat()
+    if not stat.S_ISREG(file_status.st_mode):
+        raise DatabaseBackupError("pre-migration backup artifact must be a regular file")
+    if stat.S_IMODE(file_status.st_mode) & 0o077:
+        raise DatabaseBackupError("pre-migration backup artifact permissions must be 0600")
 
 
 def _fsync_directory(path: Path) -> None:

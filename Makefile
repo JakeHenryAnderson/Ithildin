@@ -2840,6 +2840,7 @@ production-identity-storage-pis-005a-check:
 	uv lock --check
 	uv run python scripts/production_identity_storage_pis_005a_check.py
 	uv run pytest \
+		tests/test_pis004a_contract.py \
 		tests/test_pis005a_contract.py \
 		tests/test_pis005a_database_migration.py \
 		tests/test_pis005a_enrollment.py \
@@ -2851,6 +2852,7 @@ production-identity-storage-pis-005a-check:
 		apps/api/src/ithildin_api/trusted_host_promotion_v2_migration.py \
 		scripts/local_v1_lv1_003_o4_attempt008_node_identity_reconciliation.py \
 		scripts/production_identity_storage_pis_005a_check.py \
+		tests/test_pis004a_contract.py \
 		tests/test_pis005a_contract.py \
 		tests/test_pis005a_database_migration.py \
 		tests/test_pis005a_enrollment.py \
@@ -2861,6 +2863,7 @@ production-identity-storage-pis-005a-check:
 		apps/api/src/ithildin_api/trusted_host_promotion_v2_migration.py \
 		scripts/local_v1_lv1_003_o4_attempt008_node_identity_reconciliation.py \
 		scripts/production_identity_storage_pis_005a_check.py \
+		tests/test_pis004a_contract.py \
 		tests/test_pis005a_contract.py \
 		tests/test_pis005a_database_migration.py \
 		tests/test_pis005a_enrollment.py \

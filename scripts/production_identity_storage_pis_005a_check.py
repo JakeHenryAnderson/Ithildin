@@ -25,7 +25,7 @@ NEXT_TICKET_REL = Path(
     "docs/codex/production-identity-storage-pis-005a-remote-transport-next-ticket.md"
 )
 REVIEW_RECORD_REL = Path("docs/codex/production-identity-storage-pis-005a-independent-review.md")
-BRANCH = "codex/enterprise-e2-pis005a-review-repair-2"
+BRANCH = "codex/enterprise-e2-pis005a-review-repair-3"
 SOURCE_COMMIT = "e8e6a75ca3d76a233243f5e890091f3c95731da9"
 SOURCE_TREE = "1a5a6c818bf3fd5e17bcffedaae4cf5497e1e6f2"
 SECURITY_PREREQUISITE_COMMIT = "83db1196213b0e4e7de5d97ab0fb37b934ca4ab7"
@@ -150,6 +150,7 @@ _EXPECTED_ALLOWED_PATHS = [
     "tests/test_api_service.py",
 ]
 _EXPECTED_FOCUSED_TESTS = [
+    "tests/test_pis004a_contract.py",
     "tests/test_pis005a_contract.py",
     "tests/test_pis005a_database_migration.py",
     "tests/test_pis005a_enrollment.py",
@@ -181,6 +182,8 @@ _EXPECTED_NEGATIVE_CASES = [
     "migration_exact_ddl_constraint_index_and_foreign_key_drift",
     "migration_interruption_backup_reuse_and_old_writer_refusal",
     "migration_locked_source_substituted_backup_provenance_mismatch",
+    "migration_verified_backup_object_path_and_post_promotion_substitution",
+    "pis004a_detached_successor_exact_topology",
     "replacement_preserves_original_revocation_cause",
     "authority_anchor_and_review_lifecycle_gate_mutation",
     "safe_evidence_vocabulary_and_validation_error_redaction",
@@ -523,6 +526,8 @@ def _validate_persistence(value: object, failures: list[str]) -> None:
         "migration_mode": "atomic_offline_local_startup",
         "pre_migration_backup_required": True,
         "pre_migration_backup_locked_source_logical_match_required": True,
+        "pre_migration_backup_stable_object_binding_required": True,
+        "pre_migration_backup_post_promotion_identity_revalidation_required": True,
         "automatic_down_migration_allowed": False,
         "new_object_prefix": "node_workload_",
         "table_inventory": [
@@ -673,8 +678,8 @@ def _validate_candidate_procedure(value: object, failures: list[str]) -> None:
     expected = {
         "focused_command": "make production-identity-storage-pis-005a-check",
         "independent_review_template": (
-            "git fetch origin refs/heads/codex/enterprise-e2-pis005a-review-repair-2:"
-            "refs/remotes/origin/codex/enterprise-e2-pis005a-review-repair-2 && "
+            "git fetch origin refs/heads/codex/enterprise-e2-pis005a-review-repair-3:"
+            "refs/remotes/origin/codex/enterprise-e2-pis005a-review-repair-3 && "
             "git worktree add --detach /tmp/ithildin-pis005a-review <candidate_commit> && "
             "cd /tmp/ithildin-pis005a-review && "
             "make production-identity-storage-pis-005a-check"
