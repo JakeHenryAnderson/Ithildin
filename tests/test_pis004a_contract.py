@@ -67,35 +67,44 @@ def test_original_pis004a_candidate_checkout_accepts_only_clean_exact_remote_can
 
 
 @pytest.mark.parametrize(
-    ("current_branch", "head_name", "head_oid", "remote_oid", "porcelain"),
+    (
+        "current_branch",
+        "head_name",
+        "local_oid",
+        "local_tree",
+    ),
     [
         (
             pis004a_check.PIS005A_SUCCESSOR_BRANCH,
             pis004a_check.PIS005A_SUCCESSOR_BRANCH,
             "c" * 40,
-            "",
-            " M bounded-successor-change.py",
+            "d" * 40,
         ),
-        ("", "HEAD", "c" * 40, "c" * 40, ""),
+        ("", "HEAD", "", ""),
     ],
 )
 def test_pis005a_successor_accepts_named_implementation_and_detached_exact_candidate(
     current_branch: str,
     head_name: str,
-    head_oid: str,
-    remote_oid: str,
-    porcelain: str,
+    local_oid: str,
+    local_tree: str,
 ) -> None:
     assert (
         pis004a_check._pis005a_successor_checkout_failures(  # noqa: SLF001
             current_branch=current_branch,
             head_name=head_name,
-            head_oid=head_oid,
-            remote_successor_oid=remote_oid,
-            porcelain=porcelain,
+            head_oid="c" * 40,
+            head_tree="d" * 40,
+            local_successor_oid=local_oid,
+            local_successor_tree=local_tree,
+            remote_successor_oid="c" * 40,
+            remote_successor_tree="d" * 40,
+            porcelain="",
+            shallow_state="false",
             contract_bindings_valid=True,
             successor_base_tree=pis004a_check.PIS005A_SUCCESSOR_BASE_TREE,
             repair_base_tree=pis004a_check.PIS005A_REPAIR_BASE_TREE,
+            repair_base_remote_oid=pis004a_check.PIS005A_REPAIR_BASE_COMMIT,
             repair_base_is_ancestor=True,
             pis004a_remote_oid=pis004a_check.PIS004A_REVIEW_COMMIT,
         )
@@ -108,17 +117,23 @@ def test_pis005a_successor_rejects_unrelated_detached_commit() -> None:
         current_branch="",
         head_name="HEAD",
         head_oid="d" * 40,
+        head_tree="e" * 40,
+        local_successor_oid="",
+        local_successor_tree="",
         remote_successor_oid="c" * 40,
+        remote_successor_tree="e" * 40,
         porcelain="",
+        shallow_state="false",
         contract_bindings_valid=True,
         successor_base_tree=pis004a_check.PIS005A_SUCCESSOR_BASE_TREE,
         repair_base_tree=pis004a_check.PIS005A_REPAIR_BASE_TREE,
+        repair_base_remote_oid=pis004a_check.PIS005A_REPAIR_BASE_COMMIT,
         repair_base_is_ancestor=True,
         pis004a_remote_oid=pis004a_check.PIS004A_REVIEW_COMMIT,
     )
 
     assert (
-        "PIS-004A detached PIS-005A successor does not match the fetched branch tip"
+        "PIS-004A detached PIS-005A successor does not match the fetched commit and tree"
         in failures
     )
 
@@ -129,6 +144,7 @@ def test_pis005a_successor_rejects_unrelated_detached_commit() -> None:
         "fce0a3668db5150cf0aa75de1fd914b296a2e099",
         "1542bd0469e18a0ae52cc48920f30b4e41518513",
         "afd13f98440d4cd9c032b6a996db133bdf78055d",
+        pis004a_check.PIS005A_REPAIR_BASE_COMMIT,
     ],
 )
 def test_pis005a_successor_rejects_rejected_predecessor_and_contract_drift(
@@ -138,20 +154,98 @@ def test_pis005a_successor_rejects_rejected_predecessor_and_contract_drift(
         current_branch="",
         head_name="HEAD",
         head_oid=rejected_predecessor,
+        head_tree="e" * 40,
+        local_successor_oid="",
+        local_successor_tree="",
         remote_successor_oid="c" * 40,
+        remote_successor_tree="e" * 40,
         porcelain="",
+        shallow_state="false",
         contract_bindings_valid=False,
         successor_base_tree=pis004a_check.PIS005A_SUCCESSOR_BASE_TREE,
         repair_base_tree=pis004a_check.PIS005A_REPAIR_BASE_TREE,
+        repair_base_remote_oid=pis004a_check.PIS005A_REPAIR_BASE_COMMIT,
         repair_base_is_ancestor=False,
         pis004a_remote_oid=pis004a_check.PIS004A_REVIEW_COMMIT,
     )
 
     assert "PIS-004A exact PIS-005A successor identity is invalid" in failures
     assert (
-        "PIS-004A detached PIS-005A successor does not match the fetched branch tip"
+        "PIS-004A detached PIS-005A successor does not match the fetched commit and tree"
         in failures
     )
+
+
+def test_pis005a_named_successor_rejects_missing_remote_dirty_original_reproduction() -> None:
+    failures = pis004a_check._pis005a_successor_checkout_failures(  # noqa: SLF001
+        current_branch=pis004a_check.PIS005A_SUCCESSOR_BRANCH,
+        head_name=pis004a_check.PIS005A_SUCCESSOR_BRANCH,
+        head_oid="c" * 40,
+        head_tree="d" * 40,
+        local_successor_oid="c" * 40,
+        local_successor_tree="d" * 40,
+        remote_successor_oid="",
+        remote_successor_tree="",
+        porcelain=" M apps/api/src/ithildin_api/database_migration_backup.py",
+        shallow_state="false",
+        contract_bindings_valid=True,
+        successor_base_tree=pis004a_check.PIS005A_SUCCESSOR_BASE_TREE,
+        repair_base_tree=pis004a_check.PIS005A_REPAIR_BASE_TREE,
+        repair_base_remote_oid=pis004a_check.PIS005A_REPAIR_BASE_COMMIT,
+        repair_base_is_ancestor=True,
+        pis004a_remote_oid=pis004a_check.PIS004A_REVIEW_COMMIT,
+    )
+
+    assert (
+        "PIS-004A named PIS-005A successor does not match local, fetched, and tree identity"
+        in failures
+    )
+    assert "PIS-004A named PIS-005A successor is not clean" in failures
+
+
+@pytest.mark.parametrize(
+    ("head_tree", "remote_tree", "shallow_state", "expected_failure"),
+    [
+        (
+            "d" * 40,
+            "e" * 40,
+            "false",
+            "PIS-004A detached PIS-005A successor does not match the fetched commit and tree",
+        ),
+        (
+            "d" * 40,
+            "d" * 40,
+            "true",
+            "PIS-004A PIS-005A successor checkout is shallow or unverifiable",
+        ),
+    ],
+)
+def test_pis005a_detached_successor_rejects_wrong_tree_and_shallow_repository(
+    head_tree: str,
+    remote_tree: str,
+    shallow_state: str,
+    expected_failure: str,
+) -> None:
+    failures = pis004a_check._pis005a_successor_checkout_failures(  # noqa: SLF001
+        current_branch="",
+        head_name="HEAD",
+        head_oid="c" * 40,
+        head_tree=head_tree,
+        local_successor_oid="",
+        local_successor_tree="",
+        remote_successor_oid="c" * 40,
+        remote_successor_tree=remote_tree,
+        porcelain="",
+        shallow_state=shallow_state,
+        contract_bindings_valid=True,
+        successor_base_tree=pis004a_check.PIS005A_SUCCESSOR_BASE_TREE,
+        repair_base_tree=pis004a_check.PIS005A_REPAIR_BASE_TREE,
+        repair_base_remote_oid=pis004a_check.PIS005A_REPAIR_BASE_COMMIT,
+        repair_base_is_ancestor=True,
+        pis004a_remote_oid=pis004a_check.PIS004A_REVIEW_COMMIT,
+    )
+
+    assert expected_failure in failures
 
 
 @pytest.mark.parametrize(

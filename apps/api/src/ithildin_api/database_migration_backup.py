@@ -46,6 +46,14 @@ class _BackupFamily:
     receipt_path: Path
 
 
+@dataclass(frozen=True)
+class _InterruptedPublication:
+    descriptor: int
+    temporary_name: str
+    anchor_name: str
+    payload: bytes
+
+
 @dataclass
 class BackupGuard:
     """Own stable backup evidence until commit and namespace finalization finish."""
@@ -779,6 +787,25 @@ def _prepare_backup_artifact(
     locked_source: sqlite3.Connection,
     source_logical_digest: str,
 ) -> tuple[int, os.stat_result, bytes]:
+    interrupted = _open_interrupted_publication(directory_fd, canonical_name)
+    if interrupted is not None:
+        try:
+            payload = _verify_existing_payload(
+                interrupted.descriptor,
+                expected_logical_sha256=source_logical_digest,
+                label="backup",
+            )
+            status = _complete_interrupted_publication(
+                directory_fd,
+                canonical_name,
+                interrupted,
+                payload,
+            )
+            return interrupted.descriptor, status, payload
+        except Exception:
+            os.close(interrupted.descriptor)
+            raise
+
     related = _related_hidden_names(directory_fd, canonical_name)
     if not _alias_exists(directory_fd, canonical_name):
         if related:
@@ -836,6 +863,37 @@ def _prepare_receipt_artifact(
     target_schema_version: str,
 ) -> tuple[int, os.stat_result, bytes, JsonObject]:
     expected_payload = _receipt_payload(receipt)
+    interrupted = _open_interrupted_publication(directory_fd, canonical_name)
+    if interrupted is not None:
+        try:
+            payload = _verify_existing_payload(
+                interrupted.descriptor,
+                expected_logical_sha256=None,
+                label="receipt",
+            )
+            parsed = _parse_receipt_payload(payload)
+            _validate_receipt(
+                parsed,
+                backup_name=backup_name,
+                backup_sha256=backup_sha256,
+                backup_device=backup_device,
+                backup_inode=backup_inode,
+                source_schema_version=source_schema_version,
+                source_minimum_writer_version=source_minimum_writer_version,
+                source_logical_digest=source_logical_digest,
+                target_schema_version=target_schema_version,
+            )
+            status = _complete_interrupted_publication(
+                directory_fd,
+                canonical_name,
+                interrupted,
+                payload,
+            )
+            return interrupted.descriptor, status, payload, parsed
+        except Exception:
+            os.close(interrupted.descriptor)
+            raise
+
     related = _related_hidden_names(directory_fd, canonical_name)
     if not _alias_exists(directory_fd, canonical_name):
         if related:
@@ -1005,12 +1063,6 @@ def _guard_from_committed_marker(
         expected_receipt_payload = (receipt_json + "\n").encode("utf-8")
         receipt_sha256 = _bytes_digest(expected_receipt_payload)
         receipt_anchor_name = _anchor_name(family.receipt_path.name, receipt_sha256)
-        _require_no_competing_names(
-            directory_fd,
-            family.receipt_path.name,
-            receipt_anchor_name,
-            committed=True,
-        )
         receipt_fd, receipt_status, receipt_repaired = _open_or_restore_receipt_projection(
             directory_fd=directory_fd,
             canonical_name=family.receipt_path.name,
@@ -1147,6 +1199,39 @@ def _open_or_restore_receipt_projection(
     expected_payload: bytes,
 ) -> tuple[int, os.stat_result, bool]:
     expected_sha256 = _bytes_digest(expected_payload)
+    try:
+        interrupted = _open_interrupted_publication(directory_fd, canonical_name)
+        if interrupted is not None:
+            try:
+                payload = _verify_existing_payload(
+                    interrupted.descriptor,
+                    expected_logical_sha256=None,
+                    label="receipt",
+                )
+                if payload != expected_payload or interrupted.anchor_name != anchor_name:
+                    raise DatabaseBackupError(
+                        "committed migration receipt partial publication differs from the marker"
+                    )
+                status = _complete_interrupted_publication(
+                    directory_fd,
+                    canonical_name,
+                    interrupted,
+                    payload,
+                )
+            except Exception:
+                os.close(interrupted.descriptor)
+                raise
+            return interrupted.descriptor, status, True
+    except (DatabaseBackupError, OSError) as exc:
+        raise DatabaseBackupRecoveryRequired(
+            "committed migration receipt partial publication requires recovery"
+        ) from exc
+    _require_no_competing_names(
+        directory_fd,
+        canonical_name,
+        anchor_name,
+        committed=True,
+    )
     canonical = _open_valid_content_alias(
         directory_fd,
         canonical_name,
@@ -1276,6 +1361,7 @@ def _publish_new_payload(
         _require_private_regular_descriptor(descriptor, exact_link_count=1)
         physical_sha256 = _bytes_digest(payload)
         anchor_name = _anchor_name(canonical_name, physical_sha256)
+        _run_raw_protocol_hook("temporary_fsynced", canonical_name)
         _require_no_competing_names(
             directory_fd,
             canonical_name,
@@ -1289,7 +1375,17 @@ def _publish_new_payload(
         _link_no_clobber(directory_fd, temporary_name, anchor_name)
         anchor_published = True
         _require_path_matches_descriptor(directory_fd, anchor_name, os.fstat(descriptor))
-        os.unlink(temporary_name, dir_fd=directory_fd)
+        _run_raw_protocol_hook("anchor_published", canonical_name)
+        _require_alias_pair(
+            directory_fd,
+            canonical_name,
+            anchor_name,
+            os.fstat(descriptor).st_dev,
+            os.fstat(descriptor).st_ino,
+        )
+        _require_private_regular_descriptor(descriptor, exact_link_count=3)
+        _fsync_directory_fd(directory_fd)
+        _unlink_publication_temporary(directory_fd, temporary_name, descriptor)
         _require_private_regular_descriptor(descriptor, exact_link_count=2)
         status = os.fstat(descriptor)
         _require_alias_pair(
@@ -1309,6 +1405,139 @@ def _publish_new_payload(
         except OSError:
             pass
         raise
+
+
+def _open_interrupted_publication(
+    directory_fd: int,
+    canonical_name: str,
+) -> _InterruptedPublication | None:
+    related = _related_hidden_names(directory_fd, canonical_name)
+    temporary_names = {
+        name for name in related if _is_publication_temporary_name(canonical_name, name)
+    }
+    if not temporary_names:
+        return None
+    if len(temporary_names) != 1:
+        raise DatabaseBackupError(
+            "migration backup has unexpected competing anchor or temporary names"
+        )
+    temporary_name = next(iter(temporary_names))
+    descriptor = _open_alias(directory_fd, temporary_name)
+    try:
+        payload = _read_descriptor(descriptor)
+        anchor_name = _anchor_name(canonical_name, _bytes_digest(payload))
+        if related - {temporary_name, anchor_name}:
+            raise DatabaseBackupError(
+                "migration backup has unexpected competing anchor or temporary names"
+            )
+        descriptor_status = os.fstat(descriptor)
+        observed_aliases = 1
+        for name in (canonical_name, anchor_name):
+            alias_status = _alias_status(directory_fd, name)
+            if alias_status is None:
+                continue
+            if not _status_matches(alias_status, descriptor_status):
+                raise DatabaseBackupError(
+                    "interrupted migration backup publication alias was substituted"
+                )
+            observed_aliases += 1
+        if descriptor_status.st_nlink != observed_aliases:
+            raise DatabaseBackupError(
+                "interrupted migration backup publication hardlink count is invalid"
+            )
+        return _InterruptedPublication(
+            descriptor=descriptor,
+            temporary_name=temporary_name,
+            anchor_name=anchor_name,
+            payload=payload,
+        )
+    except Exception:
+        os.close(descriptor)
+        raise
+
+
+def _complete_interrupted_publication(
+    directory_fd: int,
+    canonical_name: str,
+    interrupted: _InterruptedPublication,
+    validated_payload: bytes,
+) -> os.stat_result:
+    descriptor = interrupted.descriptor
+    descriptor_status = os.fstat(descriptor)
+    if (
+        interrupted.payload != validated_payload
+        or _read_descriptor(descriptor) != validated_payload
+        or interrupted.anchor_name
+        != _anchor_name(canonical_name, _bytes_digest(validated_payload))
+    ):
+        raise DatabaseBackupError("interrupted migration backup publication bytes changed")
+    _require_no_competing_names(
+        directory_fd,
+        canonical_name,
+        interrupted.anchor_name,
+        additional_allowed={interrupted.temporary_name},
+    )
+    for name in (canonical_name, interrupted.anchor_name):
+        alias_status = _alias_status(directory_fd, name)
+        if alias_status is None:
+            _link_no_clobber(directory_fd, interrupted.temporary_name, name)
+        elif not _status_matches(alias_status, descriptor_status):
+            raise DatabaseBackupError(
+                "interrupted migration backup publication alias was substituted"
+            )
+        _require_path_matches_descriptor(directory_fd, name, descriptor_status)
+    _require_alias_pair(
+        directory_fd,
+        canonical_name,
+        interrupted.anchor_name,
+        descriptor_status.st_dev,
+        descriptor_status.st_ino,
+    )
+    _require_private_regular_descriptor(descriptor, exact_link_count=3)
+    _fsync_directory_fd(directory_fd)
+    _unlink_publication_temporary(
+        directory_fd,
+        interrupted.temporary_name,
+        descriptor,
+    )
+    _require_private_regular_descriptor(descriptor, exact_link_count=2)
+    if _read_descriptor(descriptor) != validated_payload:
+        raise DatabaseBackupError("recovered migration backup publication bytes changed")
+    status = os.fstat(descriptor)
+    _require_alias_pair(
+        directory_fd,
+        canonical_name,
+        interrupted.anchor_name,
+        status.st_dev,
+        status.st_ino,
+    )
+    _require_no_competing_names(
+        directory_fd,
+        canonical_name,
+        interrupted.anchor_name,
+    )
+    _fsync_directory_fd(directory_fd)
+    return status
+
+
+def _unlink_publication_temporary(
+    directory_fd: int,
+    temporary_name: str,
+    descriptor: int,
+) -> None:
+    if not _status_matches(
+        _alias_status(directory_fd, temporary_name),
+        os.fstat(descriptor),
+    ):
+        raise DatabaseBackupError(
+            "migration backup publication temporary alias was substituted"
+        )
+    try:
+        os.unlink(temporary_name, dir_fd=directory_fd)
+    except OSError as exc:
+        raise DatabaseBackupError(
+            "migration backup publication temporary alias could not be removed"
+        ) from exc
 
 
 def _adopt_or_verify_anchor(
@@ -1959,6 +2188,15 @@ def _valid_sha256(value: str) -> bool:
 def _related_hidden_names(directory_fd: int, canonical_name: str) -> set[str]:
     prefix = f".{canonical_name}."
     return {name for name in os.listdir(directory_fd) if name.startswith(prefix)}
+
+
+def _is_publication_temporary_name(canonical_name: str, name: str) -> bool:
+    prefix = f".{canonical_name}."
+    suffix = ".tmp"
+    if not name.startswith(prefix) or not name.endswith(suffix):
+        return False
+    token = name[len(prefix) : -len(suffix)]
+    return len(token) == 32 and all(character in "0123456789abcdef" for character in token)
 
 
 def _require_no_competing_names(

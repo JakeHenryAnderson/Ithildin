@@ -490,6 +490,159 @@ def test_completed_review_checkout_accepts_ancestor_candidate_and_only_review_pa
     )
 
 
+def test_candidate_checkout_rejects_missing_remote_and_dirty_original_reproduction(
+    tmp_path: Path,
+) -> None:
+    repository = tmp_path / "repository"
+    repository.mkdir()
+    _git(repository, "init", "-q")
+    _git(repository, "config", "user.name", "PIS-005A fixture")
+    _git(repository, "config", "user.email", "pis005a@example.invalid")
+    _git(repository, "checkout", "-q", "-b", pis005a_check.BRANCH)
+    implementation = repository / "implementation.py"
+    implementation.write_text("candidate = True\n", encoding="utf-8")
+    _git(repository, "add", implementation.name)
+    _git(repository, "commit", "-q", "-m", "candidate")
+    implementation.write_text("candidate = 'dirty'\n", encoding="utf-8")
+
+    failures = pis005a_check._candidate_checkout_failures(  # noqa: SLF001
+        repository,
+        status="candidate_independent_review_pending",
+        review=None,
+    )
+
+    assert "PIS-005A fetched candidate identity is unavailable" in failures
+    assert "PIS-005A candidate worktree is not clean" in failures
+
+
+@pytest.mark.parametrize("detached", [False, True])
+def test_candidate_checkout_accepts_clean_exact_named_and_detached_topologies(
+    tmp_path: Path,
+    detached: bool,
+) -> None:
+    repository = tmp_path / "repository"
+    repository.mkdir()
+    _git(repository, "init", "-q")
+    _git(repository, "config", "user.name", "PIS-005A fixture")
+    _git(repository, "config", "user.email", "pis005a@example.invalid")
+    _git(repository, "checkout", "-q", "-b", pis005a_check.BRANCH)
+    (repository / "implementation.py").write_text("candidate = True\n", encoding="utf-8")
+    _git(repository, "add", "implementation.py")
+    _git(repository, "commit", "-q", "-m", "candidate")
+    _git(
+        repository,
+        "update-ref",
+        f"refs/remotes/origin/{pis005a_check.BRANCH}",
+        "HEAD",
+    )
+    if detached:
+        _git(repository, "checkout", "-q", "--detach", "HEAD")
+
+    assert (
+        pis005a_check._candidate_checkout_failures(  # noqa: SLF001
+            repository,
+            status="candidate_independent_review_pending",
+            review=None,
+        )
+        == []
+    )
+
+
+def test_candidate_checkout_rejects_wrong_remote_commit_and_tree(tmp_path: Path) -> None:
+    repository = tmp_path / "repository"
+    repository.mkdir()
+    _git(repository, "init", "-q")
+    _git(repository, "config", "user.name", "PIS-005A fixture")
+    _git(repository, "config", "user.email", "pis005a@example.invalid")
+    _git(repository, "checkout", "-q", "-b", pis005a_check.BRANCH)
+    implementation = repository / "implementation.py"
+    implementation.write_text("candidate = 'remote'\n", encoding="utf-8")
+    _git(repository, "add", implementation.name)
+    _git(repository, "commit", "-q", "-m", "remote candidate")
+    _git(
+        repository,
+        "update-ref",
+        f"refs/remotes/origin/{pis005a_check.BRANCH}",
+        "HEAD",
+    )
+    implementation.write_text("candidate = 'head'\n", encoding="utf-8")
+    _git(repository, "add", implementation.name)
+    _git(repository, "commit", "-q", "-m", "wrong head")
+
+    failures = pis005a_check._candidate_checkout_failures(  # noqa: SLF001
+        repository,
+        status="candidate_independent_review_pending",
+        review=None,
+    )
+
+    assert (
+        "PIS-005A checkout does not match the fetched authorized commit and tree"
+        in failures
+    )
+
+
+def test_candidate_checkout_rejects_shallow_repository(
+    tmp_path: Path,
+) -> None:
+    repository = tmp_path / "repository"
+    repository.mkdir()
+    _git(repository, "init", "-q")
+    _git(repository, "config", "user.name", "PIS-005A fixture")
+    _git(repository, "config", "user.email", "pis005a@example.invalid")
+    _git(repository, "checkout", "-q", "-b", pis005a_check.BRANCH)
+    (repository / "implementation.py").write_text("candidate = True\n", encoding="utf-8")
+    _git(repository, "add", "implementation.py")
+    _git(repository, "commit", "-q", "-m", "candidate")
+    head = _git(repository, "rev-parse", "HEAD")
+    _git(
+        repository,
+        "update-ref",
+        f"refs/remotes/origin/{pis005a_check.BRANCH}",
+        head,
+    )
+    git_directory = repository / _git(repository, "rev-parse", "--git-dir")
+    (git_directory / "shallow").write_text(f"{head}\n", encoding="utf-8")
+
+    failures = pis005a_check._candidate_checkout_failures(  # noqa: SLF001
+        repository,
+        status="candidate_independent_review_pending",
+        review=None,
+    )
+
+    assert "PIS-005A candidate repository is shallow or unverifiable" in failures
+
+
+def test_candidate_checkout_rejects_exact_rejected_topology(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    repository = tmp_path / "repository"
+    repository.mkdir()
+    _git(repository, "init", "-q")
+    _git(repository, "config", "user.name", "PIS-005A fixture")
+    _git(repository, "config", "user.email", "pis005a@example.invalid")
+    _git(repository, "checkout", "-q", "-b", pis005a_check.BRANCH)
+    (repository / "implementation.py").write_text("candidate = True\n", encoding="utf-8")
+    _git(repository, "add", "implementation.py")
+    _git(repository, "commit", "-q", "-m", "candidate")
+    head = _git(repository, "rev-parse", "HEAD")
+    _git(
+        repository,
+        "update-ref",
+        f"refs/remotes/origin/{pis005a_check.BRANCH}",
+        head,
+    )
+    monkeypatch.setattr(pis005a_check, "REJECTED_CANDIDATE_COMMITS", {head})
+
+    failures = pis005a_check._candidate_checkout_failures(  # noqa: SLF001
+        repository,
+        status="candidate_independent_review_pending",
+        review=None,
+    )
+
+    assert "PIS-005A candidate is not a new descendant of the exact repair base" in failures
+
+
 def _git(root: Path, *arguments: str) -> str:
     completed = subprocess.run(
         ["git", *arguments],

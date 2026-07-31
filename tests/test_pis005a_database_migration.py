@@ -313,6 +313,189 @@ def test_canonical_substitution_during_dual_publication_fails_closed(
     _assert_schema_six_without_commit_marker(db_path)
 
 
+@pytest.mark.parametrize("failure_boundary", ["anchor_link", "temporary_unlink"])
+def test_transient_partial_publication_failure_is_retryable_without_manual_cleanup(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    failure_boundary: str,
+) -> None:
+    db_path = tmp_path / "ithildin.sqlite3"
+    frozen = _load_schema_six_migration(tmp_path)
+    frozen.initialize_or_migrate_database(db_path)
+    backup_path, _ = pre_v7_backup_paths(db_path)
+    failure_observed = False
+
+    if failure_boundary == "anchor_link":
+        original_link = migration_backup._link_no_clobber  # noqa: SLF001
+
+        def fail_anchor_link_once(
+            directory_fd: int,
+            source_name: str,
+            destination_name: str,
+        ) -> None:
+            nonlocal failure_observed
+            if (
+                not failure_observed
+                and destination_name.startswith(f".{backup_path.name}.sha256-")
+            ):
+                failure_observed = True
+                raise DatabaseBackupError("simulated transient alias link failure")
+            original_link(directory_fd, source_name, destination_name)
+
+        monkeypatch.setattr(
+            migration_backup,
+            "_link_no_clobber",
+            fail_anchor_link_once,
+        )
+        expected_message = "simulated transient alias link failure"
+    else:
+        original_unlink_temporary = (
+            migration_backup._unlink_publication_temporary  # noqa: SLF001
+        )
+
+        def fail_temporary_unlink_once(
+            directory_fd: int,
+            temporary_name: str,
+            descriptor: int,
+        ) -> None:
+            nonlocal failure_observed
+            if (
+                not failure_observed
+                and temporary_name.startswith(f".{backup_path.name}.")
+                and temporary_name.endswith(".tmp")
+            ):
+                failure_observed = True
+                raise DatabaseBackupError(
+                    "migration backup publication temporary alias could not be removed"
+                )
+            original_unlink_temporary(directory_fd, temporary_name, descriptor)
+
+        monkeypatch.setattr(
+            migration_backup,
+            "_unlink_publication_temporary",
+            fail_temporary_unlink_once,
+        )
+        expected_message = "temporary alias could not be removed"
+
+    with pytest.raises(DatabaseBackupError, match=expected_message):
+        initialize_database(db_path)
+
+    assert failure_observed is True
+    _assert_schema_six_without_commit_marker(db_path)
+    temporary_names = _publication_temporary_paths(backup_path)
+    assert len(temporary_names) == 1
+    if failure_boundary == "anchor_link":
+        monkeypatch.setattr(migration_backup, "_link_no_clobber", original_link)
+    else:
+        monkeypatch.setattr(
+            migration_backup,
+            "_unlink_publication_temporary",
+            original_unlink_temporary,
+        )
+
+    initialize_database(db_path)
+
+    backup_path, receipt_path, backup_anchor, _ = _pre_v7_artifacts(db_path)
+    assert backup_path.stat().st_ino == backup_anchor.stat().st_ino
+    assert _publication_temporary_paths(backup_path) == []
+    _assert_schema_seven_with_exact_marker(db_path, receipt_path)
+
+
+def test_interrupted_receipt_publication_reuses_validated_payload_on_retry(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    db_path = tmp_path / "ithildin.sqlite3"
+    frozen = _load_schema_six_migration(tmp_path)
+    frozen.initialize_or_migrate_database(db_path)
+    _, receipt_path = pre_v7_backup_paths(db_path)
+    original_hook = migration_backup._run_raw_protocol_hook  # noqa: SLF001
+
+    def interrupt_receipt(stage: str, artifact_name: str) -> None:
+        if stage == "canonical_published" and artifact_name == receipt_path.name:
+            raise DatabaseBackupError("leave interrupted receipt publication")
+
+    monkeypatch.setattr(
+        migration_backup,
+        "_run_raw_protocol_hook",
+        interrupt_receipt,
+    )
+    with pytest.raises(DatabaseBackupError, match="interrupted receipt publication"):
+        initialize_database(db_path)
+
+    _assert_schema_six_without_commit_marker(db_path)
+    temporary_paths = _publication_temporary_paths(receipt_path)
+    assert len(temporary_paths) == 1
+    assert receipt_path.stat().st_ino == temporary_paths[0].stat().st_ino
+    monkeypatch.setattr(
+        migration_backup,
+        "_run_raw_protocol_hook",
+        original_hook,
+    )
+    initialize_database(db_path)
+
+    _, receipt_path, _, receipt_anchor = _pre_v7_artifacts(db_path)
+    assert receipt_path.stat().st_ino == receipt_anchor.stat().st_ino
+    assert _publication_temporary_paths(receipt_path) == []
+    _assert_schema_seven_with_exact_marker(db_path, receipt_path)
+
+
+@pytest.mark.parametrize("substituted_alias", ["canonical", "anchor"])
+def test_interrupted_publication_rejects_and_preserves_substituted_alias(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    substituted_alias: str,
+) -> None:
+    db_path = tmp_path / "ithildin.sqlite3"
+    frozen = _load_schema_six_migration(tmp_path)
+    frozen.initialize_or_migrate_database(db_path)
+    backup_path, temporary_path, anchor_path = _leave_partial_backup_publication(
+        db_path,
+        monkeypatch,
+    )
+    competitor_payload = f"{substituted_alias} competitor".encode()
+    competitor = tmp_path / f"{substituted_alias}-competitor"
+    competitor.write_bytes(competitor_payload)
+    competitor.chmod(0o600)
+    if substituted_alias == "canonical":
+        competitor.replace(backup_path)
+        substituted_path = backup_path
+    else:
+        competitor.replace(anchor_path)
+        substituted_path = anchor_path
+
+    with pytest.raises(DatabaseBackupError, match="alias was substituted"):
+        initialize_database(db_path)
+
+    assert substituted_path.read_bytes() == competitor_payload
+    assert temporary_path.is_file()
+    _assert_schema_six_without_commit_marker(db_path)
+
+
+def test_interrupted_publication_rejects_and_preserves_genuine_competitor(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    db_path = tmp_path / "ithildin.sqlite3"
+    frozen = _load_schema_six_migration(tmp_path)
+    frozen.initialize_or_migrate_database(db_path)
+    backup_path, temporary_path, _ = _leave_partial_backup_publication(
+        db_path,
+        monkeypatch,
+    )
+    competitor = tmp_path / f".{backup_path.name}.sha256-{'0' * 64}"
+    competitor.write_bytes(b"genuine competitor")
+    competitor.chmod(0o600)
+
+    with pytest.raises(DatabaseBackupError, match="unexpected competing anchor"):
+        initialize_database(db_path)
+
+    assert competitor.read_bytes() == b"genuine competitor"
+    assert temporary_path.is_file()
+    assert backup_path.is_file()
+    _assert_schema_six_without_commit_marker(db_path)
+
+
 def test_same_content_different_inode_during_ddl_fails_before_commit(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -984,6 +1167,115 @@ initialize_database(Path(sys.argv[1]))
     initialize_database(db_path)
 
 
+@pytest.mark.parametrize(
+    ("crash_stage", "partial_state"),
+    [
+        ("temporary_fsynced", "temporary_only"),
+        ("canonical_published", "canonical_and_temporary"),
+        ("anchor_published", "canonical_anchor_and_temporary"),
+        ("anchor_published", "anchor_and_temporary"),
+    ],
+)
+def test_child_process_partial_publication_crash_is_recoverable(
+    tmp_path: Path,
+    crash_stage: str,
+    partial_state: str,
+) -> None:
+    db_path = tmp_path / "ithildin.sqlite3"
+    frozen = _load_schema_six_migration(tmp_path)
+    frozen.initialize_or_migrate_database(db_path)
+    backup_path, _ = pre_v7_backup_paths(db_path)
+    script = """
+import os
+import sys
+from pathlib import Path
+import ithildin_api.database_migration_backup as backup
+from ithildin_api.database import initialize_database
+
+stage = sys.argv[2]
+artifact_name = sys.argv[3]
+
+def crash(observed_stage, observed_artifact):
+    if observed_stage == stage and observed_artifact == artifact_name:
+        os._exit(75)
+
+backup._run_raw_protocol_hook = crash
+initialize_database(Path(sys.argv[1]))
+"""
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            script,
+            str(db_path),
+            crash_stage,
+            backup_path.name,
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 75, result.stderr
+    _assert_schema_six_without_commit_marker(db_path)
+    temporary_paths = _publication_temporary_paths(backup_path)
+    assert len(temporary_paths) == 1
+    temporary_path = temporary_paths[0]
+    anchor_path = content_addressed_anchor_path(
+        backup_path,
+        migration_backup._bytes_digest(temporary_path.read_bytes()),  # noqa: SLF001
+    )
+    if partial_state == "anchor_and_temporary":
+        backup_path.unlink()
+    expected_aliases = {
+        "temporary_only": (False, False),
+        "canonical_and_temporary": (True, False),
+        "canonical_anchor_and_temporary": (True, True),
+        "anchor_and_temporary": (False, True),
+    }
+    canonical_expected, anchor_expected = expected_aliases[partial_state]
+    assert backup_path.exists() is canonical_expected
+    assert anchor_path.exists() is anchor_expected
+    for alias in (backup_path, anchor_path):
+        if alias.exists():
+            assert alias.stat().st_ino == temporary_path.stat().st_ino
+
+    initialize_database(db_path)
+
+    backup_path, receipt_path, backup_anchor, _ = _pre_v7_artifacts(db_path)
+    assert backup_path.stat().st_ino == backup_anchor.stat().st_ino
+    assert _publication_temporary_paths(backup_path) == []
+    _assert_schema_seven_with_exact_marker(db_path, receipt_path)
+
+
+def test_committed_exact_marker_repairs_partial_receipt_publication_then_restarts(
+    tmp_path: Path,
+) -> None:
+    db_path = tmp_path / "ithildin.sqlite3"
+    frozen = _load_schema_six_migration(tmp_path)
+    frozen.initialize_or_migrate_database(db_path)
+    initialize_database(db_path)
+    _, receipt_path, _, receipt_anchor = _pre_v7_artifacts(db_path)
+    receipt_payload = receipt_path.read_bytes()
+    exact_marker = receipt_payload.decode().rstrip("\n")
+    receipt_path.unlink()
+    receipt_anchor.unlink()
+    temporary_path = tmp_path / f".{receipt_path.name}.{'a' * 32}.tmp"
+    temporary_path.write_bytes(receipt_payload)
+    temporary_path.chmod(0o600)
+    os.link(temporary_path, receipt_path)
+
+    with pytest.raises(DatabaseBackupRecoveryRequired, match="aliases were repaired"):
+        initialize_database(db_path)
+
+    assert receipt_path.stat().st_ino == receipt_anchor.stat().st_ino
+    assert not temporary_path.exists()
+    with sqlite3.connect(db_path) as connection:
+        metadata = dict(connection.execute("SELECT key, value FROM app_metadata"))
+    assert metadata["schema_version"] == "7"
+    assert metadata[PRE_V7_MARKER_KEY] == exact_marker
+    initialize_database(db_path)
+
+
 def test_post_finalization_same_uid_mutation_is_detected_on_next_restart(
     tmp_path: Path,
 ) -> None:
@@ -1235,6 +1527,65 @@ def _pre_v7_artifacts(db_path: Path) -> tuple[Path, Path, Path, Path]:
         migration_backup._bytes_digest(receipt_path.read_bytes()),  # noqa: SLF001
     )
     return backup_path, receipt_path, backup_anchor, receipt_anchor
+
+
+def _leave_partial_backup_publication(
+    db_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> tuple[Path, Path, Path]:
+    backup_path, _ = pre_v7_backup_paths(db_path)
+    original_hook = migration_backup._run_raw_protocol_hook  # noqa: SLF001
+
+    def interrupt_after_canonical(stage: str, artifact_name: str) -> None:
+        if stage == "canonical_published" and artifact_name == backup_path.name:
+            raise DatabaseBackupError("leave exact interrupted publication")
+
+    monkeypatch.setattr(
+        migration_backup,
+        "_run_raw_protocol_hook",
+        interrupt_after_canonical,
+    )
+    with pytest.raises(DatabaseBackupError, match="leave exact interrupted publication"):
+        initialize_database(db_path)
+    monkeypatch.setattr(
+        migration_backup,
+        "_run_raw_protocol_hook",
+        original_hook,
+    )
+    temporary_paths = _publication_temporary_paths(backup_path)
+    assert len(temporary_paths) == 1
+    temporary_path = temporary_paths[0]
+    anchor_path = content_addressed_anchor_path(
+        backup_path,
+        migration_backup._bytes_digest(temporary_path.read_bytes()),  # noqa: SLF001
+    )
+    assert backup_path.stat().st_ino == temporary_path.stat().st_ino
+    assert not anchor_path.exists()
+    _assert_schema_six_without_commit_marker(db_path)
+    return backup_path, temporary_path, anchor_path
+
+
+def _publication_temporary_paths(canonical_path: Path) -> list[Path]:
+    prefix = f".{canonical_path.name}."
+    suffix = ".tmp"
+    return sorted(
+        candidate
+        for candidate in canonical_path.parent.iterdir()
+        if candidate.name.startswith(prefix)
+        and candidate.name.endswith(suffix)
+        and len(candidate.name[len(prefix) : -len(suffix)]) == 32
+    )
+
+
+def _assert_schema_seven_with_exact_marker(
+    db_path: Path,
+    receipt_path: Path,
+) -> None:
+    with sqlite3.connect(db_path) as connection:
+        metadata = dict(connection.execute("SELECT key, value FROM app_metadata"))
+    assert metadata["schema_version"] == "7"
+    assert metadata["minimum_writer_version"] == "7"
+    assert metadata[PRE_V7_MARKER_KEY] == receipt_path.read_text(encoding="utf-8").rstrip("\n")
 
 
 def _create_distinct_schema_six_database(path: Path, frozen: ModuleType) -> None:

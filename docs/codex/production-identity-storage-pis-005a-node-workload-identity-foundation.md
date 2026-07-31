@@ -8,11 +8,11 @@ Source commit: `e8e6a75ca3d76a233243f5e890091f3c95731da9`.
 
 Security prerequisite: `83db1196213b0e4e7de5d97ab0fb37b934ca4ab7`.
 
-Branch: `codex/enterprise-e2-pis005a-review-repair-4`.
+Branch: `codex/enterprise-e2-pis005a-review-repair-5`.
 
-Frozen repair source: branch `origin/codex/enterprise-e2-pis005a-review-repair-3`, commit
-`afd13f98440d4cd9c032b6a996db133bdf78055d`, tree
-`49e958caeba4f3bce51feaa4e842f8f622c00d4a`.
+Frozen repair source: branch `origin/codex/enterprise-e2-pis005a-review-repair-4`, commit
+`22566cae4a1bc84dca20747d7bd1531d77d7f025`, tree
+`44952292c183b4a481f15dc691e6c04e90e45d55`.
 
 Rejected predecessor evidence remains unchanged:
 
@@ -24,9 +24,12 @@ Rejected predecessor evidence remains unchanged:
   `ba9a40e929ff330c15c6c23766006eb1c26878ef`; and
 - branch `codex/enterprise-e2-pis005a-review-repair-3`, commit
   `afd13f98440d4cd9c032b6a996db133bdf78055d`, tree
-  `49e958caeba4f3bce51feaa4e842f8f622c00d4a`.
+  `49e958caeba4f3bce51feaa4e842f8f622c00d4a`; and
+- branch `codex/enterprise-e2-pis005a-review-repair-4`, commit
+  `22566cae4a1bc84dca20747d7bd1531d77d7f025`, tree
+  `44952292c183b4a481f15dc691e6c04e90e45d55`.
 
-None of the three rejected exact candidates is relabeled or mutated by this fresh repair-4
+None of the four rejected exact candidates is relabeled or mutated by this fresh repair-5
 candidate.
 
 Current governed tool count: exactly `24`.
@@ -228,7 +231,7 @@ After focused and broader checks pass, a separate reviewer should reproduce the 
 candidate in a clean detached worktree:
 
 ```sh
-git fetch origin refs/heads/codex/enterprise-e2-pis005a-review-repair-4:refs/remotes/origin/codex/enterprise-e2-pis005a-review-repair-4
+git fetch origin refs/heads/codex/enterprise-e2-pis005a-review-repair-5:refs/remotes/origin/codex/enterprise-e2-pis005a-review-repair-5
 git worktree add --detach /tmp/ithildin-pis005a-review <candidate_commit>
 cd /tmp/ithildin-pis005a-review
 make production-identity-storage-pis-005a-check
