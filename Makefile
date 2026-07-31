@@ -26,6 +26,7 @@ NODE_RELEASE_BUNDLE ?= var/node-release-artifact/node-release-$(NODE_RELEASE_VER
 .PHONY: local-v1-contract-check local-v1-golden-path-check local-v1-inner-check local-v1-milestone-check local-v1-runtime-trust-check local-v1-test-fast local-v1-typecheck local-v1-hermes-evidence-check local-v1-o2-evidence-check local-v1-real-agent-static-check local-v1-real-agent-run local-v1-real-agent-check local-v1-node-journey local-v1-node-journey-check local-v1-failure-recovery-static-check local-v1-failure-recovery-run local-v1-failure-recovery-check local-v1-operations-static-check local-v1-operations-run local-v1-operations-check local-v1-ui-production-build local-v1-candidate-inventory local-v1-candidate-check local-v1-release-check
 .PHONY: enterprise-e1-contract-check enterprise-e1-milestone-check enterprise-e1-single-site-bootstrap enterprise-e1-single-site-config enterprise-e1-single-site-up enterprise-e1-single-site-health enterprise-e1-single-site-down enterprise-e1-single-site-deployment-check enterprise-e1-single-site-rehearsal enterprise-e1-configuration-check enterprise-e1-recovery-check enterprise-e1-cockpit-check enterprise-e1-evidence-check enterprise-e1-inherited-local-v1-check enterprise-e1-local-v1-descendant-inventory enterprise-e1-candidate-preflight enterprise-e1-candidate-inventory enterprise-e1-candidate-check
 .PHONY: enterprise-e2-preparation-check enterprise-e2-scale-fixture-check
+.PHONY: product-line-acceptance-checkpoint
 
 test:
 	uv run pytest
@@ -85,6 +86,9 @@ enterprise-e2-preparation-check:
 	$(MAKE) enterprise-e1-contract-check
 	$(MAKE) tool-surface-invariant-gate
 	$(MAKE) no-new-powers-guardrail
+
+product-line-acceptance-checkpoint:
+	uv run python scripts/product_line_acceptance_checkpoint.py
 
 enterprise-e1-single-site-bootstrap:
 	@test -n "$(E1_ENV_FILE)" || (echo "E1_ENV_FILE must be an absolute owner-only environment file" >&2; exit 2)

@@ -6,6 +6,11 @@ externally closed.
 
 ## Start Here
 
+- [Product-Line Acceptance Checkpoint](product-line-acceptance-checkpoint.md) - scoped Personal
+  technical-preview and bounded Enterprise E1 single-site-pilot development continuation, with
+  false UAT, release, production, promotion, public-claim, and external-system authority.
+- [Machine-Readable Product-Line Acceptance Record](product-line-acceptance-checkpoint.json) -
+  closed exact-candidate, waiver-scope, PIS-wait, rejected-candidate, and nonclaim bindings.
 - [Ithildin Local v1.0 Completion Contract](local-v1-completion-contract.md) - active delivery target.
 - [Ithildin Enterprise Track E1 Completion Contract](enterprise-e1-completion-contract.md) -
   active enterprise implementation contract, reuse audit, fixed milestones, and nonclaims.

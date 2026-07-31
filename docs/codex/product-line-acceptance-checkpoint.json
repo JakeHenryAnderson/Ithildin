@@ -1,0 +1,71 @@
+{
+  "schema_version": "1",
+  "record_type": "ithildin_product_line_acceptance_checkpoint",
+  "record_status": "accepted_for_scoped_development_continuation",
+  "recorded_on": "2026-07-30",
+  "source_authority": {
+    "kind": "human_product_authority",
+    "accepted_direction": "personal_technical_preview_and_bounded_enterprise_e1_single_site_pilot",
+    "acceptance_effect": "scoped_development_continuation_only"
+  },
+  "product_lines": {
+    "personal": {
+      "candidate_commit": "ab4162d8f4b6d3f45a68f33316f4b765a45765db",
+      "candidate_tree": "25be9f049ca3ff3ccf6721100944e36baa0c3b05",
+      "acceptance_scope": "personal_technical_preview",
+      "development_continuation_accepted": true,
+      "human_uat": {
+        "prescribed": true,
+        "executed": false,
+        "passed": false,
+        "waived_only_for": "continued_product_development_and_scoped_personal_technical_preview_acceptance"
+      }
+    },
+    "enterprise_e1": {
+      "candidate_commit": "02e39d57a6d38a14d959bb88a32da79fe34e4e13",
+      "candidate_tree": "9850b6cbd40742d67388527de802961ddef306bd",
+      "acceptance_scope": "bounded_enterprise_e1_single_site_pilot",
+      "development_continuation_accepted": true,
+      "human_uat": {
+        "prescribed": true,
+        "executed": false,
+        "passed": false,
+        "waived_only_for": "continued_product_development_and_bounded_enterprise_e1_single_site_pilot_acceptance"
+      }
+    }
+  },
+  "preserved_boundaries": {
+    "governed_tool_count": 24,
+    "runtime_authority": "Gateway",
+    "pis_external_input_wait": {
+      "next_action": "await_external_operator_target_and_signed_receipt_inputs_before_separate_collection_action_authority",
+      "external_inputs_present": false,
+      "collection_action_authority": false
+    },
+    "frozen_candidates_modified": false,
+    "frozen_candidates_reinterpreted": false,
+    "pis_005a_rejected_candidate": {
+      "commit": "fce0a3668db5150cf0aa75de1fd914b296a2e099",
+      "tree": "331adb70f2c2c24def540c3576fc6876e33c478c",
+      "status": "candidate_independent_review_pending",
+      "review_findings": {
+        "critical": 0,
+        "high": 1,
+        "medium": 1,
+        "low": 3
+      },
+      "modified": false,
+      "reinterpreted": false
+    }
+  },
+  "authority_nonclaims": {
+    "human_uat_passed": false,
+    "local_v1_release_accepted": false,
+    "release_authority": false,
+    "production_readiness": false,
+    "production_promotion": false,
+    "public_security_product_readiness": false,
+    "external_system_authority": false,
+    "enterprise_production_ready": false
+  }
+}
